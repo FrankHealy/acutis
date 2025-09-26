@@ -1,3 +1,5 @@
+// src/components/residents/ResidentsSection.tsx
+
 import React from 'react';
 import ResidentsHeader from './ResidentsHeader';
 import RollCallControls from './RollCallControls';
@@ -5,7 +7,7 @@ import ResidentsTable from './ResidentsTable';
 import AbsenceModal from './AbsenceModal';
 import { useResidents } from './hooks/useResidents';
 
-const ResidentsSection = () => {
+const ResidentsSection: React.FC = () => {
   const {
     residents,
     loading,
@@ -24,12 +26,12 @@ const ResidentsSection = () => {
     absenceDescription,
     setAbsenceDescription,
     handleAbsenceSubmit,
-    saveAllAttendance
+    saveAllAttendance,
   } = useResidents();
 
-  // Add bulk actions for roll call
+  // bulk actions for roll call
   const handleMarkAllPresent = () => {
-    residents.forEach(resident => {
+    residents.forEach((resident) => {
       if (!attendanceData[resident.id]) {
         handleAttendanceChange(resident.id, true);
       }
@@ -37,7 +39,7 @@ const ResidentsSection = () => {
   };
 
   const handleMarkAllAbsent = () => {
-    residents.forEach(resident => {
+    residents.forEach((resident) => {
       if (!attendanceData[resident.id]) {
         handleAttendanceChange(resident.id, false);
       }
@@ -49,36 +51,47 @@ const ResidentsSection = () => {
 
   return (
     <div className="space-y-6">
-      <ResidentsHeader 
+      <ResidentsHeader
         rollCallView={rollCallView}
         setRollCallView={setRollCallView}
         residentCount={residents.length}
         onSaveAttendance={saveAllAttendance}
       />
 
-      {rollCallView && (
-        <RollCallControls
+      {rollCallView ? (
+        <>
+          <RollCallControls
+            attendanceData={attendanceData}
+            totalResidents={residents.length}
+            onSaveAttendance={saveAllAttendance}
+            onMarkAllPresent={handleMarkAllPresent}
+            onMarkAllAbsent={handleMarkAllAbsent}
+          />
+          <ResidentsTable
+            residents={residents}
+            rollCallView={true}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+            attendanceData={attendanceData}
+            onAttendanceChange={handleAttendanceChange}
+          />
+        </>
+      ) : (
+        <ResidentsTable
+          residents={residents}
+          rollCallView={false}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSort={handleSort}
           attendanceData={attendanceData}
-          totalResidents={residents.length}
-          onSaveAttendance={saveAllAttendance}
-          onMarkAllPresent={handleMarkAllPresent}
-          onMarkAllAbsent={handleMarkAllAbsent}
+          onAttendanceChange={handleAttendanceChange}
         />
       )}
-      
-      <ResidentsTable
-        residents={residents}
-        rollCallView={rollCallView}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSort={handleSort}
-        attendanceData={attendanceData}
-        onAttendanceChange={handleAttendanceChange}
-      />
 
       {absentResident && (
         <AbsenceModal
-          resident={residents.find(r => r.id === absentResident)}
+          resident={residents.find((r) => r.id === absentResident)}
           absenceReason={absenceReason}
           setAbsenceReason={setAbsenceReason}
           absenceDescription={absenceDescription}

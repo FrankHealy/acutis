@@ -1,27 +1,24 @@
-import React from 'react';
-import { ChevronDown, User } from 'lucide-react';
-import ResidentRow from './ResidentRow';
+// src/components/residents/ResidentsTable.tsx
 
-interface Resident {
-  id: number;
-  firstName: string;
-  surname: string;
-  nationality: string;
-  age: number;
-  weekNumber: number | null;
-  roomNumber: string;
-  photo: string | null;
-  present: boolean | null;
-  extra?: boolean;
-}
+import React from 'react';
+import { ChevronDown } from 'lucide-react';
+import ResidentRow from './ResidentRow';
+import type { Resident } from '../../services/mockDataService';
+import type { AttendanceRecord } from '../../services/residentService';
+
+export type SortBy = keyof Pick<
+  Resident,
+  'firstName' | 'surname' | 'age' | 'weekNumber' | 'roomNumber' | 'unit'
+>;
+export type SortOrder = 'asc' | 'desc';
 
 interface ResidentsTableProps {
   residents: Resident[];
   rollCallView: boolean;
-  sortBy: string;
-  sortOrder: string;
-  onSort: (column: string) => void;
-  attendanceData: Record<number, any>;
+  sortBy: SortBy;
+  sortOrder: SortOrder;
+  onSort: (column: SortBy) => void;
+  attendanceData: Record<number, AttendanceRecord | undefined>;
   onAttendanceChange: (residentId: number, isPresent: boolean) => void;
 }
 
@@ -32,10 +29,13 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
   sortOrder,
   onSort,
   attendanceData,
-  onAttendanceChange
+  onAttendanceChange,
 }) => {
-  const SortableHeader: React.FC<{ column: string; children: React.ReactNode }> = ({ column, children }) => (
-    <th 
+  const SortableHeader: React.FC<{ column: SortBy; children: React.ReactNode }> = ({
+    column,
+    children,
+  }) => (
+    <th
       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
       onClick={() => onSort(column)}
     >
@@ -57,7 +57,8 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Photo
               </th>
-              <SortableHeader column="surname">Name</SortableHeader>
+              <SortableHeader column="firstName">First Name</SortableHeader>
+              <SortableHeader column="surname">Surname</SortableHeader>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Nationality
               </th>
@@ -72,15 +73,29 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {residents.map((resident) => (
-              <ResidentRow
-                key={resident.id}
-                resident={resident}
-                rollCallView={rollCallView}
-                attendance={attendanceData[resident.id]}
-                onAttendanceChange={onAttendanceChange}
-              />
-            ))}
+            {Array.isArray(residents) && residents.length > 0 ? (
+              residents.map((resident, idx) => {
+                if (!resident) {
+                  console.error('Undefined resident at index', idx);
+                  return null;
+                }
+                return (
+                  <ResidentRow
+                    key={resident.id}
+                    resident={resident}
+                    rollCallView={rollCallView}
+                    attendance={attendanceData[resident.id]}
+                    onAttendanceChange={onAttendanceChange}
+                  />
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={rollCallView ? 8 : 7} className="text-center py-4 text-gray-500">
+                  No residents found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

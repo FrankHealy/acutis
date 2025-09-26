@@ -1,4 +1,6 @@
-import { Resident, MockDataService } from './mockDataService';
+// src/services/residentService.ts
+
+import { type Resident, MockDataService } from './mockDataService';
 
 export interface AttendanceRecord {
   residentId: number;
@@ -9,16 +11,15 @@ export interface AttendanceRecord {
 }
 
 export interface ResidentService {
-  getResidents(unit: string): Promise<Resident[]>;
-  getRollCallResidents(unit: string): Promise<Resident[]>;
-  saveAttendance(records: AttendanceRecord[]): Promise<void>;
-  getResident(id: number): Promise<Resident>;
+  getResidents(unit: Resident['unit']): Promise<Resident[]>;
+  getRollCallResidents(unit: Resident['unit']): Promise<Resident[]>;
+  saveAttendance(records: AttendanceRecord[]): Promise<AttendanceRecord[]>;
+  getResident(id: number): Promise<Resident | null>;
 }
 
 // Mock implementation (will be replaced with real API later)
 export class MockResidentService implements ResidentService {
-  async getResidents(unit: string): Promise<Resident[]> {
-    // Simulate API delay
+  async getResidents(unit: Resident['unit']): Promise<Resident[]> {
     return new Promise(resolve => {
       setTimeout(() => {
         resolve(MockDataService.getResidentsByUnit(unit));
@@ -26,7 +27,7 @@ export class MockResidentService implements ResidentService {
     });
   }
 
-  async getRollCallResidents(unit: string): Promise<Resident[]> {
+  async getRollCallResidents(unit: Resident['unit']): Promise<Resident[]> {
     return new Promise(resolve => {
       setTimeout(() => {
         resolve(MockDataService.getRollCallResidents(unit));
@@ -34,20 +35,18 @@ export class MockResidentService implements ResidentService {
     });
   }
 
-  async saveAttendance(records: AttendanceRecord[]): Promise<void> {
+  async saveAttendance(records: AttendanceRecord[]): Promise<AttendanceRecord[]> {
     return new Promise(resolve => {
       setTimeout(() => {
         console.log('Attendance saved:', records);
-        resolve();
+        resolve(records); // return records for consistency with real API
       }, 500);
     });
   }
 
-  async getResident(id: number): Promise<Resident> {
-    const resident = MockDataService.getResidentById(id);
-    if (!resident) throw new Error(`Resident ${id} not found`);
-    return resident;
+  async getResident(id: number): Promise<Resident | null> {
+    return MockDataService.getResidentById(id) ?? null;
   }
 }
 
-export const residentService = new MockResidentService();
+export const residentService: ResidentService = new MockResidentService();
