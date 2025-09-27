@@ -6,14 +6,19 @@ import Navigation from './components/layout/Navigation';
 import Dashboard from './components/dashboard/Dashboard';
 import NewAdmissionForm from './components/admissions/NewAdmissionForm';
 import ResidentsSection from './components/residents/ResidentsSection';
+import RoomAssignments from './components/operations/RoomAssignments';
 
-type Step = 'dashboard' | 'new-admission' | 'residents';
+type Step =
+  | 'dashboard'
+  | 'new-admission'
+  | 'residents'
+  | 'operations/room-mapping'
+  | 'operations/ot-roles'
+  | 'operations/therapy-schedule';
 
 const AcutisAdmissionsSystem: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<Step>('dashboard');
 
-  // Wrapper keeps our internal Step type but remains compatible with children
-  // that expect (step: string) => void
   const goTo = (step: string) => setCurrentStep(step as Step);
 
   const renderStep = () => {
@@ -24,6 +29,20 @@ const AcutisAdmissionsSystem: React.FC = () => {
         return <NewAdmissionForm setCurrentStep={goTo} />;
       case 'residents':
         return <ResidentsSection />;
+      case 'operations/room-mapping':
+        return <RoomAssignments />;
+      case 'operations/ot-roles':
+        return (
+          <div className="p-6 bg-white rounded-xl shadow">
+            OT Roles (coming soon)
+          </div>
+        );
+      case 'operations/therapy-schedule':
+        return (
+          <div className="p-6 bg-white rounded-xl shadow">
+            Therapy Schedule (coming soon)
+          </div>
+        );
       default:
         return null;
     }
@@ -33,7 +52,6 @@ const AcutisAdmissionsSystem: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <Navigation currentStep={currentStep} setCurrentStep={goTo} />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderStep()}
       </main>
