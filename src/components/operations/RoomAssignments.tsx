@@ -30,8 +30,7 @@ const RoomAssignments: React.FC = () => {
   const totalResidents = 40;
 
   const sideLength = totalRooms / 4; // 11 rooms per edge
-  const columns = sideLength; // 11 columns
-  const rows = sideLength + 2; // 13 rows (extra for corners)
+  const gridSize = sideLength + 2; // 13 grid cells including corners
 
   const rooms = React.useMemo(
     () => Array.from({ length: totalRooms }, (_, i) => i + 1),
@@ -86,11 +85,11 @@ const RoomAssignments: React.FC = () => {
   const receptionTop = intersectionY - receptionSizePx / 2;
   const receptionCenterX = receptionLeft + receptionSizePx / 2;
   const receptionCenterY = receptionTop + receptionSizePx / 2;
-  const receptionRightEdge = receptionCenterX + receptionSizePx / Math.SQRT2;
 
   const corridorThickness = receptionSizePx / 2;
   const corridorLeft = intersectionX - courtyardBorderInset;
-  const corridorLength = receptionRightEdge - corridorLeft;
+  const corridorRight = receptionCenterX;
+  const corridorLength = corridorRight - corridorLeft;
 
   const roomCellClass =
     "relative w-full h-full bg-gray-100 text-xs font-medium text-gray-700 overflow-hidden rounded-md shadow-sm";
@@ -98,8 +97,8 @@ const RoomAssignments: React.FC = () => {
   const roomsPerimeterStyle: React.CSSProperties = {
     position: "relative",
     display: "grid",
-    gridTemplateColumns: `repeat(${columns}, ${cellSizeRem}rem)`,
-    gridTemplateRows: `repeat(${rows}, ${cellSizeRem}rem)`,
+    gridTemplateColumns: `repeat(${gridSize}, ${cellSizeRem}rem)`,
+    gridTemplateRows: `repeat(${gridSize}, ${cellSizeRem}rem)`,
   };
 
   const corridorStyle: React.CSSProperties = {
@@ -110,6 +109,7 @@ const RoomAssignments: React.FC = () => {
     height: `${corridorThickness}px`,
     backgroundColor: "#f8fafc",
     border: "1px solid #94a3b8",
+    borderLeft: "none",
     borderRadius: "0",
     pointerEvents: "none",
     zIndex: 1,
@@ -237,7 +237,7 @@ const RoomAssignments: React.FC = () => {
     return (
       <div
         className={roomCellClass}
-        style={{ boxShadow: '0 0 0 1px #cbd5f5 inset' }}
+        style={{ boxShadow: "0 0 0 1px #cbd5f5 inset" }}
         onDragOver={handleDragOver(num)}
         onDrop={handleDrop(num)}
       >
@@ -296,7 +296,7 @@ const RoomAssignments: React.FC = () => {
 
           {/* Right column */}
           {rooms.slice(sideLength, sideLength * 2).map((num, index) => (
-            <div key={num} style={{ gridColumn: columns, gridRow: index + 2 }}>
+            <div key={num} style={{ gridColumn: gridSize, gridRow: index + 2 }}>
               {renderRoom(num)}
             </div>
           ))}
@@ -305,7 +305,7 @@ const RoomAssignments: React.FC = () => {
           {rooms.slice(sideLength * 2, sideLength * 3).map((num, index) => (
             <div
               key={num}
-              style={{ gridColumn: columns - 1 - index, gridRow: rows }}
+              style={{ gridColumn: gridSize - 1 - index, gridRow: gridSize }}
             >
               {renderRoom(num)}
             </div>
@@ -315,7 +315,7 @@ const RoomAssignments: React.FC = () => {
           {rooms.slice(sideLength * 3, totalRooms).map((num, index) => (
             <div
               key={num}
-              style={{ gridColumn: 1, gridRow: rows - 1 - index }}
+              style={{ gridColumn: 1, gridRow: gridSize - 1 - index }}
             >
               {renderRoom(num)}
             </div>
@@ -323,29 +323,43 @@ const RoomAssignments: React.FC = () => {
 
           {/* Courtyard */}
           <div
-            style={{ gridColumn: `2 / ${columns}`, gridRow: `2 / ${rows}` }}
+            style={{ gridColumn: `2 / ${gridSize}`, gridRow: `2 / ${gridSize}` }}
             className="border-4 border-gray-300 bg-green-200/70 flex items-center justify-center text-green-700 text-sm font-semibold rounded-lg"
           >
             Courtyard
           </div>
 
-          {/* Connector and reception */}
+          {/* Reception connector */}
           <div style={corridorStyle} />
+
+          {/* Reception */}
           <div style={receptionStyle}>
             <span style={receptionLabelStyle}>Reception</span>
           </div>
 
           {/* Corridor labels */}
-          <div className="absolute top-5 left-1/2 -translate-x-1/2 text-sm font-semibold text-gray-700">
+          <div
+            className="absolute text-sm font-semibold text-gray-700"
+            style={{ top: `${corridorPadding / 2}px`, left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none" }}
+          >
             Clocktower
           </div>
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-sm font-semibold text-gray-700">
+          <div
+            className="absolute text-sm font-semibold text-gray-700"
+            style={{ bottom: `${corridorPadding / 2}px`, left: "50%", transform: "translate(-50%, 50%)", pointerEvents: "none" }}
+          >
             St Joseph's Side
           </div>
-          <div className="absolute left-5 top-1/2 -translate-y-1/2 -rotate-90 text-sm font-semibold text-gray-700">
+          <div
+            className="absolute text-sm font-semibold text-gray-700"
+            style={{ left: `${corridorPadding / 2}px`, top: "50%", transform: "translate(-50%, -50%) rotate(-90deg)", pointerEvents: "none" }}
+          >
             Green Mile
           </div>
-          <div className="absolute right-5 top-1/2 -translate-y-1/2 rotate-90 text-sm font-semibold text-gray-700">
+          <div
+            className="absolute text-sm font-semibold text-gray-700"
+            style={{ right: `${corridorPadding / 2}px`, top: "50%", transform: "translate(50%, -50%) rotate(90deg)", pointerEvents: "none" }}
+          >
             Over Drug Unit
           </div>
         </div>
