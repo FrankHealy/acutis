@@ -1,4 +1,3 @@
-import React from 'react';
 import { UserPlus, Shield, FileText, Stethoscope, MapPin, ChevronRight } from 'lucide-react';
 
 const ProgressIndicator = () => {

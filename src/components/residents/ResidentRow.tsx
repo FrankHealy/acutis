@@ -17,14 +17,26 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
   attendance,
   onAttendanceChange,
 }) => {
+  const fallbackAvatar = resident.fallbackPhoto || `https://i.pravatar.cc/150?img=${((resident.id - 1) % 70) + 1}`;
+
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    if (event.currentTarget.src === fallbackAvatar) {
+      return;
+    }
+
+    event.currentTarget.onerror = null;
+    event.currentTarget.src = fallbackAvatar;
+  };
+
   return (
     <tr>
       {/* Photo */}
       <td className="px-6 py-4 whitespace-nowrap">
         {resident.photo ? (
           <img
-            src={resident.photo}
+            src={resident.photo ?? fallbackAvatar}
             alt={`${resident.firstName} ${resident.surname}`}
+            onError={handleImageError}
             className="h-10 w-10 rounded-full object-cover"
           />
         ) : (

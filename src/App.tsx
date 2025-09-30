@@ -7,6 +7,7 @@ import Dashboard from './components/dashboard/Dashboard';
 import NewAdmissionForm from './components/admissions/NewAdmissionForm';
 import ResidentsSection from './components/residents/ResidentsSection';
 import RoomAssignments from './components/operations/RoomAssignments';
+import GroupTherapySection from './components/operations/GroupTherapySection';
 
 type Step =
   | 'dashboard'
@@ -38,11 +39,7 @@ const AcutisAdmissionsSystem: React.FC = () => {
           </div>
         );
       case 'operations/therapy-schedule':
-        return (
-          <div className="p-6 bg-white rounded-xl shadow">
-            Therapy Schedule (coming soon)
-          </div>
-        );
+        return <GroupTherapySection />;
       default:
         return null;
     }

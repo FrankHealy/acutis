@@ -1,4 +1,3 @@
-import React from 'react';
 import { Shield } from 'lucide-react';
 
 const ContrabandSection = () => {
@@ -29,7 +28,7 @@ const ContrabandSection = () => {
         <textarea 
           placeholder="Details of contraband found..."
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-          rows="3"
+          rows={3}
         ></textarea>
       </div>
     </div>

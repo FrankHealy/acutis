@@ -1,0 +1,219 @@
+[
+  {
+    "id": 1,
+    "term": "Anxious",
+    "description": "Displays worry, nervousness, or unease; may appear restless.",
+    "ownerId": "default",
+    "ratingId": 0
+  },
+  {
+    "id": 2,
+    "term": "Calm",
+    "description": "Appears relaxed, at ease, and not visibly distressed.",
+    "ownerId": "default",
+    "ratingId": 0
+  },
+  {
+    "id": 3,
+    "term": "Irritable",
+    "description": "Shows low tolerance for others, easily annoyed or short-tempered.",
+    "ownerId": "default",
+    "ratingId": 1
+  },
+  {
+    "id": 4,
+    "term": "Agitated",
+    "description": "Visibly restless or unsettled, may pace or fidget excessively.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 5,
+    "term": "Tearful",
+    "description": "Shows crying or is close to tears, emotional distress visible.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 6,
+    "term": "Flat Affect",
+    "description": "Shows little or no emotional expression, monotone voice, blank facial expression.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 7,
+    "term": "Hopeful",
+    "description": "Shows signs of optimism or positive outlook.",
+    "ownerId": "default",
+    "ratingId": 3
+  },
+  {
+    "id": 8,
+    "term": "Silent",
+    "description": "Does not speak during session, unresponsive verbally.",
+    "ownerId": "default",
+    "ratingId": 0
+  },
+  {
+    "id": 9,
+    "term": "Engaged",
+    "description": "Actively participates, shows interest and attention.",
+    "ownerId": "default",
+    "ratingId": 0
+  },
+  {
+    "id": 10,
+    "term": "Withdrawn",
+    "description": "Minimal interaction, avoids eye contact, distant.",
+    "ownerId": "default",
+    "ratingId": 1
+  },
+  {
+    "id": 11,
+    "term": "Distracted",
+    "description": "Attention wanders, not focused on discussion.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 12,
+    "term": "Inattentive",
+    "description": "Appears disconnected, head down, unresponsive.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 13,
+    "term": "Restless",
+    "description": "Constant shifting or moving, difficulty staying still.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 14,
+    "term": "Cooperative",
+    "description": "Works well with group, follows facilitator guidance.",
+    "ownerId": "default",
+    "ratingId": 1
+  },
+  {
+    "id": 15,
+    "term": "Overwhelmed",
+    "description": "Shows signs of emotional or cognitive overload.",
+    "ownerId": "default",
+    "ratingId": 3
+  },
+  {
+    "id": 16,
+    "term": "Defensive",
+    "description": "Responds protectively to feedback, may justify or deflect.",
+    "ownerId": "default",
+    "ratingId": 0
+  },
+  {
+    "id": 17,
+    "term": "Supportive",
+    "description": "Encourages others, gives verbal/non-verbal reassurance.",
+    "ownerId": "default",
+    "ratingId": 0
+  },
+  {
+    "id": 18,
+    "term": "Respectful",
+    "description": "Listens and interacts with courtesy.",
+    "ownerId": "default",
+    "ratingId": 1
+  },
+  {
+    "id": 19,
+    "term": "Argumentative",
+    "description": "Challenges others frequently, combative tone.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 20,
+    "term": "Encouraging",
+    "description": "Offers positive feedback and reinforcement.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 21,
+    "term": "Open",
+    "description": "Willing to share thoughts and feelings freely.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 22,
+    "term": "Sarcastic",
+    "description": "Uses mocking or cutting remarks, often undermining.",
+    "ownerId": "default",
+    "ratingId": 3
+  },
+  {
+    "id": 23,
+    "term": "Limited English",
+    "description": "Has difficulty understanding or expressing due to language barrier.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 24,
+    "term": "Needs Clarification",
+    "description": "Frequently asks for repetition or explanation, possible comprehension issue.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 25,
+    "term": "Yawning",
+    "description": "Frequent yawning, sign of tiredness or boredom.",
+    "ownerId": "default",
+    "ratingId": 4
+  },
+  {
+    "id": 26,
+    "term": "Fidgeting",
+    "description": "Excessive movement such as tapping, shifting, or playing with objects.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 27,
+    "term": "Sweating",
+    "description": "Visible perspiration, may indicate anxiety or withdrawal.",
+    "ownerId": "default",
+    "ratingId": 3
+  },
+  {
+    "id": 28,
+    "term": "Shaky",
+    "description": "Noticeable trembling or unsteady movements.",
+    "ownerId": "default",
+    "ratingId": 3
+  },
+  {
+    "id": 29,
+    "term": "Relaxed Posture",
+    "description": "Body appears at ease, comfortable position.",
+    "ownerId": "default",
+    "ratingId": 1
+  },
+  {
+    "id": 30,
+    "term": "Arms Crossed",
+    "description": "Closed-off or defensive body language.",
+    "ownerId": "default",
+    "ratingId": 2
+  },
+  {
+    "id": 31,
+    "term": "Slumped Posture",
+    "description": "Bent forward, low energy or disengagement.",
+    "ownerId": "default",
+    "ratingId": 2
+  }
+]

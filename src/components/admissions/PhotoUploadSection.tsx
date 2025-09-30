@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Camera, Upload } from 'lucide-react';
+import { useRef } from 'react';
+import { Camera } from 'lucide-react';
 
 const PhotoUploadSection = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);

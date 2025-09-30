@@ -1,4 +1,3 @@
-import React from 'react';
 import { Building, AlertTriangle, User } from 'lucide-react';
 
 const Header = () => {

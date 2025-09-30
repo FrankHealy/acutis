@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Heart, Upload, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Heart, Upload } from 'lucide-react';
 import SectionToggle from '../common/SectionToggle';
 
 const MedicalInfoSection = () => {

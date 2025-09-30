@@ -1,5 +1,5 @@
 // src/services/mockRoomService.ts
-import type { Resident } from './mockDataService';
+import { mockResidents, type Resident } from './mockDataService';
 
 export interface Room {
   roomNumber: number;
@@ -26,15 +26,11 @@ export const mockAssignments: RoomAssignment[] = alcoholRooms.map(r => ({
 }));
 
 // Example residents for testing layout (10 for demo)
-export const mockAlcoholResidents: Resident[] = Array.from({ length: 10 }, (_, i) => ({
-  id: i + 1,
-  firstName: `Test${i + 1}`,
-  surname: `Resident`,
-  nationality: 'Irish',
-  age: 30 + i,
-  weekNumber: (i % 12) + 1,
-  roomNumber: '',
-  photo: null,
-  present: null,
-  unit: 'alcohol',
-}));
+export const mockAlcoholResidents: Resident[] = mockResidents
+  .filter((resident) => resident.unit === 'alcohol')
+  .slice(0, 10)
+  .map((resident, index) => ({
+    ...resident,
+    id: index + 1,
+    roomNumber: '',
+  }));

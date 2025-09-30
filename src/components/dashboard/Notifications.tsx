@@ -1,4 +1,3 @@
-import React from 'react';
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 const Notifications = () => {

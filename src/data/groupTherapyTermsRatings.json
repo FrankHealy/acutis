@@ -1,0 +1,32 @@
+[
+  {
+    "id": 0,
+    "label": "Core",
+    "description": "Always used, must-have baseline terms"
+  },
+  {
+    "id": 1,
+    "label": "Frequent",
+    "description": "Used regularly in most sessions"
+  },
+  {
+    "id": 2,
+    "label": "Common",
+    "description": "Often useful, but not every session"
+  },
+  {
+    "id": 3,
+    "label": "Occasional",
+    "description": "Situational, depending on group or individual state"
+  },
+  {
+    "id": 4,
+    "label": "Rare",
+    "description": "Seldom needed, only in specific circumstances"
+  },
+  {
+    "id": 5,
+    "label": "Very Rare",
+    "description": "Edge cases, hardly ever used"
+  }
+]

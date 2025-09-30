@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { User } from 'lucide-react';
 import SectionToggle from '../common/SectionToggle';
 
 const PersonalInfoSection = () => {
@@ -35,7 +35,7 @@ const PersonalInfoSection = () => {
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <textarea className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3"></textarea>
+            <textarea className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3}></textarea>
           </div>
         </div>
       )}
