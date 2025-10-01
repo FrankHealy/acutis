@@ -1,0 +1,6 @@
+C:\work\acutis\server\Acutis.Infrastructure\obj\Debug\net8.0\Acutis.Infrastructure.csproj.AssemblyReference.cache
+C:\work\acutis\server\Acutis.Infrastructure\obj\Debug\net8.0\Acutis.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\work\acutis\server\Acutis.Infrastructure\obj\Debug\net8.0\Acutis.Infrastructure.AssemblyInfoInputs.cache
+C:\work\acutis\server\Acutis.Infrastructure\obj\Debug\net8.0\Acutis.Infrastructure.AssemblyInfo.cs
+C:\work\acutis\server\Acutis.Infrastructure\obj\Debug\net8.0\Acutis.Infrastructure.csproj.CoreCompileInputs.cache
+C:\work\acutis\server\Acutis.Infrastructure\obj\Debug\net8.0\Acutis.Infrastructure.sourcelink.json

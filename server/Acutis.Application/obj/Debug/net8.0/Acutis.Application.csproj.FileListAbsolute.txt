@@ -1,0 +1,16 @@
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\Acutis.Application.csproj.AssemblyReference.cache
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\Acutis.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\Acutis.Application.AssemblyInfoInputs.cache
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\Acutis.Application.AssemblyInfo.cs
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\Acutis.Application.csproj.CoreCompileInputs.cache
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\Acutis.Application.sourcelink.json
+C:\work\acutis\server\Acutis.Application\bin\Debug\net8.0\Acutis.Application.deps.json
+C:\work\acutis\server\Acutis.Application\bin\Debug\net8.0\Acutis.Application.dll
+C:\work\acutis\server\Acutis.Application\bin\Debug\net8.0\Acutis.Application.pdb
+C:\work\acutis\server\Acutis.Application\bin\Debug\net8.0\Acutis.Domain.dll
+C:\work\acutis\server\Acutis.Application\bin\Debug\net8.0\Acutis.Domain.pdb
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\Acutis.A.12721A79.Up2Date
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\Acutis.Application.dll
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\refint\Acutis.Application.dll
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\Acutis.Application.pdb
+C:\work\acutis\server\Acutis.Application\obj\Debug\net8.0\ref\Acutis.Application.dll

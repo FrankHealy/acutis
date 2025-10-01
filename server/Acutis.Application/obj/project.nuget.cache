@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "Fz5BKQJ+WgE=",
+  "success": true,
+  "projectFilePath": "C:\\work\\acutis\\server\\Acutis.Application\\Acutis.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\frank\\.nuget\\packages\\fluentvalidation\\11.9.1\\fluentvalidation.11.9.1.nupkg.sha512"
+  ],
+  "logs": []
+}
