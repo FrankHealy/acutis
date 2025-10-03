@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Acutis.Application.Admissions;
-using Acutis.Application.Admissions.Requests;
+using Acutis.Application.Interfaces;
+using Acutis.Application.Requests;
 
 namespace Acutis.Api.Controllers;
 

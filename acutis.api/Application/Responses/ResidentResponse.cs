@@ -1,4 +1,6 @@
-﻿public record ResidentResponse(
+﻿namespace Acutis.Application.Responses;
+
+public record ResidentResponse(
     Guid Id,
     string SocialSecurityNumber,
     DateTime DateOfBirth,

@@ -10,4 +10,4 @@
         public Nationality(string name) => Name = name;
     }
 
-}
+

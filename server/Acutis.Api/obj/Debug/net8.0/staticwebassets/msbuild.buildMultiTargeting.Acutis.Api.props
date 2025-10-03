@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\Acutis.Api.props" />
+</Project>

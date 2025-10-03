@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Acutis.Application.Requests;
 
 public class CreateResidentRequestValidator : AbstractValidator<CreateResidentRequest>
 {

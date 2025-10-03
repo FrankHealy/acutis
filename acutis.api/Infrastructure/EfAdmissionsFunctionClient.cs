@@ -1,6 +1,6 @@
-﻿using Acutis.Application.Admissions;
-using Acutis.Application.Admissions.Requests;
-using Acutis.Application.Admissions.Responses;
+﻿using Acutis.Application.Responses;
+using Acutis.Application.Requests;
+using Acutis.Application.Interfaces;
 using Acutis.Domain.Admissions;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,4 +1,6 @@
-﻿public record CreateResidentRequest(
+﻿namespace Acutis.Application.Requests;
+
+public record CreateResidentRequest(
     string SocialSecurityNumber,
     DateTime DateOfBirth,
     DateTime DateOfAdmission,

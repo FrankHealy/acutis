@@ -1,7 +1,7 @@
 ﻿using Acutis.Application.Requests;
 using Acutis.Application.Responses;
 
-namespace Acutis.Application.;
+namespace Acutis.Application.Interfaces;
 
 public interface IAdmissionsFunctionClient
 {

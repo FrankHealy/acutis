@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "oJ2tDuJseVKYvUW0QliP8m2rAS3YWClQEmms5s1GYy8=",
+  "Source": "Acutis.Api",
+  "BasePath": "_content/Acutis.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

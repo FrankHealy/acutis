@@ -1,4 +1,4 @@
-using Acutis.Application.Admissions;
+using Acutis.Application.Interfaces;
 using Acutis.Infrastructure;
 using Acutis.Infrastructure.Admissions;
 using Microsoft.EntityFrameworkCore;
