@@ -8,21 +8,14 @@ using Microsoft.Extensions.Options;
 
 namespace Acutis.Api.Authentication;
 
-public class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+[method: Obsolete]
+public class ApiKeyAuthenticationHandler(
+    IOptionsMonitor<AuthenticationSchemeOptions> options,
+    ILoggerFactory loggerFactory,
+    UrlEncoder encoder,
+    IApiKeyValidator validator) : AuthenticationHandler<AuthenticationSchemeOptions>(options, loggerFactory, encoder)
 {
     public const string SchemeName = "ApiKey";
-    private readonly IApiKeyValidator _validator;
-
-    public ApiKeyAuthenticationHandler(
-        IOptionsMonitor<AuthenticationSchemeOptions> options,
-        ILoggerFactory loggerFactory,
-        UrlEncoder encoder,
-        ISystemClock clock,
-        IApiKeyValidator validator)
-        : base(options, loggerFactory, encoder, clock)
-    {
-        _validator = validator;
-    }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -37,7 +30,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationS
             return AuthenticateResult.NoResult();
         }
 
-        if (!await _validator.ValidateAsync(apiKey, Context.RequestAborted))
+        if (!await validator.ValidateAsync(apiKey, Context.RequestAborted))
         {
             return AuthenticateResult.Fail("Invalid API key");
         }

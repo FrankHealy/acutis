@@ -1,0 +1,347 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\work\\acutis\\server\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\lookups\\probationrerquirement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\lookups\\probationrerquirement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|c:\\work\\acutis\\server\\acutis.application\\dtos\\residentdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|solutionrelative:acutis.application\\dtos\\residentdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|c:\\work\\acutis\\server\\acutis.application\\validators\\createresidentrequestvalidator .cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|solutionrelative:acutis.application\\validators\\createresidentrequestvalidator .cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|c:\\work\\acutis\\server\\acutis.infrastructure\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|solutionrelative:acutis.infrastructure\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|c:\\work\\acutis\\server\\acutis.infrastructure\\acutis.infrastructure.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|solutionrelative:acutis.infrastructure\\acutis.infrastructure.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|c:\\work\\acutis\\server\\acutis.infrastructure\\admissions\\residentsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|solutionrelative:acutis.infrastructure\\admissions\\residentsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|c:\\work\\acutis\\server\\acutis.infrastructure\\services\\residentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|solutionrelative:acutis.infrastructure\\services\\residentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7F3542C2-6BCA-439C-BD17-0A43221CE1E1}|Acutis.Api\\Acutis.Api.csproj|c:\\work\\acutis\\server\\acutis.api\\controllers\\residentscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7F3542C2-6BCA-439C-BD17-0A43221CE1E1}|Acutis.Api\\Acutis.Api.csproj|solutionrelative:acutis.api\\controllers\\residentscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\entities\\address.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\entities\\address.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|c:\\work\\acutis\\server\\acutis.application\\requests\\createresidentrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|solutionrelative:acutis.application\\requests\\createresidentrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|c:\\work\\acutis\\server\\acutis.application\\requests\\updateresidentrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|solutionrelative:acutis.application\\requests\\updateresidentrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|c:\\work\\acutis\\server\\acutis.application\\services\\iresidentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|solutionrelative:acutis.application\\services\\iresidentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\lookups\\documenttype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\lookups\\documenttype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\entities\\residentdocument.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\entities\\residentdocument.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|c:\\work\\acutis\\server\\acutis.application\\validators\\updateresidentrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|solutionrelative:acutis.application\\validators\\updateresidentrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|c:\\work\\acutis\\server\\acutis.application\\acutis.application.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|solutionrelative:acutis.application\\acutis.application.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\entities\\resident.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\entities\\resident.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\lookups\\residentdocument.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\lookups\\residentdocument.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\lookups\\country.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\lookups\\country.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ProbationRerquirement.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\ProbationRerquirement.cs",
+              "RelativeDocumentMoniker": "Acutis.Domain\\Lookups\\ProbationRerquirement.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\ProbationRerquirement.cs",
+              "RelativeToolTip": "Acutis.Domain\\Lookups\\ProbationRerquirement.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAiAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-04T12:43:03.542Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "Acutis.Infrastructure\\AppDbContext.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\AppDbContext.cs",
+              "RelativeToolTip": "Acutis.Infrastructure\\AppDbContext.cs",
+              "ViewState": "AgIAACwAAAAAAAAAAAAIwFIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-04T12:38:23.375Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "ResidentsService.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Admissions\\ResidentsService.cs",
+              "RelativeDocumentMoniker": "Acutis.Infrastructure\\Admissions\\ResidentsService.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Admissions\\ResidentsService.cs*",
+              "RelativeToolTip": "Acutis.Infrastructure\\Admissions\\ResidentsService.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-04T12:35:55.906Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Acutis.Infrastructure",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Acutis.Infrastructure.csproj",
+              "RelativeDocumentMoniker": "Acutis.Infrastructure\\Acutis.Infrastructure.csproj",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Acutis.Infrastructure.csproj*",
+              "RelativeToolTip": "Acutis.Infrastructure\\Acutis.Infrastructure.csproj*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-10-04T12:35:04.809Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{e506b91c-c606-466a-90a9-123d1d1e12b3}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ResidentsController.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Api\\Controllers\\ResidentsController.cs",
+              "RelativeDocumentMoniker": "Acutis.Api\\Controllers\\ResidentsController.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Api\\Controllers\\ResidentsController.cs*",
+              "RelativeToolTip": "Acutis.Api\\Controllers\\ResidentsController.cs*",
+              "ViewState": "AgIAAC4AAAAAAAAAAAAIwFQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-03T22:14:53.989Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Address.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\Address.cs",
+              "RelativeDocumentMoniker": "Acutis.Domain\\Entities\\Address.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\Address.cs*",
+              "RelativeToolTip": "Acutis.Domain\\Entities\\Address.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAABAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-03T21:52:47.216Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ResidentService.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Services\\ResidentService.cs",
+              "RelativeDocumentMoniker": "Acutis.Infrastructure\\Services\\ResidentService.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Services\\ResidentService.cs*",
+              "RelativeToolTip": "Acutis.Infrastructure\\Services\\ResidentService.cs*",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAwBAAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-03T13:17:13.866Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "UpdateResidentRequest.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Application\\Requests\\UpdateResidentRequest.cs",
+              "RelativeDocumentMoniker": "Acutis.Application\\Requests\\UpdateResidentRequest.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Application\\Requests\\UpdateResidentRequest.cs",
+              "RelativeToolTip": "Acutis.Application\\Requests\\UpdateResidentRequest.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-03T21:50:11.272Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "CreateResidentRequestValidator .cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Application\\Validators\\CreateResidentRequestValidator .cs",
+              "RelativeDocumentMoniker": "Acutis.Application\\Validators\\CreateResidentRequestValidator .cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Application\\Validators\\CreateResidentRequestValidator .cs",
+              "RelativeToolTip": "Acutis.Application\\Validators\\CreateResidentRequestValidator .cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAQwBwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-03T10:09:09.264Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ResidentDto.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Application\\DTOs\\ResidentDto.cs",
+              "RelativeDocumentMoniker": "Acutis.Application\\DTOs\\ResidentDto.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Application\\DTOs\\ResidentDto.cs",
+              "RelativeToolTip": "Acutis.Application\\DTOs\\ResidentDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACAAAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-02T23:03:53.874Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "ResidentDocument.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\ResidentDocument.cs",
+              "RelativeDocumentMoniker": "Acutis.Domain\\Entities\\ResidentDocument.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\ResidentDocument.cs",
+              "RelativeToolTip": "Acutis.Domain\\Entities\\ResidentDocument.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-03T10:50:45.977Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "UpdateResidentRequest.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Application\\Validators\\UpdateResidentRequest.cs",
+              "RelativeDocumentMoniker": "Acutis.Application\\Validators\\UpdateResidentRequest.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Application\\Validators\\UpdateResidentRequest.cs",
+              "RelativeToolTip": "Acutis.Application\\Validators\\UpdateResidentRequest.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-03T10:48:19.401Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "DocumentType.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\DocumentType.cs",
+              "RelativeDocumentMoniker": "Acutis.Domain\\Lookups\\DocumentType.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\DocumentType.cs",
+              "RelativeToolTip": "Acutis.Domain\\Lookups\\DocumentType.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwgAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-02T19:46:48.319Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "CreateResidentRequest.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Application\\Requests\\CreateResidentRequest.cs",
+              "RelativeDocumentMoniker": "Acutis.Application\\Requests\\CreateResidentRequest.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Application\\Requests\\CreateResidentRequest.cs",
+              "RelativeToolTip": "Acutis.Application\\Requests\\CreateResidentRequest.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAACQAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-02T22:58:52.956Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "IResidentService.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Application\\Services\\IResidentService.cs",
+              "RelativeDocumentMoniker": "Acutis.Application\\Services\\IResidentService.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Application\\Services\\IResidentService.cs*",
+              "RelativeToolTip": "Acutis.Application\\Services\\IResidentService.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAABOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-02T22:56:01.657Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "Resident.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\Resident.cs",
+              "RelativeDocumentMoniker": "Acutis.Domain\\Entities\\Resident.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\Resident.cs",
+              "RelativeToolTip": "Acutis.Domain\\Entities\\Resident.cs",
+              "ViewState": "AQIAACcAAAAAAAAAAAAQwEIAAAAgAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-02T22:12:28.781Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "ResidentDocument.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\ResidentDocument.cs",
+              "RelativeDocumentMoniker": "Acutis.Domain\\Lookups\\ResidentDocument.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\ResidentDocument.cs",
+              "RelativeToolTip": "Acutis.Domain\\Lookups\\ResidentDocument.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABoAAAAJAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-02T19:48:03.065Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "Acutis.Application.csproj",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Application\\Acutis.Application.csproj",
+              "RelativeDocumentMoniker": "Acutis.Application\\Acutis.Application.csproj",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Application\\Acutis.Application.csproj",
+              "RelativeToolTip": "Acutis.Application\\Acutis.Application.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-10-03T10:08:16.303Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "Country.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\Country.cs",
+              "RelativeDocumentMoniker": "Acutis.Domain\\Lookups\\Country.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\Country.cs",
+              "RelativeToolTip": "Acutis.Domain\\Lookups\\Country.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABUAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-02T19:26:34.573Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Acutis.Application.Requests
 {
+
     public class CreateResidentRequest
     {
         public string SocialSecurityNumber { get; set; } = string.Empty;
@@ -19,7 +20,8 @@ namespace Acutis.Application.Requests
         public Guid PrimaryAddictionId { get; set; }
         public List<Guid> SecondaryAddictionIds { get; set; } = new();
 
-        public Guid CountryId { get; set; }   // 🔹 updated
+        public Guid CountryId { get; set; }
+        public Guid AddressId { get; set; }
         public Guid? ProbationRequirementId { get; set; }
 
         public string NextOfKinFirstName { get; set; } = string.Empty;

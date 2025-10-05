@@ -54,6 +54,8 @@ public class Resident : AuditableEntity
     public int Age => DateTime.Today.Year - DateOfBirth.Year -
         (DateOfBirth.Date > DateTime.Today.AddYears(-(DateTime.Today.Year - DateOfBirth.Year)) ? 1 : 0);
 
+    public object Address { get; set; }
+
     private Resident() { }
 
     public Resident(

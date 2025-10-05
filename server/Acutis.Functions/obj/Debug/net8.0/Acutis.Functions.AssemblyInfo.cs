@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Acutis.Functions")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5d5b8ffcf26d847d3e2d19b50038bc859a73b2a9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5d67945d16bd8c51a47b362e298ffc94551e726b")]
 [assembly: System.Reflection.AssemblyProductAttribute("Acutis.Functions")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Acutis.Functions")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

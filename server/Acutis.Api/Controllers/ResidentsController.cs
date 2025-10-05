@@ -1,38 +1,83 @@
-﻿using Acutis.Application.Common;
-using Acutis.Application.DTOs;
-using Acutis.Application.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Acutis.Application.Interfaces;
+using Acutis.Application.Requests;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "Therapy.Read")]
 public class ResidentsController : ControllerBase
 {
-    private readonly IResidentService _residentService;
+    private readonly IResidentService _service;
 
-    public ResidentsController(IResidentService residentService)
+    public ResidentsController(IResidentService service)
     {
-        _residentService = residentService;
+        _service = service;
     }
 
-    [HttpGet]
-    [ProducesResponseType(typeof(PagedResult<ResidentDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetResidents([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Create a new resident
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateResidentRequest request)
     {
-        var result = await _residentService.GetResidentsAsync(page, pageSize, cancellationToken);
+        var user = User.Identity?.Name ?? "system";
+        var result = await _service.CreateResidentAsync(request, user);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    /// <summary>
+    /// Get resident by Id
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var result = await _service.GetResidentByIdAsync(id);
+        if (result == null) return NotFound();
         return Ok(result);
     }
 
-    [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(ResidentDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetResident(Guid id, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Get all residents
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
     {
-        var resident = await _residentService.GetResidentAsync(id, cancellationToken);
-        return resident is null ? NotFound() : Ok(resident);
+        var result = await _service.GetAllResidentsAsync();
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Update resident (partial)
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateResidentRequest request)
+    {
+        var user = User.Identity?.Name ?? "system";
+        var result = await _service.UpdateResidentAsync(id, request, user);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Mark resident as completed (all info gathered)
+    /// </summary>
+    [HttpPost("{id:guid}/complete")]
+    public async Task<IActionResult> MarkCompleted(Guid id)
+    {
+        var user = User.Identity?.Name ?? "system";
+        var result = await _service.MarkResidentCompletedAsync(id, user);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Delete resident
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var user = User.Identity?.Name ?? "system";
+        var success = await _service.DeleteResidentAsync(id, user);
+        if (!success) return NotFound();
+        return NoContent();
     }
 }

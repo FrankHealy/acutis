@@ -1249,12 +1249,18 @@
           "FluentValidation": "11.9.1"
         },
         "runtime": {
-          "Acutis.Application.dll": {}
+          "Acutis.Application.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       },
       "Acutis.Domain/1.0.0": {
         "runtime": {
-          "Acutis.Domain.dll": {}
+          "Acutis.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       }
     }

@@ -9,12 +9,13 @@ namespace Acutis.Domain.Lookups
 {
     public class Country
     {
-
-        public string CountryCode { get; private set; } = string.Empty;
-        public string CountryNane { get; private set; } 
+        public Guid Id { get; private set; } = Guid.NewGuid(); 
+        public string CountryCode { get; private set; } = string.Empty; 
         public string Demonym { get; private set; }
+        public string CountryName { get; set; }
+
         public Country(string countryCode, string countryName, string demonym)
-     => (CountryCode, CountryNane, Demonym) = (countryCode, countryName, demonym);
+     => (CountryCode, CountryName, Demonym) = (countryCode, countryName, demonym);
 
 
     }

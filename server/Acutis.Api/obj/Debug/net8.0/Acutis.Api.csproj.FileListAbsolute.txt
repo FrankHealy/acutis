@@ -104,3 +104,4 @@ C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\refint\Acutis.Api.dll
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.pdb
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.genruntimeconfig.cache
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\ref\Acutis.Api.dll
+C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\rpswa.dswa.cache.json
