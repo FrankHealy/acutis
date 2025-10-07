@@ -3,6 +3,7 @@ using Acutis.Application.Requests;
 
 namespace Acutis.Application.Interfaces;
 
+
 public interface IResidentService
 {
     Task<ResidentDto> CreateResidentAsync(CreateResidentRequest request, string userName);

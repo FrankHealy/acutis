@@ -1,11 +1,11 @@
+C:\work\acutis\server\Acutis.Domain\bin\Debug\net8.0\Acutis.Domain.deps.json
+C:\work\acutis\server\Acutis.Domain\bin\Debug\net8.0\Acutis.Domain.dll
+C:\work\acutis\server\Acutis.Domain\bin\Debug\net8.0\Acutis.Domain.pdb
 C:\work\acutis\server\Acutis.Domain\obj\Debug\net8.0\Acutis.Domain.GeneratedMSBuildEditorConfig.editorconfig
 C:\work\acutis\server\Acutis.Domain\obj\Debug\net8.0\Acutis.Domain.AssemblyInfoInputs.cache
 C:\work\acutis\server\Acutis.Domain\obj\Debug\net8.0\Acutis.Domain.AssemblyInfo.cs
 C:\work\acutis\server\Acutis.Domain\obj\Debug\net8.0\Acutis.Domain.csproj.CoreCompileInputs.cache
 C:\work\acutis\server\Acutis.Domain\obj\Debug\net8.0\Acutis.Domain.sourcelink.json
-C:\work\acutis\server\Acutis.Domain\bin\Debug\net8.0\Acutis.Domain.deps.json
-C:\work\acutis\server\Acutis.Domain\bin\Debug\net8.0\Acutis.Domain.dll
-C:\work\acutis\server\Acutis.Domain\bin\Debug\net8.0\Acutis.Domain.pdb
 C:\work\acutis\server\Acutis.Domain\obj\Debug\net8.0\Acutis.Domain.dll
 C:\work\acutis\server\Acutis.Domain\obj\Debug\net8.0\refint\Acutis.Domain.dll
 C:\work\acutis\server\Acutis.Domain\obj\Debug\net8.0\Acutis.Domain.pdb

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Acutis.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+89bc4e70916e40df2beb2fb40cf94b5a9c855576")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cbb0fba3a3efd2a40f879c2f8e43e68c8b847e04")]
 [assembly: System.Reflection.AssemblyProductAttribute("Acutis.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Acutis.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

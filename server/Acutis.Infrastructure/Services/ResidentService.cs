@@ -2,157 +2,167 @@
 using Acutis.Application.Interfaces;
 using Acutis.Application.Requests;
 using Acutis.Domain.Entities;
+using Acutis.Domain.Enums;
+using Acutis.Domain.Lookups;
+using Acutis.Infrastructure.Mapping;
 using Microsoft.EntityFrameworkCore;
-using System;
 
-namespace Acutis.Infrastructure.Services;
-
-public class ResidentService : IResidentService
+namespace Acutis.Infrastructure.Admissions
 {
-    private readonly AppDbContext _db;
-
-    public ResidentService(AppDbContext db)
+    public class ResidentService : IResidentService
     {
-        _db = db;
-    }
+        private readonly AppDbContext _db;
+        public ResidentService(AppDbContext db) { _db = db; }
 
-    public async Task<ResidentDto> CreateResidentAsync(CreateResidentRequest request, string createdBy)
-    {
-        var resident = new Resident(
-            request.SocialSecurityNumber,
-            request.DateOfBirth,
-            request.DateOfAdmission,
-            request.FirstName,
-            request.MiddleName,
-            request.Surname,
-            request.IsPreviousResident,
-            request.PrimaryAddictionId,
-            request.CountryId
-        );
-
-        resident.UpdateAddress(request.AddressId);
-        if (request.ProbationRequirementId.HasValue)
-            resident.AssignProbationRequirement(request.ProbationRequirementId.Value);
-
-        resident.AddSecondaryAddictions(request.SecondaryAddictionIds);
-
-        _db.Residents.Add(resident);
-        await _db.SaveChangesAsync();
-
-        return await MapResidentToDto(resident.Id);
-    }
-
-    public async Task<ResidentDto?> GetResidentByIdAsync(Guid id)
-    {
-        var resident = await _db.Residents
-            .Include(r => r.Country)
-            .Include(r => r.Address).ThenInclude(a => a.Country)
-            .Include(r => r.ProbationRequirement)
-            .Include(r => r.PrimaryAddiction)
-            .Include(r => r.SecondaryAddictions)
-            .FirstOrDefaultAsync(r => r.Id == id);
-
-        return resident is null ? null : MapResident(resident);
-    }
-
-    public async Task<IEnumerable<ResidentDto>> GetAllResidentsAsync()
-    {
-        var residents = await _db.Residents
-            .Include(r => r.Country)
-            .Include(r => r.Address).ThenInclude(a => a.Country)
-            .Include(r => r.ProbationRequirement)
-            .Include(r => r.PrimaryAddiction)
-            .Include(r => r.SecondaryAddictions)
-            .ToListAsync();
-
-        return residents.Select(MapResident);
-    }
-
-    public async Task<ResidentDto> UpdateResidentAsync(Guid id, UpdateResidentRequest request, string modifiedBy)
-    {
-        var resident = await _db.Residents.FindAsync(id);
-        if (resident == null) throw new Exception("Resident not found");
-
-        resident.UpdateContact(request.PhoneNumber, request.EmailAddress);
-
-        if (request.AddressId.HasValue) resident.UpdateAddress(request.AddressId.Value);
-        if (request.ProbationRequirementId.HasValue) resident.AssignProbationRequirement(request.ProbationRequirementId.Value);
-
-        if (request.SecondaryAddictionIds != null)
-            resident.UpdateSecondaryAddictions(request.SecondaryAddictionIds);
-
-        await _db.SaveChangesAsync();
-        return await MapResidentToDto(id);
-    }
-
-    public async Task<bool> DeleteResidentAsync(Guid id, string deletedBy)
-    {
-        var resident = await _db.Residents.FindAsync(id);
-        if (resident == null) return false;
-
-        _db.Residents.Remove(resident);
-        await _db.SaveChangesAsync();
-        return true;
-    }
-
-    public async Task<ResidentDto> MarkResidentCompletedAsync(Guid id, string completedBy)
-    {
-        var resident = await _db.Residents.FindAsync(id);
-        if (resident == null) throw new Exception("Resident not found");
-
-        resident.MarkCompleted(completedBy);
-        await _db.SaveChangesAsync();
-
-        return await MapResidentToDto(id);
-    }
-
-    private async Task<ResidentDto> MapResidentToDto(Guid id)
-    {
-        var resident = await _db.Residents
-            .Include(r => r.Country)
-            .Include(r => r.Address).ThenInclude(a => a.Country)
-            .Include(r => r.ProbationRequirement)
-            .Include(r => r.PrimaryAddiction)
-            .Include(r => r.SecondaryAddictions)
-            .FirstAsync(r => r.Id == id);
-
-        return MapResident(resident);
-    }
-
-    private ResidentDto MapResident(Resident r) =>
-        new ResidentDto
+        public async Task<ResidentDto> CreateResidentAsync(CreateResidentRequest req, string userName)
         {
-            Id = r.Id,
-            SocialSecurityNumber = r.SocialSecurityNumber,
-            DateOfBirth = r.DateOfBirth,
-            DateOfAdmission = r.DateOfAdmission,
-            FirstName = r.FirstName,
-            MiddleName = r.MiddleName,
-            Surname = r.Surname,
-            IsPreviousResident = r.IsPreviousResident,
+            var country = await _db.Countries.FindAsync(req.CountryId) ?? throw new Exception("Invalid CountryId");
+            var address = await _db.Addresses.FindAsync(req.AddressId) ?? throw new Exception("Invalid AddressId");
+            var primary = await _db.Addictions.FindAsync(req.PrimaryAddictionId) ?? throw new Exception("Invalid PrimaryAddictionId");
 
-            Country = r.Country.CountryName,
-            Address = $"{r.Address.Line1}, {r.Address.City}, {r.Address.County}, {r.Address.PostCode}, {r.Address.Country.CountryName}",
-            PrimaryAddiction = r.PrimaryAddiction.Name,
-            SecondaryAddictions = r.SecondaryAddictions.Select(sa => sa.Name).ToList(),
-            ProbationRequirement = r.ProbationRequirement?.Requirement,
+            ProbationRequirement? probation = null;
+            if (req.ProbationRequirementId.HasValue)
+                probation = await _db.ProbationRequirements.FindAsync(req.ProbationRequirementId.Value);
 
-            NextOfKinFirstName = r.NextOfKinFirstName,
-            NextOfKinSecondName = r.NextOfKinSecondName,
-            NextOfKinPhoneNumber = r.NextOfKinPhoneNumber,
+            var resident = new Resident(
+                req.SocialSecurityNumber, req.DateOfBirth, req.DateOfAdmission,
+                req.FirstName, req.MiddleName, req.Surname, req.IsPreviousResident,
+                primary.Id, country.Id);
 
-            HasMedicalCard = r.HasMedicalCard,
-            MedicalCardNumber = r.MedicalCardNumber,
-            HasPrivateInsurance = r.HasPrivateInsurance,
-            PrivateMedicalInsuranceNumber = r.PrivateMedicalInsuranceNumber,
-            HasMobilityIssue = r.HasMobilityIssue,
+            resident.UpdateAddress(address.Id);
+            resident.UpdateAlias(req.Alias);
+            resident.UpdateContact(req.PhoneNumber, req.EmailAddress);
+            resident.UpdateNextOfKin(req.NextOfKinFirstName, req.NextOfKinSecondName, req.NextOfKinPhoneNumber);
+            if (probation != null) resident.AssignProbationRequirement(probation.Id);
 
-            IsCompleted = r.IsCompleted,
-            CompletedAt = r.CompletedAt,
-            CompletedBy = r.CompletedBy,
+            // Secondary addictions: service loads entities and passes them to domain
+            if (req.SecondaryAddictionIds != null)
+            {
+                if (req.SecondaryAddictionIds.Count == 0)
+                {
+                    resident.ClearSecondaryAddictions();
+                }
+                else
+                {
+                    var secondary = await _db.Addictions
+                        .Where(a => req.SecondaryAddictionIds.Contains(a.Id))
+                        .ToListAsync();
+                    resident.UpdateSecondaryAddictions(secondary);
+                }
+            }
 
-            Age = r.CalculateAge(),
-            Photos = r.Photos.Select(p => p.Url).ToList(),
-            Documents = r.Documents.Select(d => d.Url).ToList()
-        };
+            resident.UpdateMedicalInfo(
+                req.HasMedicalCard, req.MedicalCardNumber,
+                req.HasPrivateInsurance, req.PrivateMedicalInsuranceProviderId,
+                req.PrivateMedicalInsuranceNumber, req.HasMobilityIssue
+            );
+
+            if (req.PhotoDeclined) resident.DeclinePhoto(req.PhotoDeclinedReason);
+            else resident.SetArrivalPhoto(req.PhotoUrl);
+
+            if (!string.IsNullOrWhiteSpace(req.QuestionnairesJson)) resident.AttachQuestionnaire(req.QuestionnairesJson);
+
+            if (!string.IsNullOrWhiteSpace(req.PreferredStepDownHouse) &&
+                Enum.TryParse<StepDownHouse>(req.PreferredStepDownHouse, true, out var house))
+                resident.SetPreferredStepDownHouse(house);
+
+            if (!string.IsNullOrWhiteSpace(req.RoomNumber)) resident.AssignRoom(req.RoomNumber);
+            if (req.DepositAmount.HasValue) resident.RecordDeposit(req.DepositAmount.Value, Guid.Empty);
+            if (req.IsAdmissionFormComplete) resident.MarkAdmissionFormComplete("system");
+
+            _db.Residents.Add(resident);
+            await _db.SaveChangesAsync();
+
+            return await MapResidentToDto(resident.Id);
+        }
+
+        public async Task<ResidentDto?> GetResidentByIdAsync(Guid id)
+        {
+            var r = await _db.Residents
+                .Include(x => x.Country)
+                .Include(x => x.Address).ThenInclude(a => a.Country)
+                .Include(x => x.ReligiousAffiliation)
+                .Include(x => x.ProbationRequirement)
+                .Include(x => x.PrivateMedicalInsuranceProvider)
+                .Include(x => x.PrimaryAddiction)
+                .Include(x => x.SecondaryAddictions)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            return r is null ? null : DtoMapper.ToResidentDto(r);
+        }
+
+        public async Task<IEnumerable<ResidentDto>> GetAllResidentsAsync()
+        {
+            var list = await _db.Residents
+                .Include(x => x.Country)
+                .Include(x => x.Address).ThenInclude(a => a.Country)
+                .Include(x => x.PrimaryAddiction)
+                .ToListAsync();
+
+            return list.Select(DtoMapper.ToResidentDto);
+        }
+
+        public async Task<ResidentDto> UpdateResidentAsync(Guid id, UpdateResidentRequest req, string userName)
+        {
+            var r = await _db.Residents
+                .Include(x => x.SecondaryAddictions) // include mutable collection
+                .FirstOrDefaultAsync(x => x.Id == id)
+                ?? throw new Exception("Resident not found");
+
+            // Secondary addictions: null = no change; empty = clear; list = replace
+            if (req.SecondaryAddictionIds != null)
+            {
+                if (req.SecondaryAddictionIds.Count == 0)
+                {
+                    r.ClearSecondaryAddictions();
+                }
+                else
+                {
+                    var secondaries = await _db.Addictions
+                        .Where(a => req.SecondaryAddictionIds.Contains(a.Id))
+                        .ToListAsync();
+
+                    r.UpdateSecondaryAddictions(secondaries);
+                }
+            }
+
+            // All other updates (no EF work here)
+            DtoMapper.ApplyUpdate(r, req);
+
+            await _db.SaveChangesAsync();
+            return await MapResidentToDto(id);
+        }
+
+        public async Task<ResidentDto> MarkAdmissionFormCompleteAsync(Guid id, string userName)
+        {
+            var r = await _db.Residents.FindAsync(id) ?? throw new Exception("Resident not found");
+            r.MarkAdmissionFormComplete(userName);
+            await _db.SaveChangesAsync();
+            return await MapResidentToDto(id);
+        }
+
+        public async Task<bool> DeleteResidentAsync(Guid id, string userName)
+        {
+            var r = await _db.Residents.FindAsync(id);
+            if (r == null) return false;
+            _db.Remove(r);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        private async Task<ResidentDto> MapResidentToDto(Guid id)
+        {
+            var r = await _db.Residents
+                .Include(x => x.Country)
+                .Include(x => x.Address).ThenInclude(a => a.Country)
+                .Include(x => x.ReligiousAffiliation)
+                .Include(x => x.ProbationRequirement)
+                .Include(x => x.PrivateMedicalInsuranceProvider)
+                .Include(x => x.PrimaryAddiction)
+                .Include(x => x.SecondaryAddictions)
+                .FirstAsync(x => x.Id == id);
+
+            return DtoMapper.ToResidentDto(r);
+        }
+    }
 }

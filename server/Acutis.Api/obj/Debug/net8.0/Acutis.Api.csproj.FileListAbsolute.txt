@@ -1,5 +1,6 @@
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\appsettings.Development.json
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\appsettings.json
+C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Acutis.Api.staticwebassets.endpoints.json
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Acutis.Api.exe
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Acutis.Api.deps.json
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Acutis.Api.runtimeconfig.json
@@ -8,6 +9,7 @@ C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Acutis.Api.pdb
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Azure.Core.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Azure.Identity.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\FluentValidation.dll
+C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\FluentValidation.DependencyInjectionExtensions.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.Data.SqlClient.dll
@@ -18,6 +20,8 @@ C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Relational.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Sqlite.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.SqlServer.dll
+C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.dll
+C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.Extensions.DependencyModel.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.Identity.Client.dll
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Microsoft.Identity.Client.Extensions.Msal.dll
@@ -83,6 +87,7 @@ C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Acutis.Application.pdb
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Acutis.Infrastructure.pdb
 C:\work\acutis\server\Acutis.Api\bin\Debug\net8.0\Acutis.Domain.pdb
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.csproj.AssemblyReference.cache
+C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\rpswa.dswa.cache.json
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.GeneratedMSBuildEditorConfig.editorconfig
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.AssemblyInfoInputs.cache
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.AssemblyInfo.cs
@@ -90,18 +95,17 @@ C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.csproj.CoreCompileI
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.MvcApplicationPartsAssemblyInfo.cs
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.MvcApplicationPartsAssemblyInfo.cache
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.sourcelink.json
-C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets.build.json
-C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets.development.json
-C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets\msbuild.Acutis.Api.Microsoft.AspNetCore.StaticWebAssets.props
-C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets\msbuild.build.Acutis.Api.props
-C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.Acutis.Api.props
-C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.Acutis.Api.props
-C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets.pack.json
+C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\rjimswa.dswa.cache.json
+C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
+C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\scopedcss\bundle\Acutis.Api.styles.css
+C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets.build.json
+C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets.build.json.cache
+C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets.development.json
+C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\staticwebassets.build.endpoints.json
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.csproj.Up2Date
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.dll
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\refint\Acutis.Api.dll
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.pdb
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\Acutis.Api.genruntimeconfig.cache
 C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\ref\Acutis.Api.dll
-C:\work\acutis\server\Acutis.Api\obj\Debug\net8.0\rpswa.dswa.cache.json

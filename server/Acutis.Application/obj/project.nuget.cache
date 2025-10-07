@@ -1,10 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "k//2ZjrL7tM=",
+  "dgSpecHash": "HBqHSYTBVGo=",
   "success": true,
   "projectFilePath": "C:\\work\\acutis\\server\\Acutis.Application\\Acutis.Application.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\frank\\.nuget\\packages\\fluentvalidation\\11.9.1\\fluentvalidation.11.9.1.nupkg.sha512"
+    "C:\\Users\\frank\\.nuget\\packages\\fluentvalidation\\12.0.0\\fluentvalidation.12.0.0.nupkg.sha512",
+    "C:\\Users\\frank\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\12.0.0\\fluentvalidation.dependencyinjectionextensions.12.0.0.nupkg.sha512",
+    "C:\\Users\\frank\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\9.0.9\\microsoft.extensions.dependencyinjection.9.0.9.nupkg.sha512",
+    "C:\\Users\\frank\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\9.0.9\\microsoft.extensions.dependencyinjection.abstractions.9.0.9.nupkg.sha512"
   ],
   "logs": []
 }

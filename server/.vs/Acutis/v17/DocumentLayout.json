@@ -3,28 +3,20 @@
   "WorkspaceRootPath": "C:\\work\\acutis\\server\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\entities\\resident.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\entities\\resident.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|c:\\work\\acutis\\server\\acutis.infrastructure\\extensions\\servicecollectionextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|solutionrelative:acutis.infrastructure\\extensions\\servicecollectionextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|c:\\work\\acutis\\server\\acutis.infrastructure\\admissions\\residentsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|solutionrelative:acutis.infrastructure\\admissions\\residentsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|c:\\work\\acutis\\server\\acutis.infrastructure\\persistence\\configurations\\residentconfiguration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|solutionrelative:acutis.infrastructure\\persistence\\configurations\\residentconfiguration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|c:\\work\\acutis\\server\\acutis.infrastructure\\mapping\\dtomapper.residents.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|solutionrelative:acutis.infrastructure\\mapping\\dtomapper.residents.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|c:\\work\\acutis\\server\\acutis.infrastructure\\infrastructureserviceregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{351F3151-C8AC-4659-BA96-0D178924EDF3}|Acutis.Infrastructure\\Acutis.Infrastructure.csproj|solutionrelative:acutis.infrastructure\\infrastructureserviceregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|c:\\work\\acutis\\server\\acutis.application\\dtos\\residentdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|solutionrelative:acutis.application\\dtos\\residentdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\lookups\\addiction.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\lookups\\addiction.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|c:\\work\\acutis\\server\\acutis.domain\\entities\\auditableentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{FAA6A7CB-DF4D-463D-B783-26DA631EA00D}|Acutis.Domain\\Acutis.Domain.csproj|solutionrelative:acutis.domain\\entities\\auditableentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|c:\\work\\acutis\\server\\acutis.application\\applicationserviceregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5369A43A-F964-49EA-AD8C-76E5841A6DB8}|Acutis.Application\\Acutis.Application.csproj|solutionrelative:acutis.application\\applicationserviceregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,92 +26,62 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{e506b91c-c606-466a-90a9-123d1d1e12b3}"
             },
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
-            },
-            {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "ResidentDto.cs",
-              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Application\\DTOs\\ResidentDto.cs",
-              "RelativeDocumentMoniker": "Acutis.Application\\DTOs\\ResidentDto.cs",
-              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Application\\DTOs\\ResidentDto.cs",
-              "RelativeToolTip": "Acutis.Application\\DTOs\\ResidentDto.cs",
-              "ViewState": "AgIAAC4AAAAAAAAAAADwv0EAAAAsAAAAAAAAAA==",
+              "DocumentIndex": 0,
+              "Title": "ServiceCollectionExtensions.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Extensions\\ServiceCollectionExtensions.cs",
+              "RelativeDocumentMoniker": "Acutis.Infrastructure\\Extensions\\ServiceCollectionExtensions.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Extensions\\ServiceCollectionExtensions.cs",
+              "RelativeToolTip": "Acutis.Infrastructure\\Extensions\\ServiceCollectionExtensions.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAYwBwAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-07T01:19:21.718Z",
+              "WhenOpened": "2025-10-07T12:30:08.641Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
-              "Title": "DtoMapper.Residents.cs",
-              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Mapping\\DtoMapper.Residents.cs",
-              "RelativeDocumentMoniker": "Acutis.Infrastructure\\Mapping\\DtoMapper.Residents.cs",
-              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Mapping\\DtoMapper.Residents.cs",
-              "RelativeToolTip": "Acutis.Infrastructure\\Mapping\\DtoMapper.Residents.cs",
-              "ViewState": "AgIAAGkAAAAAAAAAAADwv4UAAAAAAAAAAAAAAA==",
+              "Title": "InfrastructureServiceRegistration.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\InfrastructureServiceRegistration.cs",
+              "RelativeDocumentMoniker": "Acutis.Infrastructure\\InfrastructureServiceRegistration.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\InfrastructureServiceRegistration.cs",
+              "RelativeToolTip": "Acutis.Infrastructure\\InfrastructureServiceRegistration.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-07T00:20:31.398Z",
+              "WhenOpened": "2025-10-07T12:27:50.826Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "ResidentsService.cs",
-              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Admissions\\ResidentsService.cs",
-              "RelativeDocumentMoniker": "Acutis.Infrastructure\\Admissions\\ResidentsService.cs",
-              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Admissions\\ResidentsService.cs",
-              "RelativeToolTip": "Acutis.Infrastructure\\Admissions\\ResidentsService.cs",
-              "ViewState": "AgIAAIwAAAAAAAAAAADwv5sAAAAoAAAAAAAAAA==",
+              "Title": "ResidentConfiguration.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Persistence\\Configurations\\ResidentConfiguration.cs",
+              "RelativeDocumentMoniker": "Acutis.Infrastructure\\Persistence\\Configurations\\ResidentConfiguration.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Infrastructure\\Persistence\\Configurations\\ResidentConfiguration.cs",
+              "RelativeToolTip": "Acutis.Infrastructure\\Persistence\\Configurations\\ResidentConfiguration.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAuAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-07T00:15:28.863Z",
+              "WhenOpened": "2025-10-07T12:04:22.457Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Resident.cs",
-              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\Resident.cs",
-              "RelativeDocumentMoniker": "Acutis.Domain\\Entities\\Resident.cs",
-              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\Resident.cs",
-              "RelativeToolTip": "Acutis.Domain\\Entities\\Resident.cs",
-              "ViewState": "AgIAALMAAAAAAAAAAADwv88AAAAAAAAAAAAAAA==",
+              "DocumentIndex": 3,
+              "Title": "ApplicationServiceRegistration.cs",
+              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Application\\ApplicationServiceRegistration.cs",
+              "RelativeDocumentMoniker": "Acutis.Application\\ApplicationServiceRegistration.cs",
+              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Application\\ApplicationServiceRegistration.cs",
+              "RelativeToolTip": "Acutis.Application\\ApplicationServiceRegistration.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-07T00:14:52.166Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "Addiction.cs",
-              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\Addiction.cs",
-              "RelativeDocumentMoniker": "Acutis.Domain\\Lookups\\Addiction.cs",
-              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Lookups\\Addiction.cs",
-              "RelativeToolTip": "Acutis.Domain\\Lookups\\Addiction.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAALAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-07T00:10:44.683Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "AuditableEntity.cs",
-              "DocumentMoniker": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\AuditableEntity.cs",
-              "RelativeDocumentMoniker": "Acutis.Domain\\Entities\\AuditableEntity.cs",
-              "ToolTip": "C:\\work\\acutis\\server\\Acutis.Domain\\Entities\\AuditableEntity.cs",
-              "RelativeToolTip": "Acutis.Domain\\Entities\\AuditableEntity.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-07T00:09:21.845Z",
+              "WhenOpened": "2025-10-07T12:01:31.043Z",
               "EditorCaption": ""
             }
           ]

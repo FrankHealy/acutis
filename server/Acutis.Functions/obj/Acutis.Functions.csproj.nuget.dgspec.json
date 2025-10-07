@@ -56,7 +56,15 @@
           "dependencies": {
             "FluentValidation": {
               "target": "Package",
-              "version": "[11.9.1, )"
+              "version": "[12.0.0, )"
+            },
+            "FluentValidation.DependencyInjectionExtensions": {
+              "target": "Package",
+              "version": "[12.0.0, )"
+            },
+            "Microsoft.Extensions.DependencyInjection": {
+              "target": "Package",
+              "version": "[9.0.9, )"
             }
           },
           "imports": [
