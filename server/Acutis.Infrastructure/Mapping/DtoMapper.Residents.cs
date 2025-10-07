@@ -1,155 +1,133 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
+﻿using System.Linq;
 using Acutis.Application.DTOs;
 using Acutis.Application.Requests;
 using Acutis.Domain.Entities;
-using Acutis.Domain.Lookups;
 using Acutis.Domain.Enums;
-using Acutis.Domain.ValueObjects;
 
-namespace Acutis.Infrastructure.Mapping;
-
-/// <summary>
-/// Maps Resident domain entities to and from DTOs.
-/// </summary>
-internal static partial class DtoMapper
+namespace Acutis.Infrastructure.Mapping
 {
-    // ---------------------------
-    // ENTITY → DTO
-    // ---------------------------
-    public static ResidentDto ToResidentDto(Resident r)
+    internal static class DtoMapper
     {
-        return new ResidentDto
+        public static ResidentDto ToResidentDto(Resident r) => new()
         {
             Id = r.Id,
             SocialSecurityNumber = r.SocialSecurityNumber,
             DateOfAdmission = r.DateOfAdmission,
+            DateOfBirth = r.DateOfBirth,
+
             FirstName = r.FirstName,
             MiddleName = r.MiddleName,
             Surname = r.Surname,
             Alias = r.Alias,
+
             IsPreviousResident = r.IsPreviousResident,
-            Address = r.Address is null ? string.Empty :
-                $"{r.Address.Line1}, {r.Address.City}, {r.Address.County}, {r.Address.PostCode}, {r.Address.Country?.CountryName}",
-            PhoneNumber = r.PhoneNumber,
-            EmailAddress = r.EmailAddress,
             Sex = r.Sex,
-            Country = r.Country?.CountryName ?? string.Empty,
-            ReligiousAffiliation = r.ReligiousAffiliation?.Name ?? string.Empty,
+
+            Address = r.Address is null ? "" : $"{r.Address.Line1}, {r.Address.City}, {r.Address.County}, {r.Address.PostCode}",
+            Country = r.Country?.CountryName ?? "",
+
+            ReligiousAffiliation = r.ReligiousAffiliation?.Name,
             HasProbationRequirement = r.HasProbationRequirement,
-            ProbationRequirement = r.ProbationRequirement?.Requirement ?? string.Empty,
-            NextOfKinFirstName = r.NextOfKinFirstName,
-            NextOfKinSecondName = r.NextOfKinSecondName,
-            NextOfKinPhoneNumber = r.NextOfKinPhoneNumber,
+            ProbationRequirement = r.ProbationRequirement?.Requirement,
+
             HasMedicalCard = r.HasMedicalCard,
             MedicalCardNumber = r.MedicalCardNumber,
             HasPrivateInsurance = r.HasPrivateInsurance,
-            PrivateMedicalInsuranceProvider = r.PrivateMedicalInsuranceProvider?.Name ?? string.Empty,
+            PrivateMedicalInsuranceProvider = r.PrivateMedicalInsuranceProvider?.Name,
             PrivateMedicalInsuranceNumber = r.PrivateMedicalInsuranceNumber,
             HasMobilityIssue = r.HasMobilityIssue,
-            PrimaryAddiction = r.PrimaryAddiction?.Name ?? string.Empty,
-            SecondaryAddictions = r.SecondaryAddictions?.Select(a => a.Name).ToList() ?? new(),
-            Age = r.CalculateAge(),
+
+            PrimaryAddiction = r.PrimaryAddiction?.Name ?? "",
+            SecondaryAddictions = r.SecondaryAddictions.Select(a => a.Name).ToList(),
+
+            PhoneNumber = r.PhoneNumber,
+            EmailAddress = r.EmailAddress,
+
+            NextOfKinFirstName = r.NextOfKinFirstName,
+            NextOfKinSecondName = r.NextOfKinSecondName,
+            NextOfKinPhoneNumber = r.NextOfKinPhoneNumber,
+
             PhotoUrl = r.PhotoUrl,
+            ArrivalPhotoUrl = r.ArrivalPhotoUrl,
+            DischargePhotoUrl = r.DischargePhotoUrl,
+            PhotoDeclined = r.PhotoDeclined,
+            PhotoDeclinedReason = r.PhotoDeclinedReason,
+
             AdmissionPhase = r.AdmissionPhase.ToString(),
+            DataQuality = r.DataQuality.ToString(),
+
+            IsAdmissionFormComplete = r.IsAdmissionFormComplete,
+            AdmissionFormCompletedAt = r.AdmissionFormCompletedAt,
+            AdmissionFormCompletedBy = r.AdmissionFormCompletedBy,
+
+            QuestionnairesJson = r.QuestionnairesJson,
+            PreferredStepDownHouse = r.PreferredStepDownHouse.ToString(),
+
+            NeedsReview = r.NeedsReview,
+            ReviewedBy = r.ReviewedBy,
+            ReviewedAt = r.ReviewedAt,
+
+            IsCompleted = r.IsCompleted,
             CompletedBy = r.CompletedBy,
             CompletedAt = r.CompletedAt,
-            IsCompleted = r.IsCompleted
+
+            RoomNumber = r.RoomNumber,
+            DepositAmount = r.DepositAmount,
+            DepositReceivedAt = r.DepositReceivedAt,
+
+            Age = r.CalculateAge()
         };
+
+        // IMPORTANT: No secondary-addictions logic here (service handles EF lookups).
+        public static Resident ApplyUpdate(Resident r, UpdateResidentRequest req)
+        {
+            r.UpdateAlias(req.Alias);
+            r.UpdateContact(req.PhoneNumber, req.EmailAddress);
+            r.UpdateNextOfKin(req.NextOfKinFirstName, req.NextOfKinSecondName, req.NextOfKinPhoneNumber);
+
+            if (req.AddressId.HasValue)
+                r.UpdateAddress(req.AddressId.Value);
+
+            if (req.ProbationRequirementId.HasValue)
+                r.AssignProbationRequirement(req.ProbationRequirementId.Value);
+
+            r.UpdateMedicalInfo(
+                req.HasMedicalCard ?? r.HasMedicalCard,
+                req.MedicalCardNumber ?? r.MedicalCardNumber,
+                req.HasPrivateInsurance ?? r.HasPrivateInsurance,
+                req.PrivateMedicalInsuranceProviderId ?? r.PrivateMedicalInsuranceProviderId,
+                req.PrivateMedicalInsuranceNumber ?? r.PrivateMedicalInsuranceNumber,
+                req.HasMobilityIssue ?? r.HasMobilityIssue
+            );
+
+            if (req.PhotoDeclined == true)
+                r.DeclinePhoto(req.PhotoDeclinedReason);
+            else if (!string.IsNullOrWhiteSpace(req.PhotoUrl))
+                r.UpdatePhoto(req.PhotoUrl);
+
+            if (req.AdmissionPhase.HasValue)
+                r.AdvancePhase(req.AdmissionPhase.Value);
+
+            if (req.IsAdmissionFormComplete)
+                r.MarkAdmissionFormComplete("system");
+
+            if (!string.IsNullOrWhiteSpace(req.QuestionnairesJson))
+                r.AttachQuestionnaire(req.QuestionnairesJson);
+
+            if (!string.IsNullOrWhiteSpace(req.PreferredStepDownHouse) &&
+                Enum.TryParse<StepDownHouse>(req.PreferredStepDownHouse, true, out var house))
+                r.SetPreferredStepDownHouse(house);
+
+            if (req.NeedsReview == true)
+                r.FlagForReview();
+
+            if (!string.IsNullOrWhiteSpace(req.RoomNumber))
+                r.AssignRoom(req.RoomNumber);
+
+            if (req.DepositAmount.HasValue)
+                r.RecordDeposit(req.DepositAmount.Value, Guid.Empty);
+
+            return r;
+        }
     }
-
-    // ---------------------------
-    // CREATE REQUEST → ENTITY
-    // ---------------------------
-    public static Resident ToResidentEntity(
-        CreateResidentRequest request,
-        Country country,
-        Address address,
-        ProbationRequirement? probationRequirement,
-        Addiction primaryAddiction,
-        List<Addiction> secondaryAddictions)
-    {
-        var resident = new Resident(
-            request.SocialSecurityNumber,
-            request.DateOfBirth,
-            request.DateOfAdmission,
-            request.FirstName,
-            request.MiddleName,
-            request.Surname,
-            request.IsPreviousResident,
-            primaryAddiction.Id,
-            country.Id
-        );
-
-        resident.UpdateAlias(request.Alias);
-        resident.UpdateAddress(address.Id);
-        resident.UpdatePhoto(request.PhotoUrl);
-
-        if (probationRequirement != null)
-            resident.AssignProbationRequirement(probationRequirement.Id);
-
-        if (secondaryAddictions.Any())
-            resident.UpdateSecondaryAddictions(secondaryAddictions.Select(a => a.Id).ToList());
-
-        resident.UpdateContact(request.PhoneNumber, request.EmailAddress);
-        resident.UpdateNextOfKin(request.NextOfKinFirstName, request.NextOfKinSecondName, request.NextOfKinPhoneNumber);
-
-        resident.UpdateMedicalInfo(
-            request.HasMedicalCard,
-            request.MedicalCardNumber,
-            request.HasPrivateInsurance,
-            request.PrivateMedicalInsuranceProviderId,
-            request.PrivateMedicalInsuranceNumber,
-            request.HasMobilityIssue
-        );
-
-        resident.AdvancePhase(AdmissionPhase.Intake);
-
-        if (request.IsCompleted)
-            resident.MarkCompleted("system");
-
-        return resident;
-    }
-
-    // ---------------------------
-    // UPDATE REQUEST → EXISTING ENTITY
-    // ---------------------------
-    public static Resident UpdateResidentEntity(Resident r, UpdateResidentRequest request)
-    {
-        r.UpdateAlias(request.Alias);
-        r.UpdateContact(request.PhoneNumber, request.EmailAddress);
-        r.UpdateNextOfKin(request.NextOfKinFirstName, request.NextOfKinSecondName, request.NextOfKinPhoneNumber);
-
-        if (request.AddressId.HasValue)
-            r.UpdateAddress(request.AddressId.Value);
-
-        if (request.ProbationRequirementId.HasValue)
-            r.AssignProbationRequirement(request.ProbationRequirementId.Value);
-
-        if (request.SecondaryAddictionIds is { Count: > 0 })
-            r.UpdateSecondaryAddictions(request.SecondaryAddictionIds);
-
-        r.UpdateMedicalInfo(
-            request.HasMedicalCard,
-            request.MedicalCardNumber,
-            request.HasPrivateInsurance,
-            request.PrivateMedicalInsuranceProviderId,
-            request.PrivateMedicalInsuranceNumber,
-            request.HasMobilityIssue
-        );
-
-        if (!string.IsNullOrWhiteSpace(request.PhotoUrl))
-            r.UpdatePhoto(request.PhotoUrl);
-
-        if (request.AdmissionPhase.HasValue)
-            r.AdvancePhase(request.AdmissionPhase.Value);
-
-        if (request.IsCompleted)
-            r.MarkCompleted("system");
-
-        return r;
-    }
-}
-
 }
