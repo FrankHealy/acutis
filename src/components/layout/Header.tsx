@@ -1,6 +1,15 @@
+"use client";
+import { useEffect, useState } from 'react';
 import { Building, AlertTriangle, User } from 'lucide-react';
 
 const Header = () => {
+  const [today, setToday] = useState<string>("");
+
+  useEffect(() => {
+    // Compute on client to avoid SSR/client mismatch
+    setToday(new Date().toLocaleDateString());
+  }, []);
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,7 +27,7 @@ const Header = () => {
             <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
               <span>Capacity: 92/120</span>
               <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-              <span>Today: {new Date().toLocaleDateString()}</span>
+              <span>Today: {today || "\u00A0"}</span>
             </div>
           </div>
           <div className="flex items-center space-x-4">
