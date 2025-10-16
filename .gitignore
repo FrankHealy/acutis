@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Next.js build cache
+.next
+
+# Expo local data
+acutis-mobile/.expo
+
+# .NET build artifacts
+server/**/bin/
+server/**/obj/
+server/.vs/

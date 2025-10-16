@@ -4,10 +4,27 @@ import { Building, AlertTriangle, User } from 'lucide-react';
 
 const Header = () => {
   const [today, setToday] = useState<string>("");
+  const [now, setNow] = useState<string>("");
 
   useEffect(() => {
     // Compute on client to avoid SSR/client mismatch
-    setToday(new Date().toLocaleDateString());
+    const update = () => {
+      const d = new Date();
+      setToday(
+        d.toLocaleDateString("en-IE", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      );
+      setNow(
+        d.toLocaleTimeString("en-IE", { hour: "2-digit", minute: "2-digit" })
+      );
+    };
+    update();
+    const t = setInterval(update, 60_000);
+    return () => clearInterval(t);
   }, []);
 
   return (
@@ -27,7 +44,9 @@ const Header = () => {
             <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
               <span>Capacity: 92/120</span>
               <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-              <span>Today: {today || "\u00A0"}</span>
+              <span>{today || "\u00A0"}</span>
+              <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+              <span>Current Time: {now || "\u00A0"}</span>
             </div>
           </div>
           <div className="flex items-center space-x-4">

@@ -20,9 +20,9 @@ export interface DaySchedule {
   pm: Session;
 }
 
-const moduleNames = ['Spirituality', 'Change', 'Imaginative Functioning'];
+const moduleNames = ['Spirituality', 'Change', 'Imaginative Functioning','Relapse Prevention','Healing The Hurts Of The Past'];
 const counsellors = ['Counsellor A', 'Counsellor B', 'Counsellor C'];
-const rooms = ['Room Alpha', 'Room Beta', 'Room Gamma'];
+const rooms = ['Room 5', 'Room 6', 'Room 7'];
 
 export class MockOperationsService {
   static generateDay(day: string): DaySchedule {
