@@ -1,13 +1,15 @@
 // src/components/residents/ResidentsSection.tsx
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import ResidentsHeader from './ResidentsHeader';
 import RollCallControls from './RollCallControls';
 import ResidentsTable from './ResidentsTable';
 import AbsenceModal from './AbsenceModal';
 import { useResidents } from './hooks/useResidents';
+import ResidentDetail from './ResidentDetail';
 
 const ResidentsSection: React.FC = () => {
+  const [selectedResidentId, setSelectedResidentId] = useState<number | null>(null);
   const {
     residents,
     loading,
@@ -29,6 +31,11 @@ const ResidentsSection: React.FC = () => {
     saveAllAttendance,
   } = useResidents();
 
+  const selectedResident = useMemo(
+    () => (selectedResidentId != null ? residents.find(r => r.id === selectedResidentId) : undefined),
+    [selectedResidentId, residents]
+  );
+
   // bulk actions for roll call
   const handleMarkAllPresent = () => {
     residents.forEach((resident) => {
@@ -48,6 +55,16 @@ const ResidentsSection: React.FC = () => {
 
   if (loading) return <div className="flex justify-center p-8">Loading residents...</div>;
   if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
+
+  // Detail view when a resident is selected
+  if (selectedResident) {
+    return (
+      <ResidentDetail
+        resident={selectedResident}
+        onBack={() => setSelectedResidentId(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -75,6 +92,7 @@ const ResidentsSection: React.FC = () => {
             onSort={handleSort}
             attendanceData={attendanceData}
             onAttendanceChange={handleAttendanceChange}
+            onSelect={setSelectedResidentId}
           />
         </>
       ) : (
@@ -86,6 +104,7 @@ const ResidentsSection: React.FC = () => {
           onSort={handleSort}
           attendanceData={attendanceData}
           onAttendanceChange={handleAttendanceChange}
+          onSelect={setSelectedResidentId}
         />
       )}
 

@@ -9,6 +9,7 @@ interface ResidentRowProps {
   rollCallView: boolean;
   attendance?: { present: boolean; reason?: string; description?: string };
   onAttendanceChange: (residentId: number, isPresent: boolean) => void;
+  onSelect?: (residentId: number) => void;
 }
 
 const ResidentRow: React.FC<ResidentRowProps> = ({
@@ -16,6 +17,7 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
   rollCallView,
   attendance,
   onAttendanceChange,
+  onSelect,
 }) => {
   const fallbackAvatar = resident.fallbackPhoto || `https://i.pravatar.cc/150?img=${((resident.id - 1) % 70) + 1}`;
 
@@ -28,8 +30,17 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
     event.currentTarget.src = fallbackAvatar;
   };
 
+  const handleRowClick = () => {
+    if (onSelect) {
+      onSelect(resident.id);
+    }
+  };
+
   return (
-    <tr>
+    <tr
+      className="hover:bg-gray-50 cursor-pointer"
+      onClick={handleRowClick}
+    >
       {/* Photo */}
       <td className="px-6 py-4 whitespace-nowrap">
         {resident.photo ? (
@@ -82,6 +93,7 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
           <input
             type="checkbox"
             checked={attendance?.present ?? false}
+            onClick={(e) => e.stopPropagation()}
             onChange={(e) => onAttendanceChange(resident.id, e.target.checked)}
             className="h-4 w-4 text-blue-600 border-gray-300 rounded"
           />

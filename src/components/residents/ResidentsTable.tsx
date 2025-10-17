@@ -20,6 +20,7 @@ interface ResidentsTableProps {
   onSort: (column: SortBy) => void;
   attendanceData: Record<number, AttendanceRecord | undefined>;
   onAttendanceChange: (residentId: number, isPresent: boolean) => void;
+  onSelect?: (residentId: number) => void;
 }
 
 const ResidentsTable: React.FC<ResidentsTableProps> = ({
@@ -30,6 +31,7 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
   onSort,
   attendanceData,
   onAttendanceChange,
+  onSelect,
 }) => {
   const SortableHeader: React.FC<{ column: SortBy; children: React.ReactNode }> = ({
     column,
@@ -86,6 +88,7 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
                     rollCallView={rollCallView}
                     attendance={attendanceData[resident.id]}
                     onAttendanceChange={onAttendanceChange}
+                    onSelect={onSelect}
                   />
                 );
               })
