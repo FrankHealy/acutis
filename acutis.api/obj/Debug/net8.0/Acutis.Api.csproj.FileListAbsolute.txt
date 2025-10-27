@@ -1,8 +1,0 @@
-C:\work\acutis\acutis.api\obj\Debug\net8.0\Acutis.Api.csproj.AssemblyReference.cache
-C:\work\acutis\acutis.api\obj\Debug\net8.0\Acutis.Api.GeneratedMSBuildEditorConfig.editorconfig
-C:\work\acutis\acutis.api\obj\Debug\net8.0\Acutis.Api.AssemblyInfoInputs.cache
-C:\work\acutis\acutis.api\obj\Debug\net8.0\Acutis.Api.AssemblyInfo.cs
-C:\work\acutis\acutis.api\obj\Debug\net8.0\Acutis.Api.csproj.CoreCompileInputs.cache
-C:\work\acutis\acutis.api\obj\Debug\net8.0\Acutis.Api.MvcApplicationPartsAssemblyInfo.cs
-C:\work\acutis\acutis.api\obj\Debug\net8.0\Acutis.Api.MvcApplicationPartsAssemblyInfo.cache
-C:\work\acutis\acutis.api\obj\Debug\net8.0\Acutis.Api.sourcelink.json

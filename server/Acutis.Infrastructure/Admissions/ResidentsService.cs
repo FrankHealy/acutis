@@ -81,6 +81,7 @@ namespace Acutis.Infrastructure.Admissions
             var r = await _db.Residents
                 .Include(x => x.Country)
                 .Include(x => x.Address).ThenInclude(a => a.Country)
+                .Include(x => x.Address).ThenInclude(a => a.County)
                 .Include(x => x.ReligiousAffiliation)
                 .Include(x => x.ProbationRequirement)
                 .Include(x => x.PrivateMedicalInsuranceProvider)
@@ -96,6 +97,7 @@ namespace Acutis.Infrastructure.Admissions
             var list = await _db.Residents
                 .Include(x => x.Country)
                 .Include(x => x.Address).ThenInclude(a => a.Country)
+                .Include(x => x.Address).ThenInclude(a => a.County)
                 .Include(x => x.PrimaryAddiction)
                 .ToListAsync();
 
@@ -155,6 +157,7 @@ namespace Acutis.Infrastructure.Admissions
             var r = await _db.Residents
                 .Include(x => x.Country)
                 .Include(x => x.Address).ThenInclude(a => a.Country)
+                .Include(x => x.Address).ThenInclude(a => a.County)
                 .Include(x => x.ReligiousAffiliation)
                 .Include(x => x.ProbationRequirement)
                 .Include(x => x.PrivateMedicalInsuranceProvider)

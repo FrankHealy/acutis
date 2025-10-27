@@ -23,7 +23,7 @@ namespace Acutis.Infrastructure.Mapping
             IsPreviousResident = r.IsPreviousResident,
             Sex = r.Sex,
 
-            Address = r.Address is null ? "" : $"{r.Address.Line1}, {r.Address.City}, {r.Address.County}, {r.Address.PostCode}",
+            Address = r.Address is null ? "" : $"{r.Address.Line1}, {r.Address.City}, {r.Address.County?.Name ?? ""}, {r.Address.PostCode}",
             Country = r.Country?.CountryName ?? "",
 
             ReligiousAffiliation = r.ReligiousAffiliation?.Name,

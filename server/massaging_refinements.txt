@@ -1,0 +1,60 @@
+Proposed Changes and Refinements (Singular Schema, Resident + Satellites)
+
+Database schema
+- Enforce singular table naming across all entities; remove legacy plural remnants in code and migrations.
+- Add explicit precision for monetary values (e.g., Resident.DepositAmount HasPrecision(18,2)).
+- Make key FKs Restrict/NoAction to avoid multiple cascade paths (Address->Country/County; ResidentAddiction FKs).
+- Add unique constraints where applicable: Country.CountryCode; County(Name, CountryId); Addiction.Name; ProbationType.Name; MedicalInsuranceProvider.Name; DocumentType.Name.
+- Add useful indexes: Resident(SocialSecurityNumber UNIQUE, Surname, CountryId, AddressId, PrimaryAddictionId); Address(CountryId, CountyId, PostCode); ResidentAddiction(AddictionId).
+
+EF Core mappings
+- Keep explicit ToTable("Singular") mappings for clarity over convention-based pluralization rules.
+- Map ProbationRequirement.Requirement to column Name in ProbationType (done). Consider renaming entity to ProbationType for consistency.
+- ResidentAddiction join configured to NoAction on delete to prevent cycles; keep this pattern for other M:N joins.
+- Consider centralizing column length constraints (FirstName/Surname 100, Phone 50, Email 200, RoomNumber 20, etc.) for consistent DDL.
+
+Resident satellites
+- ResidentPhoto: add filtered unique index to enforce one primary photo per resident (ResidentId, IsPrimary WHERE IsPrimary=1).
+- ResidentDocument: consider storing metadata (uploaded at, size, file type) and soft-delete flag.
+- Prescription: consider precision/length limits for MedicationName/Dosage/Frequency and optional linkage to prescriber entity in future.
+
+Addresses
+- Address now references CountyId and CountryId (done). Consider adding NOT NULL for CountyId and foreign key to County with Restrict delete (done).
+- Add optional geocoding fields (Latitude/Longitude) if mapping or distance features are foreseen.
+- Add composite uniqueness guard to avoid obvious duplicates (e.g., (Line1, City, CountyId, PostCode)).
+
+Rooms
+- Replace free-text RoomType with an enum or lookup table to avoid drift (Detox, Ladies, Alcohol, Drugs). If lookup, add RoomType table + FK.
+- Add Capacity vs CurrentOccupancy instead of NumberOfResidents, and derive occupancy from assignments.
+- Consider a Resident -> Room assignment (FK) instead of string RoomNumber; add join history table if tracking moves is required.
+
+Addiction and types
+- AddictionType kept optional (as requested). Add seed values (e.g., Substance, Behavioural) and progressively link existing Addictions.
+- Consider deprecating Addiction.Category once AddictionType coverage is complete.
+
+Constraints & validation
+- Add check constraints where useful: Sex IN ('Male','Female','Other') if business-appropriate; PostCode length/format; Email basic pattern at API level.
+- Add CreatedAt/UpdatedAt audit columns via base Auditable entity for core tables (Resident, Address, Room) if needed.
+
+Migrations
+- Ensure new migration history is clean of plural-table artifacts; remove unused migration files (done). Keep FKs at Restrict/NoAction where cycles can occur.
+- Add a follow-up migration to set decimal precision for DepositAmount and add indexes/uniques listed above.
+
+Seeding & tools
+- Unify tooling verbs: seed-support, seed-rooms, seed-residents, reset-seed (with YES guard), and init-schema; ensure idempotency.
+- County + Address seeding should ensure counties are present before addresses (updated). Add Country and County seeds explicitly.
+- Download-photos: add --user-agent and retry/backoff; support "Any" sex and throttle to avoid rate limits.
+- Add a guard to not write photos for residents with PhotoDeclined flag.
+
+API & DTOs
+- Extend DTOs to surface County name and Room assignment (if FK introduced), plus AddictionType for primary/secondary addictions (when linked).
+- Update validators to reflect new required fields (e.g., Address.CountyId) and string length limits.
+
+Future (Therapy ignored for now)
+- When re-enabling therapy, align therapy entities to singular names and a dedicated schema (e.g., Therapy.Term, Therapy.Module, etc.) to avoid collisions.
+- Provide separate DbContext for therapy with clear boundaries or merge if domain dictates, keeping naming consistent.
+
+Testing & ops
+- Add integration tests to apply migrations on an empty database and verify table/constraint/index coverage.
+- Add basic health check that verifies DB connectivity and migration state on API startup (read-only, no auto-migrate in prod).
+

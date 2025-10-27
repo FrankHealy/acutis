@@ -1,6 +1,0 @@
-@acutis.api_HostAddress = http://localhost:5182
-
-GET {{acutis.api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
