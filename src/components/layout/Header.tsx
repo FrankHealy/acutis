@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { Building, AlertTriangle, User } from 'lucide-react';
+import { AlertTriangle, User } from 'lucide-react';
 
 const Header = () => {
   const [today, setToday] = useState<string>("");
@@ -33,8 +33,8 @@ const Header = () => {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Building className="h-5 w-5 text-white" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-white border border-blue-200 flex items-center justify-center">
+                <img src="/acutis-icon.svg" alt="Acutis" className="h-6 w-6" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Acutis</h1>
