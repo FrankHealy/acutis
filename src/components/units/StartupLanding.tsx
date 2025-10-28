@@ -27,14 +27,14 @@ const StartupLanding: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
       <div className="max-w-5xl mx-auto px-6">
         {/* Logo positioned a third down the viewport */}
-        <div className="pt-[33vh] flex flex-col items-center">
+        <div className="pt-[28vh] flex flex-col items-center">
           <img
             src="/acutis-logo-light.svg"
             alt="Acutis Logo"
-            className="w-[520px] max-w-full logo-animate"
+            className="w-[640px] max-w-[90vw] logo-animate"
           />
           {/* Buttons row below logo */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-5">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
             <Tile delayMs={100} label="Detox" Icon={Heart} color="border-green-400 bg-green-50 text-green-700" onClick={() => router.push('/units/detox')} />
             <Tile delayMs={220} label="Alcohol" Icon={Wine} color="border-blue-400 bg-blue-50 text-blue-700" onClick={() => router.push('/units/alcohol')} />
             <Tile delayMs={340} label="Drugs" Icon={Pill} color="border-purple-400 bg-purple-50 text-purple-700" onClick={() => router.push('/units/drugs')} />
