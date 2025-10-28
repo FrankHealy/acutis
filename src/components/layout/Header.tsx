@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AlertTriangle, User } from 'lucide-react';
 
 const Header = () => {
   const [today, setToday] = useState<string>("");
   const [now, setNow] = useState<string>("");
+  const router = useRouter();
 
   useEffect(() => {
     // Compute on client to avoid SSR/client mismatch
@@ -33,9 +35,13 @@ const Header = () => {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg overflow-hidden bg-white border border-blue-200 flex items-center justify-center">
+              <button
+                aria-label="Go to home"
+                onClick={() => router.push('/')}
+                className="w-8 h-8 rounded-lg overflow-hidden bg-white border border-blue-200 flex items-center justify-center hover:ring-2 hover:ring-blue-200 transition"
+              >
                 <img src="/acutis-icon.svg" alt="Acutis" className="h-6 w-6" />
-              </div>
+              </button>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Acutis</h1>
                 <p className="text-xs text-gray-500">Bruree Treatment Center</p>
