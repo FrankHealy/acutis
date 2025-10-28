@@ -1,7 +1,7 @@
 // src/components/residents/hooks/useResidents.ts
 
-import { useState, useEffect } from 'react';
-import { residentService, type AttendanceRecord } from '../../../services/residentService';
+import { useState, useEffect, useRef } from 'react';
+import { residentService, type AttendanceRecord, getResidentSource } from '../../../services/residentService';
 import type { Resident } from '../../../services/mockDataService';
 
 export type SortBy = keyof Pick<
@@ -21,6 +21,9 @@ export const useResidents = () => {
   const [absenceReason, setAbsenceReason] = useState('');
   const [absenceDescription, setAbsenceDescription] = useState('');
   const [attendanceData, setAttendanceData] = useState<Record<number, AttendanceRecord>>({});
+  const [residentSource, setResidentSource] = useState<'api' | 'mock'>(getResidentSource());
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'warning' | 'error' | 'info' }>({ open: false, message: '', type: 'info' });
+  const prevSourceRef = useRef(residentSource);
 
   // Load residents
   useEffect(() => {
@@ -32,6 +35,16 @@ export const useResidents = () => {
           ? await residentService.getRollCallResidents('alcohol')
           : await residentService.getResidents('alcohol');
         setResidents(data);
+        const newSource = getResidentSource();
+        setResidentSource(newSource);
+        if (prevSourceRef.current !== newSource) {
+          if (newSource === 'mock') {
+            setToast({ open: true, type: 'warning', message: 'API unavailable. Showing mock data.' });
+          } else if (prevSourceRef.current === 'mock' && newSource === 'api') {
+            setToast({ open: true, type: 'success', message: 'Connected to API. Showing live data.' });
+          }
+          prevSourceRef.current = newSource;
+        }
       } catch (err) {
         setError('Failed to load residents');
       } finally {
@@ -41,6 +54,13 @@ export const useResidents = () => {
 
     loadResidents();
   }, [rollCallView]);
+
+  // Auto-hide toast after a short delay
+  useEffect(() => {
+    if (!toast.open) return;
+    const id = setTimeout(() => setToast((t) => ({ ...t, open: false })), 4000);
+    return () => clearTimeout(id);
+  }, [toast.open]);
 
   // Sorting logic
   const handleSort = (column: SortBy) => {
@@ -119,6 +139,8 @@ export const useResidents = () => {
     residents,
     loading,
     error,
+    residentSource,
+    toast,
     rollCallView,
     setRollCallView,
     sortBy,
@@ -134,5 +156,6 @@ export const useResidents = () => {
     setAbsenceDescription,
     handleAbsenceSubmit,
     saveAllAttendance,
+    setToast,
   };
 };

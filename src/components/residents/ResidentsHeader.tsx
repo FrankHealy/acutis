@@ -5,6 +5,7 @@ interface ResidentsHeaderProps {
   rollCallView: boolean;
   setRollCallView: (view: boolean) => void;
   residentCount: number;
+  residentSource: 'api' | 'mock';
   onSaveAttendance: () => void;
 }
 
@@ -26,6 +27,7 @@ const ResidentsHeader: React.FC<ResidentsHeaderProps> = ({
   rollCallView, 
   setRollCallView, 
   residentCount,
+  residentSource,
   onSaveAttendance 
 }) => {
   return (
@@ -44,6 +46,16 @@ const ResidentsHeader: React.FC<ResidentsHeaderProps> = ({
           </p>
         </div>
         <div className="flex items-center space-x-3">
+          <span
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+              residentSource === 'api'
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+            }`}
+            title={residentSource === 'api' ? 'Live API data' : 'Mock data fallback'}
+          >
+            {residentSource === 'api' ? 'API' : 'MOCK'}
+          </span>
           <button
             onClick={() => setRollCallView(!rollCallView)}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${

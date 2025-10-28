@@ -1,8 +1,7 @@
 'use client'
 
-import { AcutisAdmissionsSystem } from '@/App'
+import StartupLanding from '@/components/units/StartupLanding'
 
 export default function Page() {
-  return <AcutisAdmissionsSystem />
+  return <StartupLanding />
 }
-

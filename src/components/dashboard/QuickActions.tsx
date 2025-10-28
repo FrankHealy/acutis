@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserPlus, MapPin, Users, FileText } from 'lucide-react';
+import { UserPlus, MapPin, Users, Settings as SettingsIcon } from 'lucide-react';
 
 interface QuickActionsProps {
   setCurrentStep: (step: string) => void;
@@ -36,12 +36,12 @@ const QuickActions: React.FC<QuickActionsProps> = ({ setCurrentStep }) => {
       },
     },
     {
-      icon: FileText,
-      label: 'Reports',
+      icon: SettingsIcon,
+      label: 'Settings',
       styles: {
-        button: 'bg-orange-50 hover:bg-orange-100',
-        icon: 'text-orange-500',
-        text: 'text-orange-700',
+        button: 'bg-gray-50 hover:bg-gray-100',
+        icon: 'text-gray-500',
+        text: 'text-gray-700',
       },
     },
   ];

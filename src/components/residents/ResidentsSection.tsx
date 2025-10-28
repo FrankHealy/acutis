@@ -7,6 +7,7 @@ import ResidentsTable from './ResidentsTable';
 import AbsenceModal from './AbsenceModal';
 import { useResidents } from './hooks/useResidents';
 import ResidentDetail from './ResidentDetail';
+import Toast from '../common/Toast';
 
 const ResidentsSection: React.FC = () => {
   const [selectedResidentId, setSelectedResidentId] = useState<number | null>(null);
@@ -14,6 +15,8 @@ const ResidentsSection: React.FC = () => {
     residents,
     loading,
     error,
+    residentSource,
+    toast,
     rollCallView,
     setRollCallView,
     sortBy,
@@ -29,6 +32,7 @@ const ResidentsSection: React.FC = () => {
     setAbsenceDescription,
     handleAbsenceSubmit,
     saveAllAttendance,
+    setToast,
   } = useResidents();
 
   const selectedResident = useMemo(
@@ -72,6 +76,7 @@ const ResidentsSection: React.FC = () => {
         rollCallView={rollCallView}
         setRollCallView={setRollCallView}
         residentCount={residents.length}
+        residentSource={residentSource}
         onSaveAttendance={saveAllAttendance}
       />
 
@@ -123,6 +128,12 @@ const ResidentsSection: React.FC = () => {
           }}
         />
       )}
+      <Toast
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+      />
     </div>
   );
 };
