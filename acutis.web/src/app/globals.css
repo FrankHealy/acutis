@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/* Global styles */
+
+@keyframes logo-pop {
+  0% { opacity: 0; transform: translateY(20px) scale(0.92); filter: drop-shadow(0 0 0 rgba(59,130,246,0)); }
+  50% { opacity: 1; transform: translateY(0) scale(1.03); filter: drop-shadow(0 10px 30px rgba(59,130,246,0.3)); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: drop-shadow(0 6px 18px rgba(59,130,246,0.2)); }
+}
+
+.logo-animate {
+  animation: logo-pop 900ms ease-out 1 both;
+}
+
+@keyframes tile-pop {
+  0% { opacity: 0; transform: translateY(12px) scale(0.98); }
+  60% { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.tile-animate {
+  animation: tile-pop 700ms ease-out 1 both;
+  will-change: transform, opacity;
+}
