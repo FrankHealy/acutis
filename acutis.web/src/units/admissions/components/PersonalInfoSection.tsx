@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
-import SectionToggle from '../ui/SectionToggle';
+import SectionToggle from '@/units/shared/ui/SectionToggle';
 
 const PersonalInfoSection = () => {
   const [isExpanded, setIsExpanded] = useState(false);

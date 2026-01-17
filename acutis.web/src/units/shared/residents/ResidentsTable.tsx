@@ -1,4 +1,4 @@
-// src/units/common/residents/ResidentsTable.tsx
+// src/units/shared/residents/ResidentsTable.tsx
 
 import React from 'react';
 import { ChevronDown } from 'lucide-react';

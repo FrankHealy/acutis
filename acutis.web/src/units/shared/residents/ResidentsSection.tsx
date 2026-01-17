@@ -1,4 +1,4 @@
-// src/units/common/residents/ResidentsSection.tsx
+// src/units/shared/residents/ResidentsSection.tsx
 
 import React, { useMemo, useState } from 'react';
 import ResidentsHeader from './ResidentsHeader';

@@ -1,4 +1,4 @@
-// src/units/common/layout/Navigation.tsx
+// src/units/shared/layout/Navigation.tsx
 
 import React from 'react';
 

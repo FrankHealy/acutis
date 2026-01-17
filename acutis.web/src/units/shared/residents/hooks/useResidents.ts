@@ -1,4 +1,4 @@
-// src/units/common/residents/hooks/useResidents.ts
+// src/units/shared/residents/hooks/useResidents.ts
 
 import { useState, useEffect, useRef } from 'react';
 import { residentService, type AttendanceRecord, getResidentSource } from '@/services/residentService';

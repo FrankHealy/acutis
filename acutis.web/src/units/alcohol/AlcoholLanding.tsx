@@ -1,6 +1,6 @@
 "use client";
 
-import { AcutisAdmissionsSystem } from '@/units/common/AdmissionsSystem';
+import { AcutisAdmissionsSystem } from '@/units/admissions/AdmissionsSystem';
 
 const AlcoholLanding = () => {
   return <AcutisAdmissionsSystem />;

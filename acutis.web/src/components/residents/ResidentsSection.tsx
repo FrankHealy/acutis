@@ -7,7 +7,7 @@ import ResidentsTable from './ResidentsTable';
 import AbsenceModal from './AbsenceModal';
 import { useResidents } from './hooks/useResidents';
 import ResidentDetail from './ResidentDetail';
-import Toast from '@/units/common/ui/Toast';
+import Toast from '@/units/shared/ui/Toast';
 
 const ResidentsSection: React.FC = () => {
   const [selectedResidentId, setSelectedResidentId] = useState<number | null>(null);

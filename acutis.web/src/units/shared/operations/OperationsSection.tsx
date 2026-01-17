@@ -1,4 +1,4 @@
-// src/units/common/operations/OperationsSection.tsx
+// src/units/shared/operations/OperationsSection.tsx
 
 import React, { useState } from 'react';
 import { MockOperationsService, type Session } from '@/services/mockOperationsService';

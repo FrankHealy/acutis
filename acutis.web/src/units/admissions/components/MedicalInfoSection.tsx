@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Heart, Upload } from 'lucide-react';
-import SectionToggle from '../ui/SectionToggle';
+import SectionToggle from '@/units/shared/ui/SectionToggle';
 
 const MedicalInfoSection = () => {
   const [isExpanded, setIsExpanded] = useState(false);

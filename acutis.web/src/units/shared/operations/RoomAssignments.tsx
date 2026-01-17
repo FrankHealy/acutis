@@ -1,4 +1,4 @@
-// src/units/common/operations/RoomAssignments.tsx
+// src/units/shared/operations/RoomAssignments.tsx
 
 import React from "react";
 

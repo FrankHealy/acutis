@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
-import Header from '@/units/common/layout/Header';
-import QuickActions from '@/units/common/dashboard/QuickActions';
+import Header from '@/units/shared/layout/Header';
+import QuickActions from '@/units/shared/dashboard/QuickActions';
 
 const DetoxLanding = () => {
   return (

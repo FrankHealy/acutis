@@ -1,4 +1,4 @@
-// src/units/common/residents/ResidentRow.tsx
+// src/units/shared/residents/ResidentRow.tsx
 
 import React from 'react';
 import { User } from 'lucide-react';

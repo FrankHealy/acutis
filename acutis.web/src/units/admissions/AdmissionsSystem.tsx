@@ -1,13 +1,13 @@
-// src/units/common/AdmissionsSystem.tsx
+// src/units/admissions/AdmissionsSystem.tsx
 
 import React, { useState } from 'react';
-import Header from '@/units/common/layout/Header';
-import Navigation from '@/units/common/layout/Navigation';
-import Dashboard from '@/units/common/dashboard/Dashboard';
-import NewAdmissionForm from '@/units/common/admissions/NewAdmissionForm';
-import ResidentsSection from '@/units/common/residents/ResidentsSection';
-import RoomAssignments from '@/units/common/operations/RoomAssignments';
-import GroupTherapySection from '@/units/common/operations/GroupTherapySection';
+import Header from '@/units/shared/layout/Header';
+import Navigation from '@/units/shared/layout/Navigation';
+import Dashboard from '@/units/shared/dashboard/Dashboard';
+import NewAdmissionForm from '@/units/admissions/components/NewAdmissionForm';
+import ResidentsSection from '@/units/shared/residents/ResidentsSection';
+import RoomAssignments from '@/units/shared/operations/RoomAssignments';
+import GroupTherapySection from '@/units/shared/operations/GroupTherapySection';
 
 type Step =
   | 'dashboard'
