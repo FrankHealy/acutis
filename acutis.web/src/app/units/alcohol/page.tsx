@@ -1,6 +1,6 @@
 "use client";
-import AlcoholLanding from '@/units/alcohol/AlcoholLanding';
+import AlcoholDashboard from '@/units/alcohol/AlcoholDashboard';
 
 export default function AlcoholUnitPage() {
-  return <AlcoholLanding />;
+  return <AlcoholDashboard />;
 }

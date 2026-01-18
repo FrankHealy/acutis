@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Header from '@/units/shared/layout/Header';
 import Navigation from '@/units/shared/layout/Navigation';
 import Dashboard from '@/units/shared/dashboard/Dashboard';
-import NewAdmissionForm from '@/units/admissions/components/NewAdmissionForm';
+import NewAdmissionForm from "./NewAdmissionForm"
 import ResidentsSection from '@/units/shared/residents/ResidentsSection';
 import RoomAssignments from '@/units/shared/operations/RoomAssignments';
 import GroupTherapySection from '@/units/shared/operations/GroupTherapySection';
