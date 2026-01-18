@@ -1,15 +1,15 @@
 import React from 'react';
-import { designTokens } from '../../components/acutis-design-system/tokens'
-import { Card, CardHeader } from '../../components/acutis-design-system/Card';
-import { StatCard, StatGrid } from '../../components/acutis-design-system/StatCard';
-import { QuickAction, QuickActionsGrid } from '../../components/acutis-design-system/QuickAction';
-import { IconBadge } from '../../components/acutis-design-system/IconBadge';
+import { designTokens } from './tokens';
+import { Card, CardHeader } from './Card';
+import { StatCard, StatGrid } from './StatCard';
+import { QuickAction, QuickActionsGrid } from './QuickAction';
+import { IconBadge } from './IconBadge';
 
 /**
  * Admissions Page - Redesigned using Dashboard Design System
  * 
  * This example shows how to transform the rectangular stat cards
- * and action buttons into the circular icon-based dashboard stylm e
+ * and action buttons into the circular icon-based dashboard style
  */
 
 // Mock icon components - replace with your actual icon library
@@ -395,4 +395,3 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
     </div>
   );
 };
-export default AdmissionsPageRedesigned;
