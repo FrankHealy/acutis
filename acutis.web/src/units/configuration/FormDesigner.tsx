@@ -5,6 +5,7 @@ import {
   FileText, Image as ImageIcon, Phone, Mail, MapPin, AlertCircle,
   Download, Upload, History, Package
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import ElementsLibraryPanel from './ElementsLibraryPanel';
 
 interface FormField {
@@ -36,6 +37,7 @@ interface FormSection {
 }
 
 const FormDesigner = () => {
+  const router = useRouter();
   const [formName, setFormName] = useState('Admission Form v4');
   const [formVersion, setFormVersion] = useState(4);
   const [selectedUnit, setSelectedUnit] = useState('all');
@@ -294,7 +296,10 @@ const FormDesigner = () => {
       <div className="bg-white border-b border-gray-200 px-8 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button
+              onClick={() => router.push('/configuration/forms')}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
               <ArrowLeft className="h-6 w-6" />
             </button>
             <div>
