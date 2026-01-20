@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import { Heart, Wine, Pill, Users, ClipboardCheck, UserPlus, Settings } from 'lucide-react';
+import { Heart, Wine, Pill, Users, ClipboardCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const Tile: React.FC<{
@@ -52,7 +52,7 @@ const StartupLanding: React.FC = () => {
               delayMs={220} 
               label="Detox" 
               Icon={Heart} 
-              color="border-teal-400 bg-teal-50 text-teal-700" 
+              color="border-green-400 bg-green-50 text-green-700" 
               onClick={() => router.push('/units/detox')} 
             />
             <Tile 
@@ -75,20 +75,6 @@ const StartupLanding: React.FC = () => {
               Icon={Users} 
               color="border-pink-400 bg-pink-50 text-pink-700" 
               onClick={() => router.push('/units/ladies')} 
-            />
-            <Tile 
-              delayMs={700} 
-              label="Admissions" 
-              Icon={UserPlus} 
-              color="border-cyan-400 bg-cyan-50 text-cyan-700" 
-              onClick={() => router.push('/units/admissions')} 
-            />
-            <Tile 
-              delayMs={820} 
-              label="Configuration" 
-              Icon={Settings} 
-              color="border-orange-400 bg-orange-50 text-orange-700" 
-              onClick={() => router.push('/configuration')} 
             />
           </div>
         </div>

@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { designTokens } from '@/components/acutis-design-system/tokens';
+import { designTokens } from '@/components/design-system/tokens';
 
 // Types from form configuration
 interface FormField {

@@ -7,9 +7,6 @@ interface CardProps {
   padding?: 'sm' | 'md' | 'lg' | 'xl';
   shadow?: 'none' | 'sm' | 'md' | 'lg';
   onClick?: () => void;
-  style?: React.CSSProperties;
-  onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
-  onMouseLeave?: React.MouseEventHandler<HTMLDivElement>;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -18,9 +15,6 @@ export const Card: React.FC<CardProps> = ({
   padding = 'lg',
   shadow = 'md',
   onClick,
-  style,
-  onMouseEnter,
-  onMouseLeave,
 }) => {
   const paddingMap = {
     sm: designTokens.spacing.sm,
@@ -43,7 +37,6 @@ export const Card: React.FC<CardProps> = ({
     padding: paddingMap[padding],
     transition: `all ${designTokens.transitions.normal}`,
     cursor: onClick ? 'pointer' : 'default',
-    ...style,
   };
 
   const hoverStyles = onClick
@@ -60,8 +53,6 @@ export const Card: React.FC<CardProps> = ({
       className={`acutis-card ${className}`}
       style={styles}
       onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
     >
       {children}
     </div>
@@ -123,24 +114,6 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
           </p>
         )}
       </div>
-    </div>
-  );
-};
-
-interface CardContentProps {
-  children: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-export const CardContent: React.FC<CardContentProps> = ({
-  children,
-  className = '',
-  style,
-}) => {
-  return (
-    <div className={className} style={style}>
-      {children}
     </div>
   );
 };

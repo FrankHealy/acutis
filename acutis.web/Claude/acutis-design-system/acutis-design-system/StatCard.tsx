@@ -91,8 +91,8 @@ export const StatCard: React.FC<StatCardProps> = ({
                 gap: designTokens.spacing.xs,
               }}
             >
-              {trend.direction === 'up' && '^'}
-              {trend.direction === 'down' && 'v'}
+              {trend.direction === 'up' && '↑'}
+              {trend.direction === 'down' && '↓'}
               {trend.value}
             </div>
           )}

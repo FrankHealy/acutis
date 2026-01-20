@@ -1,0 +1,108 @@
+{
+  "admissions": [
+    {
+      "id": "adm-001",
+      "firstName": "Michael",
+      "lastName": "O'Brien",
+      "status": "expected",
+      "expectedTime": "10:00",
+      "admissionType": "alcohol",
+      "phoneEvalCompleted": true,
+      "isReturning": false,
+      "unit": "detox",
+      "createdAt": "2026-01-18T08:00:00Z",
+      "notes": ""
+    },
+    {
+      "id": "adm-002",
+      "firstName": "Patrick",
+      "lastName": "Murphy",
+      "status": "expected",
+      "expectedTime": "11:30",
+      "admissionType": "alcohol",
+      "phoneEvalCompleted": true,
+      "isReturning": false,
+      "unit": "detox",
+      "createdAt": "2026-01-18T08:15:00Z",
+      "notes": ""
+    },
+    {
+      "id": "adm-003",
+      "firstName": "John",
+      "lastName": "Fitzgerald",
+      "status": "arrived",
+      "expectedTime": "14:00",
+      "admissionType": "alcohol",
+      "phoneEvalCompleted": true,
+      "isReturning": true,
+      "unit": "detox",
+      "createdAt": "2026-01-18T09:00:00Z",
+      "notes": "Previous stay in 2023"
+    },
+    {
+      "id": "adm-004",
+      "firstName": "Thomas",
+      "lastName": "Collins",
+      "status": "expected",
+      "expectedTime": "",
+      "admissionType": "alcohol",
+      "phoneEvalCompleted": false,
+      "isReturning": false,
+      "unit": "detox",
+      "createdAt": "2026-01-18T09:30:00Z",
+      "notes": "Awaiting phone eval"
+    },
+    {
+      "id": "adm-005",
+      "firstName": "Sarah",
+      "lastName": "Walsh",
+      "status": "completed",
+      "expectedTime": "09:00",
+      "admissionType": "drugs",
+      "phoneEvalCompleted": true,
+      "isReturning": false,
+      "unit": "detox",
+      "createdAt": "2026-01-18T07:00:00Z",
+      "completedAt": "2026-01-18T10:45:00Z",
+      "notes": "Admission completed successfully"
+    },
+    {
+      "id": "adm-006",
+      "firstName": "Emma",
+      "lastName": "Kelly",
+      "status": "in_progress",
+      "expectedTime": "08:30",
+      "admissionType": "alcohol",
+      "phoneEvalCompleted": true,
+      "isReturning": false,
+      "unit": "detox",
+      "createdAt": "2026-01-18T06:30:00Z",
+      "notes": "Currently in medical screening"
+    },
+    {
+      "id": "adm-007",
+      "firstName": "David",
+      "lastName": "Murphy",
+      "status": "completed",
+      "expectedTime": "07:00",
+      "admissionType": "gambling",
+      "phoneEvalCompleted": true,
+      "isReturning": false,
+      "unit": "ladies",
+      "createdAt": "2026-01-18T05:00:00Z",
+      "completedAt": "2026-01-18T09:30:00Z",
+      "notes": "First time admission"
+    }
+  ],
+  "stats": {
+    "expectedToday": 4,
+    "completedToday": 5,
+    "needsReview": 2,
+    "occupancy": {
+      "current": 47,
+      "total": 60,
+      "percentage": 78
+    },
+    "lastUpdated": "2026-01-18T10:00:00Z"
+  }
+}

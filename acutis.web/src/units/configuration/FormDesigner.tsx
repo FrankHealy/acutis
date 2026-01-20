@@ -3,8 +3,9 @@ import {
   ArrowLeft, Save, Eye, Plus, Trash2, GripVertical, Settings, Copy, 
   ChevronDown, ChevronUp, Type, Hash, Calendar, CheckSquare, List, 
   FileText, Image as ImageIcon, Phone, Mail, MapPin, AlertCircle,
-  Download, Upload, History
+  Download, Upload, History, Package
 } from 'lucide-react';
+import ElementsLibraryPanel from './ElementsLibraryPanel';
 
 interface FormField {
   id: string;
@@ -41,6 +42,8 @@ const FormDesigner = () => {
   const [viewMode, setViewMode] = useState<'designer' | 'preview'>('designer');
   const [selectedSection, setSelectedSection] = useState<string | null>('personal-identity');
   const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
 
   // Mock form structure
   const [sections, setSections] = useState<FormSection[]>([
@@ -206,6 +209,63 @@ const FormDesigner = () => {
     }));
   };
 
+  const addFieldsFromElement = (element: any, sectionId: string) => {
+    if (!element || !Array.isArray(element.fields)) {
+      return;
+    }
+    setSections(prev =>
+      prev.map(section => {
+        if (section.id === sectionId) {
+          const newFields = element.fields.map((field: any) => ({
+            id: `field-${Date.now()}-${Math.random()}`,
+            fieldName: field.fieldName || field.id,
+            label: field.label,
+            type: field.type,
+            required: field.required,
+            placeholder: field.placeholder,
+            options: field.options,
+            validation: field.validation,
+            helpText: field.helpText,
+            defaultValue: field.defaultValue
+          }));
+
+          return {
+            ...section,
+            fields: [...section.fields, ...newFields]
+          };
+        }
+        return section;
+      })
+    );
+  };
+
+  const handleDragOver = (e: React.DragEvent, sectionId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setDragOverSectionId(sectionId);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverSectionId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, sectionId: string) => {
+    e.preventDefault();
+    setDragOverSectionId(null);
+    const elementData =
+      e.dataTransfer.getData('application/json') ||
+      e.dataTransfer.getData('text/plain');
+    
+    if (elementData) {
+      try {
+        const element = JSON.parse(elementData);
+        addFieldsFromElement(element, sectionId);
+      } catch (error) {
+        console.error('Failed to parse element data:', error);
+      }
+    }
+  };
+
   const getFieldIcon = (type: string) => {
     const fieldType = fieldTypes.find(ft => ft.value === type);
     return fieldType?.icon || Type;
@@ -213,6 +273,20 @@ const FormDesigner = () => {
 
   const selectedSectionData = sections.find(s => s.id === selectedSection);
   const selectedFieldData = selectedSectionData?.fields.find(f => f.id === selectedField);
+
+  const updateSelectedField = (updates: Partial<FormField>) => {
+    if (!selectedSection || !selectedField) return;
+    setSections(sections.map(section => {
+      if (section.id !== selectedSection) return section;
+      return {
+        ...section,
+        fields: section.fields.map(field => {
+          if (field.id !== selectedField) return field;
+          return { ...field, ...updates };
+        })
+      };
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -274,6 +348,14 @@ const FormDesigner = () => {
               </button>
             </div>
 
+            <button
+              onClick={() => setIsPanelOpen(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+            >
+              <Package className="h-4 w-4" />
+              <span>Elements Library</span>
+            </button>
+
             <button className="flex items-center space-x-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-semibold">
               <History className="h-5 w-5" />
               <span>Version History</span>
@@ -309,14 +391,25 @@ const FormDesigner = () => {
 
             <div className="p-4 space-y-2">
               {sections.map((section, index) => (
-                <button
+                <div
                   key={section.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedSection(section.id)}
+                  onDragOver={(e) => handleDragOver(e, section.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, section.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedSection(section.id);
+                    }
+                  }}
                   className={`w-full text-left p-4 rounded-xl transition-all ${
                     selectedSection === section.id
                       ? 'bg-blue-50 border-2 border-blue-500'
                       : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300'
-                  }`}
+                  } ${dragOverSectionId === section.id ? 'ring-2 ring-blue-400 bg-blue-50' : ''}`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
@@ -341,13 +434,26 @@ const FormDesigner = () => {
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
 
           {/* Section Editor */}
-          <div className="flex-1 overflow-y-auto p-8">
+          <div
+            className="flex-1 overflow-y-auto p-8"
+            onDragOver={(e) => {
+              if (selectedSection) {
+                handleDragOver(e, selectedSection);
+              }
+            }}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => {
+              if (selectedSection) {
+                handleDrop(e, selectedSection);
+              }
+            }}
+          >
             {selectedSectionData ? (
               <div className="max-w-4xl mx-auto">
                 {/* Section Settings */}
@@ -415,6 +521,11 @@ const FormDesigner = () => {
                   </div>
 
                   <div className="p-6 space-y-4">
+                    {dragOverSectionId === selectedSectionData.id && (
+                      <div className="border-2 border-dashed border-blue-400 bg-blue-50 text-blue-700 rounded-xl px-4 py-3 text-sm font-medium">
+                        Drop element here to add fields to this section
+                      </div>
+                    )}
                     {selectedSectionData.fields.length === 0 ? (
                       <div className="text-center py-12">
                         <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -513,6 +624,7 @@ const FormDesigner = () => {
                   <input
                     type="text"
                     value={selectedFieldData.label}
+                    onChange={(e) => updateSelectedField({ label: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
                   />
                 </div>
@@ -522,6 +634,7 @@ const FormDesigner = () => {
                   <input
                     type="text"
                     value={selectedFieldData.fieldName}
+                    onChange={(e) => updateSelectedField({ fieldName: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none font-mono text-sm"
                   />
                   <p className="text-xs text-gray-500 mt-1">Used in API/database (camelCase recommended)</p>
@@ -531,6 +644,7 @@ const FormDesigner = () => {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Field Type</label>
                   <select
                     value={selectedFieldData.type}
+                    onChange={(e) => updateSelectedField({ type: e.target.value as FormField['type'] })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
                   >
                     {fieldTypes.map(type => (
@@ -545,6 +659,7 @@ const FormDesigner = () => {
                     type="text"
                     value={selectedFieldData.placeholder || ''}
                     placeholder="e.g., Enter first name"
+                    onChange={(e) => updateSelectedField({ placeholder: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
                   />
                 </div>
@@ -555,6 +670,7 @@ const FormDesigner = () => {
                     value={selectedFieldData.helpText || ''}
                     placeholder="Additional guidance for users..."
                     rows={3}
+                    onChange={(e) => updateSelectedField({ helpText: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none resize-none"
                   />
                 </div>
@@ -567,6 +683,7 @@ const FormDesigner = () => {
                     <input
                       type="checkbox"
                       checked={selectedFieldData.required}
+                      onChange={(e) => updateSelectedField({ required: e.target.checked })}
                       className="w-5 h-5 rounded border-2 border-gray-300"
                     />
                     <span className="font-semibold text-gray-700">Required Field</span>
@@ -580,6 +697,15 @@ const FormDesigner = () => {
                           type="number"
                           value={selectedFieldData.validation?.min || ''}
                           placeholder="0"
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : Number(e.target.value);
+                            updateSelectedField({
+                              validation: {
+                                ...selectedFieldData.validation,
+                                min: value,
+                              },
+                            });
+                          }}
                           className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
                         />
                       </div>
@@ -588,7 +714,16 @@ const FormDesigner = () => {
                         <input
                           type="number"
                           value={selectedFieldData.validation?.max || ''}
-                          placeholder="∞"
+                          placeholder="500"
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : Number(e.target.value);
+                            updateSelectedField({
+                              validation: {
+                                ...selectedFieldData.validation,
+                                max: value,
+                              },
+                            });
+                          }}
                           className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
                         />
                       </div>
@@ -606,14 +741,32 @@ const FormDesigner = () => {
                           <input
                             type="text"
                             value={option}
+                            onChange={(e) => {
+                              const nextOptions = [...(selectedFieldData.options || [])];
+                              nextOptions[index] = e.target.value;
+                              updateSelectedField({ options: nextOptions });
+                            }}
                             className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
                           />
-                          <button className="p-2 hover:bg-red-100 rounded-lg">
+                          <button
+                            onClick={() => {
+                              const nextOptions = [...(selectedFieldData.options || [])];
+                              nextOptions.splice(index, 1);
+                              updateSelectedField({ options: nextOptions });
+                            }}
+                            className="p-2 hover:bg-red-100 rounded-lg"
+                          >
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </button>
                         </div>
                       ))}
-                      <button className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-700">
+                      <button
+                        onClick={() => {
+                          const nextOptions = [...(selectedFieldData.options || []), 'New option'];
+                          updateSelectedField({ options: nextOptions });
+                        }}
+                        className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-700"
+                      >
                         <Plus className="h-4 w-4" />
                         <span>Add Option</span>
                       </button>
@@ -717,6 +870,13 @@ const FormDesigner = () => {
           </div>
         </div>
       )}
+
+      {/* Elements Library Panel */}
+      <ElementsLibraryPanel
+        isOpen={isPanelOpen}
+        onClose={() => setIsPanelOpen(false)}
+        onElementDrop={addFieldsFromElement}
+      />
     </div>
   );
 };
