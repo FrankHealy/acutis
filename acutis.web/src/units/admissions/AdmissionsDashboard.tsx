@@ -1,398 +1,568 @@
-import React from 'react';
-import { designTokens } from '../../components/acutis-design-system/tokens'
-import { Card, CardHeader } from '../../components/acutis-design-system/Card';
-import { StatCard, StatGrid } from '../../components/acutis-design-system/StatCard';
-import { QuickAction, QuickActionsGrid } from '../../components/acutis-design-system/QuickAction';
-import { IconBadge } from '../../components/acutis-design-system/IconBadge';
-
 /**
- * Admissions Page - Redesigned using Dashboard Design System
- * 
- * This example shows how to transform the rectangular stat cards
- * and action buttons into the circular icon-based dashboard stylm e
+ * Modern admissions dashboard using design system components
+ * Connects to Form Generator for dynamic admission forms
  */
 
-// Mock icon components - replace with your actual icon library
-const CalendarIcon = () => <span>📅</span>;
-const CheckIcon = () => <span>✓</span>;
-const AlertIcon = () => <span>⚠</span>;
-const UsersIcon = () => <span>👥</span>;
-const ClipboardIcon = () => <span>📋</span>;
-const SettingsIcon = () => <span>⚙️</span>;
-const ChartIcon = () => <span>📊</span>;
-const UserPlusIcon = () => <span>➕</span>;
+'use client';
 
-export const AdmissionsPageRedesigned: React.FC = () => {
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardContent } from '@/components/acutis-design-system/Card';
+import { StatCard } from '@/components/acutis-design-system/StatCard';
+import { QuickAction } from '@/components/acutis-design-system/QuickAction';
+import { IconBadge } from '@/components/acutis-design-system/IconBadge';
+import { designTokens } from '@/components/acutis-design-system/tokens';
+import {
+  AlertTriangle,
+  BarChart3,
+  Calendar,
+  CalendarDays,
+  CheckCircle,
+  ClipboardList,
+  Edit,
+  ArrowLeft,
+  Settings,
+  UserCheck,
+  UserPlus,
+  Users,
+} from 'lucide-react';
+
+interface Admission {
+  id: string;
+  firstName: string;
+  lastName: string;
+  expectedTime: string;
+  status: 'expected' | 'arrived' | 'in_progress' | 'completed';
+  primarySubstance: string;
+  phoneEval: boolean;
+  returning: boolean;
+}
+
+interface DashboardStats {
+  expectedToday: number;
+  completedToday: number;
+  needsReview: number;
+  occupancy: number;
+  totalBeds: number;
+  occupiedBeds: number;
+  completedYesterday?: number;
+}
+
+export default function AdmissionsRedesigned() {
+  const router = useRouter();
+  const [admissions, setAdmissions] = useState<Admission[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    expectedToday: 0,
+    completedToday: 0,
+    needsReview: 0,
+    occupancy: 0,
+    totalBeds: 60,
+    occupiedBeds: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Fetch admissions data
+  useEffect(() => {
+    fetchAdmissions();
+    fetchStats();
+  }, []);
+
+  const fetchAdmissions = async () => {
+    try {
+      const response = await fetch('/api/admissions?status=expected');
+      if (!response.ok) {
+        throw new Error('Admissions request failed');
+      }
+      const data = await response.json();
+      setAdmissions(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch admissions:', error);
+      // Fallback to mock data
+      setAdmissions(getMockAdmissions());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/admissions/stats');
+      if (!response.ok) {
+        throw new Error('Stats request failed');
+      }
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+      // Fallback to mock stats
+      setStats({
+        expectedToday: 4,
+        completedToday: 5,
+        needsReview: 2,
+        occupancy: 78,
+        totalBeds: 60,
+        occupiedBeds: 47,
+        completedYesterday: 3,
+      });
+    }
+  };
+
+  const getMockAdmissions = (): Admission[] => {
+    return [
+      {
+        id: 'adm-001',
+        firstName: 'Michael',
+        lastName: "O'Brien",
+        expectedTime: '10:00',
+        status: 'expected',
+        primarySubstance: 'Alcohol',
+        phoneEval: true,
+        returning: false,
+      },
+      {
+        id: 'adm-002',
+        firstName: 'Patrick',
+        lastName: 'Murphy',
+        expectedTime: '11:30',
+        status: 'expected',
+        primarySubstance: 'Alcohol',
+        phoneEval: true,
+        returning: false,
+      },
+      {
+        id: 'adm-003',
+        firstName: 'John',
+        lastName: 'Fitzgerald',
+        expectedTime: '14:00',
+        status: 'arrived',
+        primarySubstance: 'Alcohol',
+        phoneEval: true,
+        returning: true,
+      },
+      {
+        id: 'adm-004',
+        firstName: 'Thomas',
+        lastName: 'Collins',
+        expectedTime: '15:30',
+        status: 'expected',
+        primarySubstance: 'Drugs',
+        phoneEval: true,
+        returning: false,
+      },
+    ];
+  };
+
+  const startAdmission = (admissionId: string) => {
+    // Navigate to admission intake flow
+    router.push(`/admissions/intake/${admissionId}`);
+  };
+
+  const continueAdmission = (admissionId: string) => {
+    // Navigate to continue admission flow
+    router.push(`/admissions/intake/${admissionId}?continue=true`);
+  };
+
+  const startWalkIn = (type: 'alcohol' | 'drugs' | 'ladies') => {
+    // Navigate to walk-in admission flow
+    router.push(`/admissions/intake/new?type=walkin&admissionType=${type}`);
+  };
+
+  const getInitials = (firstName: string, lastName: string): string => {
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  };
+
+  const getStatusColorKey = (status: string): keyof typeof designTokens.colors.primary => {
+    switch (status) {
+      case 'expected':
+        return 'blue';
+      case 'arrived':
+        return 'green';
+      case 'in_progress':
+        return 'purple';
+      default:
+        return 'blue';
+    }
+  };
+
+  const getStatusColorValue = (status: string): string => {
+    const key = getStatusColorKey(status);
+    return designTokens.colors.primary[key];
+  };
+
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'expected':
+        return 'Expected';
+      case 'arrived':
+        return 'Arrived';
+      case 'in_progress':
+        return 'In Progress';
+      default:
+        return status;
+    }
+  };
+
+  const formatDate = (): string => {
+    const now = new Date();
+    return now.toLocaleDateString('en-IE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
   return (
-    <div
-      style={{
-        backgroundColor: designTokens.colors.background.secondary,
-        minHeight: '100vh',
-        padding: designTokens.spacing['2xl'],
-      }}
-    >
-      {/* Page Header */}
-      <div
-        style={{
-          marginBottom: designTokens.spacing.xl,
-        }}
-      >
-        <h1
-          style={{
-            fontSize: designTokens.typography.fontSize['4xl'],
-            fontWeight: designTokens.typography.fontWeight.bold,
-            color: designTokens.colors.text.primary,
-            margin: 0,
-            marginBottom: designTokens.spacing.sm,
-          }}
-        >
-          Admissions
-        </h1>
-        <p
-          style={{
-            fontSize: designTokens.typography.fontSize.base,
-            color: designTokens.colors.text.secondary,
-            margin: 0,
-          }}
-        >
-          Sunday 18 January 2026
-        </p>
+    <div style={{ padding: designTokens.spacing.xl, backgroundColor: designTokens.colors.neutral[50], minHeight: '100vh' }}>
+      {/* Header */}
+      <div style={{ marginBottom: designTokens.spacing.xl }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: designTokens.spacing.md }}>
+          <button
+            onClick={() => router.back()}
+            aria-label="Back"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '36px',
+              height: '36px',
+              borderRadius: designTokens.borderRadius.full,
+              border: `1px solid ${designTokens.colors.neutral[200]}`,
+              backgroundColor: 'white',
+              color: designTokens.colors.neutral[700],
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = designTokens.shadows.sm;
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: designTokens.spacing.xs, color: designTokens.colors.neutral[900] }}>
+              Admissions
+            </h1>
+            <p style={{ color: designTokens.colors.neutral[600], fontSize: designTokens.typography.fontSize.base }}>
+              {formatDate()}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Stats Grid - Dashboard Style */}
-      <StatGrid columns={4}>
+      {/* Stats Cards */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: designTokens.spacing.lg,
+        marginBottom: designTokens.spacing.xl 
+      }}>
         <StatCard
-          icon={<CalendarIcon />}
+          icon={<Calendar />}
+          value={stats.expectedToday}
           label="Expected Today"
-          value="4"
-          subtitle="4 pending arrival"
+          subtitle={`${stats.expectedToday} pending arrival`}
           color="blue"
         />
         <StatCard
-          icon={<CheckIcon />}
+          icon={<CheckCircle />}
+          value={stats.completedToday}
           label="Completed Today"
-          value="5"
+          trend={
+            stats.completedYesterday
+              ? {
+                  direction: stats.completedToday > stats.completedYesterday ? 'up' : 'down',
+                  value: `${Math.abs(stats.completedToday - stats.completedYesterday)}`,
+                }
+              : undefined
+          }
           color="green"
-          trend={{ value: '+2 from yesterday', direction: 'up' }}
         />
         <StatCard
-          icon={<AlertIcon />}
+          icon={<AlertTriangle />}
+          value={stats.needsReview}
           label="Needs Review"
-          value="2"
           subtitle="Requires attention"
           color="orange"
         />
         <StatCard
-          icon={<UsersIcon />}
+          icon={<Users />}
+          value={`${stats.occupancy}%`}
           label="Current Occupancy"
-          value="78%"
-          subtitle="47 of 60 beds"
+          subtitle={`${stats.occupiedBeds} of ${stats.totalBeds} beds`}
           color="purple"
         />
-      </StatGrid>
+      </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
-          gap: designTokens.spacing.lg,
-          marginTop: designTokens.spacing.xl,
-        }}
-      >
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: designTokens.spacing.xl }}>
         {/* Main Content */}
         <div>
           {/* Walk-in Banner */}
           <Card
-            padding="lg"
-            shadow="md"
-            onClick={() => console.log('Start walk-in')}
+            style={{
+              background: `linear-gradient(135deg, ${designTokens.colors.primary.blue} 0%, ${designTokens.colors.primary.purple} 100%)`,
+              color: 'white',
+              marginBottom: designTokens.spacing.xl,
+              transition: 'transform 0.2s ease',
+            }}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backgroundColor: designTokens.colors.primary.blue,
-                padding: designTokens.spacing.lg,
-                borderRadius: designTokens.borderRadius.md,
-                margin: `-${designTokens.spacing.lg}`,
-                marginBottom: designTokens.spacing.lg,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: designTokens.spacing.lg }}>
-                <IconBadge
-                  icon={<UserPlusIcon />}
-                  color="blue"
-                  size="md"
-                />
-                <div>
-                  <h3
-                    style={{
-                      color: designTokens.colors.text.inverse,
-                      fontSize: designTokens.typography.fontSize.lg,
-                      fontWeight: designTokens.typography.fontWeight.semibold,
-                      margin: 0,
-                      marginBottom: designTokens.spacing.xs,
-                    }}
-                  >
-                    Walk-in / Not on List
-                  </h3>
-                  <p
-                    style={{
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      fontSize: designTokens.typography.fontSize.sm,
-                      margin: 0,
-                    }}
-                  >
-                    Start new admission for unexpected arrival
-                  </p>
+            <CardContent>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: designTokens.spacing.lg }}>
+                  <IconBadge
+                    icon={<UserPlus />}
+                    size="lg"
+                    color="rgba(255, 255, 255, 0.2)"
+                    iconColor="white"
+                  />
+                  <div>
+                    <h3 style={{ fontSize: designTokens.typography.fontSize.lg, fontWeight: 600, marginBottom: '4px' }}>
+                      Walk-in / Not on List
+                    </h3>
+                    <p style={{ opacity: 0.9 }}>Start new admission for unexpected arrival</p>
+                  </div>
                 </div>
               </div>
-              <span style={{ color: designTokens.colors.text.inverse, fontSize: '24px' }}>→</span>
-            </div>
+              <div style={{ display: 'flex', gap: designTokens.spacing.sm, marginTop: designTokens.spacing.md, flexWrap: 'wrap' }}>
+                {(['alcohol', 'drugs', 'ladies'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => startWalkIn(type)}
+                    style={{
+                      padding: `${designTokens.spacing.xs} ${designTokens.spacing.md}`,
+                      borderRadius: designTokens.borderRadius.full,
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      color: 'white',
+                      fontWeight: 600,
+                      textTransform: 'capitalize',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
           </Card>
 
-          {/* Expected Admissions */}
-          <Card padding="lg" shadow="md">
-            <CardHeader title="Expected Admissions (4)" />
+          {/* Expected Admissions List */}
+          <Card>
+            <CardHeader title={`Expected Admissions (${stats.expectedToday})`} />
+            <CardContent>
+              {loading ? (
+                <div style={{ padding: designTokens.spacing.xl, textAlign: 'center', color: designTokens.colors.neutral[500] }}>
+                  Loading admissions...
+                </div>
+              ) : admissions.length === 0 ? (
+                <div style={{ padding: designTokens.spacing.xl, textAlign: 'center', color: designTokens.colors.neutral[500] }}>
+                  No expected admissions today
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.spacing.md }}>
+                  {admissions.map((admission) => (
+                    <div
+                      key={admission.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: designTokens.spacing.md,
+                        borderRadius: designTokens.borderRadius.lg,
+                        backgroundColor: designTokens.colors.neutral[50],
+                        border: `1px solid ${designTokens.colors.neutral[200]}`,
+                      }}
+                    >
+                      {/* Left Side: Avatar + Info */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: designTokens.spacing.md }}>
+                        {/* Avatar */}
+                          <IconBadge
+                            icon={getInitials(admission.firstName, admission.lastName)}
+                            size="md"
+                            color={getStatusColorKey(admission.status)}
+                          />
 
-            {/* Admission List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.spacing.md }}>
-              <AdmissionListItem
-                initials="MO"
-                name="Michael O'Brien"
-                status="Expected"
-                time="10:00"
-                details={['Alcohol', 'Phone Eval ✓']}
-                badgeColor="blue"
-                actionLabel="Start Admission"
-              />
-              <AdmissionListItem
-                initials="PM"
-                name="Patrick Murphy"
-                status="Expected"
-                time="11:30"
-                details={['Alcohol', 'Phone Eval ✓']}
-                badgeColor="blue"
-                actionLabel="Start Admission"
-              />
-              <AdmissionListItem
-                initials="JF"
-                name="John Fitzgerald"
-                status="Arrived"
-                time="14:00"
-                details={['Alcohol', 'Phone Eval ✓', 'Returning']}
-                badgeColor="green"
-                actionLabel="Continue Admission"
-              />
-              <AdmissionListItem
-                initials="TC"
-                name="Thomas Collins"
-                status="Expected"
-                time=""
-                details={[]}
-                badgeColor="blue"
-                actionLabel="Start Admission"
-              />
-            </div>
+                        {/* Info */}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: designTokens.spacing.sm, marginBottom: '4px' }}>
+                            <h3 style={{ fontSize: designTokens.typography.fontSize.base, fontWeight: 600 }}>
+                              {admission.firstName} {admission.lastName}
+                            </h3>
+                            <span
+                              style={{
+                                padding: '2px 8px',
+                                borderRadius: designTokens.borderRadius.full,
+                                fontSize: designTokens.typography.fontSize.xs,
+                                fontWeight: 600,
+                                backgroundColor: getStatusColorValue(admission.status),
+                                color: 'white',
+                              }}
+                            >
+                              {getStatusLabel(admission.status)}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: designTokens.spacing.md, fontSize: designTokens.typography.fontSize.sm, color: designTokens.colors.neutral[600] }}>
+                            {admission.expectedTime && (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <path d="M12 6v6l4 2" />
+                                </svg>
+                                Expected: {admission.expectedTime}
+                              </span>
+                            )}
+                            {admission.primarySubstance && (
+                              <span>- {admission.primarySubstance}</span>
+                            )}
+                            {admission.phoneEval && (
+                              <span>- Phone Eval</span>
+                            )}
+                            {admission.returning && (
+                              <span>- Returning</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Side: Action Button */}
+                      <button
+                        onClick={() => {
+                          if (admission.status === 'arrived') {
+                            continueAdmission(admission.id);
+                          } else {
+                            startAdmission(admission.id);
+                          }
+                        }}
+                        style={{
+                          padding: `${designTokens.spacing.sm} ${designTokens.spacing.lg}`,
+                          borderRadius: designTokens.borderRadius.md,
+                          backgroundColor: admission.status === 'arrived' 
+                            ? designTokens.colors.status.success 
+                            : designTokens.colors.primary.blue,
+                          color: 'white',
+                          border: 'none',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = designTokens.shadows.md;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        {admission.status === 'arrived' ? 'Continue Admission' : 'Start Admission'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
 
         {/* Sidebar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.spacing.lg }}>
           {/* Quick Actions */}
-          <Card padding="lg" shadow="md">
+          <Card>
             <CardHeader title="Quick Actions" />
-            <QuickActionsGrid columns={2}>
-              <QuickAction
-                icon={<ClipboardIcon />}
-                label="View All Admissions"
-                color="blue"
-                onClick={() => console.log('View all')}
-              />
-              <QuickAction
-                icon={<SettingsIcon />}
-                label="Form Configuration"
-                color="purple"
-                onClick={() => console.log('Configure')}
-              />
-              <QuickAction
-                icon={<ChartIcon />}
-                label="Reports & Analytics"
-                color="green"
-                onClick={() => console.log('Reports')}
-              />
-            </QuickActionsGrid>
+            <CardContent>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.spacing.md }}>
+                <QuickAction
+                  icon={<ClipboardList />}
+                  label="View All Admissions"
+                  onClick={() => router.push('/admissions/list')}
+                  color="blue"
+                />
+                <QuickAction
+                  icon={<Settings />}
+                  label="Form Configuration"
+                  onClick={() => router.push('/configuration/forms')}
+                  color="purple"
+                />
+                <QuickAction
+                  icon={<BarChart3 />}
+                  label="Reports & Analytics"
+                  onClick={() => router.push('/reports/admissions')}
+                  color="green"
+                />
+              </div>
+            </CardContent>
           </Card>
 
           {/* Recent Activity */}
-          <Card padding="lg" shadow="md">
+          <Card>
             <CardHeader title="Recent Activity" />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.spacing.md }}>
-              <ActivityItem
-                icon={<UserPlusIcon />}
-                text="New admission completed for David Walsh"
-                time="30 minutes ago"
-                user="Sarah Murphy"
-                color="green"
-              />
-              <ActivityItem
-                icon={<AlertIcon />}
-                text="Admission flagged for review - Emma Kelly"
-                time="1 hour ago"
-                user="John Kelly"
-                color="orange"
-              />
-              <ActivityItem
-                icon={<ClipboardIcon />}
-                text="Medical prescriptions updated for Michael O'Brien"
-                time="2 hours ago"
-                user="Dr. Murphy"
-                color="blue"
-              />
-            </div>
+            <CardContent>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.spacing.md }}>
+                <ActivityItem
+                  icon={<UserCheck />}
+                  iconColor={designTokens.colors.status.success}
+                  title="New admission completed for David Walsh"
+                  time="30 minutes ago"
+                  user="Sarah Murphy"
+                />
+                <ActivityItem
+                  icon={<Edit />}
+                  iconColor={designTokens.colors.primary.blue}
+                  title="Updated medical history for John Fitzgerald"
+                  time="1 hour ago"
+                  user="Michael O'Brien"
+                />
+                <ActivityItem
+                  icon={<CalendarDays />}
+                  iconColor={designTokens.colors.primary.purple}
+                  title="Scheduled admission for Mary O'Connor"
+                  time="2 hours ago"
+                  user="Sarah Murphy"
+                />
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>
     </div>
   );
-};
-
-// Supporting components
-interface AdmissionListItemProps {
-  initials: string;
-  name: string;
-  status: string;
-  time: string;
-  details: string[];
-  badgeColor: keyof typeof designTokens.colors.primary;
-  actionLabel: string;
 }
 
-const AdmissionListItem: React.FC<AdmissionListItemProps> = ({
-  initials,
-  name,
-  status,
-  time,
-  details,
-  badgeColor,
-  actionLabel,
-}) => {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: designTokens.spacing.lg,
-        padding: designTokens.spacing.md,
-        backgroundColor: designTokens.colors.background.tertiary,
-        borderRadius: designTokens.borderRadius.md,
-      }}
-    >
-      <IconBadge icon={<span>{initials}</span>} color={badgeColor} size="sm" />
-      
-      <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: designTokens.spacing.md }}>
-          <span
-            style={{
-              fontSize: designTokens.typography.fontSize.base,
-              fontWeight: designTokens.typography.fontWeight.semibold,
-              color: designTokens.colors.text.primary,
-            }}
-          >
-            {name}
-          </span>
-          <span
-            style={{
-              fontSize: designTokens.typography.fontSize.xs,
-              padding: `${designTokens.spacing.xs} ${designTokens.spacing.sm}`,
-              backgroundColor:
-                status === 'Arrived'
-                  ? designTokens.colors.status.success
-                  : designTokens.colors.status.info,
-              color: designTokens.colors.text.inverse,
-              borderRadius: designTokens.borderRadius.sm,
-              fontWeight: designTokens.typography.fontWeight.medium,
-            }}
-          >
-            {status}
-          </span>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: designTokens.spacing.md,
-            marginTop: designTokens.spacing.xs,
-            fontSize: designTokens.typography.fontSize.sm,
-            color: designTokens.colors.text.secondary,
-          }}
-        >
-          {time && <span>⏰ Expected: {time}</span>}
-          {details.map((detail, i) => (
-            <span key={i}>• {detail}</span>
-          ))}
-        </div>
-      </div>
-
-      <button
-        style={{
-          padding: `${designTokens.spacing.sm} ${designTokens.spacing.lg}`,
-          backgroundColor: designTokens.colors.primary.blue,
-          color: designTokens.colors.text.inverse,
-          border: 'none',
-          borderRadius: designTokens.borderRadius.md,
-          fontSize: designTokens.typography.fontSize.sm,
-          fontWeight: designTokens.typography.fontWeight.semibold,
-          cursor: 'pointer',
-          transition: `all ${designTokens.transitions.normal}`,
-        }}
-      >
-        {actionLabel}
-      </button>
-    </div>
-  );
-};
-
+// Activity Item Component
 interface ActivityItemProps {
   icon: React.ReactNode;
-  text: string;
+  iconColor: string;
+  title: string;
   time: string;
   user: string;
-  color: keyof typeof designTokens.colors.primary;
 }
 
-const ActivityItem: React.FC<ActivityItemProps> = ({
-  icon,
-  text,
-  time,
-  user,
-  color,
-}) => {
+function ActivityItem({ icon, iconColor, title, time, user }: ActivityItemProps) {
   return (
-    <div style={{ display: 'flex', gap: designTokens.spacing.md }}>
-      <IconBadge icon={icon} color={color} size="sm" />
+    <div style={{ display: 'flex', gap: designTokens.spacing.sm }}>
+      <IconBadge icon={icon} size="sm" color={iconColor} />
       <div style={{ flex: 1 }}>
-        <p
-          style={{
-            fontSize: designTokens.typography.fontSize.sm,
-            color: designTokens.colors.text.primary,
-            margin: 0,
-            marginBottom: designTokens.spacing.xs,
-          }}
-        >
-          {text}
+        <p style={{ fontSize: designTokens.typography.fontSize.sm, fontWeight: 500, marginBottom: '2px' }}>
+          {title}
         </p>
-        <p
-          style={{
-            fontSize: designTokens.typography.fontSize.xs,
-            color: designTokens.colors.text.tertiary,
-            margin: 0,
-          }}
-        >
-          {time} • {user}
+        <p style={{ fontSize: designTokens.typography.fontSize.xs, color: designTokens.colors.neutral[500] }}>
+          {time} - {user}
         </p>
       </div>
     </div>
   );
-};
-export default AdmissionsPageRedesigned;
+}

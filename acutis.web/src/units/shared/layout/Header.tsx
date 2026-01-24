@@ -3,7 +3,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, User } from 'lucide-react';
 
-const Header = () => {
+interface HeaderProps {
+  showCapacity?: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
   const [today, setToday] = useState<string>("");
   const [now, setNow] = useState<string>("");
   const router = useRouter();
@@ -48,8 +52,12 @@ const Header = () => {
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
-              <span>Capacity: 92/120</span>
-              <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+              {showCapacity && (
+                <>
+                  <span>Capacity: 92/120</span>
+                  <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                </>
+              )}
               <span>{today || "\u00A0"}</span>
               <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
               <span>Current Time: {now || "\u00A0"}</span>

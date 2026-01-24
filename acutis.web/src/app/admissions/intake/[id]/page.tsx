@@ -41,6 +41,8 @@ export default function AdmissionIntakePage() {
   const admissionId = params.id as string;
   const isContinue = searchParams.get('continue') === 'true';
   const isWalkIn = params.id === 'new' && searchParams.get('type') === 'walkin';
+  const initialAdmissionType = searchParams.get('admissionType');
+  const initialUnit = searchParams.get('unit');
 
   const [formConfig, setFormConfig] = useState<FormConfiguration | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
@@ -48,18 +50,25 @@ export default function AdmissionIntakePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [admission, setAdmission] = useState<any>(null);
+  const [admissionType, setAdmissionType] = useState<string | null>(initialAdmissionType);
+  const [admissionUnit, setAdmissionUnit] = useState<string>(initialUnit || 'detox');
 
   useEffect(() => {
-    loadFormConfiguration();
     if (!isWalkIn && admissionId !== 'new') {
       loadAdmission();
+    } else {
+      setAdmissionType(initialAdmissionType || 'alcohol');
     }
-  }, [admissionId, isWalkIn]);
+  }, [admissionId, isWalkIn, initialAdmissionType]);
 
-  const loadFormConfiguration = async () => {
+  useEffect(() => {
+    if (!admissionType) return;
+    loadFormConfiguration(admissionUnit, admissionType);
+  }, [admissionType, admissionUnit]);
+
+  const loadFormConfiguration = async (unit: string, type: string) => {
     try {
-      // Load detox admission form (universal form for all types)
-      const response = await fetch('/api/forms/detox');
+      const response = await fetch(`/api/forms/${unit}?admissionType=${encodeURIComponent(type)}`);
       
       if (!response.ok) {
         throw new Error('Failed to load form configuration');
@@ -80,10 +89,16 @@ export default function AdmissionIntakePage() {
       const response = await fetch(`/api/admissions/${admissionId}`);
       
       if (response.ok) {
-        const data = await response.json();
-        setAdmission(data);
-        
-        // If continuing, load existing form data
+      const data = await response.json();
+      setAdmission(data);
+      if (data?.unit) {
+        setAdmissionUnit(data.unit);
+      }
+      if (data?.admissionType) {
+        setAdmissionType(data.admissionType);
+      }
+      
+      // If continuing, load existing form data
         if (isContinue && data.formData) {
           setFormData(data.formData);
           setCurrentStep(data.currentStep || 0);

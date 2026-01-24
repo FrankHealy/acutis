@@ -385,9 +385,20 @@ export class MockAdmissionsService {
   }
 
   // Get form configuration by unit
-  getFormConfigurationByUnit(unit: string): FormConfiguration | null {
+  getFormConfigurationByUnit(unit: string, admissionType?: string | null): FormConfiguration | null {
     const data = readJsonFile<FormsData>('forms.json');
+    if (admissionType !== undefined) {
+      return (
+        data.formConfigurations.find(
+          (f) => f.unit === unit && f.status === 'active' && f.admissionType === admissionType
+        ) || null
+      );
+    }
+
     return (
+      data.formConfigurations.find(
+        (f) => f.unit === unit && f.status === 'active' && f.admissionType == null
+      ) ||
       data.formConfigurations.find((f) => f.unit === unit && f.status === 'active') ||
       null
     );
@@ -415,6 +426,19 @@ export class MockAdmissionsService {
   ): FormConfiguration {
     const data = readJsonFile<FormsData>('forms.json');
 
+    if (form.status === 'active') {
+      data.formConfigurations = data.formConfigurations.map((existing) => {
+        if (
+          existing.unit === form.unit &&
+          existing.admissionType === form.admissionType &&
+          existing.status === 'active'
+        ) {
+          return { ...existing, status: 'archived', updatedAt: new Date().toISOString() };
+        }
+        return existing;
+      });
+    }
+
     const newForm: FormConfiguration = {
       ...form,
       id: `form-${Date.now()}`,
@@ -437,10 +461,28 @@ export class MockAdmissionsService {
       throw new Error(`Form configuration not found: ${formId}`);
     }
 
-    data.formConfigurations[index] = {
+    const next = {
       ...data.formConfigurations[index],
       ...updates,
       updatedAt: new Date().toISOString(),
+    };
+
+    if (updates.status === 'active') {
+      data.formConfigurations = data.formConfigurations.map((existing) => {
+        if (
+          existing.id !== formId &&
+          existing.unit === next.unit &&
+          existing.admissionType === next.admissionType &&
+          existing.status === 'active'
+        ) {
+          return { ...existing, status: 'archived', updatedAt: new Date().toISOString() };
+        }
+        return existing;
+      });
+    }
+
+    data.formConfigurations[index] = {
+      ...next,
     };
 
     writeJsonFile('forms.json', data);

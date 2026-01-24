@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/acutis-design-system/Card";
 import { IconBadge } from "@/components/acutis-design-system/IconBadge";
 import { designTokens } from "@/components/acutis-design-system/tokens";
-import { ClipboardList, LayoutGrid, Plus } from "lucide-react";
+import { ArrowLeft, ClipboardList, LayoutGrid, Plus } from "lucide-react";
 
 interface FormConfig {
   id: string;
@@ -109,6 +109,23 @@ export default function FormConfigurationDashboard() {
           }}
         >
           <div>
+            <button
+              onClick={() => router.push("/configuration")}
+              style={{
+                background: "none",
+                border: "none",
+                color: designTokens.colors.primary.blue,
+                fontSize: designTokens.typography.fontSize.sm,
+                cursor: "pointer",
+                marginBottom: designTokens.spacing.sm,
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <ArrowLeft size={16} />
+              Back to Configuration
+            </button>
             <h1
               style={{
                 fontSize: "2rem",

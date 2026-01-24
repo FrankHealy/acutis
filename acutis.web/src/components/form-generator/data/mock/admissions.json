@@ -4,27 +4,34 @@
       "id": "adm-001",
       "firstName": "Michael",
       "lastName": "O'Brien",
-      "status": "expected",
+      "status": "completed",
       "expectedTime": "10:00",
       "admissionType": "alcohol",
       "phoneEvalCompleted": true,
       "isReturning": false,
       "unit": "detox",
       "createdAt": "2026-01-18T08:00:00Z",
-      "notes": ""
+      "notes": "",
+      "formData": {},
+      "currentStep": 1,
+      "updatedAt": "2026-01-22T20:42:55.771Z",
+      "completedAt": "2026-01-22T20:42:54.752Z"
     },
     {
       "id": "adm-002",
       "firstName": "Patrick",
       "lastName": "Murphy",
-      "status": "expected",
+      "status": "in_progress",
       "expectedTime": "11:30",
       "admissionType": "alcohol",
       "phoneEvalCompleted": true,
       "isReturning": false,
       "unit": "detox",
       "createdAt": "2026-01-18T08:15:00Z",
-      "notes": ""
+      "notes": "",
+      "formData": {},
+      "currentStep": 0,
+      "updatedAt": "2026-01-24T18:47:46.459Z"
     },
     {
       "id": "adm-003",
@@ -92,6 +99,26 @@
       "createdAt": "2026-01-18T05:00:00Z",
       "completedAt": "2026-01-18T09:30:00Z",
       "notes": "First time admission"
+    },
+    {
+      "formData": {},
+      "currentStep": 0,
+      "status": "in_progress",
+      "id": "adm-008",
+      "createdAt": "2026-01-22T20:25:32.994Z"
+    },
+    {
+      "formData": {},
+      "currentStep": 1,
+      "status": "in_progress",
+      "id": "adm-009",
+      "createdAt": "2026-01-22T20:25:37.403Z"
+    },
+    {
+      "status": "completed",
+      "completedAt": "2026-01-22T20:25:37.410Z",
+      "id": "adm-010",
+      "createdAt": "2026-01-22T20:25:37.883Z"
     }
   ],
   "stats": {

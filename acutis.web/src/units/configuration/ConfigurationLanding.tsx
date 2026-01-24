@@ -9,6 +9,9 @@ import {
   UserCog,
   Plug,
   FileEdit,
+  CalendarClock,
+  ClipboardCheck,
+  ArrowLeft,
 } from "lucide-react";
 
 const ConfigurationLanding: React.FC = () => {
@@ -18,10 +21,19 @@ const ConfigurationLanding: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex items-center gap-3 mb-6">
-          <Settings className="h-7 w-7 text-gray-700" />
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Configuration Dashboard</h1>
-            <p className="text-gray-600">Manage forms, templates, and system settings.</p>
+          <button
+            onClick={() => router.push("/")}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-semibold transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span>Back to Startup</span>
+          </button>
+          <div className="flex items-center gap-3">
+            <Settings className="h-7 w-7 text-gray-700" />
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Configuration Dashboard</h1>
+              <p className="text-gray-600">Manage forms, templates, and system settings.</p>
+            </div>
           </div>
         </div>
 
@@ -65,16 +77,16 @@ const ConfigurationLanding: React.FC = () => {
             </p>
           </button>
 
-          <div className="text-left bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <button
+            onClick={() => router.push("/configuration/users-roles")}
+            className="text-left bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+          >
             <div className="flex items-center gap-3 mb-3">
               <UserCog className="h-6 w-6 text-gray-500" />
               <h2 className="text-lg font-semibold text-gray-900">Users & Roles</h2>
             </div>
             <p className="text-sm text-gray-600">Access control and staff permissions.</p>
-            <span className="inline-block mt-3 text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              Coming soon
-            </span>
-          </div>
+          </button>
 
           <div className="text-left bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-3">
@@ -86,6 +98,28 @@ const ConfigurationLanding: React.FC = () => {
               Coming soon
             </span>
           </div>
+
+          <button
+            onClick={() => router.push("/configuration/day-planner")}
+            className="text-left bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <CalendarClock className="h-6 w-6 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Day Planner</h2>
+            </div>
+            <p className="text-sm text-gray-600">Plan daily activities, staffing, and schedules.</p>
+          </button>
+
+          <button
+            onClick={() => router.push("/configuration/program-manager")}
+            className="text-left bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <ClipboardCheck className="h-6 w-6 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Program Manager</h2>
+            </div>
+            <p className="text-sm text-gray-600">Oversee programs, milestones, and outcomes.</p>
+          </button>
         </div>
       </main>
     </div>

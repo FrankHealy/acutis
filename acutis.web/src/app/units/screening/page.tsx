@@ -1,6 +1,8 @@
-"use client";
 import ScreeningLanding from '@/units/screening/ScreeningLanding';
 
 export default function ScreeningUnitPage() {
-  return <ScreeningLanding />;
+  const userRole = "Reception";
+  const isReception = userRole.toLowerCase() === "reception";
+
+  return <ScreeningLanding showOnlyCalls={isReception} />;
 }

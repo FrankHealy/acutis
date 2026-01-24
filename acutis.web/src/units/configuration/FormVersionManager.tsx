@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Clock, User, FileText, GitCompare, Download, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 
 interface FormVersion {
@@ -24,6 +25,7 @@ interface FieldChange {
 }
 
 const FormVersionManager = () => {
+  const router = useRouter();
   const [selectedVersions, setSelectedVersions] = useState<[number, number]>([3, 2]); // Compare v3 with v2
   const [expandedSections, setExpandedSections] = useState<string[]>(['personal-identity']);
   const [viewMode, setViewMode] = useState<'timeline' | 'compare'>('timeline');
@@ -170,8 +172,12 @@ const FormVersionManager = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <button className="p-3 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            onClick={() => router.push('/configuration/forms')}
+            className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm font-semibold transition-colors"
+          >
             <ArrowLeft className="h-6 w-6" />
+            <span>Back to Forms</span>
           </button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Form Version History</h1>

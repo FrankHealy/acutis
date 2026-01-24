@@ -1,7 +1,7 @@
 "use client";
 
-import AdmissionsRedesigned from "@/units/admissions/AdmissionsRedesigned";
+import AdmissionsDashBoard from "@/units/admissions/AdmissionsDashboard";
 
 export default function Page() {
-  return <AdmissionsRedesigned />;
+  return <AdmissionsDashBoard />;
 }

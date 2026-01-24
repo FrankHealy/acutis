@@ -66,9 +66,18 @@
                   "label": "Previous Withdrawal Symptoms?",
                   "required": true,
                   "options": [
-                    { "value": "none", "label": "None" },
-                    { "value": "mild", "label": "Mild (tremors, sweating)" },
-                    { "value": "severe", "label": "Severe (seizures, DTs)" }
+                    {
+                      "value": "none",
+                      "label": "None"
+                    },
+                    {
+                      "value": "mild",
+                      "label": "Mild (tremors, sweating)"
+                    },
+                    {
+                      "value": "severe",
+                      "label": "Severe (seizures, DTs)"
+                    }
                   ]
                 },
                 {
@@ -137,12 +146,30 @@
                   "label": "Primary Substance",
                   "required": true,
                   "options": [
-                    { "value": "heroin", "label": "Heroin" },
-                    { "value": "cocaine", "label": "Cocaine" },
-                    { "value": "methamphetamine", "label": "Methamphetamine" },
-                    { "value": "benzodiazepines", "label": "Benzodiazepines" },
-                    { "value": "prescription_opioids", "label": "Prescription Opioids" },
-                    { "value": "other", "label": "Other" }
+                    {
+                      "value": "heroin",
+                      "label": "Heroin"
+                    },
+                    {
+                      "value": "cocaine",
+                      "label": "Cocaine"
+                    },
+                    {
+                      "value": "methamphetamine",
+                      "label": "Methamphetamine"
+                    },
+                    {
+                      "value": "benzodiazepines",
+                      "label": "Benzodiazepines"
+                    },
+                    {
+                      "value": "prescription_opioids",
+                      "label": "Prescription Opioids"
+                    },
+                    {
+                      "value": "other",
+                      "label": "Other"
+                    }
                   ]
                 },
                 {
@@ -151,10 +178,22 @@
                   "label": "Route of Administration",
                   "required": true,
                   "options": [
-                    { "value": "oral", "label": "Oral" },
-                    { "value": "smoking", "label": "Smoking" },
-                    { "value": "snorting", "label": "Snorting" },
-                    { "value": "injection", "label": "Injection" }
+                    {
+                      "value": "oral",
+                      "label": "Oral"
+                    },
+                    {
+                      "value": "smoking",
+                      "label": "Smoking"
+                    },
+                    {
+                      "value": "snorting",
+                      "label": "Snorting"
+                    },
+                    {
+                      "value": "injection",
+                      "label": "Injection"
+                    }
                   ]
                 },
                 {
@@ -170,9 +209,18 @@
                   "required": false,
                   "helpText": "E.g., Methadone, Suboxone",
                   "options": [
-                    { "value": "yes", "label": "Yes" },
-                    { "value": "no", "label": "No" },
-                    { "value": "unsure", "label": "Unsure - need more information" }
+                    {
+                      "value": "yes",
+                      "label": "Yes"
+                    },
+                    {
+                      "value": "no",
+                      "label": "No"
+                    },
+                    {
+                      "value": "unsure",
+                      "label": "Unsure - need more information"
+                    }
                   ]
                 }
               ]
@@ -234,9 +282,18 @@
                   "label": "Primary Substance",
                   "required": true,
                   "options": [
-                    { "value": "alcohol", "label": "Alcohol" },
-                    { "value": "drugs", "label": "Drugs" },
-                    { "value": "both", "label": "Both" }
+                    {
+                      "value": "alcohol",
+                      "label": "Alcohol"
+                    },
+                    {
+                      "value": "drugs",
+                      "label": "Drugs"
+                    },
+                    {
+                      "value": "both",
+                      "label": "Both"
+                    }
                   ]
                 },
                 {
@@ -258,10 +315,22 @@
                   "label": "Are you currently pregnant?",
                   "required": false,
                   "options": [
-                    { "value": "yes", "label": "Yes" },
-                    { "value": "no", "label": "No" },
-                    { "value": "unsure", "label": "Unsure" },
-                    { "value": "prefer_not_to_say", "label": "Prefer not to say" }
+                    {
+                      "value": "yes",
+                      "label": "Yes"
+                    },
+                    {
+                      "value": "no",
+                      "label": "No"
+                    },
+                    {
+                      "value": "unsure",
+                      "label": "Unsure"
+                    },
+                    {
+                      "value": "prefer_not_to_say",
+                      "label": "Prefer not to say"
+                    }
                   ]
                 },
                 {
@@ -271,9 +340,18 @@
                   "required": false,
                   "helpText": "We can help arrange support if needed",
                   "options": [
-                    { "value": "yes", "label": "Yes - need assistance" },
-                    { "value": "no", "label": "No - already arranged" },
-                    { "value": "not_applicable", "label": "Not applicable" }
+                    {
+                      "value": "yes",
+                      "label": "Yes - need assistance"
+                    },
+                    {
+                      "value": "no",
+                      "label": "No - already arranged"
+                    },
+                    {
+                      "value": "not_applicable",
+                      "label": "Not applicable"
+                    }
                   ]
                 }
               ]
@@ -335,12 +413,30 @@
                   "label": "Primary Type of Gambling",
                   "required": true,
                   "options": [
-                    { "value": "online", "label": "Online Gambling" },
-                    { "value": "betting_shops", "label": "Betting Shops" },
-                    { "value": "casino", "label": "Casino" },
-                    { "value": "horses", "label": "Horse Racing" },
-                    { "value": "lottery", "label": "Lottery/Scratch Cards" },
-                    { "value": "multiple", "label": "Multiple Types" }
+                    {
+                      "value": "online",
+                      "label": "Online Gambling"
+                    },
+                    {
+                      "value": "betting_shops",
+                      "label": "Betting Shops"
+                    },
+                    {
+                      "value": "casino",
+                      "label": "Casino"
+                    },
+                    {
+                      "value": "horses",
+                      "label": "Horse Racing"
+                    },
+                    {
+                      "value": "lottery",
+                      "label": "Lottery/Scratch Cards"
+                    },
+                    {
+                      "value": "multiple",
+                      "label": "Multiple Types"
+                    }
                   ]
                 },
                 {
@@ -355,10 +451,22 @@
                   "label": "Financial Impact",
                   "required": true,
                   "options": [
-                    { "value": "minimal", "label": "Minimal - Under control" },
-                    { "value": "moderate", "label": "Moderate - Some debt" },
-                    { "value": "severe", "label": "Severe - Significant debt" },
-                    { "value": "critical", "label": "Critical - Bankruptcy/Legal issues" }
+                    {
+                      "value": "minimal",
+                      "label": "Minimal - Under control"
+                    },
+                    {
+                      "value": "moderate",
+                      "label": "Moderate - Some debt"
+                    },
+                    {
+                      "value": "severe",
+                      "label": "Severe - Significant debt"
+                    },
+                    {
+                      "value": "critical",
+                      "label": "Critical - Bankruptcy/Legal issues"
+                    }
                   ]
                 },
                 {
@@ -408,10 +516,22 @@
                   "label": "Session Type",
                   "required": true,
                   "options": [
-                    { "value": "individual", "label": "Individual Therapy" },
-                    { "value": "group", "label": "Group Therapy" },
-                    { "value": "family", "label": "Family Session" },
-                    { "value": "assessment", "label": "Assessment" }
+                    {
+                      "value": "individual",
+                      "label": "Individual Therapy"
+                    },
+                    {
+                      "value": "group",
+                      "label": "Group Therapy"
+                    },
+                    {
+                      "value": "family",
+                      "label": "Family Session"
+                    },
+                    {
+                      "value": "assessment",
+                      "label": "Assessment"
+                    }
                   ]
                 },
                 {
@@ -420,9 +540,18 @@
                   "label": "Duration",
                   "required": true,
                   "options": [
-                    { "value": "30", "label": "30 minutes" },
-                    { "value": "60", "label": "60 minutes" },
-                    { "value": "90", "label": "90 minutes" }
+                    {
+                      "value": "30",
+                      "label": "30 minutes"
+                    },
+                    {
+                      "value": "60",
+                      "label": "60 minutes"
+                    },
+                    {
+                      "value": "90",
+                      "label": "90 minutes"
+                    }
                   ]
                 }
               ]
@@ -454,11 +583,26 @@
                   "label": "Overall Progress",
                   "required": true,
                   "options": [
-                    { "value": "excellent", "label": "Excellent" },
-                    { "value": "good", "label": "Good" },
-                    { "value": "fair", "label": "Fair" },
-                    { "value": "poor", "label": "Poor" },
-                    { "value": "concerning", "label": "Concerning" }
+                    {
+                      "value": "excellent",
+                      "label": "Excellent"
+                    },
+                    {
+                      "value": "good",
+                      "label": "Good"
+                    },
+                    {
+                      "value": "fair",
+                      "label": "Fair"
+                    },
+                    {
+                      "value": "poor",
+                      "label": "Poor"
+                    },
+                    {
+                      "value": "concerning",
+                      "label": "Concerning"
+                    }
                   ]
                 },
                 {
@@ -475,9 +619,18 @@
                   "label": "Risk Assessment",
                   "required": true,
                   "options": [
-                    { "value": "low", "label": "Low Risk" },
-                    { "value": "medium", "label": "Medium Risk - Monitor" },
-                    { "value": "high", "label": "High Risk - Immediate action required" }
+                    {
+                      "value": "low",
+                      "label": "Low Risk"
+                    },
+                    {
+                      "value": "medium",
+                      "label": "Medium Risk - Monitor"
+                    },
+                    {
+                      "value": "high",
+                      "label": "High Risk - Immediate action required"
+                    }
                   ]
                 }
               ]
@@ -520,10 +673,22 @@
                   "label": "Discharge Reason",
                   "required": true,
                   "options": [
-                    { "value": "completed", "label": "Treatment Completed" },
-                    { "value": "transfer", "label": "Transfer to Another Facility" },
-                    { "value": "early", "label": "Early Discharge (Patient Request)" },
-                    { "value": "ama", "label": "Against Medical Advice" }
+                    {
+                      "value": "completed",
+                      "label": "Treatment Completed"
+                    },
+                    {
+                      "value": "transfer",
+                      "label": "Transfer to Another Facility"
+                    },
+                    {
+                      "value": "early",
+                      "label": "Early Discharge (Patient Request)"
+                    },
+                    {
+                      "value": "ama",
+                      "label": "Against Medical Advice"
+                    }
                   ]
                 },
                 {
@@ -553,6 +718,406 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Admission Form v4",
+      "unit": "alcohol",
+      "admissionType": null,
+      "version": "4",
+      "status": "active",
+      "steps": [
+        {
+          "id": "step-1",
+          "title": "Admission Form v4",
+          "order": 1,
+          "sections": [
+            {
+              "id": "personal-identity",
+              "title": "Personal Identity",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "firstName",
+                  "type": "text",
+                  "label": "First Name",
+                  "required": true,
+                  "placeholder": "Enter first name",
+                  "validation": {
+                    "min": 2,
+                    "max": 50
+                  }
+                },
+                {
+                  "id": "middleName",
+                  "type": "text",
+                  "label": "Middle Name",
+                  "required": false,
+                  "placeholder": "Enter middle name"
+                },
+                {
+                  "id": "surname",
+                  "type": "text",
+                  "label": "Surname",
+                  "required": true,
+                  "placeholder": "Enter surname",
+                  "validation": {
+                    "min": 2,
+                    "max": 50
+                  }
+                },
+                {
+                  "id": "dateOfBirth",
+                  "type": "date",
+                  "label": "Date of Birth",
+                  "required": true
+                },
+                {
+                  "id": "sex",
+                  "type": "select",
+                  "label": "Sex",
+                  "required": false,
+                  "options": [
+                    {
+                      "value": "Male",
+                      "label": "Male"
+                    },
+                    {
+                      "value": "Female",
+                      "label": "Female"
+                    },
+                    {
+                      "value": "Other",
+                      "label": "Other"
+                    }
+                  ]
+                },
+                {
+                  "id": "isPreviousResident",
+                  "type": "checkbox",
+                  "label": "Previous Resident (Returning)",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "contact",
+              "title": "Contact Information",
+              "order": 2,
+              "fields": [
+                {
+                  "id": "phoneNumber",
+                  "type": "phone",
+                  "label": "Phone Number",
+                  "required": false,
+                  "placeholder": "Enter phone number"
+                },
+                {
+                  "id": "email",
+                  "type": "email",
+                  "label": "Email Address",
+                  "required": false,
+                  "placeholder": "Enter email address"
+                },
+                {
+                  "id": "address.street",
+                  "type": "text",
+                  "label": "Street Address",
+                  "required": true,
+                  "placeholder": "123 Main Street"
+                },
+                {
+                  "id": "address.city",
+                  "type": "text",
+                  "label": "City/Town",
+                  "required": true,
+                  "placeholder": "Cork"
+                },
+                {
+                  "id": "address.county",
+                  "type": "select",
+                  "label": "County",
+                  "required": true,
+                  "options": [
+                    {
+                      "value": {
+                        "value": "Carlow",
+                        "label": "Carlow"
+                      },
+                      "label": {
+                        "value": "Carlow",
+                        "label": "Carlow"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Cavan",
+                        "label": "Cavan"
+                      },
+                      "label": {
+                        "value": "Cavan",
+                        "label": "Cavan"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Clare",
+                        "label": "Clare"
+                      },
+                      "label": {
+                        "value": "Clare",
+                        "label": "Clare"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Cork",
+                        "label": "Cork"
+                      },
+                      "label": {
+                        "value": "Cork",
+                        "label": "Cork"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Donegal",
+                        "label": "Donegal"
+                      },
+                      "label": {
+                        "value": "Donegal",
+                        "label": "Donegal"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Dublin",
+                        "label": "Dublin"
+                      },
+                      "label": {
+                        "value": "Dublin",
+                        "label": "Dublin"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Galway",
+                        "label": "Galway"
+                      },
+                      "label": {
+                        "value": "Galway",
+                        "label": "Galway"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Kerry",
+                        "label": "Kerry"
+                      },
+                      "label": {
+                        "value": "Kerry",
+                        "label": "Kerry"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Kildare",
+                        "label": "Kildare"
+                      },
+                      "label": {
+                        "value": "Kildare",
+                        "label": "Kildare"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Kilkenny",
+                        "label": "Kilkenny"
+                      },
+                      "label": {
+                        "value": "Kilkenny",
+                        "label": "Kilkenny"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Laois",
+                        "label": "Laois"
+                      },
+                      "label": {
+                        "value": "Laois",
+                        "label": "Laois"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Leitrim",
+                        "label": "Leitrim"
+                      },
+                      "label": {
+                        "value": "Leitrim",
+                        "label": "Leitrim"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Limerick",
+                        "label": "Limerick"
+                      },
+                      "label": {
+                        "value": "Limerick",
+                        "label": "Limerick"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Longford",
+                        "label": "Longford"
+                      },
+                      "label": {
+                        "value": "Longford",
+                        "label": "Longford"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Louth",
+                        "label": "Louth"
+                      },
+                      "label": {
+                        "value": "Louth",
+                        "label": "Louth"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Mayo",
+                        "label": "Mayo"
+                      },
+                      "label": {
+                        "value": "Mayo",
+                        "label": "Mayo"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Meath",
+                        "label": "Meath"
+                      },
+                      "label": {
+                        "value": "Meath",
+                        "label": "Meath"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Monaghan",
+                        "label": "Monaghan"
+                      },
+                      "label": {
+                        "value": "Monaghan",
+                        "label": "Monaghan"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Offaly",
+                        "label": "Offaly"
+                      },
+                      "label": {
+                        "value": "Offaly",
+                        "label": "Offaly"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Roscommon",
+                        "label": "Roscommon"
+                      },
+                      "label": {
+                        "value": "Roscommon",
+                        "label": "Roscommon"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Sligo",
+                        "label": "Sligo"
+                      },
+                      "label": {
+                        "value": "Sligo",
+                        "label": "Sligo"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Tipperary",
+                        "label": "Tipperary"
+                      },
+                      "label": {
+                        "value": "Tipperary",
+                        "label": "Tipperary"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Waterford",
+                        "label": "Waterford"
+                      },
+                      "label": {
+                        "value": "Waterford",
+                        "label": "Waterford"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Westmeath",
+                        "label": "Westmeath"
+                      },
+                      "label": {
+                        "value": "Westmeath",
+                        "label": "Westmeath"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Wexford",
+                        "label": "Wexford"
+                      },
+                      "label": {
+                        "value": "Wexford",
+                        "label": "Wexford"
+                      }
+                    },
+                    {
+                      "value": {
+                        "value": "Wicklow",
+                        "label": "Wicklow"
+                      },
+                      "label": {
+                        "value": "Wicklow",
+                        "label": "Wicklow"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "address.eircode",
+                  "type": "text",
+                  "label": "Eircode",
+                  "required": false,
+                  "placeholder": "T12 X456",
+                  "validation": {
+                    "pattern": "^[A-Z0-9]{3}\\s?[A-Z0-9]{4}$"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "id": "form-1769112538006",
+      "createdAt": "2026-01-22T20:08:58.006Z",
+      "updatedAt": "2026-01-22T20:08:58.006Z"
     }
   ]
 }

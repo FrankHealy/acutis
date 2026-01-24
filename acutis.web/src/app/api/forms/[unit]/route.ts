@@ -13,12 +13,17 @@ export async function GET(
   { params }: { params: { unit: string } }
 ) {
   const unit = params.unit;
+  const { searchParams } = new URL(request.url);
+  const admissionType = searchParams.get('admissionType');
   
   try {
     const useMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' || !process.env.BACKEND_API_URL;
     
     if (useMock) {
-      const form = mockAdmissionsService.getFormConfigurationByUnit(unit);
+      const form = mockAdmissionsService.getFormConfigurationByUnit(
+        unit,
+        admissionType !== null ? admissionType : undefined
+      );
       
       if (!form) {
         return NextResponse.json(
@@ -31,8 +36,9 @@ export async function GET(
     }
     
     // Call real backend
+    const queryString = admissionType ? `?admissionType=${encodeURIComponent(admissionType)}` : '';
     const response = await fetch(
-      `${process.env.BACKEND_API_URL}/api/forms/${unit}`,
+      `${process.env.BACKEND_API_URL}/api/forms/${unit}${queryString}`,
       {
         headers: {
           'Authorization': `Bearer ${process.env.SERVICE_ACCOUNT_TOKEN}`,
@@ -51,6 +57,57 @@ export async function GET(
     console.error('Get form config error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch form configuration' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/forms/[unit]
+ * 
+ * Create form configuration for a unit
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { unit: string } }
+) {
+  const unit = params.unit;
+
+  try {
+    const body = await request.json();
+    const useMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' || !process.env.BACKEND_API_URL;
+
+    if (useMock) {
+      const created = mockAdmissionsService.createFormConfiguration({
+        ...body,
+        unit,
+      });
+
+      return NextResponse.json(created);
+    }
+
+    const response = await fetch(
+      `${process.env.BACKEND_API_URL}/api/forms/${unit}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SERVICE_ACCOUNT_TOKEN}`,
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Backend request failed');
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Create form config error:', error);
+    return NextResponse.json(
+      { error: 'Failed to create form configuration' },
       { status: 500 }
     );
   }

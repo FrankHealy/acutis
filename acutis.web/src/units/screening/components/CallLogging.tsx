@@ -1,90 +1,38 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Phone, Plus, Clock, User, MapPin, Calendar, Save, X, MessageSquare } from 'lucide-react';
-
-interface CallLog {
-  id: string;
-  callerName: string;
-  callerType: 'self' | 'family' | 'professional' | 'other';
-  concernType: 'alcohol' | 'drugs' | 'gambling' | 'general';
-  location: string;
-  phoneNumber: string;
-  timestamp: string;
-  notes: string;
-  status: 'new' | 'callback-scheduled' | 'evaluation-scheduled' | 'declined';
-  urgency: 'low' | 'medium' | 'high';
-}
+import React, { useEffect, useMemo, useState } from 'react';
+import { Plus, Clock, User, Calendar, Save, X } from 'lucide-react';
+import { fetchMockCallLogs, type CallLog } from '@/data/mock/callLogs';
 
 const CallLogging: React.FC = () => {
   const [showNewCallForm, setShowNewCallForm] = useState(false);
-  const [selectedCall, setSelectedCall] = useState<CallLog | null>(null);
+  const [activeDay, setActiveDay] = useState<0 | 1 | 2>(0);
+  const [timeSort, setTimeSort] = useState<'desc' | 'asc'>('desc');
+  const [allCalls, setAllCalls] = useState<CallLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Sample data
-  const todayCalls: CallLog[] = [
-    {
-      id: '1',
-      callerName: 'Sarah Murphy',
-      callerType: 'family',
-      concernType: 'alcohol',
-      location: 'Dublin',
-      phoneNumber: '087 123 4567',
-      timestamp: new Date().toISOString(),
-      notes: 'Mother calling about son, 28 years old, struggling with alcohol dependency for 3 years',
-      status: 'evaluation-scheduled',
-      urgency: 'high'
-    },
-    {
-      id: '2',
-      callerName: 'John O\'Brien',
-      callerType: 'self',
-      concernType: 'drugs',
-      location: 'Cork',
-      phoneNumber: '086 987 6543',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      notes: 'Self-referral, cocaine use, ready for treatment',
-      status: 'callback-scheduled',
-      urgency: 'medium'
-    },
-    {
-      id: '3',
-      callerName: 'Dr. Michael Ryan',
-      callerType: 'professional',
-      concernType: 'gambling',
-      location: 'Galway',
-      phoneNumber: '091 765 432',
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      notes: 'GP referring patient with severe gambling addiction',
-      status: 'new',
-      urgency: 'high'
-    },
-  ];
+  useEffect(() => {
+    let isActive = true;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'evaluation-scheduled': return 'bg-green-100 text-green-800';
-      case 'callback-scheduled': return 'bg-yellow-100 text-yellow-800';
-      case 'declined': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-blue-100 text-blue-800';
-    }
-  };
+    const loadCalls = async () => {
+      try {
+        const data = await fetchMockCallLogs();
+        if (isActive) {
+          setAllCalls(data);
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+    loadCalls();
 
-  const getConcernColor = (concern: string) => {
-    switch (concern) {
-      case 'alcohol': return 'bg-blue-100 text-blue-800';
-      case 'drugs': return 'bg-purple-100 text-purple-800';
-      case 'gambling': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('en-IE', { 
@@ -93,146 +41,148 @@ const CallLogging: React.FC = () => {
     });
   };
 
+  const filteredCalls = useMemo(() => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - activeDay);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 1);
+    const callsForDay = allCalls.filter((call) => {
+      const ts = new Date(call.timestamp);
+      return ts >= start && ts < end;
+    });
+    return callsForDay.sort((a, b) => {
+      const aTime = new Date(a.timestamp).getTime();
+      const bTime = new Date(b.timestamp).getTime();
+      return timeSort === 'asc' ? aTime - bTime : bTime - aTime;
+    });
+  }, [activeDay, allCalls, timeSort]);
+
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Calls Today</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{todayCalls.length}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Phone className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Call Logging</h2>
+          <p className="text-sm text-gray-500">Track incoming calls by day and unit.</p>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">New Calls</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">
-                {todayCalls.filter(c => c.status === 'new').length}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <MessageSquare className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">High Urgency</p>
-              <p className="text-3xl font-bold text-red-600 mt-2">
-                {todayCalls.filter(c => c.urgency === 'high').length}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-              <Clock className="h-6 w-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Scheduled Evals</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">
-                {todayCalls.filter(c => c.status === 'evaluation-scheduled').length}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* New Call Button */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-900">Recent Calls</h2>
         <button
           onClick={() => setShowNewCallForm(true)}
-          className="flex items-center space-x-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
+          className="flex items-center space-x-2 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
         >
           <Plus className="h-5 w-5" />
           <span>Log New Call</span>
         </button>
       </div>
 
-      {/* Calls List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="divide-y divide-gray-200">
-          {todayCalls.map((call) => (
-            <div
-              key={call.id}
-              onClick={() => setSelectedCall(call)}
-              className="p-6 hover:bg-gray-50 cursor-pointer transition-colors"
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-2 shadow-sm">
+          {([
+            { label: 'Today', value: 0 },
+            { label: 'Yesterday', value: 1 },
+            { label: '2 Days Ago', value: 2 },
+          ] as const).map((item) => (
+            <button
+              key={item.value}
+              onClick={() => setActiveDay(item.value)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                activeDay === item.value
+                  ? 'bg-blue-500 text-white shadow'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">{call.callerName}</h3>
-                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getConcernColor(call.concernType)}`}>
-                      {call.concernType.charAt(0).toUpperCase() + call.concernType.slice(1)}
-                    </span>
-                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getUrgencyColor(call.urgency)}`}>
-                      {call.urgency.toUpperCase()}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <User className="h-4 w-4" />
-                      <span className="capitalize">{call.callerType}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <MapPin className="h-4 w-4" />
-                      <span>{call.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      <span>{call.phoneNumber}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <Clock className="h-4 w-4" />
-                      <span>{formatTime(call.timestamp)}</span>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-gray-700 mb-3">{call.notes}</p>
-                </div>
-
-                <div className="ml-4">
-                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(call.status)}`}>
-                    {call.status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                  </span>
-                </div>
-              </div>
-            </div>
+              {item.label}
+            </button>
           ))}
         </div>
+        <div className="text-sm text-gray-500 flex items-center gap-2">
+          <Calendar className="h-4 w-4" />
+          Showing {filteredCalls.length} calls
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table className="min-w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <button
+                  onClick={() => setTimeSort((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+                  className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-700"
+                >
+                  Time
+                  <span className="text-[10px] text-gray-400">
+                    {timeSort === 'asc' ? '▲' : '▼'}
+                  </span>
+                </button>
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Surname
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Unit
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Note
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {isLoading ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                  Loading call logs...
+                </td>
+              </tr>
+            ) : filteredCalls.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                  No calls logged for this day.
+                </td>
+              </tr>
+            ) : (
+              filteredCalls.map((call) => (
+                <tr key={call.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      {formatTime(call.timestamp)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">{call.surname}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{call.firstName}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{call.unit}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    <div className="flex items-start gap-2">
+                      <User className="h-4 w-4 text-gray-400 mt-0.5" />
+                      <span className="line-clamp-2">{call.notes}</span>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* New Call Form Modal */}
       {showNewCallForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-8">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <div className="text-white">
-                  <h3 className="text-3xl font-bold">Log New Call</h3>
-                  <p className="text-blue-100 font-medium">Record incoming inquiry</p>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">Log New Call</h3>
+                  <p className="text-sm text-gray-500">Record incoming inquiry</p>
                 </div>
                 <button
                   onClick={() => setShowNewCallForm(false)}
-                  className="p-3 hover:bg-white hover:bg-opacity-20 rounded-xl transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <X className="h-7 w-7 text-white" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
@@ -241,23 +191,23 @@ const CallLogging: React.FC = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Caller Name <span className="text-red-500">*</span>
+                    First Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg"
-                    placeholder="Enter name"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
+                    placeholder="Enter first name"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Phone Number
+                    Surname <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="tel"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg"
-                    placeholder="087 123 4567"
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
+                    placeholder="Enter surname"
                   />
                 </div>
 
@@ -265,8 +215,10 @@ const CallLogging: React.FC = () => {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Caller Type <span className="text-red-500">*</span>
                   </label>
-                  <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg">
-                    <option value="">Select type...</option>
+                  <select
+                    defaultValue="self"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
+                  >
                     <option value="self">Self</option>
                     <option value="family">Family Member</option>
                     <option value="professional">Healthcare Professional</option>
@@ -278,7 +230,7 @@ const CallLogging: React.FC = () => {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Concern Type <span className="text-red-500">*</span>
                   </label>
-                  <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg">
+                  <select className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base">
                     <option value="">Select concern...</option>
                     <option value="alcohol">Alcohol</option>
                     <option value="drugs">Drugs</option>
@@ -289,48 +241,48 @@ const CallLogging: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Location
+                    Phone Number
                   </label>
                   <input
-                    type="text"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg"
-                    placeholder="City/County"
+                    type="tel"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
+                    placeholder="087 123 4567"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Urgency <span className="text-red-500">*</span>
+                    Location
                   </label>
-                  <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
+                    placeholder="City/County"
+                  />
                 </div>
 
                 <div className="col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Call Notes <span className="text-red-500">*</span>
+                    Call Notes
                   </label>
                   <textarea
                     rows={6}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none resize-none text-base"
-                    placeholder="Enter detailed notes about the call, concerns discussed, and any relevant background information..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none resize-none text-base"
+                    placeholder="Optional notes about the call..."
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-gray-50 p-6 border-t-2 border-gray-100">
+            <div className="bg-gray-50 p-4 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setShowNewCallForm(false)}
-                  className="px-8 py-4 bg-white hover:bg-gray-100 text-gray-700 font-bold rounded-xl border-2 border-gray-200 transition-colors shadow-sm"
+                  className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-700 font-semibold rounded-lg border border-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
-                <button className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg">
+                <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-sm">
                   <div className="flex items-center space-x-2">
                     <Save className="h-5 w-5" />
                     <span>Save Call Log</span>

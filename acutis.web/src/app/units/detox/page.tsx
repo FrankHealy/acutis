@@ -1,6 +1,6 @@
 "use client";
-import DetoxLanding from '@/units/detox/DetoxLanding';
+import DetoxDashboard from '@/units/detox/DetoxDashboard';
 
 export default function DetoxUnitPage() {
-  return <DetoxLanding />;
+  return <DetoxDashboard />;
 }

@@ -41,6 +41,7 @@ const FormDesigner = () => {
   const [formName, setFormName] = useState('Admission Form v4');
   const [formVersion, setFormVersion] = useState(4);
   const [selectedUnit, setSelectedUnit] = useState('all');
+  const [admissionType, setAdmissionType] = useState<'alcohol' | 'drugs' | 'ladies'>('alcohol');
   const [viewMode, setViewMode] = useState<'designer' | 'preview'>('designer');
   const [selectedSection, setSelectedSection] = useState<string | null>('personal-identity');
   const [selectedField, setSelectedField] = useState<string | null>(null);
@@ -290,6 +291,66 @@ const FormDesigner = () => {
     }));
   };
 
+  const buildFormPayload = (status: 'draft' | 'active') => {
+    return {
+      name: formName.trim() || 'Admission Form',
+      unit: selectedUnit,
+      admissionType: selectedUnit === 'detox' ? admissionType : null,
+      version: String(formVersion),
+      status,
+      steps: [
+        {
+          id: 'step-1',
+          title: formName.trim() || 'Admission Form',
+          order: 1,
+          sections: sections.map((section, index) => ({
+            id: section.id,
+            title: section.title,
+            order: index + 1,
+            fields: section.fields.map((field) => ({
+              id: field.fieldName || field.id,
+              type: field.type,
+              label: field.label,
+              required: field.required,
+              placeholder: field.placeholder,
+              helpText: field.helpText,
+              validation: field.validation,
+              options: field.options?.map((option) => ({ value: option, label: option })),
+            })),
+          })),
+        },
+      ],
+    };
+  };
+
+  const saveForm = async (status: 'draft' | 'active') => {
+    if (selectedUnit === 'all') {
+      alert('Select a unit before saving.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/forms/${selectedUnit}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildFormPayload(status)),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save form configuration');
+      }
+
+      if (status === 'active') {
+        alert('Form published and set as active.');
+      } else {
+        alert('Draft saved.');
+      }
+    } catch (error) {
+      console.error('Save form error:', error);
+      alert('Failed to save form configuration.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -298,9 +359,10 @@ const FormDesigner = () => {
           <div className="flex items-center space-x-4">
             <button
               onClick={() => router.push('/configuration/forms')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm font-semibold transition-colors"
             >
               <ArrowLeft className="h-6 w-6" />
+              <span>Back to Forms</span>
             </button>
             <div>
               <input
@@ -326,6 +388,18 @@ const FormDesigner = () => {
               <option value="drugs">Drugs Unit</option>
               <option value="ladies">Ladies Unit</option>
             </select>
+
+            {selectedUnit === 'detox' && (
+              <select
+                value={admissionType}
+                onChange={(e) => setAdmissionType(e.target.value as typeof admissionType)}
+                className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium"
+              >
+                <option value="alcohol">Alcohol Admission</option>
+                <option value="drugs">Drugs Admission</option>
+                <option value="ladies">Ladies Admission</option>
+              </select>
+            )}
 
             {/* View Mode Toggle */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
@@ -366,12 +440,18 @@ const FormDesigner = () => {
               <span>Version History</span>
             </button>
 
-            <button className="flex items-center space-x-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-semibold">
+            <button
+              onClick={() => saveForm('draft')}
+              className="flex items-center space-x-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-semibold"
+            >
               <Save className="h-5 w-5" />
               <span>Save Draft</span>
             </button>
 
-            <button className="flex items-center space-x-2 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors font-semibold shadow-md">
+            <button
+              onClick={() => saveForm('active')}
+              className="flex items-center space-x-2 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors font-semibold shadow-md"
+            >
               <Upload className="h-5 w-5" />
               <span>Publish Version</span>
             </button>
