@@ -1,8 +1,17 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Clock, User, Calendar, Save, X } from 'lucide-react';
-import { fetchMockCallLogs, type CallLog } from '@/data/mock/callLogs';
+import { Plus, Clock, User, Calendar } from 'lucide-react';
+import type { CallLog } from '@/data/mock/callLogs';
+import CallLoggingModal, {
+  type CallLoggingFormState,
+} from '@/units/screening/components/Modal/CallLoggingModal';
+import {
+  createCallLog,
+  fetchCallLogs,
+  formatCallLogTime,
+  getFilteredCalls,
+} from '@/units/screening/components/helpers/callLoggingHelpers';
 
 const CallLogging: React.FC = () => {
   const [showNewCallForm, setShowNewCallForm] = useState(false);
@@ -10,15 +19,31 @@ const CallLogging: React.FC = () => {
   const [timeSort, setTimeSort] = useState<'desc' | 'asc'>('desc');
   const [allCalls, setAllCalls] = useState<CallLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [formState, setFormState] = useState<CallLoggingFormState>({
+    firstName: '',
+    surname: '',
+    callerType: 'self' as CallLog['callerType'],
+    concernType: '' as '' | CallLog['concernType'],
+    unit: 'Alcohol' as CallLog['unit'],
+    location: '',
+    phoneNumber: '',
+    notes: '',
+  });
 
   useEffect(() => {
     let isActive = true;
 
     const loadCalls = async () => {
       try {
-        const data = await fetchMockCallLogs();
+        const data = await fetchCallLogs();
         if (isActive) {
           setAllCalls(data);
+        }
+      } catch (error) {
+        if (isActive) {
+          setErrorMessage(error instanceof Error ? error.message : 'Failed to load call logs.');
         }
       } finally {
         if (isActive) {
@@ -34,30 +59,61 @@ const CallLogging: React.FC = () => {
     };
   }, []);
 
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('en-IE', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+  const handleFormChange = (
+    field: keyof typeof formState,
+    value: string,
+  ) => {
+    setFormState((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const resetForm = () => {
+    setFormState({
+      firstName: '',
+      surname: '',
+      callerType: 'self',
+      concernType: '',
+      unit: 'Alcohol',
+      location: '',
+      phoneNumber: '',
+      notes: '',
     });
   };
 
-  const filteredCalls = useMemo(() => {
-    const today = new Date();
-    const start = new Date(today);
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - activeDay);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 1);
-    const callsForDay = allCalls.filter((call) => {
-      const ts = new Date(call.timestamp);
-      return ts >= start && ts < end;
-    });
-    return callsForDay.sort((a, b) => {
-      const aTime = new Date(a.timestamp).getTime();
-      const bTime = new Date(b.timestamp).getTime();
-      return timeSort === 'asc' ? aTime - bTime : bTime - aTime;
-    });
-  }, [activeDay, allCalls, timeSort]);
+  const handleSaveCallLog = async () => {
+    if (!formState.firstName || !formState.surname || !formState.concernType) {
+      setErrorMessage('Please complete the required fields.');
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage(null);
+
+    try {
+      const newCall = await createCallLog({
+        ...formState,
+        concernType: formState.concernType as CallLog['concernType'],
+        status: 'new',
+        urgency: 'medium',
+        timestamp: new Date().toISOString(),
+      });
+
+      setAllCalls((prev) => [newCall, ...prev]);
+      setShowNewCallForm(false);
+      resetForm();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to save call log.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const filteredCalls = useMemo(
+    () => getFilteredCalls(allCalls, activeDay, timeSort),
+    [activeDay, allCalls, timeSort],
+  );
 
   return (
     <div className="space-y-6">
@@ -67,7 +123,10 @@ const CallLogging: React.FC = () => {
           <p className="text-sm text-gray-500">Track incoming calls by day and unit.</p>
         </div>
         <button
-          onClick={() => setShowNewCallForm(true)}
+          onClick={() => {
+            setShowNewCallForm(true);
+            setErrorMessage(null);
+          }}
           className="flex items-center space-x-2 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
         >
           <Plus className="h-5 w-5" />
@@ -100,6 +159,12 @@ const CallLogging: React.FC = () => {
           Showing {filteredCalls.length} calls
         </div>
       </div>
+
+      {errorMessage && !showNewCallForm && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="min-w-full">
@@ -149,7 +214,7 @@ const CallLogging: React.FC = () => {
                   <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-gray-400" />
-                      {formatTime(call.timestamp)}
+                      {formatCallLogTime(call.timestamp)}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">{call.surname}</td>
@@ -168,131 +233,18 @@ const CallLogging: React.FC = () => {
         </table>
       </div>
 
-      {/* New Call Form Modal */}
-      {showNewCallForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-6">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">Log New Call</h3>
-                  <p className="text-sm text-gray-500">Record incoming inquiry</p>
-                </div>
-                <button
-                  onClick={() => setShowNewCallForm(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    First Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
-                    placeholder="Enter first name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Surname <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
-                    placeholder="Enter surname"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Caller Type <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    defaultValue="self"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
-                  >
-                    <option value="self">Self</option>
-                    <option value="family">Family Member</option>
-                    <option value="professional">Healthcare Professional</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Concern Type <span className="text-red-500">*</span>
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base">
-                    <option value="">Select concern...</option>
-                    <option value="alcohol">Alcohol</option>
-                    <option value="drugs">Drugs</option>
-                    <option value="gambling">Gambling</option>
-                    <option value="general">General Inquiry</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
-                    placeholder="087 123 4567"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
-                    placeholder="City/County"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Call Notes
-                  </label>
-                  <textarea
-                    rows={6}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none resize-none text-base"
-                    placeholder="Optional notes about the call..."
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 p-4 border-t border-gray-200">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => setShowNewCallForm(false)}
-                  className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-700 font-semibold rounded-lg border border-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-sm">
-                  <div className="flex items-center space-x-2">
-                    <Save className="h-5 w-5" />
-                    <span>Save Call Log</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CallLoggingModal
+        isOpen={showNewCallForm}
+        formState={formState}
+        errorMessage={errorMessage}
+        isSaving={isSaving}
+        onChange={handleFormChange}
+        onClose={() => {
+          setShowNewCallForm(false);
+          setErrorMessage(null);
+        }}
+        onSave={handleSaveCallLog}
+      />
     </div>
   );
 };

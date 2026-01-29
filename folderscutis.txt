@@ -1,0 +1,18 @@
+the structure I wanted
+
+src
+	App/
+	    units
+	      Alcohol
+		AlcoholLanding.tsx
+		/Components
+			/AlcoholComponent1
+			/Alcohol Component 2
+  		/Drugs
+		/Ladies
+		/Admissions
+		/Screening
+		/Shared Components
+			/Timeline.tsx
+			/PeopleList.tsx
+		/configuration

@@ -33,3 +33,16 @@ acutis-mobile/.expo
 server/**/bin/
 server/**/obj/
 server/.vs/
+
+# Generic build artifacts
+**/bin/
+**/obj/
+
+
+# Local splits (not tracked)
+_split/
+
+
+# Visual Studio artifacts
+**/.vs/
+

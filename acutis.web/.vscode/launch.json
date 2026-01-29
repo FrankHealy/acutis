@@ -3,17 +3,34 @@
   "configurations": [
     {
       "name": "Next.js: dev (server)",
-      "type": "node-terminal",
+      "type": "pwa-node",
       "request": "launch",
-      "command": "npm run dev",
-      "cwd": "${workspaceFolder}"
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--inspect",
+        "${workspaceFolder}/node_modules/next/dist/bin/next",
+        "dev"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Next.js: attach (server)",
+      "type": "pwa-node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "cwd": "${workspaceFolder}",
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "name": "Next.js: chrome",
       "type": "pwa-chrome",
       "request": "launch",
       "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}"
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true
     }
   ],
   "compounds": [

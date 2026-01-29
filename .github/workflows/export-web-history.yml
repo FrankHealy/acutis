@@ -1,0 +1,61 @@
+name: Export Web History
+
+on:
+  workflow_dispatch:
+    inputs:
+      remote_url:
+        description: "Target web repo remote URL"
+        required: false
+        default: "https://github.com/FrankHealy/acutis.web.git"
+
+permissions:
+  contents: read
+
+jobs:
+  filter-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install git-filter-repo
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install git-filter-repo
+
+      - name: Filter to web-only history
+        run: |
+          git filter-repo \
+            --path src \
+            --path public \
+            --path types \
+            --path next.config.ts \
+            --path package.json \
+            --path package-lock.json \
+            --path tsconfig.json \
+            --path tsconfig.app.json \
+            --path postcss.config.cjs \
+            --path eslint.config.js \
+            --path .env.local \
+            --path .env.local.example \
+            --force
+
+      - name: Set remote with token
+        env:
+          REMOTE_URL: ${{ github.event.inputs.remote_url }}
+          TOKEN: ${{ secrets.WEB_PUSH_PAT }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "WEB_PUSH_PAT secret is missing. Please add it to this repo settings." >&2
+            exit 1
+          fi
+          git remote remove origin || true
+          git remote add origin "https://x-access-token:${TOKEN}@${REMOTE_URL#https://}"
+          git branch -M main
+
+      - name: Force push web history
+        run: |
+          git push -f -u origin main
+

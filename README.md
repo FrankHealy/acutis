@@ -1,69 +1,30 @@
-# React + TypeScript + Vite
+# Acutis Monorepo (split)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This repository previously contained the web app (Next.js), API (ASP.NET Core), and mobile app (React Native). It has now been split into three dedicated repositories:
 
-Currently, two official plugins are available:
+- Web (Next.js): https://github.com/FrankHealy/acutis.web
+- API (ASP.NET Core): https://github.com/FrankHealy/acutis.api
+- Mobile (React Native): https://github.com/FrankHealy/acutis.mob
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Current state:
+- The API and Mobile histories have been preserved in their new repos.
+- The Web repo currently contains a working snapshot; a GitHub Action is provided to export full web history.
 
-## Expanding the ESLint configuration
+## Export Web History (optional)
+Run the workflow in this repository to export the web-only history and force-push it to `acutis.web`:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1) Add a repo secret `WEB_PUSH_PAT` with write access to `FrankHealy/acutis.web`.
+2) Go to Actions → "Export Web History" → Run workflow.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+The workflow uses `git-filter-repo` to keep only:
+`src/`, `public/`, `types/`, `next.config.ts`, `package.json`, `package-lock.json`, `tsconfig*.json`, `postcss.config.cjs`, `eslint.config.js`, `.env.local*`.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Local Development (web)
+If you are working on the web app in this monorepo snapshot:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+For API and mobile development, use their dedicated repositories.
