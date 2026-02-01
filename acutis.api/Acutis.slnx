@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Acutis.Api/Acutis.Api.csproj" />
+  <Project Path="Acutis.Application/Acutis.Application.csproj" />
+  <Project Path="Acutis.Domain/Acutis.Domain.csproj" />
+  <Project Path="Acutis.Functions/Acutis.Functions.csproj" />
+  <Project Path="Acutis.Infrastructure/Acutis.Infrastructure.csproj" />
+</Solution>

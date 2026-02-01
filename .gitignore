@@ -1,0 +1,79 @@
+############################
+# OS / Editor
+############################
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+############################
+# Node / Next.js (acutis.web)
+############################
+node_modules/
+.next/
+out/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.*
+!.env.example
+
+############################
+# Expo / React Native (acutis.mob)
+############################
+.expo/
+.expo-shared/
+android/
+ios/
+web-build/
+npm-debug.log*
+yarn-debug.log*
+.env
+.env.*
+!.env.example
+
+############################
+# .NET / ASP.NET Core (acutis.api)
+############################
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+############################
+# Certificates / Secrets
+############################
+.certs/
+*.pfx
+*.pem
+*.key
+
+############################
+# Logs
+############################
+logs/
+*.log
+
+############################
+# Build artifacts
+############################
+coverage/
+reports/
+
+############################
+# Misc
+############################
+*.swp
+*.tmp
+.git-backups/

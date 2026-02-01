@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug: API (.NET)",
+      "type": "coreclr",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/acutis.api",
+      "program": "${workspaceFolder}/acutis.api/bin/Debug/net8.0/acutis.api.dll",
+      "preLaunchTask": "API: restore",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      "name": "Debug: Web (Next.js in Chrome)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/acutis.web"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug: Web + API",
+      "configurations": ["Debug: API (.NET)", "Debug: Web (Next.js in Chrome)"]
+    }
+  ]
+}

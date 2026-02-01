@@ -1,0 +1,59 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Web: install",
+      "type": "shell",
+      "command": "npm install",
+      "options": { "cwd": "${workspaceFolder}/acutis.web" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Web: dev",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "${workspaceFolder}/acutis.web" },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+
+    {
+      "label": "API: restore",
+      "type": "shell",
+      "command": "dotnet restore",
+      "options": { "cwd": "${workspaceFolder}/acutis.api" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "API: watch",
+      "type": "shell",
+      "command": "dotnet watch run",
+      "options": { "cwd": "${workspaceFolder}/acutis.api" },
+      "isBackground": true,
+      "problemMatcher": "$msCompile"
+    },
+
+    {
+      "label": "Mobile: install",
+      "type": "shell",
+      "command": "npm install",
+      "options": { "cwd": "${workspaceFolder}/acutis.mob" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Mobile: start",
+      "type": "shell",
+      "command": "npx expo start",
+      "options": { "cwd": "${workspaceFolder}/acutis.mob" },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+
+    {
+      "label": "Dev: all (api + web + mob)",
+      "dependsOrder": "parallel",
+      "dependsOn": ["API: watch", "Web: dev", "Mobile: start"],
+      "problemMatcher": []
+    }
+  ]
+}

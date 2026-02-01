@@ -1,0 +1,10 @@
+{
+  "name": "acutis",
+  "private": true,
+  "scripts": {
+    "web": "npm --prefix acutis.web run dev",
+    "api": "dotnet watch --project acutis.api run",
+    "mob": "npm --prefix acutis.mob run start",
+    "dev": "npm run web"
+  }
+}

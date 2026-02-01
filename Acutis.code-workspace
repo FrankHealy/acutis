@@ -1,0 +1,20 @@
+{
+  "folders": [
+    { "name": "acutis.web", "path": "acutis.web" },
+    { "name": "acutis.api", "path": "acutis.api" },
+    { "name": "acutis.mob", "path": "acutis.mob" }
+  ],
+  "settings": {
+    "files.eol": "\n",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    },
+    "typescript.tsdk": "acutis.web/node_modules/typescript/lib",
+    "eslint.workingDirectories": [
+      { "mode": "auto" }
+    ],
+    "dotnet.defaultSolution": "acutis.api",
+    "omnisharp.useModernNet": true
+  }
+}
