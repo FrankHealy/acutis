@@ -1,0 +1,24 @@
+Section,Item,Description,Completed
+01_Governance,OrgChart,Org chart showing data roles,False
+01_Governance,RACI_Matrix,Responsibility matrix for GDPR/security roles,False
+01_Governance,RolePolicies,Policies assigning DPO/Security Officer responsibilities,False
+02_GDPR,ROPA,Record of Processing Activities (GDPR Article 30),False
+02_GDPR,DPIA,Data Protection Impact Assessment,False
+02_GDPR,PrivacyPolicy,Published privacy policy (latest version),False
+02_GDPR/ConsentForms,ConsentForms,Screenshots or forms showing explicit consent collection,False
+03_Security,ArchitectureDiagram,"System architecture diagram (networks, RBAC, encryption)",False
+03_Security,EncryptionPolicy,Documented encryption policy (in transit + at rest),False
+03_Security,KeyVault_RotationLog,Evidence of key management and rotation (Azure Key Vault),False
+03_Security,RBAC_Policy,Documented role-based access control rules,False
+03_Security,AuditLogs_Sample,Sample log extracts showing auditing enabled,False
+04_Operations,IncidentResponsePlan,Incident response plan (72h breach rule),False
+04_Operations,DRPlan,Disaster recovery plan,False
+04_Operations,BackupPolicy,Backup retention and secure storage policy,False
+04_Operations/TrainingCertificates,TrainingCerts,Staff GDPR/security training certificates,False
+05_ExternalValidation,PenTestReport,Recent penetration test report,False
+05_ExternalValidation,GDPR_Audit_Report,Independent GDPR audit report,False
+05_ExternalValidation,ISO27001_Certificate,ISO 27001/27701 certificate (if obtained),False
+05_ExternalValidation,Azure_Compliance,Azure compliance certifications,False
+06_Healthcare,HIQA_Mapping,Mapping of system controls to HIQA standards,False
+06_Healthcare,HSE_Integration_Checklist,HSE integration security checklist,False
+06_Healthcare,MDR_CE_Documents,Medical Device Regulation (MDR) / CE marking docs (if applicable),False

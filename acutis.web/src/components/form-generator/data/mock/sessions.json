@@ -1,0 +1,36 @@
+{
+  "sessions": [
+    {
+      "id": "sess-001",
+      "admissionId": "adm-006",
+      "currentStep": 2,
+      "totalSteps": 5,
+      "data": {
+        "personalInfo": {
+          "firstName": "Emma",
+          "lastName": "Kelly",
+          "dateOfBirth": "1985-03-15",
+          "phone": "087-1234567",
+          "email": "emma.kelly@example.ie",
+          "emergencyContact": {
+            "name": "John Kelly",
+            "relationship": "Brother",
+            "phone": "087-7654321"
+          },
+          "address": {
+            "street": "15 Main Street",
+            "city": "Cork",
+            "county": "Cork",
+            "eircode": "T12 X456"
+          }
+        },
+        "medicalInfo": null,
+        "consents": null,
+        "roomAssignment": null
+      },
+      "startedAt": "2026-01-18T08:35:00Z",
+      "lastUpdatedAt": "2026-01-18T08:45:00Z",
+      "completedAt": null
+    }
+  ]
+}

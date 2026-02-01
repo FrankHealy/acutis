@@ -1,0 +1,554 @@
+[
+  {
+    "id": 1,
+    "quote": "It’s not what happens to you, but how you react to it that matters.",
+    "author": "Epictetus",
+    "date": "50–135 AD",
+    "meaning": "We cannot control events, only our response to them.",
+    "reference": "Discourses",
+    "subject": "resilience"
+  },
+  {
+    "id": 2,
+    "quote": "The impediment to action advances action. What stands in the way becomes the way.",
+    "author": "Marcus Aurelius",
+    "date": "121–180 AD",
+    "meaning": "Obstacles can become opportunities for growth.",
+    "reference": "Meditations, Book 5",
+    "subject": "perseverance"
+  },
+  {
+    "id": 3,
+    "quote": "Be yourself; everyone else is already taken.",
+    "author": "Oscar Wilde",
+    "date": "1854–1900",
+    "meaning": "Authenticity matters more than imitation.",
+    "reference": "Aphorism",
+    "subject": "identity"
+  },
+  {
+    "id": 4,
+    "quote": "The wound is the place where the Light enters you.",
+    "author": "Rumi",
+    "date": "1207–1273",
+    "meaning": "Pain can be transformative and lead to growth.",
+    "reference": "Masnavi",
+    "subject": "healing"
+  },
+  {
+    "id": 5,
+    "quote": "You don’t win friends with salad.",
+    "author": "Homer J. Simpson",
+    "date": "1995",
+    "meaning": "Sometimes we fool ourselves with effort that doesn’t work socially.",
+    "reference": "The Simpsons, Season 7 Episode 5",
+    "subject": "humour"
+  },
+  {
+    "id": 6,
+    "quote": "Save me, Jebus!",
+    "author": "Homer J. Simpson",
+    "date": "1998",
+    "meaning": "Even those without belief may call for help in crisis.",
+    "reference": "The Simpsons, Season 9 Episode 14",
+    "subject": "humour"
+  },
+  {
+    "id": 7,
+    "quote": "The majority of the Irish people are mentally unsound.",
+    "author": "Myles na gCopaleen (Flann O’Brien)",
+    "date": "1940s",
+    "meaning": "A biting satirical comment on Irish society.",
+    "reference": "Cruiskeen Lawn",
+    "subject": "Irish wit"
+  },
+  {
+    "id": 8,
+    "quote": "One chance is plenty, if you don’t waste it.",
+    "author": "Proinnseas Ó hÉalaithe",
+    "date": "2025",
+    "meaning": "Don’t wait for endless opportunities; the one in front of you is enough.",
+    "reference": "Original aphorism",
+    "subject": "resilience"
+  },
+  {
+    "quote": "Co nagle, to po diable.",
+    "funetic": "So nag-leh, toh poh dee-ab-leh",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Rushed work leads to mistakes.",
+    "reference": "Polish folk saying",
+    "subject": "patience",
+    "id": 9
+  },
+  {
+    "quote": "Nie chwal dnia przed zachodem słońca.",
+    "funetic": "Nia chaval dina fished sa-hoe-them swanka",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Don’t judge something before it is finished.",
+    "reference": "Polish folk saying",
+    "subject": "caution",
+    "id": 10
+  },
+  {
+    "id": 11,
+    "quote": "It’s not what happens to you, but how you react to it that matters.",
+    "author": "Epictetus",
+    "date": "50–135 AD",
+    "meaning": "We cannot control events, only our response to them.",
+    "reference": "Discourses",
+    "subject": "resilience"
+  },
+  {
+    "id": 12,
+    "quote": "The impediment to action advances action. What stands in the way becomes the way.",
+    "author": "Marcus Aurelius",
+    "date": "121–180 AD",
+    "meaning": "Obstacles can become opportunities for growth.",
+    "reference": "Meditations, Book 5",
+    "subject": "perseverance"
+  },
+  {
+    "id": 13,
+    "quote": "Be yourself; everyone else is already taken.",
+    "author": "Oscar Wilde",
+    "date": "1854–1900",
+    "meaning": "Authenticity matters more than imitation.",
+    "reference": "Aphorism",
+    "subject": "identity"
+  },
+  {
+    "id": 14,
+    "quote": "The wound is the place where the Light enters you.",
+    "author": "Rumi",
+    "date": "1207–1273",
+    "meaning": "Pain can be transformative and lead to growth.",
+    "reference": "Masnavi",
+    "subject": "healing"
+  },
+  {
+    "id": 15,
+    "quote": "You don’t win friends with salad.",
+    "author": "Homer J. Simpson",
+    "date": "1995",
+    "meaning": "Sometimes we fool ourselves with effort that doesn’t work socially.",
+    "reference": "The Simpsons, Season 7 Episode 5",
+    "subject": "humour"
+  },
+  {
+    "id": 16,
+    "quote": "Save me, Jebus!",
+    "author": "Homer J. Simpson",
+    "date": "1998",
+    "meaning": "Even those without belief may call for help in crisis.",
+    "reference": "The Simpsons, Season 9 Episode 14",
+    "subject": "humour"
+  },
+  {
+    "id": 17,
+    "quote": "The majority of the Irish people are mentally unsound.",
+    "author": "Myles na gCopaleen (Flann O’Brien)",
+    "date": "1940s",
+    "meaning": "A biting satirical comment on Irish society.",
+    "reference": "Cruiskeen Lawn",
+    "subject": "Irish wit"
+  },
+  {
+    "id": 18,
+    "quote": "One chance is plenty, if you don’t waste it.",
+    "author": "Proinnseas Ó hÉalaithe",
+    "date": "2025",
+    "meaning": "Don’t wait for endless opportunities; the one in front of you is enough.",
+    "reference": "Original aphorism",
+    "subject": "resilience"
+  },
+  {
+    "quote": "Co nagle, to po diable.",
+    "funetic": "So nag-leh, toh poh dee-ab-leh",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Rushed work leads to mistakes.",
+    "reference": "Polish folk saying",
+    "subject": "patience",
+    "id": 19
+  },
+  {
+    "quote": "Nie chwal dnia przed zachodem słońca.",
+    "funetic": "Nia chaval dina fished sa-hoe-them swanka",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Don’t judge something before it is finished.",
+    "reference": "Polish folk saying",
+    "subject": "caution",
+    "id": 20
+  },
+  {
+    "id": 21,
+    "quote": "It’s not what happens to you, but how you react to it that matters.",
+    "author": "Epictetus",
+    "date": "50–135 AD",
+    "meaning": "We cannot control events, only our response to them.",
+    "reference": "Discourses",
+    "subject": "resilience"
+  },
+  {
+    "id": 22,
+    "quote": "The impediment to action advances action. What stands in the way becomes the way.",
+    "author": "Marcus Aurelius",
+    "date": "121–180 AD",
+    "meaning": "Obstacles can become opportunities for growth.",
+    "reference": "Meditations, Book 5",
+    "subject": "perseverance"
+  },
+  {
+    "id": 23,
+    "quote": "Be yourself; everyone else is already taken.",
+    "author": "Oscar Wilde",
+    "date": "1854–1900",
+    "meaning": "Authenticity matters more than imitation.",
+    "reference": "Aphorism",
+    "subject": "identity"
+  },
+  {
+    "id": 24,
+    "quote": "The wound is the place where the Light enters you.",
+    "author": "Rumi",
+    "date": "1207–1273",
+    "meaning": "Pain can be transformative and lead to growth.",
+    "reference": "Masnavi",
+    "subject": "healing"
+  },
+  {
+    "id": 25,
+    "quote": "You don’t win friends with salad.",
+    "author": "Homer J. Simpson",
+    "date": "1995",
+    "meaning": "Sometimes we fool ourselves with effort that doesn’t work socially.",
+    "reference": "The Simpsons, Season 7 Episode 5",
+    "subject": "humour"
+  },
+  {
+    "id": 26,
+    "quote": "Save me, Jebus!",
+    "author": "Homer J. Simpson",
+    "date": "1998",
+    "meaning": "Even those without belief may call for help in crisis.",
+    "reference": "The Simpsons, Season 9 Episode 14",
+    "subject": "humour"
+  },
+  {
+    "id": 27,
+    "quote": "The majority of the Irish people are mentally unsound.",
+    "author": "Myles na gCopaleen (Flann O’Brien)",
+    "date": "1940s",
+    "meaning": "A biting satirical comment on Irish society.",
+    "reference": "Cruiskeen Lawn",
+    "subject": "Irish wit"
+  },
+  {
+    "id": 28,
+    "quote": "One chance is plenty, if you don’t waste it.",
+    "author": "Proinnseas Ó hÉalaithe",
+    "date": "2025",
+    "meaning": "Don’t wait for endless opportunities; the one in front of you is enough.",
+    "reference": "Original aphorism",
+    "subject": "resilience"
+  },
+  {
+    "quote": "Co nagle, to po diable.",
+    "funetic": "So nag-leh, toh poh dee-ab-leh",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Rushed work leads to mistakes.",
+    "reference": "Polish folk saying",
+    "subject": "patience",
+    "id": 29
+  },
+  {
+    "quote": "Nie chwal dnia przed zachodem słońca.",
+    "funetic": "Nia chaval dina fished sa-hoe-them swanka",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Don’t judge something before it is finished.",
+    "reference": "Polish folk saying",
+    "subject": "caution",
+    "id": 30
+  },
+  {
+    "id": 31,
+    "quote": "It’s not what happens to you, but how you react to it that matters.",
+    "author": "Epictetus",
+    "date": "50–135 AD",
+    "meaning": "We cannot control events, only our response to them.",
+    "reference": "Discourses",
+    "subject": "resilience"
+  },
+  {
+    "id": 32,
+    "quote": "The impediment to action advances action. What stands in the way becomes the way.",
+    "author": "Marcus Aurelius",
+    "date": "121–180 AD",
+    "meaning": "Obstacles can become opportunities for growth.",
+    "reference": "Meditations, Book 5",
+    "subject": "perseverance"
+  },
+  {
+    "id": 33,
+    "quote": "Be yourself; everyone else is already taken.",
+    "author": "Oscar Wilde",
+    "date": "1854–1900",
+    "meaning": "Authenticity matters more than imitation.",
+    "reference": "Aphorism",
+    "subject": "identity"
+  },
+  {
+    "id": 34,
+    "quote": "The wound is the place where the Light enters you.",
+    "author": "Rumi",
+    "date": "1207–1273",
+    "meaning": "Pain can be transformative and lead to growth.",
+    "reference": "Masnavi",
+    "subject": "healing"
+  },
+  {
+    "id": 35,
+    "quote": "You don’t win friends with salad.",
+    "author": "Homer J. Simpson",
+    "date": "1995",
+    "meaning": "Sometimes we fool ourselves with effort that doesn’t work socially.",
+    "reference": "The Simpsons, Season 7 Episode 5",
+    "subject": "humour"
+  },
+  {
+    "id": 36,
+    "quote": "Save me, Jebus!",
+    "author": "Homer J. Simpson",
+    "date": "1998",
+    "meaning": "Even those without belief may call for help in crisis.",
+    "reference": "The Simpsons, Season 9 Episode 14",
+    "subject": "humour"
+  },
+  {
+    "id": 37,
+    "quote": "The majority of the Irish people are mentally unsound.",
+    "author": "Myles na gCopaleen (Flann O’Brien)",
+    "date": "1940s",
+    "meaning": "A biting satirical comment on Irish society.",
+    "reference": "Cruiskeen Lawn",
+    "subject": "Irish wit"
+  },
+  {
+    "id": 38,
+    "quote": "One chance is plenty, if you don’t waste it.",
+    "author": "Proinnseas Ó hÉalaithe",
+    "date": "2025",
+    "meaning": "Don’t wait for endless opportunities; the one in front of you is enough.",
+    "reference": "Original aphorism",
+    "subject": "resilience"
+  },
+  {
+    "quote": "Co nagle, to po diable.",
+    "funetic": "So nag-leh, toh poh dee-ab-leh",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Rushed work leads to mistakes.",
+    "reference": "Polish folk saying",
+    "subject": "patience",
+    "id": 39
+  },
+  {
+    "quote": "Nie chwal dnia przed zachodem słońca.",
+    "funetic": "Nia chaval dina fished sa-hoe-them swanka",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Don’t judge something before it is finished.",
+    "reference": "Polish folk saying",
+    "subject": "caution",
+    "id": 40
+  },
+  {
+    "id": 41,
+    "quote": "It’s not what happens to you, but how you react to it that matters.",
+    "author": "Epictetus",
+    "date": "50–135 AD",
+    "meaning": "We cannot control events, only our response to them.",
+    "reference": "Discourses",
+    "subject": "resilience"
+  },
+  {
+    "id": 42,
+    "quote": "The impediment to action advances action. What stands in the way becomes the way.",
+    "author": "Marcus Aurelius",
+    "date": "121–180 AD",
+    "meaning": "Obstacles can become opportunities for growth.",
+    "reference": "Meditations, Book 5",
+    "subject": "perseverance"
+  },
+  {
+    "id": 43,
+    "quote": "Be yourself; everyone else is already taken.",
+    "author": "Oscar Wilde",
+    "date": "1854–1900",
+    "meaning": "Authenticity matters more than imitation.",
+    "reference": "Aphorism",
+    "subject": "identity"
+  },
+  {
+    "id": 44,
+    "quote": "The wound is the place where the Light enters you.",
+    "author": "Rumi",
+    "date": "1207–1273",
+    "meaning": "Pain can be transformative and lead to growth.",
+    "reference": "Masnavi",
+    "subject": "healing"
+  },
+  {
+    "id": 45,
+    "quote": "You don’t win friends with salad.",
+    "author": "Homer J. Simpson",
+    "date": "1995",
+    "meaning": "Sometimes we fool ourselves with effort that doesn’t work socially.",
+    "reference": "The Simpsons, Season 7 Episode 5",
+    "subject": "humour"
+  },
+  {
+    "id": 46,
+    "quote": "Save me, Jebus!",
+    "author": "Homer J. Simpson",
+    "date": "1998",
+    "meaning": "Even those without belief may call for help in crisis.",
+    "reference": "The Simpsons, Season 9 Episode 14",
+    "subject": "humour"
+  },
+  {
+    "id": 47,
+    "quote": "The majority of the Irish people are mentally unsound.",
+    "author": "Myles na gCopaleen (Flann O’Brien)",
+    "date": "1940s",
+    "meaning": "A biting satirical comment on Irish society.",
+    "reference": "Cruiskeen Lawn",
+    "subject": "Irish wit"
+  },
+  {
+    "id": 48,
+    "quote": "One chance is plenty, if you don’t waste it.",
+    "author": "Proinnseas Ó hÉalaithe",
+    "date": "2025",
+    "meaning": "Don’t wait for endless opportunities; the one in front of you is enough.",
+    "reference": "Original aphorism",
+    "subject": "resilience"
+  },
+  {
+    "quote": "Co nagle, to po diable.",
+    "funetic": "So nag-leh, toh poh dee-ab-leh",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Rushed work leads to mistakes.",
+    "reference": "Polish folk saying",
+    "subject": "patience",
+    "id": 49
+  },
+  {
+    "quote": "Nie chwal dnia przed zachodem słońca.",
+    "funetic": "Nia chaval dina fished sa-hoe-them swanka",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Don’t judge something before it is finished.",
+    "reference": "Polish folk saying",
+    "subject": "caution",
+    "id": 50
+  },
+  {
+    "id": 51,
+    "quote": "It’s not what happens to you, but how you react to it that matters.",
+    "author": "Epictetus",
+    "date": "50–135 AD",
+    "meaning": "We cannot control events, only our response to them.",
+    "reference": "Discourses",
+    "subject": "resilience"
+  },
+  {
+    "id": 52,
+    "quote": "The impediment to action advances action. What stands in the way becomes the way.",
+    "author": "Marcus Aurelius",
+    "date": "121–180 AD",
+    "meaning": "Obstacles can become opportunities for growth.",
+    "reference": "Meditations, Book 5",
+    "subject": "perseverance"
+  },
+  {
+    "id": 53,
+    "quote": "Be yourself; everyone else is already taken.",
+    "author": "Oscar Wilde",
+    "date": "1854–1900",
+    "meaning": "Authenticity matters more than imitation.",
+    "reference": "Aphorism",
+    "subject": "identity"
+  },
+  {
+    "id": 54,
+    "quote": "The wound is the place where the Light enters you.",
+    "author": "Rumi",
+    "date": "1207–1273",
+    "meaning": "Pain can be transformative and lead to growth.",
+    "reference": "Masnavi",
+    "subject": "healing"
+  },
+  {
+    "id": 55,
+    "quote": "You don’t win friends with salad.",
+    "author": "Homer J. Simpson",
+    "date": "1995",
+    "meaning": "Sometimes we fool ourselves with effort that doesn’t work socially.",
+    "reference": "The Simpsons, Season 7 Episode 5",
+    "subject": "humour"
+  },
+  {
+    "id": 56,
+    "quote": "Save me, Jebus!",
+    "author": "Homer J. Simpson",
+    "date": "1998",
+    "meaning": "Even those without belief may call for help in crisis.",
+    "reference": "The Simpsons, Season 9 Episode 14",
+    "subject": "humour"
+  },
+  {
+    "id": 57,
+    "quote": "The majority of the Irish people are mentally unsound.",
+    "author": "Myles na gCopaleen (Flann O’Brien)",
+    "date": "1940s",
+    "meaning": "A biting satirical comment on Irish society.",
+    "reference": "Cruiskeen Lawn",
+    "subject": "Irish wit"
+  },
+  {
+    "id": 58,
+    "quote": "One chance is plenty, if you don’t waste it.",
+    "author": "Proinnseas Ó hÉalaithe",
+    "date": "2025",
+    "meaning": "Don’t wait for endless opportunities; the one in front of you is enough.",
+    "reference": "Original aphorism",
+    "subject": "resilience"
+  },
+  {
+    "quote": "Co nagle, to po diable.",
+    "funetic": "So nag-leh, toh poh dee-ab-leh",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Rushed work leads to mistakes.",
+    "reference": "Polish folk saying",
+    "subject": "patience",
+    "id": 59
+  },
+  {
+    "quote": "Nie chwal dnia przed zachodem słońca.",
+    "funetic": "Nia chaval dina fished sa-hoe-them swanka",
+    "author": "Polish Proverb",
+    "date": "Traditional",
+    "meaning": "Don’t judge something before it is finished.",
+    "reference": "Polish folk saying",
+    "subject": "caution",
+    "id": 60
+  }
+]

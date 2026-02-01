@@ -1,0 +1,25 @@
+Track Name,Length,URL
+“4 Minutes | Royalty-free Music (Pixabay)”,4:00,https://pixabay.com/music/upbeat-4-minutes-141879/
+“4 Minutes Cool Upbeat Background Music for Videos”,4:00 (approx),https://www.youtube.com/watch?v=oYujvNbE2jc
+“4 MINUTES AND 39 SECONDS OF (No Copyright Music) CHILL LOFI BEAT”,4:39,https://www.youtube.com/watch?v=yZkFmjy6Qm0
+“First Contact (Ambient)”,4:02,https://www.bensound.com/royalty-free-music/track/first-contact
+“Alpha (Ambient)”,3:40,https://www.bensound.com/royalty-free-music/track/alpha
+“Wake Up (Ambient)”,4:08,https://www.bensound.com/royalty-free-music/track/wake-up
+“Just 5 Minutes Of Ambient 04 — Modular Ambient 04 Zen_Man”,5:00 (approx),https://pixabay.com/music/search/just%205%20minutes%20of%20ambient%2004/
+“Delicate Ambient (by Sam Bergamini & Fatjon Zefi)”,varies,https://www.bensound.com/royalty-free-music/track/delicate-ambient
+“Reflective Dreamy (Diffie Bosman) – Nothing On”,3:09,https://www.bensound.com/royalty-free-music/track/nothing-on-reflective-dreamy
+“Meditation (Alexander Vasenin)”,4:40,https://www.bensound.com/royalty-free-music/similar-to/taiga-ambient-nature
+“Les Prisonnieres (Benjamin Lazzarus)”,4:09,https://www.bensound.com/royalty-free-music/similar-to/whispers-in-the-dark-ambient-dark
+“Eternity (Fatjon Zefi)”,3:39,https://www.bensound.com/royalty-free-music/ambient  (*from Bensound ambient collection*) :contentReference[oaicite:0]{index=0}
+“Dreary (Solemn Slade)”,3:56,https://www.bensound.com/royalty-free-music/ambient  (*from Bensound ambient collection*) :contentReference[oaicite:1]{index=1}
+“Taking Flight (Solemn Slade)”,3:42,https://www.bensound.com/royalty-free-music/ambient  (*from Bensound ambient collection*) :contentReference[oaicite:2]{index=2}
+“Schism (Diffie Bosman)”,4:13,https://www.bensound.com/royalty-free-music/ambient  (*from Bensound ambient collection*) :contentReference[oaicite:3]{index=3}
+“Distant (Svein)”,4:12,https://www.bensound.com/royalty-free-music/ambient  (*from Bensound ambient collection*) :contentReference[oaicite:4]{index=4}
+“Soft Background Music (FreeMusicForVideo)”,3:44,https://pixabay.com/music/meditationspiritual-meditation-relax-231757/ :contentReference[oaicite:5]{index=5}
+“Valley of Silence (Roan Portman)”,~20+ min,https://pixabay.com/music/meditationspiritual-valley-of-silence-meditation-yoga-relaxation-work-study-sleep-music-122612/ :contentReference[oaicite:6]{index=6}
+“Meditation & Relax (Pixabay)”,varies,https://pixabay.com/music/meditationspiritual-meditation-relax-231757/ :contentReference[oaicite:7]{index=7}
+“Immersive Meditation (Pixabay)”,varies,https://pixabay.com/music/meditationspiritual-immersive-meditation-252195/ :contentReference[oaicite:8]{index=8}
+“Deep Meditation (Pixabay)”,varies,https://pixabay.com/music/meditationspiritual-deep-meditation-192828/ :contentReference[oaicite:9]{index=9}
+“Relax (Pixabay)”,varies,https://pixabay.com/music/search/relax/ :contentReference[oaicite:10]{index=10}
+“Mindfulness Meditation (Pixabay)”,varies,https://pixabay.com/music/meditationspiritual-mindfulness-meditation-195494/ :contentReference[oaicite:11]{index=11}
+“Spiritual / Background Music (Pixabay)”,varies,https://pixabay.com/music/search/spiritual/ :contentReference[oaicite:12]{index=12}

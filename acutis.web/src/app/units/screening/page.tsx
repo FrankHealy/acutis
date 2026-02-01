@@ -1,4 +1,4 @@
-import ScreeningLanding from '@/areas/screening/ScreeningLanding';
+import ScreeningLanding from '@/units/screening/ScreeningLanding';
 
 export default function ScreeningUnitPage() {
   const userRole = "Reception";

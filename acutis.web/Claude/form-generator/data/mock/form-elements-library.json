@@ -1,0 +1,751 @@
+{
+  "formElementLibrary": {
+    "version": "1.0",
+    "lastUpdated": "2026-01-18T21:30:00Z",
+    "categories": [
+      {
+        "id": "personal-info",
+        "name": "Personal Information",
+        "description": "Common personal details fields",
+        "elements": [
+          {
+            "id": "element-name-basic",
+            "name": "Basic Name",
+            "description": "First and Last name fields",
+            "fields": [
+              {
+                "id": "firstName",
+                "type": "text",
+                "label": "First Name",
+                "required": true,
+                "placeholder": "Enter first name",
+                "validation": {
+                  "minLength": 2,
+                  "maxLength": 50
+                }
+              },
+              {
+                "id": "lastName",
+                "type": "text",
+                "label": "Last Name",
+                "required": true,
+                "placeholder": "Enter last name",
+                "validation": {
+                  "minLength": 2,
+                  "maxLength": 50
+                }
+              }
+            ]
+          },
+          {
+            "id": "element-name-full",
+            "name": "Full Name (with Middle)",
+            "description": "First, Middle, Last name fields",
+            "fields": [
+              {
+                "id": "firstName",
+                "type": "text",
+                "label": "First Name",
+                "required": true
+              },
+              {
+                "id": "middleName",
+                "type": "text",
+                "label": "Middle Name",
+                "required": false
+              },
+              {
+                "id": "lastName",
+                "type": "text",
+                "label": "Last Name",
+                "required": true
+              }
+            ]
+          },
+          {
+            "id": "element-contact-basic",
+            "name": "Basic Contact",
+            "description": "Phone and email",
+            "fields": [
+              {
+                "id": "phone",
+                "type": "tel",
+                "label": "Phone Number",
+                "required": true,
+                "placeholder": "087-1234567",
+                "validation": {
+                  "pattern": "^\\d{3}-\\d{7}$"
+                },
+                "helpText": "Irish format: 087-1234567"
+              },
+              {
+                "id": "email",
+                "type": "email",
+                "label": "Email Address",
+                "required": false,
+                "placeholder": "name@example.ie"
+              }
+            ]
+          },
+          {
+            "id": "element-dob",
+            "name": "Date of Birth",
+            "description": "DOB with age validation",
+            "fields": [
+              {
+                "id": "dateOfBirth",
+                "type": "date",
+                "label": "Date of Birth",
+                "required": true,
+                "validation": {
+                  "maxDate": "today",
+                  "minAge": 18
+                },
+                "helpText": "Must be 18 or older"
+              }
+            ]
+          },
+          {
+            "id": "element-address-irish",
+            "name": "Irish Address",
+            "description": "Complete Irish address",
+            "fields": [
+              {
+                "id": "address.street",
+                "type": "text",
+                "label": "Street Address",
+                "required": true,
+                "placeholder": "123 Main Street"
+              },
+              {
+                "id": "address.city",
+                "type": "text",
+                "label": "City/Town",
+                "required": true,
+                "placeholder": "Cork"
+              },
+              {
+                "id": "address.county",
+                "type": "select",
+                "label": "County",
+                "required": true,
+                "options": [
+                  { "value": "Carlow", "label": "Carlow" },
+                  { "value": "Cavan", "label": "Cavan" },
+                  { "value": "Clare", "label": "Clare" },
+                  { "value": "Cork", "label": "Cork" },
+                  { "value": "Donegal", "label": "Donegal" },
+                  { "value": "Dublin", "label": "Dublin" },
+                  { "value": "Galway", "label": "Galway" },
+                  { "value": "Kerry", "label": "Kerry" },
+                  { "value": "Kildare", "label": "Kildare" },
+                  { "value": "Kilkenny", "label": "Kilkenny" },
+                  { "value": "Laois", "label": "Laois" },
+                  { "value": "Leitrim", "label": "Leitrim" },
+                  { "value": "Limerick", "label": "Limerick" },
+                  { "value": "Longford", "label": "Longford" },
+                  { "value": "Louth", "label": "Louth" },
+                  { "value": "Mayo", "label": "Mayo" },
+                  { "value": "Meath", "label": "Meath" },
+                  { "value": "Monaghan", "label": "Monaghan" },
+                  { "value": "Offaly", "label": "Offaly" },
+                  { "value": "Roscommon", "label": "Roscommon" },
+                  { "value": "Sligo", "label": "Sligo" },
+                  { "value": "Tipperary", "label": "Tipperary" },
+                  { "value": "Waterford", "label": "Waterford" },
+                  { "value": "Westmeath", "label": "Westmeath" },
+                  { "value": "Wexford", "label": "Wexford" },
+                  { "value": "Wicklow", "label": "Wicklow" }
+                ]
+              },
+              {
+                "id": "address.eircode",
+                "type": "text",
+                "label": "Eircode",
+                "required": false,
+                "placeholder": "T12 X456",
+                "validation": {
+                  "pattern": "^[A-Z0-9]{3}\\s?[A-Z0-9]{4}$"
+                }
+              }
+            ]
+          },
+          {
+            "id": "element-emergency-contact",
+            "name": "Emergency Contact",
+            "description": "Emergency contact details",
+            "fields": [
+              {
+                "id": "emergencyContact.name",
+                "type": "text",
+                "label": "Emergency Contact Name",
+                "required": true,
+                "placeholder": "Full name"
+              },
+              {
+                "id": "emergencyContact.relationship",
+                "type": "select",
+                "label": "Relationship",
+                "required": true,
+                "options": [
+                  { "value": "spouse", "label": "Spouse/Partner" },
+                  { "value": "parent", "label": "Parent" },
+                  { "value": "sibling", "label": "Sibling" },
+                  { "value": "child", "label": "Adult Child" },
+                  { "value": "friend", "label": "Friend" },
+                  { "value": "other", "label": "Other" }
+                ]
+              },
+              {
+                "id": "emergencyContact.phone",
+                "type": "tel",
+                "label": "Emergency Contact Phone",
+                "required": true,
+                "placeholder": "087-1234567",
+                "validation": {
+                  "pattern": "^\\d{3}-\\d{7}$"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "medical",
+        "name": "Medical Information",
+        "description": "Common medical history fields",
+        "elements": [
+          {
+            "id": "element-medications",
+            "name": "Current Medications",
+            "description": "Medication list",
+            "fields": [
+              {
+                "id": "currentMedications",
+                "type": "textarea",
+                "label": "Current Medications",
+                "required": false,
+                "placeholder": "List all current medications, dosages, and frequency",
+                "rows": 4,
+                "helpText": "Include prescription and over-the-counter medications"
+              }
+            ]
+          },
+          {
+            "id": "element-allergies",
+            "name": "Allergies",
+            "description": "Drug and food allergies",
+            "fields": [
+              {
+                "id": "allergies",
+                "type": "textarea",
+                "label": "Allergies",
+                "required": false,
+                "placeholder": "List any drug or food allergies",
+                "rows": 3,
+                "helpText": "Include reactions experienced"
+              }
+            ]
+          },
+          {
+            "id": "element-medical-conditions",
+            "name": "Medical Conditions",
+            "description": "Chronic conditions and history",
+            "fields": [
+              {
+                "id": "medicalConditions",
+                "type": "textarea",
+                "label": "Medical Conditions",
+                "required": false,
+                "placeholder": "List any chronic conditions, recent surgeries, or ongoing medical issues",
+                "rows": 4
+              }
+            ]
+          },
+          {
+            "id": "element-gp-details",
+            "name": "GP Information",
+            "description": "General Practitioner contact",
+            "fields": [
+              {
+                "id": "gp.name",
+                "type": "text",
+                "label": "GP Name",
+                "required": false,
+                "placeholder": "Dr. ..."
+              },
+              {
+                "id": "gp.practice",
+                "type": "text",
+                "label": "Practice Name",
+                "required": false
+              },
+              {
+                "id": "gp.phone",
+                "type": "tel",
+                "label": "GP Phone",
+                "required": false,
+                "placeholder": "021-1234567"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "substance-use",
+        "name": "Substance Use",
+        "description": "Substance use assessment fields",
+        "elements": [
+          {
+            "id": "element-alcohol-use",
+            "name": "Alcohol Use Assessment",
+            "description": "Comprehensive alcohol use questions",
+            "fields": [
+              {
+                "id": "drinksPerDay",
+                "type": "number",
+                "label": "Average Drinks Per Day",
+                "required": true,
+                "helpText": "In the past 30 days"
+              },
+              {
+                "id": "lastDrink",
+                "type": "datetime-local",
+                "label": "Last Drink",
+                "required": true
+              },
+              {
+                "id": "withdrawalHistory",
+                "type": "radio",
+                "label": "Previous Withdrawal Symptoms?",
+                "required": true,
+                "options": [
+                  { "value": "none", "label": "None" },
+                  { "value": "mild", "label": "Mild (tremors, sweating)" },
+                  { "value": "moderate", "label": "Moderate (confusion, hallucinations)" },
+                  { "value": "severe", "label": "Severe (seizures, DTs)" }
+                ]
+              },
+              {
+                "id": "yearsOfHeavyDrinking",
+                "type": "number",
+                "label": "Years of Heavy Drinking",
+                "required": false,
+                "helpText": "Approximate number of years"
+              }
+            ]
+          },
+          {
+            "id": "element-drug-use",
+            "name": "Drug Use Assessment",
+            "description": "Comprehensive drug use questions",
+            "fields": [
+              {
+                "id": "primaryDrug",
+                "type": "select",
+                "label": "Primary Drug",
+                "required": true,
+                "options": [
+                  { "value": "heroin", "label": "Heroin" },
+                  { "value": "cocaine", "label": "Cocaine/Crack" },
+                  { "value": "methamphetamine", "label": "Methamphetamine" },
+                  { "value": "cannabis", "label": "Cannabis" },
+                  { "value": "benzodiazepines", "label": "Benzodiazepines" },
+                  { "value": "prescription_opioids", "label": "Prescription Opioids" },
+                  { "value": "other", "label": "Other" }
+                ]
+              },
+              {
+                "id": "routeOfAdministration",
+                "type": "select",
+                "label": "Route of Administration",
+                "required": true,
+                "options": [
+                  { "value": "oral", "label": "Oral" },
+                  { "value": "smoking", "label": "Smoking" },
+                  { "value": "snorting", "label": "Snorting" },
+                  { "value": "injection", "label": "Injection" }
+                ]
+              },
+              {
+                "id": "lastUse",
+                "type": "datetime-local",
+                "label": "Last Use",
+                "required": true
+              },
+              {
+                "id": "frequencyOfUse",
+                "type": "select",
+                "label": "Frequency of Use",
+                "required": true,
+                "options": [
+                  { "value": "multiple_daily", "label": "Multiple times per day" },
+                  { "value": "daily", "label": "Daily" },
+                  { "value": "several_weekly", "label": "Several times per week" },
+                  { "value": "weekly", "label": "Weekly" },
+                  { "value": "occasionally", "label": "Occasionally" }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "element-gambling-assessment",
+            "name": "Gambling Assessment",
+            "description": "Gambling addiction questions",
+            "fields": [
+              {
+                "id": "gamblingTypes",
+                "type": "select",
+                "label": "Primary Type of Gambling",
+                "required": true,
+                "options": [
+                  { "value": "online", "label": "Online Gambling" },
+                  { "value": "betting_shops", "label": "Betting Shops" },
+                  { "value": "casino", "label": "Casino" },
+                  { "value": "horses", "label": "Horse Racing" },
+                  { "value": "lottery", "label": "Lottery/Scratch Cards" },
+                  { "value": "multiple", "label": "Multiple Types" }
+                ]
+              },
+              {
+                "id": "lastGamble",
+                "type": "datetime-local",
+                "label": "Last Time Gambled",
+                "required": true
+              },
+              {
+                "id": "financialImpact",
+                "type": "select",
+                "label": "Financial Impact",
+                "required": true,
+                "options": [
+                  { "value": "minimal", "label": "Minimal - Under control" },
+                  { "value": "moderate", "label": "Moderate - Some debt" },
+                  { "value": "severe", "label": "Severe - Significant debt" },
+                  { "value": "critical", "label": "Critical - Bankruptcy/Legal issues" }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "element-previous-treatment",
+            "name": "Treatment History",
+            "description": "Previous treatment attempts",
+            "fields": [
+              {
+                "id": "previousTreatment",
+                "type": "radio",
+                "label": "Previous Treatment?",
+                "required": true,
+                "options": [
+                  { "value": "yes", "label": "Yes" },
+                  { "value": "no", "label": "No" }
+                ]
+              },
+              {
+                "id": "previousTreatmentDetails",
+                "type": "textarea",
+                "label": "Previous Treatment Details",
+                "required": false,
+                "dependsOn": "previousTreatment",
+                "rows": 4,
+                "placeholder": "When, where, outcome, length of sobriety achieved..."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "assessments",
+        "name": "Assessment Scales",
+        "description": "Standard assessment and rating scales",
+        "elements": [
+          {
+            "id": "element-mood-scale",
+            "name": "Mood Rating (1-10)",
+            "description": "Standard 1-10 mood scale",
+            "fields": [
+              {
+                "id": "moodRating",
+                "type": "select",
+                "label": "Mood Rating",
+                "required": true,
+                "options": [
+                  { "value": "1", "label": "1 - Very Poor" },
+                  { "value": "2", "label": "2" },
+                  { "value": "3", "label": "3" },
+                  { "value": "4", "label": "4" },
+                  { "value": "5", "label": "5 - Neutral" },
+                  { "value": "6", "label": "6" },
+                  { "value": "7", "label": "7" },
+                  { "value": "8", "label": "8" },
+                  { "value": "9", "label": "9" },
+                  { "value": "10", "label": "10 - Excellent" }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "element-craving-intensity",
+            "name": "Craving Intensity (1-10)",
+            "description": "Standard craving intensity scale",
+            "fields": [
+              {
+                "id": "cravingIntensity",
+                "type": "select",
+                "label": "Craving Intensity",
+                "required": true,
+                "options": [
+                  { "value": "1", "label": "1 - No craving" },
+                  { "value": "2", "label": "2" },
+                  { "value": "3", "label": "3" },
+                  { "value": "4", "label": "4" },
+                  { "value": "5", "label": "5 - Moderate" },
+                  { "value": "6", "label": "6" },
+                  { "value": "7", "label": "7" },
+                  { "value": "8", "label": "8" },
+                  { "value": "9", "label": "9" },
+                  { "value": "10", "label": "10 - Severe" }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "element-risk-assessment",
+            "name": "Risk Assessment",
+            "description": "Standard risk levels",
+            "fields": [
+              {
+                "id": "riskLevel",
+                "type": "radio",
+                "label": "Risk Assessment",
+                "required": true,
+                "options": [
+                  { "value": "low", "label": "Low Risk" },
+                  { "value": "medium", "label": "Medium Risk - Monitor closely" },
+                  { "value": "high", "label": "High Risk - Immediate intervention required" }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "element-sleep-quality",
+            "name": "Sleep Assessment",
+            "description": "Sleep quality questions",
+            "fields": [
+              {
+                "id": "hoursSlept",
+                "type": "number",
+                "label": "Hours Slept Last Night",
+                "required": true,
+                "validation": {
+                  "min": 0,
+                  "max": 24
+                }
+              },
+              {
+                "id": "sleepQuality",
+                "type": "select",
+                "label": "Sleep Quality",
+                "required": true,
+                "options": [
+                  { "value": "poor", "label": "Poor" },
+                  { "value": "fair", "label": "Fair" },
+                  { "value": "good", "label": "Good" },
+                  { "value": "excellent", "label": "Excellent" }
+                ]
+              },
+              {
+                "id": "sleepDisturbances",
+                "type": "checkbox",
+                "label": "Experienced nightmares or sleep disturbances",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "consent",
+        "name": "Consent & Legal",
+        "description": "Standard consent and legal fields",
+        "elements": [
+          {
+            "id": "element-treatment-consent",
+            "name": "Treatment Consent",
+            "description": "Standard treatment agreement",
+            "fields": [
+              {
+                "id": "treatmentConsent",
+                "type": "checkbox",
+                "label": "I consent to treatment and agree to follow program rules and guidelines",
+                "required": true,
+                "helpText": "By checking this box, you agree to participate in the treatment program"
+              }
+            ]
+          },
+          {
+            "id": "element-privacy-consent",
+            "name": "Privacy & GDPR Consent",
+            "description": "GDPR compliant privacy consent",
+            "fields": [
+              {
+                "id": "privacyConsent",
+                "type": "checkbox",
+                "label": "I acknowledge the privacy policy and consent to data processing under GDPR",
+                "required": true,
+                "helpText": "Your information will be handled according to GDPR regulations"
+              }
+            ]
+          },
+          {
+            "id": "element-emergency-treatment",
+            "name": "Emergency Treatment Consent",
+            "description": "Consent for emergency medical care",
+            "fields": [
+              {
+                "id": "emergencyTreatmentConsent",
+                "type": "checkbox",
+                "label": "I consent to emergency medical treatment if required during my stay",
+                "required": true
+              }
+            ]
+          },
+          {
+            "id": "element-photo-consent",
+            "name": "Photography Consent",
+            "description": "Consent for ID photos",
+            "fields": [
+              {
+                "id": "photographyConsent",
+                "type": "checkbox",
+                "label": "I consent to photography for identification purposes only",
+                "required": false,
+                "helpText": "Photos will only be used for facility ID badge"
+              }
+            ]
+          },
+          {
+            "id": "element-gp-sharing",
+            "name": "GP Information Sharing",
+            "description": "Consent to share with GP",
+            "fields": [
+              {
+                "id": "gpSharingConsent",
+                "type": "checkbox",
+                "label": "I consent to sharing information with my GP",
+                "required": false,
+                "helpText": "Optional - helps coordinate ongoing care"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "therapy",
+        "name": "Therapy & Sessions",
+        "description": "Common therapy session fields",
+        "elements": [
+          {
+            "id": "element-session-details",
+            "name": "Session Details",
+            "description": "Basic session information",
+            "fields": [
+              {
+                "id": "sessionDate",
+                "type": "date",
+                "label": "Session Date",
+                "required": true
+              },
+              {
+                "id": "sessionType",
+                "type": "select",
+                "label": "Session Type",
+                "required": true,
+                "options": [
+                  { "value": "individual", "label": "Individual Therapy" },
+                  { "value": "group", "label": "Group Therapy" },
+                  { "value": "family", "label": "Family Session" },
+                  { "value": "crisis", "label": "Crisis Intervention" },
+                  { "value": "assessment", "label": "Assessment" }
+                ]
+              },
+              {
+                "id": "duration",
+                "type": "select",
+                "label": "Duration",
+                "required": true,
+                "options": [
+                  { "value": "30", "label": "30 minutes" },
+                  { "value": "45", "label": "45 minutes" },
+                  { "value": "60", "label": "60 minutes" },
+                  { "value": "90", "label": "90 minutes" }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "element-session-notes",
+            "name": "Session Notes",
+            "description": "Comprehensive session documentation",
+            "fields": [
+              {
+                "id": "presentingIssues",
+                "type": "textarea",
+                "label": "Presenting Issues",
+                "required": true,
+                "rows": 4,
+                "placeholder": "Main concerns discussed in this session"
+              },
+              {
+                "id": "interventions",
+                "type": "textarea",
+                "label": "Interventions Used",
+                "required": true,
+                "rows": 4,
+                "placeholder": "Therapeutic techniques and approaches used"
+              },
+              {
+                "id": "clientResponse",
+                "type": "textarea",
+                "label": "Client Response",
+                "required": false,
+                "rows": 3,
+                "placeholder": "How did the client respond to interventions?"
+              },
+              {
+                "id": "nextSteps",
+                "type": "textarea",
+                "label": "Next Steps",
+                "required": false,
+                "rows": 3,
+                "placeholder": "Homework, goals for next session, action items"
+              }
+            ]
+          },
+          {
+            "id": "element-progress-rating",
+            "name": "Progress Rating",
+            "description": "Session progress assessment",
+            "fields": [
+              {
+                "id": "progressRating",
+                "type": "select",
+                "label": "Overall Progress",
+                "required": true,
+                "options": [
+                  { "value": "excellent", "label": "Excellent - Significant progress" },
+                  { "value": "good", "label": "Good - Clear progress" },
+                  { "value": "fair", "label": "Fair - Some progress" },
+                  { "value": "poor", "label": "Poor - Minimal progress" },
+                  { "value": "concerning", "label": "Concerning - Regression" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "customElements": []
+  }
+}

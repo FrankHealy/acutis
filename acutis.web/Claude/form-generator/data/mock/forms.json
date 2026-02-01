@@ -1,0 +1,558 @@
+{
+  "formConfigurations": [
+    {
+      "id": "form-detox-alcohol",
+      "name": "Detox Admission - Alcohol",
+      "unit": "detox",
+      "admissionType": "alcohol",
+      "version": "1.0",
+      "status": "active",
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-18T08:00:00Z",
+      "description": "Alcohol detox admission form - includes CIWA protocol",
+      "steps": [
+        {
+          "id": "step-1",
+          "title": "Personal Information",
+          "order": 1,
+          "sections": [
+            {
+              "id": "section-basic",
+              "title": "Basic Information",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "firstName",
+                  "type": "text",
+                  "label": "First Name",
+                  "required": true
+                },
+                {
+                  "id": "lastName",
+                  "type": "text",
+                  "label": "Last Name",
+                  "required": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "step-2",
+          "title": "Alcohol Assessment",
+          "order": 2,
+          "sections": [
+            {
+              "id": "section-alcohol",
+              "title": "Drinking History",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "drinksPerDay",
+                  "type": "number",
+                  "label": "Average Drinks Per Day",
+                  "required": true,
+                  "helpText": "In the past 30 days"
+                },
+                {
+                  "id": "lastDrink",
+                  "type": "datetime-local",
+                  "label": "Last Drink",
+                  "required": true
+                },
+                {
+                  "id": "withdrawalHistory",
+                  "type": "radio",
+                  "label": "Previous Withdrawal Symptoms?",
+                  "required": true,
+                  "options": [
+                    { "value": "none", "label": "None" },
+                    { "value": "mild", "label": "Mild (tremors, sweating)" },
+                    { "value": "severe", "label": "Severe (seizures, DTs)" }
+                  ]
+                },
+                {
+                  "id": "ciwaRequired",
+                  "type": "checkbox",
+                  "label": "CIWA Protocol Required",
+                  "required": false,
+                  "helpText": "Check if patient requires withdrawal monitoring"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "form-detox-drugs",
+      "name": "Detox Admission - Drugs",
+      "unit": "detox",
+      "admissionType": "drugs",
+      "version": "1.0",
+      "status": "active",
+      "createdAt": "2026-01-16T10:00:00Z",
+      "updatedAt": "2026-01-18T08:00:00Z",
+      "description": "Drug addiction detox - includes substance-specific protocols",
+      "steps": [
+        {
+          "id": "step-1",
+          "title": "Personal Information",
+          "order": 1,
+          "sections": [
+            {
+              "id": "section-basic",
+              "title": "Basic Information",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "firstName",
+                  "type": "text",
+                  "label": "First Name",
+                  "required": true
+                },
+                {
+                  "id": "lastName",
+                  "type": "text",
+                  "label": "Last Name",
+                  "required": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "step-2",
+          "title": "Substance Assessment",
+          "order": 2,
+          "sections": [
+            {
+              "id": "section-drugs",
+              "title": "Drug Use History",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "primarySubstance",
+                  "type": "select",
+                  "label": "Primary Substance",
+                  "required": true,
+                  "options": [
+                    { "value": "heroin", "label": "Heroin" },
+                    { "value": "cocaine", "label": "Cocaine" },
+                    { "value": "methamphetamine", "label": "Methamphetamine" },
+                    { "value": "benzodiazepines", "label": "Benzodiazepines" },
+                    { "value": "prescription_opioids", "label": "Prescription Opioids" },
+                    { "value": "other", "label": "Other" }
+                  ]
+                },
+                {
+                  "id": "routeOfAdministration",
+                  "type": "select",
+                  "label": "Route of Administration",
+                  "required": true,
+                  "options": [
+                    { "value": "oral", "label": "Oral" },
+                    { "value": "smoking", "label": "Smoking" },
+                    { "value": "snorting", "label": "Snorting" },
+                    { "value": "injection", "label": "Injection" }
+                  ]
+                },
+                {
+                  "id": "lastUse",
+                  "type": "datetime-local",
+                  "label": "Last Use",
+                  "required": true
+                },
+                {
+                  "id": "substitutionTherapy",
+                  "type": "radio",
+                  "label": "Interested in Substitution Therapy?",
+                  "required": false,
+                  "helpText": "E.g., Methadone, Suboxone",
+                  "options": [
+                    { "value": "yes", "label": "Yes" },
+                    { "value": "no", "label": "No" },
+                    { "value": "unsure", "label": "Unsure - need more information" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "form-detox-ladies",
+      "name": "Detox Admission - Ladies Unit",
+      "unit": "detox",
+      "admissionType": "ladies",
+      "version": "1.0",
+      "status": "active",
+      "createdAt": "2026-01-16T11:00:00Z",
+      "updatedAt": "2026-01-18T08:00:00Z",
+      "description": "Ladies unit admission - includes gender-specific care questions",
+      "steps": [
+        {
+          "id": "step-1",
+          "title": "Personal Information",
+          "order": 1,
+          "sections": [
+            {
+              "id": "section-basic",
+              "title": "Basic Information",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "firstName",
+                  "type": "text",
+                  "label": "First Name",
+                  "required": true
+                },
+                {
+                  "id": "lastName",
+                  "type": "text",
+                  "label": "Last Name",
+                  "required": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "step-2",
+          "title": "Substance & Women's Health",
+          "order": 2,
+          "sections": [
+            {
+              "id": "section-substance",
+              "title": "Substance Use",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "primarySubstance",
+                  "type": "select",
+                  "label": "Primary Substance",
+                  "required": true,
+                  "options": [
+                    { "value": "alcohol", "label": "Alcohol" },
+                    { "value": "drugs", "label": "Drugs" },
+                    { "value": "both", "label": "Both" }
+                  ]
+                },
+                {
+                  "id": "lastUse",
+                  "type": "datetime-local",
+                  "label": "Last Use",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "section-womens-health",
+              "title": "Women's Health (Optional)",
+              "order": 2,
+              "fields": [
+                {
+                  "id": "pregnant",
+                  "type": "radio",
+                  "label": "Are you currently pregnant?",
+                  "required": false,
+                  "options": [
+                    { "value": "yes", "label": "Yes" },
+                    { "value": "no", "label": "No" },
+                    { "value": "unsure", "label": "Unsure" },
+                    { "value": "prefer_not_to_say", "label": "Prefer not to say" }
+                  ]
+                },
+                {
+                  "id": "childcare",
+                  "type": "radio",
+                  "label": "Do you have childcare needs?",
+                  "required": false,
+                  "helpText": "We can help arrange support if needed",
+                  "options": [
+                    { "value": "yes", "label": "Yes - need assistance" },
+                    { "value": "no", "label": "No - already arranged" },
+                    { "value": "not_applicable", "label": "Not applicable" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "form-detox-gambling",
+      "name": "Detox Admission - Gambling",
+      "unit": "detox",
+      "admissionType": "gambling",
+      "version": "1.0",
+      "status": "active",
+      "createdAt": "2026-01-16T12:00:00Z",
+      "updatedAt": "2026-01-18T08:00:00Z",
+      "description": "Gambling addiction admission - behavioral addiction focus",
+      "steps": [
+        {
+          "id": "step-1",
+          "title": "Personal Information",
+          "order": 1,
+          "sections": [
+            {
+              "id": "section-basic",
+              "title": "Basic Information",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "firstName",
+                  "type": "text",
+                  "label": "First Name",
+                  "required": true
+                },
+                {
+                  "id": "lastName",
+                  "type": "text",
+                  "label": "Last Name",
+                  "required": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "step-2",
+          "title": "Gambling Assessment",
+          "order": 2,
+          "sections": [
+            {
+              "id": "section-gambling",
+              "title": "Gambling History",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "gamblingTypes",
+                  "type": "select",
+                  "label": "Primary Type of Gambling",
+                  "required": true,
+                  "options": [
+                    { "value": "online", "label": "Online Gambling" },
+                    { "value": "betting_shops", "label": "Betting Shops" },
+                    { "value": "casino", "label": "Casino" },
+                    { "value": "horses", "label": "Horse Racing" },
+                    { "value": "lottery", "label": "Lottery/Scratch Cards" },
+                    { "value": "multiple", "label": "Multiple Types" }
+                  ]
+                },
+                {
+                  "id": "lastGamble",
+                  "type": "datetime-local",
+                  "label": "Last Time Gambled",
+                  "required": true
+                },
+                {
+                  "id": "financialImpact",
+                  "type": "select",
+                  "label": "Financial Impact",
+                  "required": true,
+                  "options": [
+                    { "value": "minimal", "label": "Minimal - Under control" },
+                    { "value": "moderate", "label": "Moderate - Some debt" },
+                    { "value": "severe", "label": "Severe - Significant debt" },
+                    { "value": "critical", "label": "Critical - Bankruptcy/Legal issues" }
+                  ]
+                },
+                {
+                  "id": "accessToFunds",
+                  "type": "checkbox",
+                  "label": "Willing to surrender access to finances during treatment",
+                  "required": false,
+                  "helpText": "Recommended for gambling addiction recovery"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "form-therapy-session",
+      "name": "Therapy Session Notes",
+      "unit": "therapy",
+      "admissionType": null,
+      "formType": "adhoc",
+      "version": "1.0",
+      "status": "active",
+      "createdAt": "2026-01-17T10:00:00Z",
+      "updatedAt": "2026-01-18T08:00:00Z",
+      "description": "Ad-hoc therapy session notes form for therapists",
+      "steps": [
+        {
+          "id": "step-1",
+          "title": "Session Information",
+          "order": 1,
+          "sections": [
+            {
+              "id": "section-session",
+              "title": "Session Details",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "sessionDate",
+                  "type": "date",
+                  "label": "Session Date",
+                  "required": true
+                },
+                {
+                  "id": "sessionType",
+                  "type": "select",
+                  "label": "Session Type",
+                  "required": true,
+                  "options": [
+                    { "value": "individual", "label": "Individual Therapy" },
+                    { "value": "group", "label": "Group Therapy" },
+                    { "value": "family", "label": "Family Session" },
+                    { "value": "assessment", "label": "Assessment" }
+                  ]
+                },
+                {
+                  "id": "duration",
+                  "type": "select",
+                  "label": "Duration",
+                  "required": true,
+                  "options": [
+                    { "value": "30", "label": "30 minutes" },
+                    { "value": "60", "label": "60 minutes" },
+                    { "value": "90", "label": "90 minutes" }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "section-notes",
+              "title": "Session Notes",
+              "order": 2,
+              "fields": [
+                {
+                  "id": "presentingIssues",
+                  "type": "textarea",
+                  "label": "Presenting Issues",
+                  "required": true,
+                  "rows": 4,
+                  "helpText": "Main concerns discussed in this session"
+                },
+                {
+                  "id": "interventions",
+                  "type": "textarea",
+                  "label": "Interventions Used",
+                  "required": true,
+                  "rows": 4,
+                  "helpText": "Therapeutic techniques and approaches"
+                },
+                {
+                  "id": "progress",
+                  "type": "select",
+                  "label": "Overall Progress",
+                  "required": true,
+                  "options": [
+                    { "value": "excellent", "label": "Excellent" },
+                    { "value": "good", "label": "Good" },
+                    { "value": "fair", "label": "Fair" },
+                    { "value": "poor", "label": "Poor" },
+                    { "value": "concerning", "label": "Concerning" }
+                  ]
+                },
+                {
+                  "id": "nextSteps",
+                  "type": "textarea",
+                  "label": "Next Steps",
+                  "required": false,
+                  "rows": 3,
+                  "helpText": "Homework, goals for next session, etc."
+                },
+                {
+                  "id": "riskAssessment",
+                  "type": "radio",
+                  "label": "Risk Assessment",
+                  "required": true,
+                  "options": [
+                    { "value": "low", "label": "Low Risk" },
+                    { "value": "medium", "label": "Medium Risk - Monitor" },
+                    { "value": "high", "label": "High Risk - Immediate action required" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "form-discharge-planning",
+      "name": "Discharge Planning Form",
+      "unit": "discharge",
+      "admissionType": null,
+      "formType": "adhoc",
+      "version": "1.0",
+      "status": "active",
+      "createdAt": "2026-01-17T14:00:00Z",
+      "updatedAt": "2026-01-18T08:00:00Z",
+      "description": "Discharge planning and aftercare form",
+      "steps": [
+        {
+          "id": "step-1",
+          "title": "Discharge Planning",
+          "order": 1,
+          "sections": [
+            {
+              "id": "section-discharge",
+              "title": "Discharge Details",
+              "order": 1,
+              "fields": [
+                {
+                  "id": "dischargeDate",
+                  "type": "date",
+                  "label": "Planned Discharge Date",
+                  "required": true
+                },
+                {
+                  "id": "dischargeReason",
+                  "type": "select",
+                  "label": "Discharge Reason",
+                  "required": true,
+                  "options": [
+                    { "value": "completed", "label": "Treatment Completed" },
+                    { "value": "transfer", "label": "Transfer to Another Facility" },
+                    { "value": "early", "label": "Early Discharge (Patient Request)" },
+                    { "value": "ama", "label": "Against Medical Advice" }
+                  ]
+                },
+                {
+                  "id": "aftercarePlan",
+                  "type": "textarea",
+                  "label": "Aftercare Plan",
+                  "required": true,
+                  "rows": 6,
+                  "helpText": "Outpatient services, support groups, follow-up appointments"
+                },
+                {
+                  "id": "medicationsPrescribed",
+                  "type": "textarea",
+                  "label": "Medications on Discharge",
+                  "required": false,
+                  "rows": 4
+                },
+                {
+                  "id": "followUpAppointment",
+                  "type": "datetime-local",
+                  "label": "Follow-up Appointment",
+                  "required": false,
+                  "helpText": "First post-discharge appointment"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

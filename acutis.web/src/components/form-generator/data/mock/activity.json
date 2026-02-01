@@ -1,0 +1,85 @@
+{
+  "activities": [
+    {
+      "id": "act-001",
+      "type": "admission_completed",
+      "icon": "user_plus",
+      "text": "New admission completed for David Walsh",
+      "admissionId": "adm-007",
+      "timestamp": "2026-01-18T09:30:00Z",
+      "user": {
+        "name": "Sarah Murphy",
+        "id": "user-001"
+      },
+      "metadata": {
+        "unit": "ladies",
+        "admissionType": "gambling"
+      }
+    },
+    {
+      "id": "act-002",
+      "type": "admission_flagged",
+      "icon": "alert",
+      "text": "Admission flagged for review - Emma Kelly",
+      "admissionId": "adm-006",
+      "timestamp": "2026-01-18T09:00:00Z",
+      "user": {
+        "name": "John Kelly",
+        "id": "user-002"
+      },
+      "metadata": {
+        "reason": "Missing medical documentation",
+        "unit": "detox"
+      }
+    },
+    {
+      "id": "act-003",
+      "type": "medical_update",
+      "icon": "clipboard",
+      "text": "Medical prescriptions updated for Michael O'Brien",
+      "admissionId": "adm-001",
+      "timestamp": "2026-01-18T08:00:00Z",
+      "user": {
+        "name": "Dr. Murphy",
+        "id": "user-003"
+      },
+      "metadata": {
+        "unit": "detox"
+      }
+    },
+    {
+      "id": "act-004",
+      "type": "admission_started",
+      "icon": "user_plus",
+      "text": "Admission process started for Sarah Walsh",
+      "admissionId": "adm-005",
+      "timestamp": "2026-01-18T07:00:00Z",
+      "user": {
+        "name": "Mary O'Connor",
+        "id": "user-004"
+      },
+      "metadata": {
+        "unit": "detox",
+        "admissionType": "drugs"
+      }
+    },
+    {
+      "id": "act-005",
+      "type": "room_assigned",
+      "icon": "bed",
+      "text": "Room assigned to Patrick Murphy - Building A, Room 12",
+      "admissionId": "adm-002",
+      "timestamp": "2026-01-18T06:30:00Z",
+      "user": {
+        "name": "Tom Brennan",
+        "id": "user-005"
+      },
+      "metadata": {
+        "building": "A",
+        "room": "12",
+        "bed": "1",
+        "unit": "detox"
+      }
+    }
+  ]
+}
