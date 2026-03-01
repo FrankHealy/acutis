@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
-import { Heart, Wine, Pill, Users, ClipboardCheck, UserPlus, Settings } from 'lucide-react';
+import { Heart, Wine, Pill, Users, ClipboardCheck, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
@@ -113,7 +113,7 @@ const StartupLanding: React.FC = () => {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
             <Tile 
               delayMs={100} 
-              label="Screening & Forecasting" 
+              label="Screening & Evaluation" 
               Icon={ClipboardCheck} 
               color="border-green-400 bg-green-50 text-green-700" 
               onClick={() => router.push('/units/screening')} 
@@ -148,17 +148,10 @@ const StartupLanding: React.FC = () => {
             />
             <Tile 
               delayMs={700} 
-              label="Admissions" 
-              Icon={UserPlus} 
-              color="border-cyan-400 bg-cyan-50 text-cyan-700" 
-              onClick={() => router.push('/units/admissions')} 
-            />
-            <Tile 
-              delayMs={820} 
               label="Configuration" 
               Icon={Settings} 
               color="border-orange-400 bg-orange-50 text-orange-700" 
-              onClick={() => router.push('/configuration')} 
+              onClick={() => router.push('/units/config')} 
             />
           </div>
         </div>

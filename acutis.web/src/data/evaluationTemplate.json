@@ -1,0 +1,135 @@
+{
+  "callMetadata": {
+    "callDateTime": null,
+    "callType": "inbound",
+    "callerRelationship": null,
+    "assessorName": null,
+    "centre": null,
+    "verbalConsent": false,
+    "gdprNoticeGiven": false
+  },
+  "personalDetails": {
+    "firstName": null,
+    "lastName": null,
+    "dateOfBirth": null,
+    "age": null,
+    "phoneNumber": null,
+    "email": null,
+    "location": {
+      "county": null,
+      "country": null
+    },
+    "preferredContactMethod": null,
+    "safeToLeaveVoicemail": false
+  },
+  "reasonForContact": {
+    "initiatedBy": null,
+    "primaryReason": null,
+    "clientDescription": null,
+    "triggerEvent": null
+  },
+  "substanceUse": {
+    "primarySubstance": "alcohol",
+    "secondarySubstances": [],
+    "drinkingDaysPerWeek": null,
+    "averageUnitsPerDay": null,
+    "heaviestDrinkingDayUnits": null,
+    "timeOfFirstDrink": null,
+    "drinksAlone": null,
+    "yearsProblematicUse": null,
+    "longestAbstinencePeriod": null,
+    "lastDrinkDateTime": null,
+    "drankInLast24Hours": false
+  },
+  "dependenceIndicators": {
+    "lossOfControl": false,
+    "unableToStop": false,
+    "tolerance": false,
+    "withdrawalSymptoms": {
+      "tremors": false,
+      "sweats": false,
+      "anxiety": false,
+      "nausea": false,
+      "seizures": false,
+      "hallucinations": false
+    },
+    "drinkingToAvoidWithdrawal": false,
+    "morningDrinking": false
+  },
+  "medicalRisk": {
+    "historyOfWithdrawalSeizures": false,
+    "historyOfDTs": false,
+    "medicalConditions": [],
+    "currentMedications": [],
+    "recentHospitalisations": false,
+    "gpDetails": {
+      "gpName": null,
+      "practice": null
+    },
+    "currentlyMedicallySupervised": false
+  },
+  "mentalHealth": {
+    "diagnoses": [],
+    "currentlyInTreatment": false,
+    "suicidalIdeation": false,
+    "previousSuicideAttempts": false,
+    "selfHarmHistory": false
+  },
+  "socialContext": {
+    "livingSituation": null,
+    "supportSystem": [],
+    "alcoholInHome": false,
+    "primaryStressors": []
+  },
+  "functionalImpact": {
+    "workImpact": null,
+    "relationshipImpact": null,
+    "legalIssues": {
+      "present": false,
+      "details": null,
+      "courtDatePending": false
+    },
+    "physicalHealthImpact": []
+  },
+  "treatmentHistory": {
+    "previousTreatments": [],
+    "mostRecentTreatmentDate": null,
+    "whatHelpedPreviously": null,
+    "whatDidNotHelp": null,
+    "knownRelapseTriggers": null
+  },
+  "motivation": {
+    "desireToStopScale": null,
+    "confidenceToStopScale": null,
+    "treatmentGoal": null,
+    "expectations": null
+  },
+  "practicalities": {
+    "availabilityForTreatment": null,
+    "fundingSource": null,
+    "insuranceProvider": null,
+    "timeOffWorkPossible": false
+  },
+  "assessorSummary": {
+    "overallRiskLevel": null,
+    "detoxRequired": false,
+    "medicalSupervisionRequired": false,
+    "immediateSafetyConcerns": false,
+    "recommendedPathway": null
+  },
+  "outcome": {
+    "nextStepsExplained": false,
+    "appointmentScheduled": {
+      "scheduled": false,
+      "dateTime": null
+    },
+    "informationSent": false,
+    "followUpRequired": false,
+    "referralMade": null
+  },
+  "notes": {
+    "clinicalNotes": null,
+    "safeguardingNotes": null,
+    "additionalNotes": null
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, Clock, User, Calendar } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import type { CallLog } from '@/data/mock/callLogs';
@@ -8,6 +8,7 @@ import CallLoggingModal, {
   type CallLoggingFormState,
 } from '@/areas/screening/callLogging/modal/CallLoggingModal';
 import {
+  type CallLogRangeDays,
   formatCallLogTime,
   getFilteredCalls,
 } from '@/areas/screening/callLogging/helpers/callLoggingHelpers';
@@ -15,11 +16,12 @@ import {
   createCallLog,
   fetchCallLogs,
 } from '@/areas/screening/services/callLoggingService';
+import { getScreeningControl } from '@/areas/screening/services/screeningControlService';
 
 const CallLogging: React.FC = () => {
   const { data: session, status } = useSession();
   const [showNewCallForm, setShowNewCallForm] = useState(false);
-  const [activeDay, setActiveDay] = useState<0 | 1 | 2>(0);
+  const [activeRangeDays, setActiveRangeDays] = useState<CallLogRangeDays>(2);
   const [timeSort, setTimeSort] = useState<'desc' | 'asc'>('desc');
   const [allCalls, setAllCalls] = useState<CallLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,36 +38,67 @@ const CallLogging: React.FC = () => {
     notes: '',
   });
 
-  useEffect(() => {
-    let isActive = true;
+  const loadCalls = useCallback(async (forceRefresh = false, withLoader = false) => {
+    try {
+      if (withLoader) {
+        setIsLoading(true);
+      }
+      if (status !== 'authenticated') {
+        setIsLoading(false);
+        return;
+      }
+      const data = await fetchCallLogs(session?.accessToken, {
+        forceRefresh,
+        rangeDays: activeRangeDays,
+      });
+      setAllCalls(data);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to load call logs.');
+    } finally {
+      if (withLoader) {
+        setIsLoading(false);
+      }
+    }
+  }, [activeRangeDays, session?.accessToken, status]);
 
-    const loadCalls = async () => {
+  useEffect(() => {
+    void loadCalls(false, true);
+  }, [loadCalls]);
+
+  useEffect(() => {
+    if (status !== 'authenticated') {
+      return;
+    }
+
+    let intervalId: number | null = null;
+    let disposed = false;
+
+    const start = async () => {
       try {
-        if (status !== 'authenticated') {
-          if (isActive) setIsLoading(false);
-          return;
-        }
-        const data = await fetchCallLogs(session?.accessToken);
-        if (isActive) {
-          setAllCalls(data);
-        }
-      } catch (error) {
-        if (isActive) {
-          setErrorMessage(error instanceof Error ? error.message : 'Failed to load call logs.');
-        }
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
+        const control = await getScreeningControl(session?.accessToken);
+        if (disposed) return;
+        const seconds = Math.max(5, control.callLogsCacheSeconds || 30);
+        intervalId = window.setInterval(() => {
+          void loadCalls(true, false);
+        }, seconds * 1000);
+      } catch {
+        if (disposed) return;
+        intervalId = window.setInterval(() => {
+          void loadCalls(true, false);
+        }, 30_000);
       }
     };
 
-    loadCalls();
+    void start();
 
     return () => {
-      isActive = false;
+      disposed = true;
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+      }
     };
-  }, [session?.accessToken, status]);
+  }, [loadCalls, session?.accessToken, status]);
 
   const handleFormChange = (
     field: keyof typeof formState,
@@ -122,8 +155,8 @@ const CallLogging: React.FC = () => {
   };
 
   const filteredCalls = useMemo(
-    () => getFilteredCalls(allCalls, activeDay, timeSort),
-    [activeDay, allCalls, timeSort],
+    () => getFilteredCalls(allCalls, activeRangeDays, timeSort),
+    [activeRangeDays, allCalls, timeSort],
   );
 
   return (
@@ -148,15 +181,16 @@ const CallLogging: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-2 shadow-sm">
           {([
-            { label: 'Today', value: 0 },
-            { label: 'Yesterday', value: 1 },
-            { label: '2 Days Ago', value: 2 },
+            { label: 'Last 2 Days', value: 2 },
+            { label: 'Last Week', value: 7 },
+            { label: 'Last 2 Weeks', value: 14 },
+            { label: 'Last Month', value: 30 },
           ] as const).map((item) => (
             <button
               key={item.value}
-              onClick={() => setActiveDay(item.value)}
+              onClick={() => setActiveRangeDays(item.value)}
               className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                activeDay === item.value
+                activeRangeDays === item.value
                   ? 'bg-blue-500 text-white shadow'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -216,7 +250,7 @@ const CallLogging: React.FC = () => {
             ) : filteredCalls.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
-                  No calls logged for this day.
+                  No calls logged for this range.
                 </td>
               </tr>
             ) : (

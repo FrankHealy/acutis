@@ -3,6 +3,7 @@ import NextAuth from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 
 type KeycloakAccessTokenPayload = {
+  iss?: string;
   preferred_username?: string;
   realm_access?: {
     roles?: string[];
@@ -36,7 +37,13 @@ const handler = NextAuth({
     async jwt({ token, account, profile }) {
       if (account?.access_token) {
         token.accessToken = account.access_token;
+        if (account.id_token) {
+          token.idToken = account.id_token;
+        }
         const payload = decodeJwtPayload(account.access_token);
+        if (payload?.iss) {
+          token.issuer = payload.iss;
+        }
         const realmRoles = Array.isArray(payload?.realm_access?.roles)
           ? payload?.realm_access?.roles
           : [];
@@ -62,6 +69,12 @@ const handler = NextAuth({
       if (token?.accessToken) {
         session.accessToken = token.accessToken as string;
       }
+      if (token?.idToken) {
+        session.idToken = token.idToken as string;
+      }
+      if (token?.issuer) {
+        session.issuer = token.issuer as string;
+      }
       if (token?.roles) {
         session.roles = token.roles as string[];
       }
@@ -76,12 +89,5 @@ const handler = NextAuth({
   },
   // You can add database configurations or custom callbacks here later if needed
 });
-KeycloakProvider({
-  clientId: process.env.AUTH_KEYCLOAK_ID!,
-  clientSecret: process.env.AUTH_KEYCLOAK_SECRET ?? "",
-  issuer: process.env.AUTH_KEYCLOAK_ISSUER!,
-  authorization: { params: { prompt: "login" } },
-})
-
 
 export { handler as GET, handler as POST };

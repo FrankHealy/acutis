@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="Acutis.Api.Tests/Acutis.Api.Tests.csproj" />
   <Project Path="Acutis.Api/Acutis.Api.csproj" />
   <Project Path="Acutis.Application/Acutis.Application.csproj" />
   <Project Path="Acutis.Domain/Acutis.Domain.csproj" />

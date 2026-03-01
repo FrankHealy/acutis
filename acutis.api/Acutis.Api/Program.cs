@@ -1,4 +1,7 @@
 using Acutis.Api.Security;
+using Acutis.Api.Services.Forms;
+using Acutis.Api.Services.Lookups;
+using Acutis.Api.Services.Screening;
 using Acutis.Application.Interfaces;
 using Acutis.Application.Services;
 using Acutis.Infrastructure.Data;
@@ -19,21 +22,47 @@ builder.Services.AddDbContext<AcutisDbContext>(options =>
 
 builder.Services.AddScoped<ICallRepository, CallRepository>();
 builder.Services.AddScoped<ICallService, CallService>();
+builder.Services.AddScoped<IFormService, FormService>();
+builder.Services.AddScoped<IOptionService, OptionService>();
+builder.Services.AddScoped<ITranslationService, TranslationService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
+builder.Services.AddScoped<IFormValidationService, FormValidationService>();
+builder.Services.AddScoped<IScreeningControlService, ScreeningControlService>();
+builder.Services.AddScoped<IFormConfigurationService, FormConfigurationService>();
+builder.Services.AddScoped<ILookupService, LookupService>();
 
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
+var defaultDevelopmentCorsOrigins = new[]
+{
+    "http://localhost:3000",
+    "https://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://127.0.0.1:3000"
+};
+var allowedCorsOrigins = corsOrigins.Length > 0
+    ? corsOrigins
+    : builder.Environment.IsDevelopment()
+        ? defaultDevelopmentCorsOrigins
+        : Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("WebApp", policy =>
     {
-        if (builder.Environment.IsDevelopment() && corsOrigins.Length == 0)
+        if (allowedCorsOrigins.Length == 0)
         {
-            policy.AllowAnyOrigin()
+            // Last-resort local dev fallback when no explicit origins are configured.
+            policy.SetIsOriginAllowed(origin =>
+                origin.StartsWith("http://localhost:", StringComparison.OrdinalIgnoreCase) ||
+                origin.StartsWith("https://localhost:", StringComparison.OrdinalIgnoreCase) ||
+                origin.StartsWith("http://127.0.0.1:", StringComparison.OrdinalIgnoreCase) ||
+                origin.StartsWith("https://127.0.0.1:", StringComparison.OrdinalIgnoreCase))
                 .AllowAnyHeader()
                 .AllowAnyMethod();
             return;
         }
 
-        policy.WithOrigins(corsOrigins)
+        policy.WithOrigins(allowedCorsOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

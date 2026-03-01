@@ -39,6 +39,15 @@ const Navigation: React.FC<NavigationProps> = ({ currentStep, setCurrentStep }) 
             Residents
           </button>
 
+          <button
+            onClick={() => setCurrentStep('configuration')}
+            className={`text-sm font-medium ${
+              currentStep === 'configuration' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Configuration
+          </button>
+
           {/* Operations dropdown */}
           <div className="relative group">
             <button
@@ -52,6 +61,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentStep, setCurrentStep }) 
             </button>
             <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
               {[
+                { key: 'operations/day-planner', label: 'Day Planner' },
                 { key: 'operations/room-mapping', label: 'Room Assignments' },
                 { key: 'operations/ot-roles', label: 'OT Roles' },
                 { key: 'operations/therapy-schedule', label: 'Therapy Schedule' },

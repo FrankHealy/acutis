@@ -1,4 +1,11 @@
 import type { CallLog } from '@/data/mock/callLogs';
+import type { CallLogRangeDays } from '@/areas/screening/callLogging/helpers/callLoggingHelpers';
+import {
+  clearLocalCache,
+  getScreeningControl,
+  readLocalCache,
+  writeLocalCache,
+} from '@/areas/screening/services/screeningControlService';
 
 type ApiCall = {
   id: string;
@@ -11,6 +18,8 @@ type ApiCall = {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5009';
 const CALLS_ENDPOINT = `${API_BASE_URL}/api/screenings/calls`;
+const CALL_LOG_CACHE_KEY_PREFIX = 'screening.calls';
+const CALL_LOG_CACHE_RANGES: ReadonlyArray<CallLogRangeDays> = [2, 7, 14, 30];
 
 const splitCaller = (caller?: string | null) => {
   if (!caller) return { firstName: '', surname: '' };
@@ -72,8 +81,23 @@ const getAuthHeaders = (accessToken?: string) => {
   };
 };
 
-export const fetchCallLogs = async (accessToken?: string): Promise<CallLog[]> => {
-  const response = await fetch(CALLS_ENDPOINT, {
+export const fetchCallLogs = async (
+  accessToken?: string,
+  options?: { forceRefresh?: boolean; rangeDays?: CallLogRangeDays },
+): Promise<CallLog[]> => {
+  const rangeDays = options?.rangeDays ?? 30;
+  const cacheKey = `${CALL_LOG_CACHE_KEY_PREFIX}.${rangeDays}d`;
+  const control = await getScreeningControl(accessToken, { forceRefresh: options?.forceRefresh });
+  const canUseCache = !options?.forceRefresh && control.callLogsCacheSeconds > 0;
+
+  if (canUseCache) {
+    const cached = readLocalCache<CallLog[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  const response = await fetch(`${CALLS_ENDPOINT}?lastDays=${rangeDays}`, {
     method: 'GET',
     headers: getAuthHeaders(accessToken),
     cache: 'no-store',
@@ -86,7 +110,13 @@ export const fetchCallLogs = async (accessToken?: string): Promise<CallLog[]> =>
 
   const data = (await response.json()) as ApiCall[];
   if (!Array.isArray(data)) return [];
-  return data.map(mapApiCallToUi);
+  const mapped = data.map(mapApiCallToUi);
+
+  if (canUseCache) {
+    writeLocalCache(cacheKey, mapped, control.callLogsCacheSeconds);
+  }
+
+  return mapped;
 };
 
 export const createCallLog = async (
@@ -108,5 +138,9 @@ export const createCallLog = async (
   }
 
   const data = (await response.json()) as ApiCall;
+  for (const rangeDays of CALL_LOG_CACHE_RANGES) {
+    clearLocalCache(`${CALL_LOG_CACHE_KEY_PREFIX}.${rangeDays}d`);
+  }
+  clearLocalCache('screening.evaluees');
   return mapApiCallToUi(data);
 };
