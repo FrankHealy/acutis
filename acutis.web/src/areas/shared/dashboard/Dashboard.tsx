@@ -8,14 +8,15 @@ import Notifications from './Notifications';
 interface DashboardProps {
   setCurrentStep: (step: string) => void;
   unitName: string;
+  onOpenGroupTherapy: (moduleKey?: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ setCurrentStep, unitName }) => {
+const Dashboard: React.FC<DashboardProps> = ({ setCurrentStep, unitName, onOpenGroupTherapy }) => {
   return (
     <div className="space-y-6">
       <StatsCards unitName={unitName} />
       {/* Replaces the four unit indicators with the Detox Daily Timeline */}
-      <UnitDailyTimeline unitName={unitName} />
+      <UnitDailyTimeline unitName={unitName} onOpenGroupTherapy={onOpenGroupTherapy} />
       <QuickActions setCurrentStep={setCurrentStep} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

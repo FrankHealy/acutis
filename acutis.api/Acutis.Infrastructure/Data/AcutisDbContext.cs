@@ -2,6 +2,8 @@
 using Acutis.Domain.Lookups;
 using Acutis.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Acutis.Infrastructure.Data;
 
@@ -378,6 +380,9 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<TextTranslation> TextTranslations => Set<TextTranslation>();
     public DbSet<FormSubmission> FormSubmissions => Set<FormSubmission>();
     public DbSet<ScreeningControl> ScreeningControls => Set<ScreeningControl>();
+    public DbSet<GroupTherapySubjectTemplate> GroupTherapySubjectTemplates => Set<GroupTherapySubjectTemplate>();
+    public DbSet<GroupTherapyDailyQuestion> GroupTherapyDailyQuestions => Set<GroupTherapyDailyQuestion>();
+    public DbSet<GroupTherapyResidentRemark> GroupTherapyResidentRemarks => Set<GroupTherapyResidentRemark>();
     public DbSet<LookupType> LookupTypes => Set<LookupType>();
     public DbSet<LookupValue> LookupValues => Set<LookupValue>();
     public DbSet<LookupValueLabel> LookupValueLabels => Set<LookupValueLabel>();
@@ -589,11 +594,16 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new LookupTypeConfiguration());
         modelBuilder.ApplyConfiguration(new LookupValueConfiguration());
         modelBuilder.ApplyConfiguration(new LookupValueLabelConfiguration());
+        modelBuilder.ApplyConfiguration(new GroupTherapySubjectTemplateConfiguration());
+        modelBuilder.ApplyConfiguration(new GroupTherapyDailyQuestionConfiguration());
+        modelBuilder.ApplyConfiguration(new GroupTherapyResidentRemarkConfiguration());
 
         SeedFormDefinition(modelBuilder);
         SeedOptionSets(modelBuilder);
         SeedTranslations(modelBuilder);
         SeedScreeningControls(modelBuilder);
+        SeedGroupTherapyProgram(modelBuilder);
+        SeedGroupTherapyRemarks(modelBuilder);
     }
 
     private static void SeedFormDefinition(ModelBuilder modelBuilder)
@@ -923,6 +933,359 @@ public sealed class AcutisDbContext : DbContext
             new TextTranslation { Id = Guid.Parse("f66d9b1d-3871-4cd2-b15e-e100db7c9b3f"), Key = "evaluation.status.in_progress", Locale = "ar", Text = "قيد التنفيذ" },
             new TextTranslation { Id = Guid.Parse("dbbd3650-7578-48eb-8ff1-850f4494de2c"), Key = "evaluation.status.scheduled", Locale = "ar", Text = "مجدول" },
             new TextTranslation { Id = Guid.Parse("7f1f55d9-6d09-4075-9d6b-c54c14490515"), Key = "evaluation.status.completed", Locale = "ar", Text = "مكتمل" });
+    }
+
+    private static void SeedGroupTherapyProgram(ModelBuilder modelBuilder)
+    {
+        const string unitCode = "alcohol";
+        const string programCode = "bruree_alcohol_gt";
+
+        var weeklyTopics = new[]
+        {
+            new
+            {
+                Week = 1,
+                Topic = "Spirituality",
+                Intro =
+                    "Week focus: spirituality as connection, meaning, and values in recovery. Sessions are reflective, practical, and respectful of each resident's personal belief framework.",
+                Days = new[]
+                {
+                    new[]
+                    {
+                        "What does spirituality mean to you personally, if anything?",
+                        "When do you feel most connected to purpose or meaning?",
+                        "What daily practice helps you feel grounded for recovery?"
+                    },
+                    new[]
+                    {
+                        "How has addiction impacted your sense of purpose?",
+                        "What value do you want to rebuild this week?",
+                        "Who or what reminds you of your better self?"
+                    },
+                    new[]
+                    {
+                        "What are three things you are grateful for today?",
+                        "How can gratitude support you during cravings?",
+                        "What small act of kindness can you offer today?"
+                    },
+                    new[]
+                    {
+                        "What does forgiveness mean in your own words?",
+                        "Is there someone you need to forgive to move forward?",
+                        "What would self-forgiveness look like this week?"
+                    },
+                    new[]
+                    {
+                        "What fear are you carrying right now?",
+                        "What helps you let go when you cannot control an outcome?",
+                        "How can trust be rebuilt one action at a time?"
+                    },
+                    new[]
+                    {
+                        "What is one boundary that protects your peace?",
+                        "How does silence or reflection help your recovery?",
+                        "What personal ritual can you commit to each morning?"
+                    },
+                    new[]
+                    {
+                        "What did you learn this week about your inner life?",
+                        "Which practice from this week will you continue?",
+                        "How will spirituality support your plan for next week?"
+                    }
+                }
+            },
+            new
+            {
+                Week = 2,
+                Topic = "Change",
+                Intro =
+                    "Week focus: understanding change as a process. Residents identify patterns, barriers, motivation, and practical actions that turn intention into behavior.",
+                Days = new[]
+                {
+                    new[]
+                    {
+                        "What change are you most committed to right now?",
+                        "What makes this change important to you today?",
+                        "What is one action you can take in the next 24 hours?"
+                    },
+                    new[]
+                    {
+                        "Which old pattern appears most often before relapse behavior?",
+                        "What is your earliest warning sign that you are slipping?",
+                        "What replacement behavior can you use immediately?"
+                    },
+                    new[]
+                    {
+                        "How do you usually respond to stress without substances?",
+                        "Which coping strategy has worked for you in the past?",
+                        "What support do you need when pressure rises?"
+                    },
+                    new[]
+                    {
+                        "What belief about yourself needs to change for recovery to last?",
+                        "How does self-talk affect your daily choices?",
+                        "What new statement can you repeat when discouraged?"
+                    },
+                    new[]
+                    {
+                        "Who supports your change and how do they help?",
+                        "What relationships make change harder?",
+                        "What boundary protects your recovery progress?"
+                    },
+                    new[]
+                    {
+                        "What setback taught you something useful?",
+                        "How can you recover quickly after a difficult day?",
+                        "What does progress look like besides perfection?"
+                    },
+                    new[]
+                    {
+                        "What has changed in you this week?",
+                        "Which habit will you strengthen next week?",
+                        "How will you measure progress over the next 7 days?"
+                    }
+                }
+            },
+            new
+            {
+                Week = 3,
+                Topic = "Healing the Hurts of the Past",
+                Intro =
+                    "Week focus: safe reflection on past hurt, shame, and unresolved pain. The goal is emotional processing with boundaries, accountability, and healthier meaning-making.",
+                Days = new[]
+                {
+                    new[]
+                    {
+                        "What past hurt still affects you most today?",
+                        "How has this hurt influenced your addiction story?",
+                        "What support helps you discuss this safely?"
+                    },
+                    new[]
+                    {
+                        "What emotions do you avoid most often?",
+                        "How do avoided emotions show up in your behavior?",
+                        "What healthy way can you express one difficult emotion today?"
+                    },
+                    new[]
+                    {
+                        "What shame narrative do you carry about your past?",
+                        "What facts challenge that shame narrative?",
+                        "What compassionate truth can replace it?"
+                    },
+                    new[]
+                    {
+                        "What apology do you owe, and what accountability is needed first?",
+                        "Where do you need to make amends without causing further harm?",
+                        "How can you prepare for difficult conversations responsibly?"
+                    },
+                    new[]
+                    {
+                        "What boundaries protect you when discussing trauma?",
+                        "How do you know when to pause and regulate?",
+                        "Which grounding technique works best for you?"
+                    },
+                    new[]
+                    {
+                        "What does healing look like in practical daily life?",
+                        "What relationship needs rebuilding through consistent action?",
+                        "How can you show trustworthiness this week?"
+                    },
+                    new[]
+                    {
+                        "What insight from this week changed your perspective?",
+                        "What unfinished hurt needs ongoing support after discharge?",
+                        "What is your next healing step with your care team?"
+                    }
+                }
+            },
+            new
+            {
+                Week = 4,
+                Topic = "Relapse Prevention",
+                Intro =
+                    "Week focus: practical relapse prevention planning. Residents define triggers, rehearse response plans, and build support structures for high-risk situations post-treatment.",
+                Days = new[]
+                {
+                    new[]
+                    {
+                        "What are your top three relapse triggers?",
+                        "Which trigger is highest risk in the next month?",
+                        "What is your first-step response when that trigger appears?"
+                    },
+                    new[]
+                    {
+                        "What thoughts usually come before a lapse?",
+                        "How can you challenge those thoughts in real time?",
+                        "Who can you contact immediately when those thoughts appear?"
+                    },
+                    new[]
+                    {
+                        "What places or people increase relapse risk for you?",
+                        "Which boundaries are non-negotiable after discharge?",
+                        "What exit plan will you use in unsafe environments?"
+                    },
+                    new[]
+                    {
+                        "How does poor sleep, hunger, or stress affect your risk level?",
+                        "What daily routine keeps you stable?",
+                        "What early warning signs tell you to seek support quickly?"
+                    },
+                    new[]
+                    {
+                        "What does your emergency relapse plan include?",
+                        "Where is your written plan stored and who has a copy?",
+                        "How will you reduce harm if you feel close to using?"
+                    },
+                    new[]
+                    {
+                        "What healthy reward can reinforce sobriety milestones?",
+                        "How will you stay connected to peer or community support?",
+                        "What commitment can you make to your future self today?"
+                    },
+                    new[]
+                    {
+                        "Which relapse prevention tools were most useful this week?",
+                        "What is your first 7-day post-program action plan?",
+                        "What is your key message to yourself when cravings hit?"
+                    }
+                }
+            },
+            new
+            {
+                Week = 5,
+                Topic = "Listening",
+                Intro =
+                    "Week focus: strengthening active listening in recovery groups. Residents practice presence, reflection, and empathy so conversations become safer, clearer, and more supportive.",
+                Days = new[]
+                {
+                    new[]
+                    {
+                        "What does active listening look like in group therapy?",
+                        "When do you notice yourself listening to reply rather than to understand?",
+                        "What is one habit that would improve how you listen this week?"
+                    },
+                    new[]
+                    {
+                        "How can you reflect back what someone said without judging?",
+                        "What gets in the way of listening when emotions run high?",
+                        "What phrase can you use to show empathy in a difficult conversation?"
+                    },
+                    new[]
+                    {
+                        "How does better listening reduce conflict in recovery settings?",
+                        "How can listening improve accountability between peers?",
+                        "What listening commitment will you keep before next session?"
+                    }
+                }
+            }
+        };
+
+        var subjects = new List<GroupTherapySubjectTemplate>();
+        var questions = new List<GroupTherapyDailyQuestion>();
+
+        foreach (var topic in weeklyTopics)
+        {
+            var subjectId = CreateDeterministicGuid($"group-therapy:subject:{unitCode}:{programCode}:{topic.Week}");
+            subjects.Add(new GroupTherapySubjectTemplate
+            {
+                Id = subjectId,
+                UnitCode = unitCode,
+                ProgramCode = programCode,
+                WeekNumber = topic.Week,
+                Topic = topic.Topic,
+                IntroText = topic.Intro,
+                IsActive = true
+            });
+
+            for (var dayIndex = 0; dayIndex < topic.Days.Length; dayIndex++)
+            {
+                var dayNumber = dayIndex + 1;
+                for (var questionIndex = 0; questionIndex < topic.Days[dayIndex].Length; questionIndex++)
+                {
+                    var sortOrder = questionIndex + 1;
+                    questions.Add(new GroupTherapyDailyQuestion
+                    {
+                        Id = CreateDeterministicGuid(
+                            $"group-therapy:question:{unitCode}:{programCode}:{topic.Week}:{dayNumber}:{sortOrder}"),
+                        SubjectTemplateId = subjectId,
+                        DayNumber = dayNumber,
+                        SortOrder = sortOrder,
+                        QuestionText = topic.Days[dayIndex][questionIndex],
+                        IsActive = true
+                    });
+                }
+            }
+        }
+
+        modelBuilder.Entity<GroupTherapySubjectTemplate>().HasData(subjects);
+        modelBuilder.Entity<GroupTherapyDailyQuestion>().HasData(questions);
+    }
+
+    private static void SeedGroupTherapyRemarks(ModelBuilder modelBuilder)
+    {
+        const string unitCode = "alcohol";
+        const string programCode = "bruree_alcohol_gt";
+
+        var seedUtc = new DateTime(2026, 3, 1, 9, 0, 0, DateTimeKind.Utc);
+        var records = new[]
+        {
+            new
+            {
+                ResidentId = 1,
+                ModuleKey = "spirituality",
+                NoteLines = new[]
+                {
+                    "Excellent insight",
+                    "Reflective Awareness [Strength]: Can identify personal meaning and values."
+                },
+                FreeText = "Resident engaged well and linked gratitude practice to daily recovery structure."
+            },
+            new
+            {
+                ResidentId = 2,
+                ModuleKey = "change",
+                NoteLines = new[]
+                {
+                    "Good participation",
+                    "Behavioral Flexibility [Developing]: Acknowledges old patterns and can name one replacement behaviour."
+                },
+                FreeText = "Shows motivation but needs reminders to turn intentions into concrete same-day actions."
+            },
+            new
+            {
+                ResidentId = 3,
+                ModuleKey = "relapse-prevention",
+                NoteLines = new[]
+                {
+                    "Needs encouragement",
+                    "Trigger Awareness [Developing]: Identifies high-risk cues but hesitates to activate support."
+                },
+                FreeText = "Agreed to write and carry an emergency contact plan before next session."
+            }
+        };
+
+        var seededRemarks = records.Select((record, index) => new GroupTherapyResidentRemark
+        {
+            Id = CreateDeterministicGuid(
+                $"group-therapy:remark:{unitCode}:{programCode}:{record.ModuleKey}:{record.ResidentId}"),
+            UnitCode = unitCode,
+            ProgramCode = programCode,
+            ResidentId = record.ResidentId,
+            ModuleKey = record.ModuleKey,
+            NoteLinesJson = System.Text.Json.JsonSerializer.Serialize(record.NoteLines),
+            FreeText = record.FreeText,
+            CreatedAtUtc = seedUtc.AddMinutes(index),
+            UpdatedAtUtc = seedUtc.AddMinutes(index)
+        });
+
+        modelBuilder.Entity<GroupTherapyResidentRemark>().HasData(seededRemarks);
+    }
+
+    private static Guid CreateDeterministicGuid(string value)
+    {
+        var bytes = Encoding.UTF8.GetBytes(value);
+        var hash = MD5.HashData(bytes);
+        return new Guid(hash);
     }
 
     private static void SeedScreeningControls(ModelBuilder modelBuilder)

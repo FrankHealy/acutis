@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260301195333_AddListeningGroupTherapyWeek")]
+    partial class AddListeningGroupTherapyWeek
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1075,91 +1078,6 @@ namespace Acutis.Infrastructure.Migrations
                             QuestionText = "What listening commitment will you keep before next session?",
                             SortOrder = 3,
                             SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        });
-                });
-
-            modelBuilder.Entity("Acutis.Domain.Entities.GroupTherapyResidentRemark", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FreeText")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ModuleKey")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("NoteLinesJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProgramCode")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("ResidentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UnitCode")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UnitCode", "ProgramCode", "ModuleKey", "ResidentId")
-                        .IsUnique()
-                        .HasDatabaseName("UQ_GroupTherapyResidentRemark_Unit_Program_Module_Resident");
-
-                    b.ToTable("GroupTherapyResidentRemark", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("17a1b864-4a2c-8538-e8ee-4e8c87c4bee9"),
-                            CreatedAtUtc = new DateTime(2026, 3, 1, 9, 0, 0, 0, DateTimeKind.Utc),
-                            FreeText = "Resident engaged well and linked gratitude practice to daily recovery structure.",
-                            ModuleKey = "spirituality",
-                            NoteLinesJson = "[\"Excellent insight\",\"Reflective Awareness [Strength]: Can identify personal meaning and values.\"]",
-                            ProgramCode = "bruree_alcohol_gt",
-                            ResidentId = 1,
-                            UnitCode = "alcohol",
-                            UpdatedAtUtc = new DateTime(2026, 3, 1, 9, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("ca9dc4b1-8dba-15f5-dd27-4d70004b878a"),
-                            CreatedAtUtc = new DateTime(2026, 3, 1, 9, 1, 0, 0, DateTimeKind.Utc),
-                            FreeText = "Shows motivation but needs reminders to turn intentions into concrete same-day actions.",
-                            ModuleKey = "change",
-                            NoteLinesJson = "[\"Good participation\",\"Behavioral Flexibility [Developing]: Acknowledges old patterns and can name one replacement behaviour.\"]",
-                            ProgramCode = "bruree_alcohol_gt",
-                            ResidentId = 2,
-                            UnitCode = "alcohol",
-                            UpdatedAtUtc = new DateTime(2026, 3, 1, 9, 1, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("c39b9c50-d423-d96c-4925-9a5d68c1d586"),
-                            CreatedAtUtc = new DateTime(2026, 3, 1, 9, 2, 0, 0, DateTimeKind.Utc),
-                            FreeText = "Agreed to write and carry an emergency contact plan before next session.",
-                            ModuleKey = "relapse-prevention",
-                            NoteLinesJson = "[\"Needs encouragement\",\"Trigger Awareness [Developing]: Identifies high-risk cues but hesitates to activate support.\"]",
-                            ProgramCode = "bruree_alcohol_gt",
-                            ResidentId = 3,
-                            UnitCode = "alcohol",
-                            UpdatedAtUtc = new DateTime(2026, 3, 1, 9, 2, 0, 0, DateTimeKind.Utc)
                         });
                 });
 

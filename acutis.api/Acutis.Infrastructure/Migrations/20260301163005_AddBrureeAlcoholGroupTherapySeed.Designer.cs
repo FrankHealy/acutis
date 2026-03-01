@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260301163005_AddBrureeAlcoholGroupTherapySeed")]
+    partial class AddBrureeAlcoholGroupTherapySeed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -994,172 +997,6 @@ namespace Acutis.Infrastructure.Migrations
                             QuestionText = "What is your key message to yourself when cravings hit?",
                             SortOrder = 3,
                             SubjectTemplateId = new Guid("94a61edf-0fd8-24a5-5f4c-d57f08c3fa18")
-                        },
-                        new
-                        {
-                            Id = new Guid("8102daea-a52d-c9f0-ff85-676cb0658c80"),
-                            DayNumber = 1,
-                            IsActive = true,
-                            QuestionText = "What does active listening look like in group therapy?",
-                            SortOrder = 1,
-                            SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        },
-                        new
-                        {
-                            Id = new Guid("8d533f76-de71-0bcf-982a-2ccf134075b4"),
-                            DayNumber = 1,
-                            IsActive = true,
-                            QuestionText = "When do you notice yourself listening to reply rather than to understand?",
-                            SortOrder = 2,
-                            SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        },
-                        new
-                        {
-                            Id = new Guid("dd02f7e4-8592-ca0a-597e-40a1fe9570ad"),
-                            DayNumber = 1,
-                            IsActive = true,
-                            QuestionText = "What is one habit that would improve how you listen this week?",
-                            SortOrder = 3,
-                            SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        },
-                        new
-                        {
-                            Id = new Guid("f46ab704-a436-695d-859d-6984e7b2dd56"),
-                            DayNumber = 2,
-                            IsActive = true,
-                            QuestionText = "How can you reflect back what someone said without judging?",
-                            SortOrder = 1,
-                            SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        },
-                        new
-                        {
-                            Id = new Guid("574598cf-bc96-ff2b-e7a6-e64b939bd722"),
-                            DayNumber = 2,
-                            IsActive = true,
-                            QuestionText = "What gets in the way of listening when emotions run high?",
-                            SortOrder = 2,
-                            SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        },
-                        new
-                        {
-                            Id = new Guid("1bc8d546-b918-e0a7-456f-89d11783805a"),
-                            DayNumber = 2,
-                            IsActive = true,
-                            QuestionText = "What phrase can you use to show empathy in a difficult conversation?",
-                            SortOrder = 3,
-                            SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        },
-                        new
-                        {
-                            Id = new Guid("098801ef-c165-979c-eac7-3272d84230ec"),
-                            DayNumber = 3,
-                            IsActive = true,
-                            QuestionText = "How does better listening reduce conflict in recovery settings?",
-                            SortOrder = 1,
-                            SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        },
-                        new
-                        {
-                            Id = new Guid("31d3c554-2e1c-0b05-d69f-d624bc872265"),
-                            DayNumber = 3,
-                            IsActive = true,
-                            QuestionText = "How can listening improve accountability between peers?",
-                            SortOrder = 2,
-                            SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        },
-                        new
-                        {
-                            Id = new Guid("e6cfdd9f-7858-32ae-44f8-7f6f9a64eaa2"),
-                            DayNumber = 3,
-                            IsActive = true,
-                            QuestionText = "What listening commitment will you keep before next session?",
-                            SortOrder = 3,
-                            SubjectTemplateId = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa")
-                        });
-                });
-
-            modelBuilder.Entity("Acutis.Domain.Entities.GroupTherapyResidentRemark", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FreeText")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ModuleKey")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("NoteLinesJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProgramCode")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("ResidentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UnitCode")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UnitCode", "ProgramCode", "ModuleKey", "ResidentId")
-                        .IsUnique()
-                        .HasDatabaseName("UQ_GroupTherapyResidentRemark_Unit_Program_Module_Resident");
-
-                    b.ToTable("GroupTherapyResidentRemark", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("17a1b864-4a2c-8538-e8ee-4e8c87c4bee9"),
-                            CreatedAtUtc = new DateTime(2026, 3, 1, 9, 0, 0, 0, DateTimeKind.Utc),
-                            FreeText = "Resident engaged well and linked gratitude practice to daily recovery structure.",
-                            ModuleKey = "spirituality",
-                            NoteLinesJson = "[\"Excellent insight\",\"Reflective Awareness [Strength]: Can identify personal meaning and values.\"]",
-                            ProgramCode = "bruree_alcohol_gt",
-                            ResidentId = 1,
-                            UnitCode = "alcohol",
-                            UpdatedAtUtc = new DateTime(2026, 3, 1, 9, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("ca9dc4b1-8dba-15f5-dd27-4d70004b878a"),
-                            CreatedAtUtc = new DateTime(2026, 3, 1, 9, 1, 0, 0, DateTimeKind.Utc),
-                            FreeText = "Shows motivation but needs reminders to turn intentions into concrete same-day actions.",
-                            ModuleKey = "change",
-                            NoteLinesJson = "[\"Good participation\",\"Behavioral Flexibility [Developing]: Acknowledges old patterns and can name one replacement behaviour.\"]",
-                            ProgramCode = "bruree_alcohol_gt",
-                            ResidentId = 2,
-                            UnitCode = "alcohol",
-                            UpdatedAtUtc = new DateTime(2026, 3, 1, 9, 1, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("c39b9c50-d423-d96c-4925-9a5d68c1d586"),
-                            CreatedAtUtc = new DateTime(2026, 3, 1, 9, 2, 0, 0, DateTimeKind.Utc),
-                            FreeText = "Agreed to write and carry an emergency contact plan before next session.",
-                            ModuleKey = "relapse-prevention",
-                            NoteLinesJson = "[\"Needs encouragement\",\"Trigger Awareness [Developing]: Identifies high-risk cues but hesitates to activate support.\"]",
-                            ProgramCode = "bruree_alcohol_gt",
-                            ResidentId = 3,
-                            UnitCode = "alcohol",
-                            UpdatedAtUtc = new DateTime(2026, 3, 1, 9, 2, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -1243,16 +1080,6 @@ namespace Acutis.Infrastructure.Migrations
                             Topic = "Relapse Prevention",
                             UnitCode = "alcohol",
                             WeekNumber = 4
-                        },
-                        new
-                        {
-                            Id = new Guid("e55f9fc8-a0e7-1894-6830-9b189760b6aa"),
-                            IntroText = "Week focus: strengthening active listening in recovery groups. Residents practice presence, reflection, and empathy so conversations become safer, clearer, and more supportive.",
-                            IsActive = true,
-                            ProgramCode = "bruree_alcohol_gt",
-                            Topic = "Listening",
-                            UnitCode = "alcohol",
-                            WeekNumber = 5
                         });
                 });
 

@@ -33,9 +33,10 @@ interface ScheduleEvent {
 
 type UnitDailyTimelineProps = {
   unitName: string;
+  onOpenGroupTherapy: (moduleKey?: string) => void;
 };
 
-const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName }) => {
+const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenGroupTherapy }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [viewMode, setViewMode] = useState<"morning" | "evening">("morning");
@@ -77,6 +78,31 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName }) => {
   ];
 
   const getCurrentSchedule = () => (viewMode === "morning" ? morningSchedule : eveningSchedule);
+
+  const mapEventToModuleKey = (title: string): string | undefined => {
+    switch (title) {
+      case "Works/Group":
+        return "spirituality";
+      case "Group A":
+        return "change";
+      case "Group B":
+        return "relapse-prevention";
+      case "Group C":
+        return "healing-the-hurts-of-the-past";
+      default:
+        return undefined;
+    }
+  };
+
+  const handleEventClick = (event: ScheduleEvent) => {
+    const moduleKey = mapEventToModuleKey(event.title);
+    if (moduleKey) {
+      onOpenGroupTherapy(moduleKey);
+      return;
+    }
+
+    setSelectedEvent(event);
+  };
 
   const getCurrentMinutes = () => currentTime.getHours() * 60 + currentTime.getMinutes();
 
@@ -202,7 +228,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName }) => {
                 style={{ left: `${position}%`, transform: "translateX(-50%)", top: `${topOffset}px` }}
               >
                 <button
-                  onClick={() => setSelectedEvent(event)}
+                  onClick={() => handleEventClick(event)}
                   className={`relative group transition-all duration-200 ${isCurrent ? "scale-125" : "hover:scale-110"}`}
                 >
                   <div className={`w-14 h-14 ${event.color} rounded-full flex items-center justify-center shadow-lg ${isCurrent ? "ring-4 ring-yellow-400 ring-offset-2" : ""} ${isSpecial ? "ring-4 ring-gray-300 ring-offset-2" : ""}`}>
@@ -264,4 +290,3 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName }) => {
 };
 
 export default UnitDailyTimeline;
-

@@ -1,3 +1,5 @@
+import seededResidents from "../data/mockResidents.json";
+
 export type Resident = {
   id: number;
   firstName: string;
@@ -25,112 +27,106 @@ export type Resident = {
   literacyScale: number;
 };
 
-const baseResidents: Resident[] = [
-  {
-    id: 1,
-    firstName: "Michael",
-    surname: "Ryan",
-    nationality: "Irish",
-    age: 39,
-    weekNumber: 4,
-    roomNumber: "A-205",
-    unit: "alcohol",
-    photo: null,
-    fallbackPhoto: "https://i.pravatar.cc/150?img=11",
-    psn: "ALC-1001",
-    admissionDate: "2026-01-12",
-    expectedCompletion: "2026-04-12",
-    primaryAddiction: "Alcohol",
-    isDrug: false,
-    isGambeler: true,
-    isPreviousResident: false,
-    dietaryNeedsCode: 0,
-    isSnorer: false,
-    hasCriminalHistory: false,
-    isOnProbation: false,
-    argumentativeScale: 1,
-    learningDifficultyScale: 2,
-    literacyScale: 3,
-  },
-  {
-    id: 2,
-    firstName: "Sarah",
-    surname: "Moran",
-    nationality: "Irish",
-    age: 31,
-    weekNumber: 1,
-    roomNumber: "D-101",
-    unit: "detox",
-    photo: null,
-    fallbackPhoto: "https://i.pravatar.cc/150?img=21",
-    psn: "DTX-2001",
-    admissionDate: "2026-02-10",
-    expectedCompletion: "2026-03-20",
-    primaryAddiction: "Alcohol",
-    isDrug: false,
-    isGambeler: false,
-    isPreviousResident: false,
-    dietaryNeedsCode: 1,
-    isSnorer: true,
-    hasCriminalHistory: false,
-    isOnProbation: false,
-    argumentativeScale: 2,
-    learningDifficultyScale: 1,
-    literacyScale: 4,
-  },
-  {
-    id: 3,
-    firstName: "Ahmed",
-    surname: "Latif",
-    nationality: "Moroccan",
-    age: 28,
-    weekNumber: 5,
-    roomNumber: "DR-110",
-    unit: "drugs",
-    photo: null,
-    fallbackPhoto: "https://i.pravatar.cc/150?img=31",
-    psn: "DRG-3001",
-    admissionDate: "2025-12-15",
-    expectedCompletion: "2026-03-10",
-    primaryAddiction: "Substances",
-    isDrug: true,
-    isGambeler: false,
-    isPreviousResident: true,
-    dietaryNeedsCode: 0,
-    isSnorer: false,
-    hasCriminalHistory: true,
-    isOnProbation: true,
-    argumentativeScale: 3,
-    learningDifficultyScale: 2,
-    literacyScale: 2,
-  },
-  {
-    id: 4,
-    firstName: "Emma",
-    surname: "Kelly",
-    nationality: "Irish",
-    age: 34,
-    weekNumber: 3,
-    roomNumber: "L-103",
-    unit: "ladies",
-    photo: null,
-    fallbackPhoto: "https://i.pravatar.cc/150?img=41",
-    psn: "LAD-4001",
-    admissionDate: "2026-01-21",
-    expectedCompletion: "2026-04-20",
-    primaryAddiction: "Alcohol",
-    isDrug: false,
-    isGambeler: false,
-    isPreviousResident: false,
-    dietaryNeedsCode: 2,
-    isSnorer: false,
-    hasCriminalHistory: false,
-    isOnProbation: false,
-    argumentativeScale: 1,
-    learningDifficultyScale: 1,
-    literacyScale: 4,
-  },
-];
+type SeedResident = {
+  id: string;
+  psn: string;
+  surname: string;
+  firstName: string;
+  photoURL?: string | null;
+  dob: string;
+  weekNumber: number;
+  roomNumber: number;
+  nationality: string;
+  primaryAddiction: string;
+  isDrug: boolean;
+  isGambeler: boolean;
+  isSnorer: boolean;
+  dietaryNeedsCode: number;
+  hasCriminalHistory: boolean;
+  isOnProbation: boolean;
+  argumentativeScale: number;
+  learningDifficultyScale: number;
+  literacyScale: number;
+  isPreviousResident: boolean;
+};
 
-export const mockResidents = baseResidents;
+const toIsoDate = (value: Date): string => value.toISOString().slice(0, 10);
 
+const addDays = (value: Date, days: number): Date => {
+  const result = new Date(value);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+const calculateAge = (dobIso: string): number => {
+  const dob = new Date(dobIso);
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const monthDiff = now.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+    age--;
+  }
+  return Math.max(16, age);
+};
+
+const normalizePhoto = (photoUrl: string | null | undefined): string | null => {
+  if (!photoUrl) {
+    return null;
+  }
+
+  const trimmed = photoUrl.trim();
+  return trimmed.length === 0 ? null : trimmed;
+};
+
+const deriveUnit = (seed: SeedResident, index: number): Resident["unit"] => {
+  if (seed.isDrug) {
+    return "drugs";
+  }
+
+  if ((seed.weekNumber ?? 0) <= 4) {
+    return "detox";
+  }
+
+  // Keep a consistent slice for the ladies unit while source data has no explicit gender field.
+  if (index % 9 === 0) {
+    return "ladies";
+  }
+
+  return "alcohol";
+};
+
+const alcoholSeedResidents: Resident[] = (seededResidents as SeedResident[]).map((seed, index) => {
+  const fallbackPhoto = `https://i.pravatar.cc/150?img=${(index % 70) + 1}`;
+  const weekNumber = seed.weekNumber ?? 1;
+  const admissionDate = addDays(new Date(), -(weekNumber * 7));
+  const expectedCompletion = addDays(admissionDate, 84);
+
+  return {
+    id: index + 1,
+    firstName: seed.firstName,
+    surname: seed.surname,
+    nationality: seed.nationality,
+    age: calculateAge(seed.dob),
+    weekNumber: weekNumber,
+    roomNumber: String(seed.roomNumber),
+    unit: deriveUnit(seed, index),
+    photo: normalizePhoto(seed.photoURL),
+    fallbackPhoto,
+    psn: seed.psn,
+    admissionDate: toIsoDate(admissionDate),
+    expectedCompletion: toIsoDate(expectedCompletion),
+    primaryAddiction: seed.primaryAddiction ?? "Alcohol",
+    isDrug: Boolean(seed.isDrug),
+    isGambeler: Boolean(seed.isGambeler),
+    isPreviousResident: Boolean(seed.isPreviousResident),
+    dietaryNeedsCode: seed.dietaryNeedsCode ?? 0,
+    isSnorer: Boolean(seed.isSnorer),
+    hasCriminalHistory: Boolean(seed.hasCriminalHistory),
+    isOnProbation: Boolean(seed.isOnProbation),
+    argumentativeScale: seed.argumentativeScale ?? 0,
+    learningDifficultyScale: seed.learningDifficultyScale ?? 0,
+    literacyScale: seed.literacyScale ?? 0,
+  };
+});
+
+export const mockResidents: Resident[] = alcoholSeedResidents;

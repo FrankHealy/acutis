@@ -1,6 +1,8 @@
 using Acutis.Api.Security;
 using Acutis.Api.Services.Forms;
+using Acutis.Api.Services.GroupTherapy;
 using Acutis.Api.Services.Lookups;
+using Acutis.Api.Services.Residents;
 using Acutis.Api.Services.Screening;
 using Acutis.Application.Interfaces;
 using Acutis.Application.Services;
@@ -30,6 +32,8 @@ builder.Services.AddScoped<IFormValidationService, FormValidationService>();
 builder.Services.AddScoped<IScreeningControlService, ScreeningControlService>();
 builder.Services.AddScoped<IFormConfigurationService, FormConfigurationService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
+builder.Services.AddScoped<IGroupTherapyService, GroupTherapyService>();
+builder.Services.AddScoped<IResidentService, ResidentService>();
 
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
 var defaultDevelopmentCorsOrigins = new[]

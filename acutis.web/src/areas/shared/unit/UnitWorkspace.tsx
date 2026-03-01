@@ -30,14 +30,19 @@ type UnitWorkspaceProps = {
 export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<Step>("dashboard");
+  const [therapyModuleKey, setTherapyModuleKey] = useState<string | undefined>(undefined);
   const unit = UnitDefinitions[unitId];
 
   const goTo = (step: string) => setCurrentStep(step as Step);
+  const openGroupTherapy = (moduleKey?: string) => {
+    setTherapyModuleKey(moduleKey);
+    setCurrentStep("operations/therapy-schedule");
+  };
 
   const renderStep = () => {
     switch (currentStep) {
       case "dashboard":
-        return <Dashboard setCurrentStep={goTo} unitName={unit.name} />;
+        return <Dashboard setCurrentStep={goTo} unitName={unit.name} onOpenGroupTherapy={openGroupTherapy} />;
       case "new-admission":
         return <UnitAdmissionForm unitId={unitId} unitName={unit.name} setCurrentStep={goTo} />;
       case "residents":
@@ -106,7 +111,7 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
           </div>
         );
       case "operations/therapy-schedule":
-        return <GroupTherapySection />;
+        return <GroupTherapySection initialModuleKey={therapyModuleKey} unitId={unitId} />;
       default:
         return null;
     }
