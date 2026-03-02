@@ -4,6 +4,7 @@ using Acutis.Api.Services.GroupTherapy;
 using Acutis.Api.Services.Lookups;
 using Acutis.Api.Services.Residents;
 using Acutis.Api.Services.Screening;
+using Acutis.Api.Services.TherapyScheduling;
 using Acutis.Application.Interfaces;
 using Acutis.Application.Services;
 using Acutis.Infrastructure.Data;
@@ -34,6 +35,9 @@ builder.Services.AddScoped<IFormConfigurationService, FormConfigurationService>(
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IGroupTherapyService, GroupTherapyService>();
 builder.Services.AddScoped<IResidentService, ResidentService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<ITherapySchedulingService, TherapySchedulingService>();
+builder.Services.AddHttpContextAccessor();
 
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
 var defaultDevelopmentCorsOrigins = new[]
@@ -109,6 +113,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<RequestCorrelationMiddleware>();
 app.UseCors("WebApp");
 app.UseAuthentication();
 app.UseAuthorization();

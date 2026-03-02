@@ -383,6 +383,14 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<GroupTherapySubjectTemplate> GroupTherapySubjectTemplates => Set<GroupTherapySubjectTemplate>();
     public DbSet<GroupTherapyDailyQuestion> GroupTherapyDailyQuestions => Set<GroupTherapyDailyQuestion>();
     public DbSet<GroupTherapyResidentRemark> GroupTherapyResidentRemarks => Set<GroupTherapyResidentRemark>();
+    public DbSet<TherapyTopic> TherapyTopics => Set<TherapyTopic>();
+    public DbSet<ResidentProgrammeEpisode> ResidentProgrammeEpisodes => Set<ResidentProgrammeEpisode>();
+    public DbSet<WeeklyTherapyRun> WeeklyTherapyRuns => Set<WeeklyTherapyRun>();
+    public DbSet<ResidentWeeklyTherapyAssignment> ResidentWeeklyTherapyAssignments => Set<ResidentWeeklyTherapyAssignment>();
+    public DbSet<TherapyTopicCompletion> TherapyTopicCompletions => Set<TherapyTopicCompletion>();
+    public DbSet<EpisodeEvent> EpisodeEvents => Set<EpisodeEvent>();
+    public DbSet<TherapySchedulingConfig> TherapySchedulingConfigs => Set<TherapySchedulingConfig>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<LookupType> LookupTypes => Set<LookupType>();
     public DbSet<LookupValue> LookupValues => Set<LookupValue>();
     public DbSet<LookupValueLabel> LookupValueLabels => Set<LookupValueLabel>();
@@ -597,6 +605,14 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GroupTherapySubjectTemplateConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyDailyQuestionConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyResidentRemarkConfiguration());
+        modelBuilder.ApplyConfiguration(new TherapyTopicConfiguration());
+        modelBuilder.ApplyConfiguration(new ResidentProgrammeEpisodeConfiguration());
+        modelBuilder.ApplyConfiguration(new WeeklyTherapyRunConfiguration());
+        modelBuilder.ApplyConfiguration(new ResidentWeeklyTherapyAssignmentConfiguration());
+        modelBuilder.ApplyConfiguration(new TherapyTopicCompletionConfiguration());
+        modelBuilder.ApplyConfiguration(new EpisodeEventConfiguration());
+        modelBuilder.ApplyConfiguration(new TherapySchedulingConfigConfiguration());
+        modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
 
         SeedFormDefinition(modelBuilder);
         SeedOptionSets(modelBuilder);
@@ -604,6 +620,7 @@ public sealed class AcutisDbContext : DbContext
         SeedScreeningControls(modelBuilder);
         SeedGroupTherapyProgram(modelBuilder);
         SeedGroupTherapyRemarks(modelBuilder);
+        SeedTherapyTopics(modelBuilder);
     }
 
     private static void SeedFormDefinition(ModelBuilder modelBuilder)
@@ -1279,6 +1296,33 @@ public sealed class AcutisDbContext : DbContext
         });
 
         modelBuilder.Entity<GroupTherapyResidentRemark>().HasData(seededRemarks);
+    }
+
+    private static void SeedTherapyTopics(ModelBuilder modelBuilder)
+    {
+        var topics = new[]
+        {
+            ("RELAPSE_PREVENTION", "Relapse Prevention"),
+            ("COPING_SKILLS", "Coping Skills"),
+            ("TRIGGERS_AND_CRAVINGS", "Triggers and Cravings"),
+            ("TOPIC_04", "Topic 4 (TBD)"),
+            ("TOPIC_05", "Topic 5 (TBD)"),
+            ("TOPIC_06", "Topic 6 (TBD)"),
+            ("TOPIC_07", "Topic 7 (TBD)"),
+            ("TOPIC_08", "Topic 8 (TBD)"),
+            ("TOPIC_09", "Topic 9 (TBD)"),
+            ("TOPIC_10", "Topic 10 (TBD)")
+        };
+
+        var seededTopics = topics.Select(topic => new TherapyTopic
+        {
+            Id = CreateDeterministicGuid($"therapy-topic:{topic.Item1}"),
+            Code = topic.Item1,
+            DefaultName = topic.Item2,
+            IsActive = true
+        });
+
+        modelBuilder.Entity<TherapyTopic>().HasData(seededTopics);
     }
 
     private static Guid CreateDeterministicGuid(string value)
