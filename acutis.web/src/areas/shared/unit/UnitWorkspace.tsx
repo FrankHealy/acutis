@@ -163,15 +163,17 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header showCapacity={false} />
-      <Navigation
-        currentStep={currentStep}
-        setCurrentStep={goTo}
-        showAdmissions={unit.admissionsEnabled}
-        unitName={unit.name}
-        unitAccentClass={unit.accentClass}
-        unitIconKey={unit.iconKey}
-      />
+      <div className="sticky top-0 z-40">
+        <Header showCapacity={false} />
+        <Navigation
+          currentStep={currentStep}
+          setCurrentStep={goTo}
+          showAdmissions={unit.admissionsEnabled}
+          unitName={unit.name}
+          unitAccentClass={unit.accentClass}
+          unitIconKey={unit.iconKey}
+        />
+      </div>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{renderStep()}</main>
     </div>
   );

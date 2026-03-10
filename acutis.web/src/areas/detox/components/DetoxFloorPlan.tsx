@@ -1,5 +1,5 @@
-import DetoxFloorplan2 from "@/areas/detox/components/DetoxFloorplan2";
+import DetoxFloorPlan5 from "@/areas/detox/components/DetoxFloorPlan5";
 
 export default function DetoxFloorPlan() {
-  return <DetoxFloorplan2 />;
+  return <DetoxFloorPlan5 />;
 }
