@@ -27,6 +27,33 @@ public sealed class TherapySchedulingController : ControllerBase
         return OkEnvelope(topics);
     }
 
+    [HttpGet("therapy-scheduling/config")]
+    public async Task<ActionResult<ApiEnvelope<TherapySchedulingConfigDto>>> GetSchedulingConfig(
+        Guid centreId,
+        [FromQuery] Guid? unitId,
+        CancellationToken cancellationToken = default)
+    {
+        var config = await _therapySchedulingService.GetConfigAsync(centreId, unitId, cancellationToken);
+        return OkEnvelope(config);
+    }
+
+    [HttpPut("therapy-scheduling/config")]
+    public async Task<ActionResult<ApiEnvelope<TherapySchedulingConfigDto>>> UpsertSchedulingConfig(
+        Guid centreId,
+        [FromBody] UpsertTherapySchedulingConfigRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = await _therapySchedulingService.UpsertConfigAsync(centreId, request, cancellationToken);
+            return OkEnvelope(config);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestEnvelope("INVALID_CONFIG", ex.Message);
+        }
+    }
+
     [HttpPost("therapy-scheduling/runs")]
     public async Task<ActionResult<ApiEnvelope<WeeklyTherapyRunDto>>> CreateWeeklyRun(
         Guid centreId,

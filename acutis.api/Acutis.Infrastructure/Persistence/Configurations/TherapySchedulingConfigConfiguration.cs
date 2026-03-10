@@ -22,6 +22,12 @@ public sealed class TherapySchedulingConfigConfiguration : IEntityTypeConfigurat
         builder.Property(x => x.ShiftIntakeIfPublicHoliday).IsRequired();
         builder.Property(x => x.AllowDuplicateCompletionsInEpisode).IsRequired();
 
-        builder.HasIndex(x => new { x.CentreId, x.UnitId }).IsUnique();
+        builder.HasIndex(x => x.CentreId)
+            .HasFilter("[UnitId] IS NULL")
+            .IsUnique();
+
+        builder.HasIndex(x => new { x.CentreId, x.UnitId })
+            .HasFilter("[UnitId] IS NOT NULL")
+            .IsUnique();
     }
 }

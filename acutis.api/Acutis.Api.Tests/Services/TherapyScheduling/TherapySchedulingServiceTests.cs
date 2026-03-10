@@ -12,6 +12,88 @@ namespace Acutis.Api.Tests.Services.TherapyScheduling;
 public sealed class TherapySchedulingServiceTests
 {
     [Fact]
+    public async Task UpsertConfigAsync_SavesUnitConfig_AndWritesAudit()
+    {
+        await using var dbContext = CreateDbContext(nameof(UpsertConfigAsync_SavesUnitConfig_AndWritesAudit));
+        var centreId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        var service = CreateService(dbContext);
+
+        var saved = await service.UpsertConfigAsync(
+            centreId,
+            new UpsertTherapySchedulingConfigRequest
+            {
+                UnitId = unitId,
+                IntakeDayPreference = "Monday",
+                ShiftIntakeIfPublicHoliday = true,
+                DetoxWeeks = 2,
+                TotalWeeks = 12,
+                MainProgrammeWeeks = 10,
+                TopicsRequired = 10,
+                TopicsRunningPerWeek = 3,
+                WeekDefinition = "MondayToSunday",
+                HolidayCalendar = "Ireland",
+                Reason = "Set unit defaults"
+            });
+
+        Assert.True(saved.IsPersisted);
+        Assert.Equal("Unit", saved.Source);
+        Assert.Equal(unitId, saved.UnitId);
+        Assert.Equal(1, await dbContext.TherapySchedulingConfigs.CountAsync());
+        Assert.Contains(await dbContext.AuditLogs.ToListAsync(), x => x.EntityType == nameof(TherapySchedulingConfig));
+    }
+
+    [Fact]
+    public async Task GetConfigAsync_UsesUnitOverride_ThenCentreFallback()
+    {
+        await using var dbContext = CreateDbContext(nameof(GetConfigAsync_UsesUnitOverride_ThenCentreFallback));
+        var centreId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        var service = CreateService(dbContext);
+
+        await service.UpsertConfigAsync(
+            centreId,
+            new UpsertTherapySchedulingConfigRequest
+            {
+                UnitId = null,
+                IntakeDayPreference = "Monday",
+                ShiftIntakeIfPublicHoliday = true,
+                DetoxWeeks = 2,
+                TotalWeeks = 12,
+                MainProgrammeWeeks = 10,
+                TopicsRequired = 10,
+                TopicsRunningPerWeek = 3,
+                WeekDefinition = "MondayToSunday",
+                HolidayCalendar = "Ireland"
+            });
+
+        var fallback = await service.GetConfigAsync(centreId, unitId);
+        Assert.Equal("CentreFallback", fallback.Source);
+        Assert.Equal(unitId, fallback.UnitId);
+
+        await service.UpsertConfigAsync(
+            centreId,
+            new UpsertTherapySchedulingConfigRequest
+            {
+                UnitId = unitId,
+                IntakeDayPreference = "Tuesday",
+                ShiftIntakeIfPublicHoliday = false,
+                DetoxWeeks = 1,
+                TotalWeeks = 12,
+                MainProgrammeWeeks = 11,
+                TopicsRequired = 10,
+                TopicsRunningPerWeek = 3,
+                WeekDefinition = "MondayToSunday",
+                HolidayCalendar = "Ireland"
+            });
+
+        var unitOverride = await service.GetConfigAsync(centreId, unitId);
+        Assert.Equal("Unit", unitOverride.Source);
+        Assert.Equal("Tuesday", unitOverride.IntakeDayPreference);
+        Assert.False(unitOverride.ShiftIntakeIfPublicHoliday);
+    }
+
+    [Fact]
     public async Task CreateWeeklyRunAsync_GeneratesDraftAssignments_AndWritesAudit()
     {
         await using var dbContext = CreateDbContext(nameof(CreateWeeklyRunAsync_GeneratesDraftAssignments_AndWritesAudit));

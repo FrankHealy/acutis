@@ -1,84 +1,174 @@
 // src/units/shared/operations/RoomAssignments.tsx
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import DetoxFloorPlan from "@/areas/detox/components/DetoxFloorPlan";
+import type { UnitId } from "@/areas/shared/unit/unitTypes";
+import { operationsService, type UnitRoomAssignment } from "@/services/operationsService";
+import { residentService } from "@/services/residentService";
 
 type Resident = {
   id: string;
   initials: string;
 };
 
-const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+interface RoomAssignmentsProps {
+  unitId?: UnitId;
+}
 
-const generateInitials = (): string => {
-  const first = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-  const second = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-  return `${first}${second}`;
+const toResidentInitials = (firstName: string, surname: string): string => {
+  const first = firstName.trim()[0] ?? "?";
+  const second = surname.trim()[0] ?? "?";
+  return `${first}${second}`.toUpperCase();
 };
 
-const shuffleArray = <T,>(input: T[]): T[] => {
-  const arr = [...input];
-  for (let i = arr.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+const shuffleResidents = <T,>(items: T[]): T[] => {
+  const next = [...items];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
   }
-  return arr;
+  return next;
 };
 
-const RoomAssignments: React.FC = () => {
-  const totalRooms = 44;
-  const capacityPerRoom = 2;
-  const totalResidents = 40;
+const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
+  const [roomAssignments, setRoomAssignments] = useState<Record<number, Resident[]>>({});
+  const [roomList, setRoomList] = useState<number[]>([]);
+  const [capacityPerRoom, setCapacityPerRoom] = useState(2);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
 
-  const sideLength = totalRooms / 4; // 11 rooms per edge
-  const gridSize = sideLength + 2; // 13 grid cells including corners
+  useEffect(() => {
+    let active = true;
 
-  const rooms = React.useMemo(
-    () => Array.from({ length: totalRooms }, (_, i) => i + 1),
-    [totalRooms]
-  );
+    const load = async () => {
+      try {
+        setLoading(true);
 
-  const residents = React.useMemo<Resident[]>(
-    () =>
-      Array.from({ length: totalResidents }, (_, index) => ({
-        id: `resident-${index + 1}`,
-        initials: generateInitials(),
-      })),
-    [totalResidents]
-  );
+        const [rooms, residents] = await Promise.all([
+          operationsService.getRoomAssignments(unitId),
+          residentService.getResidents(unitId),
+        ]);
 
-  const initialAssignments = React.useMemo<Record<number, Resident[]>>(() => {
-    const assignments = rooms.reduce<Record<number, Resident[]>>((acc, room) => {
-      acc[room] = [];
-      return acc;
-    }, {});
+        if (!active) {
+          return;
+        }
 
-    const availableSlots = shuffleArray(
-      rooms.flatMap((room) =>
-        Array.from({ length: capacityPerRoom }, () => room)
-      )
-    );
+        const residentsById = new Map(
+          residents.map((resident) => [
+            resident.id,
+            {
+              id: String(resident.id),
+              initials: toResidentInitials(resident.firstName, resident.surname),
+            },
+          ]),
+        );
 
-    residents.forEach((resident, index) => {
-      const roomNumber = availableSlots[index];
-      if (!roomNumber) {
-        return;
+        const mappedAssignments = rooms.reduce<Record<number, Resident[]>>((acc, room) => {
+          const numericRoom = Number(room.roomCode);
+          if (!Number.isFinite(numericRoom)) {
+            return acc;
+          }
+
+          acc[numericRoom] = room.occupants
+            .map((occupant) => residentsById.get(occupant.residentId))
+            .filter((resident): resident is Resident => resident !== undefined);
+
+          return acc;
+        }, {});
+
+        const previewAssignments = { ...mappedAssignments };
+
+        if (unitId === "alcohol") {
+          const currentlyAssigned = Object.values(previewAssignments).reduce((total, occupants) => total + occupants.length, 0);
+          const previewTarget = 30;
+
+          if (currentlyAssigned < previewTarget) {
+            const assignedIds = new Set(
+              Object.values(previewAssignments)
+                .flatMap((occupants) => occupants)
+                .map((resident) => resident.id),
+            );
+
+            const previewPool = shuffleResidents(
+              residents
+                .filter((resident) => !assignedIds.has(String(resident.id)))
+                .map((resident) => ({
+                  id: String(resident.id),
+                  initials: toResidentInitials(resident.firstName, resident.surname),
+                })),
+            );
+
+            let remaining = Math.min(previewTarget - currentlyAssigned, previewPool.length);
+
+            for (const room of rooms) {
+              if (remaining <= 0) {
+                break;
+              }
+
+              const numericRoom = Number(room.roomCode);
+              if (!Number.isFinite(numericRoom)) {
+                continue;
+              }
+
+              const occupants = previewAssignments[numericRoom] ?? [];
+              const availableSlots = Math.max(0, room.capacity - occupants.length);
+              if (availableSlots === 0) {
+                continue;
+              }
+
+              const additions = previewPool.splice(0, Math.min(availableSlots, remaining));
+              if (additions.length === 0) {
+                continue;
+              }
+
+              previewAssignments[numericRoom] = [...occupants, ...additions];
+              remaining -= additions.length;
+            }
+          }
+        }
+
+        setRoomList(
+          rooms
+            .map((room) => Number(room.roomCode))
+            .filter((room): room is number => Number.isFinite(room))
+            .sort((left, right) => left - right),
+        );
+        setCapacityPerRoom(Math.max(1, rooms[0]?.capacity ?? 2));
+        setRoomAssignments(previewAssignments);
+        setError(null);
+      } catch (loadError) {
+        if (!active) {
+          return;
+        }
+
+        setError(loadError instanceof Error ? loadError.message : "Unable to load room assignments.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-      assignments[roomNumber] = [...assignments[roomNumber], resident];
-    });
+    };
 
-    return assignments;
-  }, [capacityPerRoom, residents, rooms]);
+    void load();
 
-  const [roomOccupants, setRoomOccupants] = React.useState<Record<number, Resident[]>>(initialAssignments);
-  const [draggingId, setDraggingId] = React.useState<string | null>(null);
+    return () => {
+      active = false;
+    };
+  }, [unitId]);
+
+  const totalRooms = roomList.length;
+  const sideLength = Math.max(1, totalRooms / 4);
+  const gridSize = sideLength + 2;
 
   const corridorPadding = 40;
   const cellSizeRem = 3.5;
-  const cellSizePx = 56; // assumes 16px root font-size for rem conversion
+  const cellSizePx = 56;
   const receptionSizePx = cellSizePx * 2;
-  const intersectionX = cellSizePx; // between left rooms and courtyard
-  const intersectionY = cellSizePx * 3; // between rooms 42/43 and courtyard wall
-  const courtyardBorderInset = 4; // match courtyard border thickness
+  const intersectionX = cellSizePx;
+  const intersectionY = cellSizePx * 3;
+  const courtyardBorderInset = 4;
 
   const receptionLeft =
     intersectionX - receptionSizePx / 2 + receptionSizePx / Math.SQRT2;
@@ -143,12 +233,12 @@ const RoomAssignments: React.FC = () => {
       (event: React.DragEvent<HTMLDivElement>) => {
         event.dataTransfer.setData(
           "application/json",
-          JSON.stringify({ residentId, fromRoom })
+          JSON.stringify({ residentId, fromRoom }),
         );
         event.dataTransfer.effectAllowed = "move";
         setDraggingId(residentId);
       },
-    []
+    [],
   );
 
   const handleDragEnd = React.useCallback(() => {
@@ -157,7 +247,7 @@ const RoomAssignments: React.FC = () => {
 
   const handleDragOver = React.useCallback(
     (room: number) => (event: React.DragEvent<HTMLDivElement>) => {
-      const occupants = roomOccupants[room] ?? [];
+      const occupants = roomAssignments[room] ?? [];
       const isResidentAlreadyHere =
         draggingId !== null &&
         occupants.some((resident) => resident.id === draggingId);
@@ -170,7 +260,7 @@ const RoomAssignments: React.FC = () => {
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
     },
-    [capacityPerRoom, draggingId, roomOccupants]
+    [capacityPerRoom, draggingId, roomAssignments],
   );
 
   const handleDrop = React.useCallback(
@@ -193,7 +283,7 @@ const RoomAssignments: React.FC = () => {
           return;
         }
 
-        setRoomOccupants((prev) => {
+        setRoomAssignments((prev) => {
           const source = prev[fromRoom] ?? [];
           const target = prev[room] ?? [];
 
@@ -220,11 +310,11 @@ const RoomAssignments: React.FC = () => {
         event.dataTransfer.clearData();
       }
     },
-    [capacityPerRoom]
+    [capacityPerRoom],
   );
 
   const renderRoom = (num: number) => {
-    const occupants = roomOccupants[num] ?? [];
+    const occupants = roomAssignments[num] ?? [];
 
     const slotPositions: Array<React.CSSProperties> = [
       { top: "0.45rem", right: "0.45rem" },
@@ -280,92 +370,132 @@ const RoomAssignments: React.FC = () => {
     );
   };
 
+  const topRooms = useMemo(() => roomList.slice(0, sideLength), [roomList, sideLength]);
+  const rightRooms = useMemo(() => roomList.slice(sideLength, sideLength * 2), [roomList, sideLength]);
+  const bottomRooms = useMemo(() => roomList.slice(sideLength * 2, sideLength * 3), [roomList, sideLength]);
+  const leftRooms = useMemo(() => roomList.slice(sideLength * 3, totalRooms), [roomList, sideLength, totalRooms]);
+
+  const zoomPercent = Math.round(zoom * 100);
+
   return (
-    <div className="p-6 bg-gray-50 flex justify-center">
-      <div
-        className="relative inline-flex items-center justify-center border-4 border-gray-300 rounded-lg bg-yellow-100"
-        style={{ padding: `${corridorPadding}px` }}
-      >
-        <div style={roomsPerimeterStyle}>
-          {/* Top row */}
-          {rooms.slice(0, sideLength).map((num, index) => (
-            <div key={num} style={{ gridColumn: index + 2, gridRow: 1 }}>
-              {renderRoom(num)}
-            </div>
-          ))}
-
-          {/* Right column */}
-          {rooms.slice(sideLength, sideLength * 2).map((num, index) => (
-            <div key={num} style={{ gridColumn: gridSize, gridRow: index + 2 }}>
-              {renderRoom(num)}
-            </div>
-          ))}
-
-          {/* Bottom row */}
-          {rooms.slice(sideLength * 2, sideLength * 3).map((num, index) => (
-            <div
-              key={num}
-              style={{ gridColumn: gridSize - 1 - index, gridRow: gridSize }}
-            >
-              {renderRoom(num)}
-            </div>
-          ))}
-
-          {/* Left column */}
-          {rooms.slice(sideLength * 3, totalRooms).map((num, index) => (
-            <div
-              key={num}
-              style={{ gridColumn: 1, gridRow: gridSize - 1 - index }}
-            >
-              {renderRoom(num)}
-            </div>
-          ))}
-
-          {/* Courtyard */}
-          <div
-            style={{ gridColumn: `2 / ${gridSize}`, gridRow: `2 / ${gridSize}` }}
-            className="border-4 border-gray-300 bg-green-200/70 flex items-center justify-center text-green-700 text-sm font-semibold rounded-lg"
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Room Assignments</h2>
+          <p className="text-sm text-gray-600">Drag and drop resident initials between available room slots.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setZoom((current) => Math.max(0.6, current - 0.1))}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
           >
-            Courtyard
-          </div>
-
-          {/* Reception connector */}
-          <div style={corridorStyle} />
-
-          {/* Reception */}
-          <div style={receptionStyle}>
-            <span style={receptionLabelStyle}>Reception</span>
-          </div>
-
-          {/* Corridor labels */}
-          <div
-            className="absolute text-sm font-semibold text-gray-700"
-            style={{ top: `${corridorPadding / 2}px`, left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none" }}
+            Zoom Out
+          </button>
+          <div className="min-w-16 text-center text-sm font-medium text-gray-600">{zoomPercent}%</div>
+          <button
+            type="button"
+            onClick={() => setZoom((current) => Math.min(1.8, current + 0.1))}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
           >
-            Clocktower
-          </div>
-          <div
-            className="absolute text-sm font-semibold text-gray-700"
-            style={{ bottom: `${corridorPadding / 2}px`, left: "50%", transform: "translate(-50%, 50%)", pointerEvents: "none" }}
-          >
-            St Joseph's Side
-          </div>
-          <div
-            className="absolute text-sm font-semibold text-gray-700"
-            style={{ left: `${corridorPadding / 2}px`, top: "50%", transform: "translate(-50%, -50%) rotate(-90deg)", pointerEvents: "none" }}
-          >
-            Green Mile
-          </div>
-          <div
-            className="absolute text-sm font-semibold text-gray-700"
-            style={{ right: `${corridorPadding / 2}px`, top: "50%", transform: "translate(50%, -50%) rotate(90deg)", pointerEvents: "none" }}
-          >
-            Over Drug Unit
-          </div>
+            Zoom In
+          </button>
         </div>
       </div>
+
+      {loading ? <div className="mb-4 text-sm text-gray-600">Loading room assignments...</div> : null}
+      {error ? <div className="mb-4 text-sm text-red-600">{error}</div> : null}
+
+      {!loading && !error ? (
+        <div className="overflow-x-auto">
+          <div className="min-w-[780px] py-2 flex justify-center">
+            <div
+              className="relative inline-flex items-center justify-center border-4 border-gray-300 rounded-lg bg-yellow-100"
+              style={{ padding: `${corridorPadding}px`, transform: `scale(${zoom})`, transformOrigin: "center top" }}
+            >
+              <div style={roomsPerimeterStyle}>
+                {topRooms.map((num, index) => (
+                  <div key={num} style={{ gridColumn: index + 2, gridRow: 1 }}>
+                    {renderRoom(num)}
+                  </div>
+                ))}
+
+                {rightRooms.map((num, index) => (
+                  <div key={num} style={{ gridColumn: gridSize, gridRow: index + 2 }}>
+                    {renderRoom(num)}
+                  </div>
+                ))}
+
+                {bottomRooms.map((num, index) => (
+                  <div
+                    key={num}
+                    style={{ gridColumn: gridSize - 1 - index, gridRow: gridSize }}
+                  >
+                    {renderRoom(num)}
+                  </div>
+                ))}
+
+                {leftRooms.map((num, index) => (
+                  <div
+                    key={num}
+                    style={{ gridColumn: 1, gridRow: gridSize - 1 - index }}
+                  >
+                    {renderRoom(num)}
+                  </div>
+                ))}
+
+                <div
+                  style={{ gridColumn: `2 / ${gridSize}`, gridRow: `2 / ${gridSize}` }}
+                  className="border-4 border-gray-300 bg-green-200/70 flex items-center justify-center text-green-700 text-sm font-semibold rounded-lg"
+                >
+                  Courtyard
+                </div>
+
+                <div style={corridorStyle} />
+
+                <div style={receptionStyle}>
+                  <span style={receptionLabelStyle}>Reception</span>
+                </div>
+
+                <div
+                  className="absolute text-sm font-semibold text-gray-700"
+                  style={{ top: "-27px", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}
+                >
+                  Clocktower
+                </div>
+                <div
+                  className="absolute text-sm font-semibold text-gray-700"
+                  style={{ bottom: "-27px", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}
+                >
+                  St Joseph&apos;s Side
+                </div>
+                <div
+                  className="absolute text-sm font-semibold text-gray-700"
+                  style={{ left: "-56px", top: "50%", transform: "translateY(-50%) rotate(-90deg)", pointerEvents: "none" }}
+                >
+                  Green Mile
+                </div>
+                <div
+                  className="absolute text-sm font-semibold text-gray-700"
+                  style={{ right: "-72px", top: "50%", transform: "translateY(-50%) rotate(90deg)", pointerEvents: "none" }}
+                >
+                  Over Drug Unit
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
+};
+
+const RoomAssignments: React.FC<RoomAssignmentsProps> = ({ unitId }) => {
+  if (unitId === "detox") {
+    return <DetoxFloorPlan />;
+  }
+
+  return <StandardRoomAssignments unitId={unitId ?? "alcohol"} />;
 };
 
 export default RoomAssignments;

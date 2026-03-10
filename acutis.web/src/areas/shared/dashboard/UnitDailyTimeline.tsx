@@ -34,9 +34,10 @@ interface ScheduleEvent {
 type UnitDailyTimelineProps = {
   unitName: string;
   onOpenGroupTherapy: (moduleKey?: string) => void;
+  onOpenRollCall: () => void;
 };
 
-const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenGroupTherapy }) => {
+const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenGroupTherapy, onOpenRollCall }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [viewMode, setViewMode] = useState<"morning" | "evening">("morning");
@@ -45,6 +46,20 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const nowMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+
+    // Auto-switch timeline mode by time-of-day so staff don't need to toggle it manually.
+    if (nowMinutes >= 750 && nowMinutes <= 1320 && viewMode !== "evening") {
+      setViewMode("evening");
+      return;
+    }
+
+    if ((nowMinutes < 750 || nowMinutes > 1320) && viewMode !== "morning") {
+      setViewMode("morning");
+    }
+  }, [currentTime, viewMode]);
 
   const timeToMinutes = (time: string): number => {
     const [hours, minutes] = time.split(":").map(Number);
@@ -95,6 +110,11 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
   };
 
   const handleEventClick = (event: ScheduleEvent) => {
+    if (event.title === "Roll Call") {
+      onOpenRollCall();
+      return;
+    }
+
     const moduleKey = mapEventToModuleKey(event.title);
     if (moduleKey) {
       onOpenGroupTherapy(moduleKey);
@@ -157,12 +177,12 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
   const currentMinutes = getCurrentMinutes();
   const schedule = getCurrentSchedule();
   const maxStack = Math.max(0, ...schedule.map((e) => e.stackPosition ?? 0));
-  const verticalSpacing = 110;
+  const verticalSpacing = 132;
   const bubbleSize = 56;
-  const labelHeight = 56;
+  const labelHeight = 72;
   const baseTop = 6;
   const trackThickness = 8;
-  const extraBottom = 24;
+  const extraBottom = 32;
   const rows = maxStack + 1;
   const timelineHeight = baseTop + rows * verticalSpacing + bubbleSize + labelHeight + extraBottom;
   const shouldShowIndicator =
@@ -207,7 +227,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
         {shouldShowIndicator && (
           <div className="pointer-events-none absolute z-40 -translate-x-1/2" style={{ left: `${currentPosition}%`, top: baseTop - 2 }}>
             <div className="h-3 w-3 rounded-full border-2 border-white bg-red-500 shadow" />
-            <div className="absolute left-1/2 top-4 -translate-x-1/2 whitespace-nowrap">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
               <span className="rounded bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 shadow-sm">NOW</span>
             </div>
           </div>
@@ -234,7 +254,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
                   <div className={`w-14 h-14 ${event.color} rounded-full flex items-center justify-center shadow-lg ${isCurrent ? "ring-4 ring-yellow-400 ring-offset-2" : ""} ${isSpecial ? "ring-4 ring-gray-300 ring-offset-2" : ""}`}>
                     <IconComponent className="h-7 w-7 text-white" />
                   </div>
-                  <div className="absolute left-1/2 top-16 -translate-x-1/2 text-center leading-tight">
+                  <div className="absolute left-1/2 top-16 w-32 -translate-x-1/2 text-center leading-tight">
                     <div className={`text-xs font-bold ${isCurrent ? "text-gray-900" : "text-gray-600"}`}>{event.time}</div>
                     <div className={`mt-1 max-w-[120px] text-xs ${isCurrent ? "font-bold text-gray-900" : "text-gray-500"}`}>{event.title}</div>
                     {event.days && <div className="mt-0.5 text-[10px] text-gray-400">{event.days}</div>}

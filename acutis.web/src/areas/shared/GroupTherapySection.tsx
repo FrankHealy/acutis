@@ -5,6 +5,7 @@ import { User, CheckCircle } from "lucide-react";
 import { residentService } from "@/services/residentService";
 import { type Resident } from "@/services/mockDataService";
 import { groupTherapyService, type GroupTherapyProgram } from "@/services/groupTherapyService";
+import QuoteOfTheDay from "./QuoteOfTheDay";
 
 type Participant = {
   id: number;
@@ -437,7 +438,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
     setIsSaving(true);
     try {
       const saved = await groupTherapyService.upsertRemark({
-        unitCode: unitId,
+        unitId,
         programCode: PROGRAM_CODE,
         residentId: selectedResident.id,
         moduleKey: currentModule.id,
@@ -469,6 +470,9 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 max-w-6xl mx-auto">
+      <div className="mb-6">
+        <QuoteOfTheDay unitId={unitId} />
+      </div>
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{currentModule.title}</h1>
         <p className="text-gray-600 text-lg">Group Therapy Morning Session - {new Date().toLocaleDateString()}</p>

@@ -1,3 +1,5 @@
+import { UNIT_GUIDS } from "./unitIdentity";
+import type { UnitId } from "@/areas/shared/unit/unitTypes";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
 
 export type GroupTherapyDay = {
@@ -29,7 +31,7 @@ export type GroupTherapyResidentRemark = {
 };
 
 export type UpsertGroupTherapyResidentRemarkRequest = {
-  unitCode: string;
+  unitId: UnitId;
   programCode: string;
   residentId: number;
   moduleKey: string;
@@ -43,9 +45,10 @@ const noStoreFetchInit: RequestInit = {
 };
 
 export const groupTherapyService = {
-  async getProgram(unitCode: string, programCode: string): Promise<GroupTherapyProgram | null> {
+  async getProgram(unitId: UnitId, programCode: string): Promise<GroupTherapyProgram | null> {
+    const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
-      `${API_BASE_URL}/api/grouptherapy/program?unitCode=${encodeURIComponent(unitCode)}&programCode=${encodeURIComponent(programCode)}`,
+      `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/program?programCode=${encodeURIComponent(programCode)}`,
       noStoreFetchInit
     );
 
@@ -61,12 +64,13 @@ export const groupTherapyService = {
   },
 
   async getRemarks(
-    unitCode: string,
+    unitId: UnitId,
     programCode: string,
     moduleKey: string
   ): Promise<GroupTherapyResidentRemark[]> {
+    const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
-      `${API_BASE_URL}/api/grouptherapy/remarks?unitCode=${encodeURIComponent(unitCode)}&programCode=${encodeURIComponent(programCode)}&moduleKey=${encodeURIComponent(moduleKey)}`,
+      `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/remarks?programCode=${encodeURIComponent(programCode)}&moduleKey=${encodeURIComponent(moduleKey)}`,
       noStoreFetchInit
     );
 
@@ -80,13 +84,20 @@ export const groupTherapyService = {
   async upsertRemark(
     payload: UpsertGroupTherapyResidentRemarkRequest
   ): Promise<GroupTherapyResidentRemark> {
-    const response = await fetch(`${API_BASE_URL}/api/grouptherapy/remarks`, {
+    const unitGuid = UNIT_GUIDS[payload.unitId];
+    const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/remarks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        programCode: payload.programCode,
+        residentId: payload.residentId,
+        moduleKey: payload.moduleKey,
+        noteLines: payload.noteLines,
+        freeText: payload.freeText,
+      }),
     });
 
     if (!response.ok) {

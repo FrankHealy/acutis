@@ -1,4 +1,5 @@
 import { mockResidents, type Resident } from "./mockDataService";
+import { UNIT_GUIDS } from "./unitIdentity";
 
 export type AttendanceRecord = {
   residentId: number;
@@ -31,6 +32,19 @@ type ResidentListItemDto = {
   roomNumber: string;
   unitId: Resident["unit"];
   photoUrl?: string | null;
+  admissionDate?: string | null;
+  expectedCompletion?: string | null;
+  primaryAddiction?: string | null;
+  isDrug?: boolean;
+  isGambeler?: boolean;
+  isPreviousResident?: boolean;
+  dietaryNeedsCode?: number;
+  isSnorer?: boolean;
+  hasCriminalHistory?: boolean;
+  isOnProbation?: boolean;
+  argumentativeScale?: number;
+  learningDifficultyScale?: number;
+  literacyScale?: number;
 };
 
 export const getResidentSource = (): "api" | "mock" => residentSource;
@@ -54,24 +68,25 @@ const mapApiResident = (dto: ResidentListItemDto): Resident => {
     photo: dto.photoUrl?.trim() ? dto.photoUrl.trim() : null,
     fallbackPhoto: `https://i.pravatar.cc/150?img=${((dto.id - 1) % 70) + 1}`,
     psn: dto.psn,
-    admissionDate: admissionDate.toISOString().slice(0, 10),
-    expectedCompletion: expectedCompletion.toISOString().slice(0, 10),
-    primaryAddiction: "Alcohol",
-    isDrug: dto.unitId === "drugs",
-    isGambeler: false,
-    isPreviousResident: false,
-    dietaryNeedsCode: 0,
-    isSnorer: false,
-    hasCriminalHistory: false,
-    isOnProbation: false,
-    argumentativeScale: 0,
-    learningDifficultyScale: 0,
-    literacyScale: 0,
+    admissionDate: dto.admissionDate?.trim() ? dto.admissionDate : admissionDate.toISOString().slice(0, 10),
+    expectedCompletion: dto.expectedCompletion?.trim() ? dto.expectedCompletion : expectedCompletion.toISOString().slice(0, 10),
+    primaryAddiction: dto.primaryAddiction?.trim() ? dto.primaryAddiction : "Alcohol",
+    isDrug: dto.isDrug ?? dto.unitId === "drugs",
+    isGambeler: dto.isGambeler ?? false,
+    isPreviousResident: dto.isPreviousResident ?? false,
+    dietaryNeedsCode: dto.dietaryNeedsCode ?? 0,
+    isSnorer: dto.isSnorer ?? false,
+    hasCriminalHistory: dto.hasCriminalHistory ?? false,
+    isOnProbation: dto.isOnProbation ?? false,
+    argumentativeScale: dto.argumentativeScale ?? 0,
+    learningDifficultyScale: dto.learningDifficultyScale ?? 0,
+    literacyScale: dto.literacyScale ?? 0,
   };
 };
 
 const fetchResidentsFromApi = async (unit: Resident["unit"]): Promise<Resident[]> => {
-  const response = await fetch(`${API_BASE_URL}/api/residents?unitId=${encodeURIComponent(unit)}`, {
+  const unitGuid = UNIT_GUIDS[unit];
+  const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/residents`, {
     method: "GET",
     headers: {
       Accept: "application/json",

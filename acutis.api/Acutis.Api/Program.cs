@@ -2,9 +2,14 @@ using Acutis.Api.Security;
 using Acutis.Api.Services.Forms;
 using Acutis.Api.Services.GroupTherapy;
 using Acutis.Api.Services.Lookups;
+using Acutis.Api.Services.MediaPlayer;
+using Acutis.Api.Services.Policy;
+using Acutis.Api.Services.Quotes;
 using Acutis.Api.Services.Residents;
 using Acutis.Api.Services.Screening;
 using Acutis.Api.Services.TherapyScheduling;
+using Acutis.Api.Services.Units;
+using Acutis.Api.Services.UnitVideos;
 using Acutis.Application.Interfaces;
 using Acutis.Application.Services;
 using Acutis.Infrastructure.Data;
@@ -13,6 +18,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,8 +41,17 @@ builder.Services.AddScoped<IFormConfigurationService, FormConfigurationService>(
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IGroupTherapyService, GroupTherapyService>();
 builder.Services.AddScoped<IResidentService, ResidentService>();
+builder.Services.AddScoped<IUnitOperationsService, UnitOperationsService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<ITherapySchedulingService, TherapySchedulingService>();
+builder.Services.AddScoped<IMediaPlayerService, MediaPlayerService>();
+builder.Services.AddScoped<IQuoteService, QuoteService>();
+builder.Services.AddScoped<IUnitVideoService, UnitVideoService>();
+builder.Services.AddScoped<IUnitVideoAdminService, UnitVideoService>();
+builder.Services.AddSingleton<IUnitIdentityService, UnitIdentityService>();
+builder.Services.Configure<OfflineWindowPolicyOptions>(builder.Configuration.GetSection("OfflineWindowPolicy"));
+builder.Services.Configure<AuthorizationOptions>(builder.Configuration.GetSection(AuthorizationOptions.SectionName));
+builder.Services.AddSingleton<IOfflineWindowPolicyService, OfflineWindowPolicyService>();
 builder.Services.AddHttpContextAccessor();
 
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
@@ -76,33 +91,40 @@ builder.Services.AddCors(options =>
     });
 });
 
-var jwtSection = builder.Configuration.GetSection("Jwt");
-var jwtIssuer = jwtSection["Issuer"] ?? jwtSection["Authority"];
-var jwtAudience = jwtSection["Audience"];
+var authorizationOptions = builder.Configuration
+    .GetSection(AuthorizationOptions.SectionName)
+    .Get<AuthorizationOptions>() ?? new AuthorizationOptions();
 
-if (string.IsNullOrWhiteSpace(jwtIssuer))
+if (!authorizationOptions.Disabled)
 {
-    throw new InvalidOperationException("Jwt:Issuer or Jwt:Authority is required for Keycloak.");
-}
+    var jwtSection = builder.Configuration.GetSection("Jwt");
+    var jwtIssuer = jwtSection["Issuer"] ?? jwtSection["Authority"];
+    var jwtAudience = jwtSection["Audience"];
 
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    if (string.IsNullOrWhiteSpace(jwtIssuer))
     {
-        options.Authority = jwtIssuer;
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidIssuer = jwtIssuer,
-            ValidAudiences = new[] { jwtAudience }
-        };
-    });
+        throw new InvalidOperationException("Jwt:Issuer or Jwt:Authority is required for Keycloak.");
+    }
 
-builder.Services.AddSingleton<IClaimsTransformation, KeycloakClientRoleClaimsTransformation>();
-builder.Services.AddAuthorization();
+    builder.Services
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.Authority = jwtIssuer;
+            options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidIssuer = jwtIssuer,
+                ValidAudiences = new[] { jwtAudience }
+            };
+        });
+
+    builder.Services.AddSingleton<IClaimsTransformation, KeycloakClientRoleClaimsTransformation>();
+    builder.Services.AddAuthorization();
+}
 
 var app = builder.Build();
 
@@ -115,8 +137,12 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseMiddleware<RequestCorrelationMiddleware>();
 app.UseCors("WebApp");
-app.UseAuthentication();
-app.UseAuthorization();
+
+if (!app.Services.GetRequiredService<IOptions<AuthorizationOptions>>().Value.Disabled)
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 
 app.MapControllers();
 

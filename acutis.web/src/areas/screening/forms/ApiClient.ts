@@ -1,3 +1,5 @@
+import { createAuthHeaders } from "@/lib/authMode";
+
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
@@ -165,15 +167,14 @@ const formatApiErrorMessage = (status: number, bodyText: string): string => {
 
 const request = async <TResponse>(
   path: string,
-  accessToken: string,
+  accessToken?: string,
   init?: RequestInit
 ): Promise<TResponse> => {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
+      ...createAuthHeaders(accessToken),
       ...(init?.headers ?? {}),
     },
     cache: "no-store",
@@ -191,7 +192,7 @@ const request = async <TResponse>(
 };
 
 export const getActiveForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   locale: string,
   subjectType: SaveProgressRequest["subjectType"],
   subjectId: string | null,
@@ -216,7 +217,7 @@ export const getActiveForm = async (
 };
 
 export const saveProgress = async (
-  accessToken: string,
+  accessToken: string | undefined,
   payload: SaveProgressRequest
 ): Promise<SaveProgressResponse> => {
   return request<SaveProgressResponse>("/api/screening/SaveProgress", accessToken, {
@@ -226,7 +227,7 @@ export const saveProgress = async (
 };
 
 export const save = async (
-  accessToken: string,
+  accessToken: string | undefined,
   payload: SaveRequest
 ): Promise<SaveResponse> => {
   return request<SaveResponse>("/api/screening/Save", accessToken, {
@@ -236,7 +237,7 @@ export const save = async (
 };
 
 export const getFormVersions = async (
-  accessToken: string,
+  accessToken: string | undefined,
   formCode: string
 ): Promise<FormConfigurationVersionDto[]> => {
   return request<FormConfigurationVersionDto[]>(
@@ -249,7 +250,7 @@ export const getFormVersions = async (
 };
 
 export const activateFormVersion = async (
-  accessToken: string,
+  accessToken: string | undefined,
   formCode: string,
   version: number
 ): Promise<FormConfigurationVersionDto> => {
@@ -262,8 +263,45 @@ export const activateFormVersion = async (
   );
 };
 
+export const deleteAlcoholScreeningForm = async (
+  accessToken: string | undefined,
+  version: number
+): Promise<void> => {
+  await request<void>(`/api/configuration/DeleteAlcoholScreeningForm/${version}`, accessToken, {
+    method: "DELETE",
+  });
+};
+
+export const deleteAdmissionForm = async (
+  accessToken: string | undefined,
+  formCode: string,
+  version: number
+): Promise<void> => {
+  await request<void>(
+    `/api/configuration/DeleteAdmissionForm/${encodeURIComponent(formCode)}/${version}`,
+    accessToken,
+    {
+      method: "DELETE",
+    }
+  );
+};
+
+export const deleteSurveyForm = async (
+  accessToken: string | undefined,
+  surveyCode: string,
+  version: number
+): Promise<void> => {
+  await request<void>(
+    `/api/configuration/DeleteSurveyForm/${encodeURIComponent(surveyCode)}/${version}`,
+    accessToken,
+    {
+      method: "DELETE",
+    }
+  );
+};
+
 export const createAlcoholScreeningForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   form: UpsertFormDefinitionRequest
 ): Promise<FormConfigurationVersionDto> => {
   return request<FormConfigurationVersionDto>("/api/configuration/CreateAlcoholScreeningForm", accessToken, {
@@ -273,7 +311,7 @@ export const createAlcoholScreeningForm = async (
 };
 
 export const saveAsDraftAlcoholScreeningForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   form: UpsertFormDefinitionRequest
 ): Promise<FormConfigurationVersionDto> => {
   return request<FormConfigurationVersionDto>("/api/configuration/SaveAsDraftAlcoholScreeningForm", accessToken, {
@@ -283,7 +321,7 @@ export const saveAsDraftAlcoholScreeningForm = async (
 };
 
 export const editAlcoholScreeningForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   sourceVersion: number,
   form: UpsertFormDefinitionRequest
 ): Promise<FormConfigurationVersionDto> => {
@@ -294,7 +332,7 @@ export const editAlcoholScreeningForm = async (
 };
 
 export const editAsDraftAlcoholScreeningForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   sourceVersion: number,
   form: UpsertFormDefinitionRequest
 ): Promise<FormConfigurationVersionDto> => {
@@ -305,7 +343,7 @@ export const editAsDraftAlcoholScreeningForm = async (
 };
 
 export const createAdmissionForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   formCode: string,
   form: UpsertFormDefinitionRequest
 ): Promise<FormConfigurationVersionDto> => {
@@ -316,7 +354,7 @@ export const createAdmissionForm = async (
 };
 
 export const saveAsDraftAdmissionForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   formCode: string,
   form: UpsertFormDefinitionRequest
 ): Promise<FormConfigurationVersionDto> => {
@@ -327,7 +365,7 @@ export const saveAsDraftAdmissionForm = async (
 };
 
 export const editAdmissionForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   formCode: string,
   sourceVersion: number,
   form: UpsertFormDefinitionRequest
@@ -339,7 +377,7 @@ export const editAdmissionForm = async (
 };
 
 export const editAsDraftAdmissionForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   formCode: string,
   sourceVersion: number,
   form: UpsertFormDefinitionRequest
@@ -351,7 +389,7 @@ export const editAsDraftAdmissionForm = async (
 };
 
 export const createSurveyForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   surveyCode: string,
   form: UpsertFormDefinitionRequest
 ): Promise<FormConfigurationVersionDto> => {
@@ -362,7 +400,7 @@ export const createSurveyForm = async (
 };
 
 export const saveAsDraftSurveyForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   surveyCode: string,
   form: UpsertFormDefinitionRequest
 ): Promise<FormConfigurationVersionDto> => {
@@ -373,7 +411,7 @@ export const saveAsDraftSurveyForm = async (
 };
 
 export const editSurveyForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   surveyCode: string,
   sourceVersion: number,
   form: UpsertFormDefinitionRequest
@@ -385,7 +423,7 @@ export const editSurveyForm = async (
 };
 
 export const editAsDraftSurveyForm = async (
-  accessToken: string,
+  accessToken: string | undefined,
   surveyCode: string,
   sourceVersion: number,
   form: UpsertFormDefinitionRequest

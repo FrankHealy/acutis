@@ -1,5 +1,6 @@
 using Acutis.Api.Contracts;
 using Acutis.Api.Services.GroupTherapy;
+using Acutis.Api.Services.Units;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,10 +12,12 @@ namespace Acutis.Api.Controllers;
 public sealed class GroupTherapyController : ControllerBase
 {
     private readonly IGroupTherapyService _groupTherapyService;
+    private readonly IUnitIdentityService _unitIdentityService;
 
-    public GroupTherapyController(IGroupTherapyService groupTherapyService)
+    public GroupTherapyController(IGroupTherapyService groupTherapyService, IUnitIdentityService unitIdentityService)
     {
         _groupTherapyService = groupTherapyService;
+        _unitIdentityService = unitIdentityService;
     }
 
     [HttpGet("program")]
@@ -43,6 +46,27 @@ public sealed class GroupTherapyController : ControllerBase
         return Ok(program);
     }
 
+    [HttpGet("/api/units/{unitId:guid}/grouptherapy/program")]
+    public async Task<ActionResult<GroupTherapyProgramResponse>> GetProgramByUnitId(
+        Guid unitId,
+        [FromQuery] string programCode = "bruree_alcohol_gt",
+        CancellationToken cancellationToken = default)
+    {
+        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        {
+            return NotFound($"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        var program = await _groupTherapyService.GetProgramAsync(unit.UnitCode, programCode, cancellationToken);
+        if (program is null)
+        {
+            return NotFound(
+                $"No group therapy program found for unit '{unit.UnitCode}' and program '{programCode}'.");
+        }
+
+        return Ok(program);
+    }
+
     [HttpGet("remarks")]
     public async Task<ActionResult<IReadOnlyList<GroupTherapyResidentRemarkDto>>> GetRemarks(
         [FromQuery] string unitCode = "alcohol",
@@ -66,6 +90,32 @@ public sealed class GroupTherapyController : ControllerBase
         }
 
         var remarks = await _groupTherapyService.GetRemarksAsync(unitCode, programCode, moduleKey, cancellationToken);
+        return Ok(remarks);
+    }
+
+    [HttpGet("/api/units/{unitId:guid}/grouptherapy/remarks")]
+    public async Task<ActionResult<IReadOnlyList<GroupTherapyResidentRemarkDto>>> GetRemarksByUnitId(
+        Guid unitId,
+        [FromQuery] string programCode = "bruree_alcohol_gt",
+        [FromQuery] string moduleKey = "spirituality",
+        CancellationToken cancellationToken = default)
+    {
+        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        {
+            return NotFound($"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(programCode))
+        {
+            return BadRequest("Query parameter 'programCode' is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(moduleKey))
+        {
+            return BadRequest("Query parameter 'moduleKey' is required.");
+        }
+
+        var remarks = await _groupTherapyService.GetRemarksAsync(unit.UnitCode, programCode, moduleKey, cancellationToken);
         return Ok(remarks);
     }
 
@@ -101,5 +151,20 @@ public sealed class GroupTherapyController : ControllerBase
 
         var remark = await _groupTherapyService.UpsertRemarkAsync(request, cancellationToken);
         return Ok(remark);
+    }
+
+    [HttpPost("/api/units/{unitId:guid}/grouptherapy/remarks")]
+    public async Task<ActionResult<GroupTherapyResidentRemarkDto>> UpsertRemarkByUnitId(
+        Guid unitId,
+        [FromBody] UpsertGroupTherapyResidentRemarkRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        {
+            return NotFound($"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        request.UnitCode = unit.UnitCode;
+        return await UpsertRemark(request, cancellationToken);
     }
 }

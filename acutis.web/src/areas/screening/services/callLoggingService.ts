@@ -6,6 +6,7 @@ import {
   readLocalCache,
   writeLocalCache,
 } from '@/areas/screening/services/screeningControlService';
+import { createAuthHeaders } from '@/lib/authMode';
 
 type ApiCall = {
   id: string;
@@ -62,23 +63,20 @@ const mapUiToApiCall = (payload: Omit<CallLog, 'id'>): ApiCall => {
 };
 
 const getAuthHeaders = (accessToken?: string) => {
-  if (!accessToken) {
-    throw new Error('Missing access token for call logging requests.');
-  }
-  try {
-    const payload = JSON.parse(atob(accessToken.split('.')[1] ?? ''));
-    if (payload?.exp) {
-      const expMs = Number(payload.exp) * 1000;
-      const expIso = new Date(expMs).toISOString();
-      console.info(`[CallLogging] access token exp: ${expIso}`);
+  if (accessToken) {
+    try {
+      const payload = JSON.parse(atob(accessToken.split('.')[1] ?? ''));
+      if (payload?.exp) {
+        const expMs = Number(payload.exp) * 1000;
+        const expIso = new Date(expMs).toISOString();
+        console.info(`[CallLogging] access token exp: ${expIso}`);
+      }
+    } catch {
+      console.warn('[CallLogging] Unable to decode access token expiry.');
     }
-  } catch {
-    console.warn('[CallLogging] Unable to decode access token expiry.');
   }
-  return {
-    Accept: 'application/json',
-    Authorization: `Bearer ${accessToken}`,
-  };
+
+  return createAuthHeaders(accessToken);
 };
 
 export const fetchCallLogs = async (

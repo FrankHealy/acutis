@@ -3,6 +3,7 @@ import {
   readLocalCache,
   writeLocalCache,
 } from "@/areas/screening/services/screeningControlService";
+import { createAuthHeaders } from "@/lib/authMode";
 
 export type EvaluationQueueItem = {
   surname: string;
@@ -18,13 +19,7 @@ const EVALUEES_ENDPOINT = `${API_BASE_URL}/api/screenings/evaluees`;
 const EVALUATION_CACHE_KEY = "screening.evaluees";
 
 const getAuthHeaders = (accessToken?: string) => {
-  if (!accessToken) {
-    throw new Error("Missing access token for evaluation queue requests.");
-  }
-  return {
-    Accept: "application/json",
-    Authorization: `Bearer ${accessToken}`,
-  };
+  return createAuthHeaders(accessToken);
 };
 
 export const fetchEvaluationQueue = async (

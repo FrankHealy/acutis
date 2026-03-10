@@ -380,6 +380,7 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<TextTranslation> TextTranslations => Set<TextTranslation>();
     public DbSet<FormSubmission> FormSubmissions => Set<FormSubmission>();
     public DbSet<ScreeningControl> ScreeningControls => Set<ScreeningControl>();
+    public DbSet<Resident> Residents => Set<Resident>();
     public DbSet<GroupTherapySubjectTemplate> GroupTherapySubjectTemplates => Set<GroupTherapySubjectTemplate>();
     public DbSet<GroupTherapyDailyQuestion> GroupTherapyDailyQuestions => Set<GroupTherapyDailyQuestion>();
     public DbSet<GroupTherapyResidentRemark> GroupTherapyResidentRemarks => Set<GroupTherapyResidentRemark>();
@@ -391,6 +392,11 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<EpisodeEvent> EpisodeEvents => Set<EpisodeEvent>();
     public DbSet<TherapySchedulingConfig> TherapySchedulingConfigs => Set<TherapySchedulingConfig>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+    public DbSet<Quote> Quotes => Set<Quote>();
+    public DbSet<UnitQuoteCuration> UnitQuoteCurations => Set<UnitQuoteCuration>();
+    public DbSet<Video> Videos => Set<Video>();
+    public DbSet<UnitVideoCuration> UnitVideoCurations => Set<UnitVideoCuration>();
     public DbSet<LookupType> LookupTypes => Set<LookupType>();
     public DbSet<LookupValue> LookupValues => Set<LookupValue>();
     public DbSet<LookupValueLabel> LookupValueLabels => Set<LookupValueLabel>();
@@ -599,6 +605,24 @@ public sealed class AcutisDbContext : DbContext
             entity.HasIndex(control => control.UnitCode).IsUnique();
         });
 
+        modelBuilder.Entity<Resident>(entity =>
+        {
+            entity.ToTable("Resident");
+            entity.HasKey(resident => resident.Id);
+            entity.Property(resident => resident.Psn).HasMaxLength(50);
+            entity.Property(resident => resident.UnitCode).HasMaxLength(20);
+            entity.Property(resident => resident.FirstName).HasMaxLength(100);
+            entity.Property(resident => resident.Surname).HasMaxLength(100);
+            entity.Property(resident => resident.Nationality).HasMaxLength(100);
+            entity.Property(resident => resident.RoomNumber).HasMaxLength(20);
+            entity.Property(resident => resident.PhotoUrl).HasMaxLength(500);
+            entity.Property(resident => resident.PrimaryAddiction).HasMaxLength(100);
+            entity.Property(resident => resident.CreatedAtUtc).HasColumnType("datetime2").IsRequired();
+            entity.Property(resident => resident.UpdatedAtUtc).HasColumnType("datetime2").IsRequired();
+            entity.HasIndex(resident => new { resident.UnitCode, resident.RoomNumber });
+            entity.HasIndex(resident => resident.Psn).IsUnique();
+        });
+
         modelBuilder.ApplyConfiguration(new LookupTypeConfiguration());
         modelBuilder.ApplyConfiguration(new LookupValueConfiguration());
         modelBuilder.ApplyConfiguration(new LookupValueLabelConfiguration());
@@ -613,6 +637,11 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new EpisodeEventConfiguration());
         modelBuilder.ApplyConfiguration(new TherapySchedulingConfigConfiguration());
         modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
+        modelBuilder.ApplyConfiguration(new MediaAssetConfiguration());
+        modelBuilder.ApplyConfiguration(new QuoteConfiguration());
+        modelBuilder.ApplyConfiguration(new UnitQuoteCurationConfiguration());
+        modelBuilder.ApplyConfiguration(new VideoConfiguration());
+        modelBuilder.ApplyConfiguration(new UnitVideoCurationConfiguration());
 
         SeedFormDefinition(modelBuilder);
         SeedOptionSets(modelBuilder);

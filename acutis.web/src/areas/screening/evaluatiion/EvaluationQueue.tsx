@@ -26,6 +26,7 @@ import {
   submitEvaluationForm,
 } from '@/areas/screening/services/evaluationFormService';
 import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
+import { isAuthorizedClient } from '@/lib/authMode';
 
 interface EvaluationCandidate {
   id: string;
@@ -90,7 +91,7 @@ const EvaluationQueue: React.FC = () => {
       if (withLoader) {
         setIsLoading(true);
       }
-      if (status !== 'authenticated') {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
         setIsLoading(false);
         return;
       }
@@ -122,7 +123,7 @@ const EvaluationQueue: React.FC = () => {
   }, [loadQueue]);
 
   useEffect(() => {
-    if (status !== 'authenticated') {
+    if (!isAuthorizedClient(status, session?.accessToken)) {
       return;
     }
 
@@ -159,7 +160,7 @@ const EvaluationQueue: React.FC = () => {
     let active = true;
 
     const loadForm = async () => {
-      if (status !== 'authenticated' || !session?.accessToken || !selectedCandidate) {
+      if (!isAuthorizedClient(status, session?.accessToken) || !selectedCandidate) {
         setFormData(null);
         setFormError(null);
         return;
@@ -167,8 +168,14 @@ const EvaluationQueue: React.FC = () => {
 
       try {
         setFormLoading(true);
+        const accessToken = session?.accessToken;
+        if (!accessToken) {
+          setFormData(null);
+          setFormError("Session expired.");
+          return;
+        }
         const response = await loadEvaluationForm({
-          accessToken: session.accessToken,
+          accessToken,
           locale,
           subjectId: selectedCandidate.id,
         });

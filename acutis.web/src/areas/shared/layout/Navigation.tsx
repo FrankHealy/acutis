@@ -1,17 +1,39 @@
 // src/units/shared/layout/Navigation.tsx
 
 import React from 'react';
+import { Pill, Shield, Venus, Wine } from "lucide-react";
+import type { UnitDefinition } from "@/areas/shared/unit/unitTypes";
 
 interface NavigationProps {
   currentStep: string;
   setCurrentStep: (step: string) => void;
+  showAdmissions: boolean;
+  unitName: string;
+  unitAccentClass: string;
+  unitIconKey: UnitDefinition["iconKey"];
 }
 
-const Navigation: React.FC<NavigationProps> = ({ currentStep, setCurrentStep }) => {
+const Navigation: React.FC<NavigationProps> = ({
+  currentStep,
+  setCurrentStep,
+  showAdmissions,
+  unitName,
+  unitAccentClass,
+  unitIconKey,
+}) => {
+  const unitIconMap = {
+    wine: Wine,
+    shield: Shield,
+    pill: Pill,
+    venus: Venus,
+  } as const;
+  const UnitIcon = unitIconMap[unitIconKey];
+
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex space-x-6 h-14 items-center">
+        <div className="flex h-14 items-center justify-between">
+          <div className="flex space-x-6 items-center">
           <button
             onClick={() => setCurrentStep('dashboard')}
             className={`text-sm font-medium ${
@@ -21,14 +43,16 @@ const Navigation: React.FC<NavigationProps> = ({ currentStep, setCurrentStep }) 
             Dashboard
           </button>
 
-          <button
-            onClick={() => setCurrentStep('new-admission')}
-            className={`text-sm font-medium ${
-              currentStep === 'new-admission' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Admissions
-          </button>
+          {showAdmissions && (
+            <button
+              onClick={() => setCurrentStep('new-admission')}
+              className={`text-sm font-medium ${
+                currentStep === 'new-admission' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Admissions
+            </button>
+          )}
 
           <button
             onClick={() => setCurrentStep('residents')}
@@ -65,6 +89,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentStep, setCurrentStep }) 
                 { key: 'operations/room-mapping', label: 'Room Assignments' },
                 { key: 'operations/ot-roles', label: 'OT Roles' },
                 { key: 'operations/therapy-schedule', label: 'Therapy Schedule' },
+                { key: 'operations/meditation', label: 'Meditation' },
               ].map(item => (
                 <button
                   key={item.key}
@@ -79,6 +104,12 @@ const Navigation: React.FC<NavigationProps> = ({ currentStep, setCurrentStep }) 
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+          <div className="hidden md:flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1">
+            <UnitIcon className={`h-4 w-4 ${unitAccentClass}`} />
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Unit</span>
+            <span className={`text-sm font-semibold ${unitAccentClass}`}>{unitName}</span>
           </div>
         </div>
       </div>

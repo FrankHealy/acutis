@@ -172,6 +172,41 @@ public sealed class TherapySchedulingPreferences
     public bool AllowDuplicateCompletionsInEpisode { get; set; }
 }
 
+public sealed class TherapySchedulingConfigDto
+{
+    public Guid? ConfigId { get; set; }
+    public Guid CentreId { get; set; }
+    public Guid? UnitId { get; set; }
+    public string IntakeDayPreference { get; set; } = "Monday";
+    public bool ShiftIntakeIfPublicHoliday { get; set; } = true;
+    public int DetoxWeeks { get; set; } = 2;
+    public int TotalWeeks { get; set; } = 12;
+    public int MainProgrammeWeeks { get; set; } = 10;
+    public int TopicsRequired { get; set; } = 10;
+    public int TopicsRunningPerWeek { get; set; } = 3;
+    public string WeekDefinition { get; set; } = "MondayToSunday";
+    public string HolidayCalendar { get; set; } = "Ireland";
+    public bool AllowDuplicateCompletionsInEpisode { get; set; }
+    public bool IsPersisted { get; set; }
+    public string Source { get; set; } = "Default";
+}
+
+public sealed class UpsertTherapySchedulingConfigRequest
+{
+    public Guid? UnitId { get; set; }
+    public string IntakeDayPreference { get; set; } = "Monday";
+    public bool ShiftIntakeIfPublicHoliday { get; set; } = true;
+    public int DetoxWeeks { get; set; } = 2;
+    public int TotalWeeks { get; set; } = 12;
+    public int MainProgrammeWeeks { get; set; } = 10;
+    public int TopicsRequired { get; set; } = 10;
+    public int TopicsRunningPerWeek { get; set; } = 3;
+    public string WeekDefinition { get; set; } = "MondayToSunday";
+    public string HolidayCalendar { get; set; } = "Ireland";
+    public bool AllowDuplicateCompletionsInEpisode { get; set; }
+    public string? Reason { get; set; }
+}
+
 public sealed class DuplicateCompletionException : InvalidOperationException
 {
     public DuplicateCompletionException(Guid episodeId, Guid therapyTopicId)

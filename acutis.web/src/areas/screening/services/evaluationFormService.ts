@@ -7,7 +7,7 @@ import {
 } from "@/areas/screening/forms/ApiClient";
 
 type EvaluationFormParams = {
-  accessToken: string;
+  accessToken?: string;
   locale: string;
   subjectId: string;
 };

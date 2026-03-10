@@ -9,13 +9,22 @@ import { useResidents } from './hooks/useResidents';
 import ResidentDetail from './ResidentDetail';
 import Toast from '@/units/shared/ui/Toast';
 import type { UnitId } from './unit/unitTypes';
+import QuoteOfTheDay from './QuoteOfTheDay';
+import RecoveryVideos from './RecoveryVideos';
 
 type ResidentsSectionProps = {
   unitId: UnitId;
   unitName: string;
+  initialRollCallView?: boolean;
+  onOpenMeditation?: () => void;
 };
 
-const ResidentsSection: React.FC<ResidentsSectionProps> = ({ unitId, unitName }) => {
+const ResidentsSection: React.FC<ResidentsSectionProps> = ({
+  unitId,
+  unitName,
+  initialRollCallView = false,
+  onOpenMeditation,
+}) => {
   const [selectedResidentId, setSelectedResidentId] = useState<number | null>(null);
   const {
     residents,
@@ -39,7 +48,7 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({ unitId, unitName })
     handleAbsenceSubmit,
     saveAllAttendance,
     setToast,
-  } = useResidents(unitId);
+  } = useResidents(unitId, initialRollCallView);
 
   const selectedResident = useMemo(
     () => (selectedResidentId != null ? residents.find(r => r.id === selectedResidentId) : undefined),
@@ -85,9 +94,15 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({ unitId, unitName })
         residentCount={residents.length}
         residentSource={residentSource}
         onSaveAttendance={saveAllAttendance}
+        onOpenMeditation={onOpenMeditation}
       />
 
+      {rollCallView && unitId !== 'detox' && <QuoteOfTheDay unitId={unitId} />}
+
       {rollCallView ? (
+        unitId === 'detox' ? (
+          <RecoveryVideos unitId={unitId} />
+        ) : (
         <>
           <RollCallControls
             attendanceData={attendanceData}
@@ -107,6 +122,7 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({ unitId, unitName })
             onSelect={setSelectedResidentId}
           />
         </>
+        )
       ) : (
         <ResidentsTable
           residents={residents}

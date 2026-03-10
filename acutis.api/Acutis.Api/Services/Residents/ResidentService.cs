@@ -1,5 +1,6 @@
-using System.Text.Json;
 using Acutis.Api.Contracts;
+using Acutis.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Acutis.Api.Services.Residents;
 
@@ -12,11 +13,11 @@ public interface IResidentService
 
 public sealed class ResidentService : IResidentService
 {
-    private readonly IWebHostEnvironment _environment;
+    private readonly AcutisDbContext _dbContext;
 
-    public ResidentService(IWebHostEnvironment environment)
+    public ResidentService(AcutisDbContext dbContext)
     {
-        _environment = environment;
+        _dbContext = dbContext;
     }
 
     public async Task<IReadOnlyList<ResidentListItemDto>> GetAllResidentsAsync(
@@ -24,59 +25,50 @@ public sealed class ResidentService : IResidentService
         CancellationToken cancellationToken = default)
     {
         var normalizedUnit = NormalizeUnit(unitId);
-        var seedResidents = await ReadSeedResidentsAsync(cancellationToken);
-        if (seedResidents.Count == 0)
-        {
-            return Array.Empty<ResidentListItemDto>();
-        }
-
-        var mapped = seedResidents
-            .Select((seed, index) =>
-            {
-                var derivedUnit = DeriveUnit(seed, index);
-                return new ResidentListItemDto
-                {
-                    Id = index + 1,
-                    Psn = seed.Psn,
-                    FirstName = seed.FirstName,
-                    Surname = seed.Surname,
-                    Nationality = seed.Nationality,
-                    Age = CalculateAge(seed.Dob),
-                    WeekNumber = seed.WeekNumber,
-                    RoomNumber = seed.RoomNumber.ToString(),
-                    UnitId = derivedUnit,
-                    PhotoUrl = string.IsNullOrWhiteSpace(seed.PhotoURL) ? null : seed.PhotoURL.Trim()
-                };
-            })
-            .Where(resident => resident.UnitId.Equals(normalizedUnit, StringComparison.OrdinalIgnoreCase))
+        var residents = await _dbContext.Residents
+            .AsNoTracking()
+            .Where(resident => resident.UnitCode == normalizedUnit)
             .OrderBy(resident => resident.Surname)
             .ThenBy(resident => resident.FirstName)
-            .ToList();
+            .ToListAsync(cancellationToken);
 
-        return mapped;
+        return residents
+            .Select(resident => new ResidentListItemDto
+            {
+                Id = ToLegacyResidentId(resident.Id),
+                Psn = resident.Psn?.Trim() ?? string.Empty,
+                UnitGuid = resident.UnitId,
+                FirstName = resident.FirstName?.Trim() ?? string.Empty,
+                Surname = resident.Surname?.Trim() ?? string.Empty,
+                Nationality = resident.Nationality?.Trim() ?? string.Empty,
+                Age = resident.DateOfBirth.HasValue
+                    ? CalculateAge(resident.DateOfBirth.Value.ToString("yyyy-MM-dd"))
+                    : 18,
+                WeekNumber = resident.WeekNumber,
+                RoomNumber = resident.RoomNumber?.Trim() ?? string.Empty,
+                UnitId = resident.UnitCode?.Trim().ToLowerInvariant() ?? normalizedUnit,
+                PhotoUrl = resident.PhotoUrl,
+                AdmissionDate = resident.AdmissionDate?.ToString("yyyy-MM-dd"),
+                ExpectedCompletion = resident.ExpectedCompletionDate?.ToString("yyyy-MM-dd"),
+                PrimaryAddiction = resident.PrimaryAddiction?.Trim() ?? string.Empty,
+                IsDrug = resident.IsDrug,
+                IsGambeler = resident.IsGambeler,
+                IsPreviousResident = resident.IsPreviousResident,
+                DietaryNeedsCode = resident.DietaryNeedsCode,
+                IsSnorer = resident.IsSnorer,
+                HasCriminalHistory = resident.HasCriminalHistory,
+                IsOnProbation = resident.IsOnProbation,
+                ArgumentativeScale = resident.ArgumentativeScale,
+                LearningDifficultyScale = resident.LearningDifficultyScale,
+                LiteracyScale = resident.LiteracyScale
+            })
+            .ToList();
     }
 
-    private async Task<List<SeedResident>> ReadSeedResidentsAsync(CancellationToken cancellationToken)
+    private static int ToLegacyResidentId(Guid residentId)
     {
-        var seedPath = Path.GetFullPath(Path.Combine(
-            _environment.ContentRootPath,
-            "..",
-            "..",
-            "acutis.web",
-            "src",
-            "data",
-            "mockResidents.json"));
-
-        if (!File.Exists(seedPath))
-        {
-            return new List<SeedResident>();
-        }
-
-        await using var stream = File.OpenRead(seedPath);
-        var residents = await JsonSerializer.DeserializeAsync<List<SeedResident>>(
-            stream,
-            cancellationToken: cancellationToken);
-        return residents ?? new List<SeedResident>();
+        var value = BitConverter.ToInt32(residentId.ToByteArray(), 0) & int.MaxValue;
+        return value == 0 ? 1 : value;
     }
 
     private static string NormalizeUnit(string unitId)
@@ -87,26 +79,6 @@ public sealed class ResidentService : IResidentService
         }
 
         return unitId.Trim().ToLowerInvariant();
-    }
-
-    private static string DeriveUnit(SeedResident seed, int index)
-    {
-        if (seed.IsDrug)
-        {
-            return "drugs";
-        }
-
-        if (seed.WeekNumber <= 4)
-        {
-            return "detox";
-        }
-
-        if (index % 9 == 0)
-        {
-            return "ladies";
-        }
-
-        return "alcohol";
     }
 
     private static int CalculateAge(string dobIso)
@@ -124,18 +96,5 @@ public sealed class ResidentService : IResidentService
         }
 
         return Math.Clamp(age, 16, 120);
-    }
-
-    private sealed class SeedResident
-    {
-        public string Psn { get; set; } = string.Empty;
-        public string Surname { get; set; } = string.Empty;
-        public string FirstName { get; set; } = string.Empty;
-        public string? PhotoURL { get; set; }
-        public string Dob { get; set; } = string.Empty;
-        public int WeekNumber { get; set; }
-        public int RoomNumber { get; set; }
-        public string Nationality { get; set; } = string.Empty;
-        public bool IsDrug { get; set; }
     }
 }

@@ -77,3 +77,25 @@ reports/
 *.swp
 *.tmp
 .git-backups/
+
+############################
+# Local media payloads (do not commit)
+############################
+media/**
+!media/**/
+!media/**/*.ps1
+!media/**/*seed*.json
+
+.dotnet/
+
+acutis.web/.next/
+
+acutis.web/node_modules/
+
+media/**/*.mp4
+
+media/**/*.webm
+
+media/**/*.mkv
+
+media/**/*.mp3

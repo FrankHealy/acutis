@@ -8,6 +8,7 @@ interface ResidentsHeaderProps {
   residentCount: number;
   residentSource: 'api' | 'mock';
   onSaveAttendance: () => void;
+  onOpenMeditation?: () => void;
 }
 
 const getCurrentDate = () => {
@@ -30,7 +31,8 @@ const ResidentsHeader: React.FC<ResidentsHeaderProps> = ({
   setRollCallView, 
   residentCount,
   residentSource,
-  onSaveAttendance 
+  onSaveAttendance,
+  onOpenMeditation
 }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -68,6 +70,14 @@ const ResidentsHeader: React.FC<ResidentsHeaderProps> = ({
           >
             {rollCallView ? 'Exit Roll Call' : 'Start Roll Call'}
           </button>
+          {rollCallView && (
+            <button
+              onClick={() => onOpenMeditation?.()}
+              className="px-4 py-2 rounded-lg font-medium border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+            >
+              Meditation
+            </button>
+          )}
           {rollCallView && (
             <button 
               onClick={onSaveAttendance}

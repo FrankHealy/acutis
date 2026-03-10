@@ -1,0 +1,134 @@
+[
+  {
+    "id": "nova_addiction_pbs",
+    "title": "Addiction - Full Documentary (NOVA | PBS)",
+    "url": "https://www.youtube.com/watch?v=qJ-qX3yrxC0",
+    "lengthSeconds": 2160,
+    "description": "Science-led documentary explaining addiction mechanisms and treatment realities.",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["detox-safe", "education", "science", "documentary"],
+    "isActive": true
+  },
+  {
+    "id": "real_stories_addiction_hope",
+    "title": "Real Stories of Addiction and Hope",
+    "url": "https://www.youtube.com/watch?v=hcUf9jrgjek",
+    "lengthSeconds": 3000,
+    "description": "First-person accounts of addiction and recovery; varied perspectives, steady tone.",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["detox-safe", "lived-experience", "documentary", "recovery"],
+    "isActive": true
+  },
+  {
+    "id": "breaking_the_chains_northants",
+    "title": "Breaking the Chains of Addiction",
+    "url": "https://www.youtube.com/watch?v=qT8VfNvC1Mw",
+    "lengthSeconds": 2880,
+    "description": "Northamptonshire recovery stories; honest, community-focused, non-sensational.",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["detox-safe", "lived-experience", "community", "recovery"],
+    "isActive": true
+  },
+  {
+    "id": "break_the_chain_jordan",
+    "title": "Jordan's Addiction Recovery Story | BREAK THE CHAIN",
+    "url": "https://www.youtube.com/watch?v=_Dd8UINnIaQ",
+    "lengthSeconds": 3000,
+    "description": "Long-form personal recovery story; supportive framing and reflection.",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["detox-safe", "lived-experience", "recovery"],
+    "isActive": true
+  },
+  {
+    "id": "break_the_chain_helen",
+    "title": "Helen's Addiction Recovery Story | BREAK THE CHAIN (Full)",
+    "url": "https://www.youtube.com/watch?v=7SkzS4YFy-s",
+    "lengthSeconds": 3000,
+    "description": "Long-form personal account; impact on relationships and rebuilding.",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["detox-safe", "lived-experience", "recovery"],
+    "isActive": true
+  },
+  {
+    "id": "only_human_alcohol_took_over",
+    "title": "How Alcohol Took Over My Life: Addiction And Recovery",
+    "url": "https://www.youtube.com/watch?v=wk8cvg3TwOw",
+    "lengthSeconds": 2700,
+    "description": "Alcohol-focused lived experience documentary; consequences and change process.",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["detox-safe", "lived-experience", "alcohol", "recovery"],
+    "isActive": true
+  },
+  {
+    "id": "through_a_blue_lens_nfb",
+    "title": "THROUGH A BLUE LENS | Full Documentary (NFB)",
+    "url": "https://www.youtube.com/watch?v=gwFRsfATaag",
+    "lengthSeconds": 3120,
+    "description": "Stark street-level documentary; mature subject matter (use discretion in detox).",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["lived-experience", "documentary", "mature", "staff-discretion"],
+    "isActive": true
+  },
+  {
+    "id": "frontline_opioids_inc",
+    "title": "Opioids, Inc. | FRONTLINE (PBS/FT)",
+    "url": "https://www.pbs.org/video/opioids-inc-x1xeg9/",
+    "lengthSeconds": 3263,
+    "description": "Investigative documentary on an opioid company's practices and system failures.",
+    "source": "PBS",
+    "language": "en",
+    "tags": ["detox-safe", "education", "investigative", "opioids", "policy"],
+    "isActive": true
+  },
+  {
+    "id": "frontline_chasing_heroin",
+    "title": "Chasing Heroin | FRONTLINE (PBS)",
+    "url": "https://www.pbs.org/wgbh/frontline/documentary/chasing-heroin/",
+    "lengthSeconds": 3240,
+    "description": "Public-health framing of the opioid/heroin crisis and what helps recovery.",
+    "source": "PBS",
+    "language": "en",
+    "tags": ["detox-safe", "education", "documentary", "opioids", "public-health"],
+    "isActive": true
+  },
+  {
+    "id": "overdosed_hidden_opioid_crisis",
+    "title": "Overdosed | The Hidden Opioid Crisis | Full Documentary",
+    "url": "https://www.youtube.com/watch?v=LX3BBbBfMco",
+    "lengthSeconds": 3000,
+    "description": "Rural community impact of opioid crisis; personal and systemic angles.",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["detox-safe", "lived-experience", "opioids", "documentary"],
+    "isActive": true
+  },
+  {
+    "id": "breaking_points_teen_stress",
+    "title": "BREAKING POINTS | Partnership to End Addiction",
+    "url": "https://www.youtube.com/watch?v=SaiGJzsfG30",
+    "lengthSeconds": 1800,
+    "description": "Youth stress and coping; prevention-oriented framing.",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["detox-safe", "education", "youth", "prevention"],
+    "isActive": true
+  },
+  {
+    "id": "american_epidemic_wsj",
+    "title": "American Epidemic: The Nation's Struggle With Opioid Addiction (WSJ)",
+    "url": "https://www.youtube.com/watch?v=nNj89ohoYQ0",
+    "lengthSeconds": 2700,
+    "description": "WSJ documentary on opioid addiction impact and families' experiences.",
+    "source": "YouTube",
+    "language": "en",
+    "tags": ["detox-safe", "education", "opioids", "documentary"],
+    "isActive": true
+  }
+]

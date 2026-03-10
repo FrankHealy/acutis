@@ -10,6 +10,8 @@ namespace Acutis.Api.Services.TherapyScheduling;
 public interface ITherapySchedulingService
 {
     Task<IReadOnlyList<TherapyTopicDto>> GetTherapyTopicsAsync(CancellationToken cancellationToken = default);
+    Task<TherapySchedulingConfigDto> GetConfigAsync(Guid centreId, Guid? unitId, CancellationToken cancellationToken = default);
+    Task<TherapySchedulingConfigDto> UpsertConfigAsync(Guid centreId, UpsertTherapySchedulingConfigRequest request, CancellationToken cancellationToken = default);
     Task<WeeklyTherapyRunDto> CreateWeeklyRunAsync(Guid centreId, CreateWeeklyTherapyRunRequest request, CancellationToken cancellationToken = default);
     Task<WeeklyTherapyRunWithAssignmentsDto?> GetRunWithAssignmentsAsync(Guid centreId, Guid runId, CancellationToken cancellationToken = default);
     Task<PublishWeeklyTherapyRunResponse?> PublishRunAsync(Guid centreId, Guid runId, PublishWeeklyTherapyRunRequest request, CancellationToken cancellationToken = default);
@@ -45,6 +47,123 @@ public sealed class TherapySchedulingService : ITherapySchedulingService
             .ToListAsync(cancellationToken);
 
         return topics.Select(MapTopic).ToList();
+    }
+
+    public async Task<TherapySchedulingConfigDto> GetConfigAsync(
+        Guid centreId,
+        Guid? unitId,
+        CancellationToken cancellationToken = default)
+    {
+        var unitConfig = unitId.HasValue
+            ? await _dbContext.TherapySchedulingConfigs
+                .AsNoTracking()
+                .Where(x => x.CentreId == centreId && x.UnitId == unitId)
+                .OrderBy(x => x.Id)
+                .FirstOrDefaultAsync(cancellationToken)
+            : null;
+
+        var centreConfig = await _dbContext.TherapySchedulingConfigs
+            .AsNoTracking()
+            .Where(x => x.CentreId == centreId && x.UnitId == null)
+            .OrderBy(x => x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (unitConfig is not null)
+        {
+            return MapConfig(unitConfig, centreId, unitId, true, "Unit");
+        }
+
+        if (centreConfig is not null)
+        {
+            return MapConfig(centreConfig, centreId, unitId, true, unitId.HasValue ? "CentreFallback" : "Centre");
+        }
+
+        return new TherapySchedulingConfigDto
+        {
+            ConfigId = null,
+            CentreId = centreId,
+            UnitId = unitId,
+            IsPersisted = false,
+            Source = "Default"
+        };
+    }
+
+    public async Task<TherapySchedulingConfigDto> UpsertConfigAsync(
+        Guid centreId,
+        UpsertTherapySchedulingConfigRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateConfigRequest(request);
+
+        var intakeDay = Enum.Parse<DayOfWeek>(request.IntakeDayPreference, true);
+        var existing = await _dbContext.TherapySchedulingConfigs
+            .Where(x => x.CentreId == centreId && x.UnitId == request.UnitId)
+            .OrderBy(x => x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var before = existing is null ? null : new
+        {
+            existing.IntakeDayPreference,
+            existing.ShiftIntakeIfPublicHoliday,
+            existing.DetoxWeeks,
+            existing.TotalWeeks,
+            existing.MainProgrammeWeeks,
+            existing.TopicsRequired,
+            existing.TopicsRunningPerWeek,
+            existing.WeekDefinition,
+            existing.HolidayCalendarCode,
+            existing.AllowDuplicateCompletionsInEpisode
+        };
+
+        if (existing is null)
+        {
+            existing = new TherapySchedulingConfig
+            {
+                Id = Guid.NewGuid(),
+                CentreId = centreId,
+                UnitId = request.UnitId
+            };
+            _dbContext.TherapySchedulingConfigs.Add(existing);
+        }
+
+        existing.IntakeDayPreference = intakeDay;
+        existing.ShiftIntakeIfPublicHoliday = request.ShiftIntakeIfPublicHoliday;
+        existing.DetoxWeeks = request.DetoxWeeks;
+        existing.TotalWeeks = request.TotalWeeks;
+        existing.MainProgrammeWeeks = request.MainProgrammeWeeks;
+        existing.TopicsRequired = request.TopicsRequired;
+        existing.TopicsRunningPerWeek = request.TopicsRunningPerWeek;
+        existing.WeekDefinition = request.WeekDefinition.Trim();
+        existing.HolidayCalendarCode = request.HolidayCalendar.Trim();
+        existing.AllowDuplicateCompletionsInEpisode = request.AllowDuplicateCompletionsInEpisode;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var action = before is null ? "Create" : "Update";
+        await _auditService.WriteAsync(
+            centreId,
+            request.UnitId,
+            nameof(TherapySchedulingConfig),
+            existing.Id.ToString(),
+            action,
+            before,
+            new
+            {
+                existing.IntakeDayPreference,
+                existing.ShiftIntakeIfPublicHoliday,
+                existing.DetoxWeeks,
+                existing.TotalWeeks,
+                existing.MainProgrammeWeeks,
+                existing.TopicsRequired,
+                existing.TopicsRunningPerWeek,
+                existing.WeekDefinition,
+                existing.HolidayCalendarCode,
+                existing.AllowDuplicateCompletionsInEpisode
+            },
+            request.Reason,
+            cancellationToken);
+
+        return MapConfig(existing, centreId, request.UnitId, true, request.UnitId.HasValue ? "Unit" : "Centre");
     }
 
     public async Task<WeeklyTherapyRunDto> CreateWeeklyRunAsync(
@@ -555,11 +674,15 @@ public sealed class TherapySchedulingService : ITherapySchedulingService
         var unitConfig = unitId.HasValue
             ? await _dbContext.TherapySchedulingConfigs
                 .AsNoTracking()
-                .SingleOrDefaultAsync(x => x.CentreId == centreId && x.UnitId == unitId, cancellationToken)
+                .Where(x => x.CentreId == centreId && x.UnitId == unitId)
+                .OrderBy(x => x.Id)
+                .FirstOrDefaultAsync(cancellationToken)
             : null;
         var centreConfig = await _dbContext.TherapySchedulingConfigs
             .AsNoTracking()
-            .SingleOrDefaultAsync(x => x.CentreId == centreId && x.UnitId == null, cancellationToken);
+            .Where(x => x.CentreId == centreId && x.UnitId == null)
+            .OrderBy(x => x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
         var config = unitConfig ?? centreConfig;
 
         if (config is null)
@@ -576,6 +699,67 @@ public sealed class TherapySchedulingService : ITherapySchedulingService
             TopicsRunningPerWeek = config.TopicsRunningPerWeek,
             AllowDuplicateCompletionsInEpisode = config.AllowDuplicateCompletionsInEpisode
         };
+    }
+
+    private static TherapySchedulingConfigDto MapConfig(
+        TherapySchedulingConfig config,
+        Guid centreId,
+        Guid? requestedUnitId,
+        bool isPersisted,
+        string source)
+    {
+        return new TherapySchedulingConfigDto
+        {
+            ConfigId = config.Id,
+            CentreId = centreId,
+            UnitId = requestedUnitId,
+            IntakeDayPreference = config.IntakeDayPreference.ToString(),
+            ShiftIntakeIfPublicHoliday = config.ShiftIntakeIfPublicHoliday,
+            DetoxWeeks = config.DetoxWeeks,
+            TotalWeeks = config.TotalWeeks,
+            MainProgrammeWeeks = config.MainProgrammeWeeks,
+            TopicsRequired = config.TopicsRequired,
+            TopicsRunningPerWeek = config.TopicsRunningPerWeek,
+            WeekDefinition = config.WeekDefinition,
+            HolidayCalendar = config.HolidayCalendarCode,
+            AllowDuplicateCompletionsInEpisode = config.AllowDuplicateCompletionsInEpisode,
+            IsPersisted = isPersisted,
+            Source = source
+        };
+    }
+
+    private static void ValidateConfigRequest(UpsertTherapySchedulingConfigRequest request)
+    {
+        if (!Enum.TryParse<DayOfWeek>(request.IntakeDayPreference, true, out _))
+        {
+            throw new InvalidOperationException("intakeDayPreference must be a valid day of week.");
+        }
+
+        if (request.DetoxWeeks < 0 || request.TotalWeeks <= 0 || request.MainProgrammeWeeks <= 0 ||
+            request.TopicsRequired <= 0 || request.TopicsRunningPerWeek <= 0)
+        {
+            throw new InvalidOperationException("Week and topic values must be positive (detoxWeeks can be zero).");
+        }
+
+        if (request.DetoxWeeks > request.TotalWeeks)
+        {
+            throw new InvalidOperationException("detoxWeeks cannot exceed totalWeeks.");
+        }
+
+        if (request.MainProgrammeWeeks != request.TotalWeeks - request.DetoxWeeks)
+        {
+            throw new InvalidOperationException("mainProgrammeWeeks must equal totalWeeks - detoxWeeks.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.WeekDefinition))
+        {
+            throw new InvalidOperationException("weekDefinition is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.HolidayCalendar))
+        {
+            throw new InvalidOperationException("holidayCalendar is required.");
+        }
     }
 
     private static Guid SelectTopicForEpisode(

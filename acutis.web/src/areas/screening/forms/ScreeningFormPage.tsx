@@ -9,6 +9,9 @@ import {
   createAdmissionForm,
   createAlcoholScreeningForm,
   createSurveyForm,
+  deleteAdmissionForm,
+  deleteAlcoholScreeningForm,
+  deleteSurveyForm,
   editAdmissionForm,
   editAlcoholScreeningForm,
   editAsDraftAdmissionForm,
@@ -29,6 +32,7 @@ import {
   type SaveResponse,
   type UpsertFormDefinitionRequest,
 } from "./ApiClient";
+import { isAuthorizedClient } from "@/lib/authMode";
 
 type SubjectType = "anonymous_call" | "resident" | "admission";
 
@@ -51,6 +55,7 @@ export default function ScreeningFormPage() {
   const [versionsError, setVersionsError] = useState<string | null>(null);
   const [activatingVersion, setActivatingVersion] = useState<number | null>(null);
   const [activationError, setActivationError] = useState<string | null>(null);
+  const [deletingVersion, setDeletingVersion] = useState<number | null>(null);
   const [editorTitleKey, setEditorTitleKey] = useState("");
   const [editorDescriptionKey, setEditorDescriptionKey] = useState("");
   const [editorSchemaJson, setEditorSchemaJson] = useState("");
@@ -76,7 +81,7 @@ export default function ScreeningFormPage() {
     let active = true;
 
     const load = async () => {
-      if (status !== "authenticated" || !session?.accessToken) {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
         if (active) {
           setIsLoading(false);
         }
@@ -85,8 +90,13 @@ export default function ScreeningFormPage() {
 
       try {
         setIsLoading(true);
+        const accessToken = session?.accessToken;
+        if (!accessToken) {
+          setErrorMessage("Session expired.");
+          return;
+        }
         const response = await getActiveForm(
-          session.accessToken,
+          accessToken,
           locale,
           subjectType,
           null,
@@ -117,7 +127,7 @@ export default function ScreeningFormPage() {
     let active = true;
 
     const loadVersions = async () => {
-      if (status !== "authenticated" || !session?.accessToken) {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
         if (active) {
           setIsVersionsLoading(false);
           setVersions([]);
@@ -127,7 +137,13 @@ export default function ScreeningFormPage() {
 
       try {
         setIsVersionsLoading(true);
-        const response = await getFormVersions(session.accessToken, selectedFormCode);
+        const accessToken = session?.accessToken;
+        if (!accessToken) {
+          setVersions([]);
+          setVersionsError("Session expired.");
+          return;
+        }
+        const response = await getFormVersions(accessToken, selectedFormCode);
         if (!active) return;
         setVersions(response);
         setVersionsError(null);
@@ -177,13 +193,45 @@ export default function ScreeningFormPage() {
 
     try {
       setActivatingVersion(version);
-      await activateFormVersion(session.accessToken, selectedFormCode, version);
+      await activateFormVersion(accessToken, selectedFormCode, version);
       setActivationError(null);
       setReloadKey((value) => value + 1);
     } catch (error) {
       setActivationError(error instanceof Error ? error.message : "Unable to activate version.");
     } finally {
       setActivatingVersion(null);
+    }
+  };
+
+  const handleDeleteVersion = async (version: number) => {
+    if (!session?.accessToken) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Soft delete form version v${version}? This will archive the version but keep audit history.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingVersion(version);
+      setActivationError(null);
+      if (configMode === "alcohol") {
+        await deleteAlcoholScreeningForm(accessToken, version);
+      } else if (configMode === "admission") {
+        await deleteAdmissionForm(accessToken, selectedFormCode, version);
+      } else if (configMode === "survey") {
+        await deleteSurveyForm(accessToken, selectedFormCode, version);
+      } else {
+        throw new Error("Unsupported form code for delete action.");
+      }
+      setReloadKey((value) => value + 1);
+    } catch (deleteError) {
+      setActivationError(deleteError instanceof Error ? deleteError.message : "Unable to soft delete version.");
+    } finally {
+      setDeletingVersion(null);
     }
   };
 
@@ -196,7 +244,7 @@ export default function ScreeningFormPage() {
       setIsPingingConfigApi(true);
       setPingConfigApiError(null);
       const startedAt = performance.now();
-      const response = await getFormVersions(session.accessToken, selectedFormCode);
+      const response = await getFormVersions(accessToken, selectedFormCode);
       const elapsedMs = Math.round(performance.now() - startedAt);
       setPingConfigApiMessage(
         `Config API OK (${response.length} version(s), ${elapsedMs} ms, ${new Date().toLocaleTimeString()}).`
@@ -268,32 +316,32 @@ export default function ScreeningFormPage() {
         configMode === "alcohol"
           ? action === "create"
             ? makeActive
-              ? await createAlcoholScreeningForm(session.accessToken, payload)
-              : await saveAsDraftAlcoholScreeningForm(session.accessToken, payload)
+              ? await createAlcoholScreeningForm(accessToken, payload)
+              : await saveAsDraftAlcoholScreeningForm(accessToken, payload)
             : makeActive
-              ? await editAlcoholScreeningForm(session.accessToken, formData.form.version, payload)
-              : await editAsDraftAlcoholScreeningForm(session.accessToken, formData.form.version, payload)
+              ? await editAlcoholScreeningForm(accessToken, formData.form.version, payload)
+              : await editAsDraftAlcoholScreeningForm(accessToken, formData.form.version, payload)
           : configMode === "admission"
             ? action === "create"
               ? makeActive
-                ? await createAdmissionForm(session.accessToken, selectedFormCode, payload)
-                : await saveAsDraftAdmissionForm(session.accessToken, selectedFormCode, payload)
+                ? await createAdmissionForm(accessToken, selectedFormCode, payload)
+                : await saveAsDraftAdmissionForm(accessToken, selectedFormCode, payload)
               : makeActive
-                ? await editAdmissionForm(session.accessToken, selectedFormCode, formData.form.version, payload)
+                ? await editAdmissionForm(accessToken, selectedFormCode, formData.form.version, payload)
                 : await editAsDraftAdmissionForm(
-                    session.accessToken,
+                    accessToken,
                     selectedFormCode,
                     formData.form.version,
                     payload
                   )
             : action === "create"
               ? makeActive
-                ? await createSurveyForm(session.accessToken, selectedFormCode, payload)
-                : await saveAsDraftSurveyForm(session.accessToken, selectedFormCode, payload)
+                ? await createSurveyForm(accessToken, selectedFormCode, payload)
+                : await saveAsDraftSurveyForm(accessToken, selectedFormCode, payload)
               : makeActive
-                ? await editSurveyForm(session.accessToken, selectedFormCode, formData.form.version, payload)
+                ? await editSurveyForm(accessToken, selectedFormCode, formData.form.version, payload)
                 : await editAsDraftSurveyForm(
-                    session.accessToken,
+                    accessToken,
                     selectedFormCode,
                     formData.form.version,
                     payload
@@ -318,10 +366,19 @@ export default function ScreeningFormPage() {
     );
   }
 
-  if (status !== "authenticated" || !session?.accessToken) {
+  if (!isAuthorizedClient(status, session?.accessToken)) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600">
         Please sign in to access screening forms.
+      </div>
+    );
+  }
+
+  const accessToken = session?.accessToken;
+  if (!accessToken) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+        Session expired.
       </div>
     );
   }
@@ -346,7 +403,7 @@ export default function ScreeningFormPage() {
     submissionId: string | null;
     answers: Record<string, JsonValue>;
   }): Promise<SaveProgressResponse> => {
-    return saveProgress(session.accessToken!, {
+    return saveProgress(accessToken, {
       formCode: formData.form.code,
       formVersion: formData.form.version,
       locale,
@@ -361,7 +418,7 @@ export default function ScreeningFormPage() {
     submissionId: string | null;
     answers: Record<string, JsonValue>;
   }): Promise<SaveResponse> => {
-    return save(session.accessToken!, {
+    return save(accessToken, {
       formCode: formData.form.code,
       formVersion: formData.form.version,
       locale,
@@ -456,7 +513,7 @@ export default function ScreeningFormPage() {
                   <th className="py-2 pr-4">Version</th>
                   <th className="py-2 pr-4">Status</th>
                   <th className="py-2 pr-4">Created</th>
-                  <th className="py-2 text-right">Action</th>
+                  <th className="py-2 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -475,18 +532,28 @@ export default function ScreeningFormPage() {
                           {new Date(item.createdAt).toLocaleString()}
                         </td>
                         <td className="py-2 text-right">
-                          <button
-                            type="button"
-                            className="rounded border border-slate-300 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                            onClick={() => handleActivateVersion(item.version)}
-                            disabled={isCurrent || activatingVersion === item.version}
-                          >
-                            {isCurrent
-                              ? "Active"
-                              : activatingVersion === item.version
-                                ? "Activating..."
-                                : "Activate"}
-                          </button>
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              className="rounded border border-slate-300 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                              onClick={() => handleActivateVersion(item.version)}
+                              disabled={isCurrent || activatingVersion === item.version || deletingVersion === item.version}
+                            >
+                              {isCurrent
+                                ? "Active"
+                                : activatingVersion === item.version
+                                  ? "Activating..."
+                                  : "Activate"}
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded border border-red-300 px-3 py-1.5 font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              onClick={() => handleDeleteVersion(item.version)}
+                              disabled={deletingVersion === item.version}
+                            >
+                              {deletingVersion === item.version ? "Deleting..." : "Soft Delete"}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -11,11 +11,11 @@ export type SortBy = keyof Pick<
 >;
 export type SortOrder = 'asc' | 'desc';
 
-export const useResidents = (unitId: UnitId) => {
+export const useResidents = (unitId: UnitId, initialRollCallView = false) => {
   const [residents, setResidents] = useState<Resident[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [rollCallView, setRollCallView] = useState(false);
+  const [rollCallView, setRollCallView] = useState(initialRollCallView);
   const [sortBy, setSortBy] = useState<SortBy>('surname');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [absentResident, setAbsentResident] = useState<number | null>(null);

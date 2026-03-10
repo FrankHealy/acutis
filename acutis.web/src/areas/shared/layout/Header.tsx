@@ -5,6 +5,7 @@ import { AlertTriangle } from 'lucide-react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
 import { getScreeningControl } from '@/areas/screening/services/screeningControlService';
+import { isAuthorizationDisabled } from '@/lib/authMode';
 
 interface HeaderProps {
   showCapacity?: boolean;
@@ -19,7 +20,8 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
   const [capacityText, setCapacityText] = useState('92/120');
   const menuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
-  const displayName = session?.username ?? session?.user?.name ?? session?.user?.email ?? 'User';
+  const displayName =
+    session?.username ?? session?.user?.name ?? session?.user?.email ?? (isAuthorizationDisabled ? 'Guest' : 'User');
   const initials = useMemo(() => {
     return displayName
       .split(/[\s@.]+/)
@@ -45,9 +47,10 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
     let active = true;
 
     const loadControl = async () => {
-      if (!session?.accessToken) return;
+      const accessToken = session?.accessToken;
+      if (!accessToken && !isAuthorizationDisabled) return;
       try {
-        const control = await getScreeningControl(session.accessToken);
+        const control = await getScreeningControl(accessToken);
         if (!active) return;
         setCapacityText(`${control.currentOccupancy}/${control.unitCapacity}`);
       } catch {
@@ -174,37 +177,41 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
                   <div className="px-4 py-3 text-sm text-gray-700 border-b border-emerald-50">
                     {t('header.signed_in_as')} <span className="font-semibold">{displayName}</span>
                   </div>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => signIn('keycloak')}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-emerald-50"
-                  >
-                    {t('header.login_different_user')}
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={async () => {
-                      await signOut({ redirect: false });
-                      const issuer = session?.issuer;
-                      const idToken = session?.idToken;
-                      if (issuer && idToken) {
-                        const logoutUrl = new URL(`${issuer}/protocol/openid-connect/logout`);
-                        logoutUrl.searchParams.set('id_token_hint', idToken);
-                        logoutUrl.searchParams.set(
-                          'post_logout_redirect_uri',
-                          `${window.location.origin}/api/auth/signin`
-                        );
-                        window.location.href = logoutUrl.toString();
-                        return;
-                      }
-                      signIn('keycloak', { prompt: 'login' });
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                  >
-                    {t('header.logout')}
-                  </button>
+                  {!isAuthorizationDisabled && (
+                    <>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => signIn('keycloak')}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-emerald-50"
+                      >
+                        {t('header.login_different_user')}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={async () => {
+                          await signOut({ redirect: false });
+                          const issuer = session?.issuer;
+                          const idToken = session?.idToken;
+                          if (issuer && idToken) {
+                            const logoutUrl = new URL(`${issuer}/protocol/openid-connect/logout`);
+                            logoutUrl.searchParams.set('id_token_hint', idToken);
+                            logoutUrl.searchParams.set(
+                              'post_logout_redirect_uri',
+                              `${window.location.origin}/api/auth/signin`
+                            );
+                            window.location.href = logoutUrl.toString();
+                            return;
+                          }
+                          signIn('keycloak', { prompt: 'login' });
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                      >
+                        {t('header.logout')}
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

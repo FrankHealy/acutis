@@ -1,3 +1,7 @@
+import { UNIT_GUIDS } from "@/services/unitIdentity";
+import type { UnitId } from "@/areas/shared/unit/unitTypes";
+import { createAuthHeaders } from "@/lib/authMode";
+
 export type ScreeningControl = {
   unitCode: string;
   unitName: string;
@@ -17,16 +21,10 @@ type CacheEnvelope<T> = {
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
-const DEFAULT_UNIT_CODE = "alcohol";
+const DEFAULT_UNIT: UnitId = "alcohol";
 
 const getAuthHeaders = (accessToken?: string) => {
-  if (!accessToken) {
-    throw new Error("Missing access token for screening control requests.");
-  }
-  return {
-    Accept: "application/json",
-    Authorization: `Bearer ${accessToken}`,
-  };
+  return createAuthHeaders(accessToken);
 };
 
 const getCacheKey = (key: string) => `acutis.cache.${key}`;
@@ -72,11 +70,12 @@ let inMemoryControlExpiresAt = 0;
 
 export const getScreeningControl = async (
   accessToken?: string,
-  options?: { forceRefresh?: boolean; unitCode?: string }
+  options?: { forceRefresh?: boolean; unitId?: UnitId }
 ): Promise<ScreeningControl> => {
-  const unitCode = options?.unitCode ?? DEFAULT_UNIT_CODE;
+  const unitId = options?.unitId ?? DEFAULT_UNIT;
+  const unitGuid = UNIT_GUIDS[unitId];
   const forceRefresh = Boolean(options?.forceRefresh);
-  const cacheKey = `screening.control.${unitCode}`;
+  const cacheKey = `screening.control.${unitId}`;
 
   if (!forceRefresh && inMemoryControl && Date.now() < inMemoryControlExpiresAt) {
     return inMemoryControl;
@@ -91,7 +90,7 @@ export const getScreeningControl = async (
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/screening/control?unitCode=${encodeURIComponent(unitCode)}`, {
+  const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/screening/control`, {
     method: "GET",
     headers: getAuthHeaders(accessToken),
     cache: "no-store",

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Acutis.Api.Contracts;
 using Acutis.Api.Services.Screening;
+using Acutis.Api.Services.Units;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +21,7 @@ public sealed class ScreeningController : ControllerBase
     private readonly ISubmissionService _submissionService;
     private readonly IFormValidationService _validationService;
     private readonly IScreeningControlService _screeningControlService;
+    private readonly IUnitIdentityService _unitIdentityService;
 
     public ScreeningController(
         IFormService formService,
@@ -27,7 +29,8 @@ public sealed class ScreeningController : ControllerBase
         ITranslationService translationService,
         ISubmissionService submissionService,
         IFormValidationService validationService,
-        IScreeningControlService screeningControlService)
+        IScreeningControlService screeningControlService,
+        IUnitIdentityService unitIdentityService)
     {
         _formService = formService;
         _optionService = optionService;
@@ -35,6 +38,7 @@ public sealed class ScreeningController : ControllerBase
         _submissionService = submissionService;
         _validationService = validationService;
         _screeningControlService = screeningControlService;
+        _unitIdentityService = unitIdentityService;
     }
 
     [HttpGet("control")]
@@ -46,6 +50,25 @@ public sealed class ScreeningController : ControllerBase
         if (control is null)
         {
             return NotFound($"No screening control found for unit '{unitCode}'.");
+        }
+
+        return Ok(control);
+    }
+
+    [HttpGet("/api/units/{unitId:guid}/screening/control")]
+    public async Task<ActionResult<ScreeningControlDto>> GetControlByUnitId(
+        Guid unitId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        {
+            return NotFound($"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        var control = await _screeningControlService.GetByUnitCodeAsync(unit.UnitCode, cancellationToken);
+        if (control is null)
+        {
+            return NotFound($"No screening control found for unit '{unit.UnitCode}'.");
         }
 
         return Ok(control);

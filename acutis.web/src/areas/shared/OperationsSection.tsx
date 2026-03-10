@@ -1,23 +1,24 @@
 // src/units/shared/operations/OperationsSection.tsx
 
-import React, { useState } from 'react';
-import { MockOperationsService, type Session } from '@/services/mockOperationsService';
-import { User } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from "react";
+import { User } from "lucide-react";
+import { operationsService, type UnitOtDaySchedule, type UnitOtSession } from "@/services/operationsService";
+import type { UnitId } from "./unit/unitTypes";
 
-const Weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const Weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-const SessionTable: React.FC<{ session: Session }> = ({ session }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-    <div className="flex justify-between items-center bg-gray-50 px-4 py-2 border-b border-gray-200">
+const SessionTable: React.FC<{ session: UnitOtSession }> = ({ session }) => (
+  <div className="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2">
       <div>
         <h3 className="text-lg font-semibold text-gray-800">{session.title}</h3>
         <p className="text-sm text-gray-600">
-          {session.counsellor} – {session.room}
+          {session.facilitator} - {session.room}
         </p>
       </div>
-      <button className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm">
-        Start Session
-      </button>
+      <span className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+        {session.residents.length} residents
+      </span>
     </div>
     <table className="w-full">
       <thead className="bg-gray-100">
@@ -31,26 +32,26 @@ const SessionTable: React.FC<{ session: Session }> = ({ session }) => (
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-200">
-        {session.residents.map((r) => (
-          <tr key={r.id}>
+        {session.residents.map((resident) => (
+          <tr key={resident.id}>
             <td className="px-4 py-2">
-              {r.photo ? (
+              {resident.photoUrl ? (
                 <img
-                  src={r.photo}
-                  alt={`${r.firstName} ${r.surname}`}
+                  src={resident.photoUrl}
+                  alt={`${resident.firstName} ${resident.surname}`}
                   className="h-8 w-8 rounded-full object-cover"
                 />
               ) : (
-                <div className="h-8 w-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-400">
                   <User className="h-5 w-5" />
                 </div>
               )}
             </td>
-            <td className="px-4 py-2 text-sm">{r.firstName}</td>
-            <td className="px-4 py-2 text-sm">{r.surname}</td>
-            <td className="px-4 py-2 text-sm">{r.age}</td>
-            <td className="px-4 py-2 text-sm">{r.nationality}</td>
-            <td className="px-4 py-2 text-sm">{r.roomNumber}</td>
+            <td className="px-4 py-2 text-sm">{resident.firstName}</td>
+            <td className="px-4 py-2 text-sm">{resident.surname}</td>
+            <td className="px-4 py-2 text-sm">{resident.age}</td>
+            <td className="px-4 py-2 text-sm">{resident.nationality}</td>
+            <td className="px-4 py-2 text-sm">{resident.roomNumber}</td>
           </tr>
         ))}
       </tbody>
@@ -58,48 +59,77 @@ const SessionTable: React.FC<{ session: Session }> = ({ session }) => (
   </div>
 );
 
-const OperationsSection: React.FC = () => {
-  const [schedule, setSchedule] = useState(MockOperationsService.generateWeek());
-  const [activeDay, setActiveDay] = useState(Weekdays[new Date().getDay() - 1] || 'Monday');
+const OperationsSection: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
+  const [schedule, setSchedule] = useState<UnitOtDaySchedule[]>([]);
+  const [activeDay, setActiveDay] = useState(Weekdays[new Date().getDay() - 1] || "Monday");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = () => {
-    setSchedule(MockOperationsService.generateWeek());
-  };
+  useEffect(() => {
+    let active = true;
 
-  const daySchedule = schedule[activeDay];
+    const load = async () => {
+      try {
+        setLoading(true);
+        const response = await operationsService.getOtSchedule(unitId);
+        if (!active) {
+          return;
+        }
+        setSchedule(response);
+        setError(null);
+      } catch (loadError) {
+        if (!active) {
+          return;
+        }
+        setError(loadError instanceof Error ? loadError.message : "Unable to load OT schedule.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [unitId]);
+
+  const daySchedule = useMemo(
+    () => schedule.find((item) => item.day === activeDay),
+    [activeDay, schedule]
+  );
+
+  if (loading) {
+    return <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">Loading OT schedule...</div>;
+  }
+
+  if (error) {
+    return <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">{error}</div>;
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div className="flex space-x-2">
           {Weekdays.map((day) => (
             <button
               key={day}
               onClick={() => setActiveDay(day)}
-              className={`px-3 py-1 rounded ${
-                activeDay === day ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+              className={`rounded px-3 py-1 ${
+                activeDay === day ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"
               }`}
             >
               {day}
             </button>
           ))}
         </div>
-        <button
-          onClick={handleGenerate}
-          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-        >
-          Generate Schedule
-        </button>
+        <div className="text-sm text-slate-500">Unit-scoped OT and focus sessions</div>
       </div>
 
-      {daySchedule && (
-        <>
-          <SessionTable session={daySchedule.am} />
-          <SessionTable session={daySchedule.focusInside} />
-          <SessionTable session={daySchedule.focusOutside} />
-          <SessionTable session={daySchedule.pm} />
-        </>
-      )}
+      {daySchedule ? daySchedule.sessions.map((session) => (
+        <SessionTable key={`${daySchedule.day}-${session.id}`} session={session} />
+      )) : null}
     </div>
   );
 };

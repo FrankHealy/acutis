@@ -11,6 +11,7 @@ import {
   FileEdit,
   CalendarClock,
   ClipboardCheck,
+  Quote,
   ArrowLeft,
 } from "lucide-react";
 
@@ -108,6 +109,17 @@ const ConfigurationLanding: React.FC = () => {
               <h2 className="text-lg font-semibold text-gray-900">Day Planner</h2>
             </div>
             <p className="text-sm text-gray-600">Plan daily activities, staffing, and schedules.</p>
+          </button>
+
+          <button
+            onClick={() => router.push("/units/config/quotes")}
+            className="text-left bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <Quote className="h-6 w-6 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Quote Library</h2>
+            </div>
+            <p className="text-sm text-gray-600">Global quotes and unit quote curation.</p>
           </button>
 
           <button
