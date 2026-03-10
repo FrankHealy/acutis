@@ -99,3 +99,7 @@ media/**/*.webm
 media/**/*.mkv
 
 media/**/*.mp3
+
+acutis.web/GitPush.ps1
+
+media/
