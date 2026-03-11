@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Heart, Wine, Pill, Users, ClipboardCheck, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
+import { hasSuperAdminAccess } from '@/lib/adminAccess';
+import { useAppAccess } from '@/areas/shared/hooks/useAppAccess';
 
 const Tile: React.FC<{
   label: string;
@@ -30,6 +32,8 @@ const Tile: React.FC<{
 const StartupLanding: React.FC = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { access } = useAppAccess();
+  const canSeeGlobalConfiguration = hasSuperAdminAccess(access.roles);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const name = session?.user?.name || session?.user?.email || 'User';
@@ -146,13 +150,15 @@ const StartupLanding: React.FC = () => {
               color="border-pink-400 bg-pink-50 text-pink-700" 
               onClick={() => router.push('/units/ladies')} 
             />
-            <Tile 
-              delayMs={700} 
-              label="Configuration" 
-              Icon={Settings} 
-              color="border-orange-400 bg-orange-50 text-orange-700" 
-              onClick={() => router.push('/units/config')} 
-            />
+            {canSeeGlobalConfiguration && (
+              <Tile 
+                delayMs={700} 
+                label="Configuration" 
+                Icon={Settings} 
+                color="border-orange-400 bg-orange-50 text-orange-700" 
+                onClick={() => router.push('/units/config')} 
+              />
+            )}
           </div>
         </div>
       </div>

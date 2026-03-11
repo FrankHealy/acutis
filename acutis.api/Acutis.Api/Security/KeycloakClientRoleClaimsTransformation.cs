@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
 using Acutis.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +7,6 @@ namespace Acutis.Api.Security;
 
 public sealed class KeycloakClientRoleClaimsTransformation : IClaimsTransformation
 {
-    private const string ClientId = "api-client";
     private readonly AcutisDbContext _dbContext;
 
     public KeycloakClientRoleClaimsTransformation(AcutisDbContext dbContext)
@@ -28,17 +26,13 @@ public sealed class KeycloakClientRoleClaimsTransformation : IClaimsTransformati
             return principal;
         }
 
-        var externalRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        AddRealmRoles(principal, identity, externalRoles);
-        AddClientRoles(principal, identity, externalRoles);
-
         var appUser = await EnsureAppUserAsync(principal);
         if (appUser is not null && !identity.HasClaim(ApplicationClaimTypes.AppUserId, appUser.Id.ToString("D")))
         {
             identity.AddClaim(new Claim(ApplicationClaimTypes.AppUserId, appUser.Id.ToString("D")));
         }
 
-        var roleRecords = await ResolveAuthorizedRolesAsync(appUser?.Id, externalRoles);
+        var roleRecords = await ResolveAuthorizedRolesAsync(appUser?.Id);
         foreach (var role in roleRecords.Select(x => x.RoleKey).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (!identity.HasClaim(ClaimTypes.Role, role))
@@ -148,7 +142,7 @@ public sealed class KeycloakClientRoleClaimsTransformation : IClaimsTransformati
         return user;
     }
 
-    private async Task<List<ResolvedRoleRecord>> ResolveAuthorizedRolesAsync(Guid? appUserId, HashSet<string> externalRoles)
+    private async Task<List<ResolvedRoleRecord>> ResolveAuthorizedRolesAsync(Guid? appUserId)
     {
         var userRoleQuery = _dbContext.AppUserRoleAssignments
             .AsNoTracking()
@@ -174,105 +168,9 @@ public sealed class KeycloakClientRoleClaimsTransformation : IClaimsTransformati
                 })
             .ToListAsync();
 
-        var externalRoleRecords = await _dbContext.AppRoles
-            .AsNoTracking()
-            .Where(x => x.IsActive && x.ExternalRoleName != string.Empty && externalRoles.Contains(x.ExternalRoleName))
-            .SelectMany(
-                role => role.RolePermissions.Where(rp => rp.AppPermission.IsActive),
-                (role, rolePermission) => new ResolvedRoleRecord
-                {
-                    RoleKey = role.Key,
-                    PermissionKey = rolePermission.AppPermission.Key,
-                    UnitId = null
-                })
-            .ToListAsync();
-
         return userRoleRecords
-            .Concat(externalRoleRecords)
             .Where(x => !string.IsNullOrWhiteSpace(x.PermissionKey))
             .ToList();
-    }
-
-    private static void AddRealmRoles(ClaimsPrincipal principal, ClaimsIdentity identity, HashSet<string> rolesFound)
-    {
-        var json = principal.FindFirst("realm_access")?.Value;
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return;
-        }
-
-        TryAddRolesFromJson(json, identity, rolesFound);
-    }
-
-    private static void AddClientRoles(ClaimsPrincipal principal, ClaimsIdentity identity, HashSet<string> rolesFound)
-    {
-        var json = principal.FindFirst("resource_access")?.Value;
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return;
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty(ClientId, out var client))
-            {
-                return;
-            }
-
-            if (!client.TryGetProperty("roles", out var roles) || roles.ValueKind != JsonValueKind.Array)
-            {
-                return;
-            }
-
-            foreach (var entry in roles.EnumerateArray())
-            {
-                var role = entry.GetString();
-                if (string.IsNullOrWhiteSpace(role))
-                {
-                    continue;
-                }
-
-                rolesFound.Add(role);
-                if (!identity.HasClaim(ClaimTypes.Role, role))
-                {
-                    identity.AddClaim(new Claim(ClaimTypes.Role, role));
-                }
-            }
-        }
-        catch
-        {
-        }
-    }
-
-    private static void TryAddRolesFromJson(string json, ClaimsIdentity identity, HashSet<string> rolesFound)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("roles", out var roles) || roles.ValueKind != JsonValueKind.Array)
-            {
-                return;
-            }
-
-            foreach (var entry in roles.EnumerateArray())
-            {
-                var role = entry.GetString();
-                if (string.IsNullOrWhiteSpace(role))
-                {
-                    continue;
-                }
-
-                rolesFound.Add(role);
-                if (!identity.HasClaim(ClaimTypes.Role, role))
-                {
-                    identity.AddClaim(new Claim(ClaimTypes.Role, role));
-                }
-            }
-        }
-        catch
-        {
-        }
     }
 
     private sealed class ResolvedRoleRecord

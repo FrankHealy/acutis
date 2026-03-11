@@ -126,13 +126,25 @@ if (!authorizationOptions.Disabled)
         });
 
     builder.Services.AddScoped<IClaimsTransformation, KeycloakClientRoleClaimsTransformation>();
-    builder.Services.AddAuthorization(options =>
-    {
-        options.AddPolicy(
-            ApplicationPolicies.ConfigurationManage,
-            policy => policy.RequireClaim(ApplicationClaimTypes.Permission, ApplicationPermissions.ConfigurationManage));
-    });
 }
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        ApplicationPolicies.ConfigurationManage,
+        policy =>
+        {
+            if (authorizationOptions.Disabled)
+            {
+                policy.RequireAssertion(_ => true);
+                return;
+            }
+
+            policy.RequireAssertion(context =>
+                context.User.HasClaim(ApplicationClaimTypes.Permission, ApplicationPermissions.ConfigurationManage) &&
+                ApplicationRoles.SuperAdminAliases.Any(context.User.IsInRole));
+        });
+});
 
 var app = builder.Build();
 

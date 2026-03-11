@@ -5,10 +5,6 @@ import KeycloakProvider from "next-auth/providers/keycloak";
 type KeycloakAccessTokenPayload = {
   iss?: string;
   preferred_username?: string;
-  realm_access?: {
-    roles?: string[];
-  };
-  resource_access?: Record<string, { roles?: string[] }>;
 };
 
 const decodeJwtPayload = (token: string): KeycloakAccessTokenPayload | null => {
@@ -44,16 +40,6 @@ const handler = NextAuth({
         if (payload?.iss) {
           token.issuer = payload.iss;
         }
-        const realmRoles = Array.isArray(payload?.realm_access?.roles)
-          ? payload?.realm_access?.roles
-          : [];
-        const resourceRoles = payload?.resource_access
-          ? Object.values(payload.resource_access).flatMap((entry) => entry?.roles ?? [])
-          : [];
-        const roles = Array.from(new Set([...realmRoles, ...resourceRoles]));
-        if (roles.length) {
-          token.roles = roles;
-        }
         const username =
           payload?.preferred_username ??
           (profile as { preferred_username?: string })?.preferred_username ??
@@ -74,9 +60,6 @@ const handler = NextAuth({
       }
       if (token?.issuer) {
         session.issuer = token.issuer as string;
-      }
-      if (token?.roles) {
-        session.roles = token.roles as string[];
       }
       if (token?.username) {
         session.username = token.username as string;

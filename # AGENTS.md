@@ -60,3 +60,4 @@ Main directories:
 
 Modify only files required for the task.
 Do not refactor unrelated areas.
+Please consider localization at every screen visit.

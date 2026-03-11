@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Acutis.Api.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -39,5 +40,37 @@ public sealed class AuthTestController : ControllerBase
             .ToArray();
 
         return Ok(new { claims });
+    }
+
+    [HttpGet("access")]
+    [Authorize]
+    public IActionResult Access()
+    {
+        var unitAccess = User.FindAll(ApplicationClaimTypes.UnitAccess)
+            .Select(claim => claim.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var permissions = User.FindAll(ApplicationClaimTypes.Permission)
+            .Select(claim => claim.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var unitPermissions = User.FindAll(ApplicationClaimTypes.UnitPermission)
+            .Select(claim => claim.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var roles = User.FindAll(ClaimTypes.Role)
+            .Select(claim => claim.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return Ok(new
+        {
+            appUserId = User.FindFirstValue(ApplicationClaimTypes.AppUserId),
+            subject = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"),
+            roles,
+            permissions,
+            unitAccess,
+            unitPermissions
+        });
     }
 }

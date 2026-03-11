@@ -15,6 +15,8 @@ import ResidentsSection from "@/areas/shared/ResidentsSection";
 import MeditationSection from "@/areas/shared/MeditationSection";
 import type { UnitId } from "./unitTypes";
 import { UnitDefinitions } from "./unitTypes";
+import { hasSuperAdminAccess } from "@/lib/adminAccess";
+import { useAppAccess } from "@/areas/shared/hooks/useAppAccess";
 
 type Step =
   | "dashboard"
@@ -33,10 +35,12 @@ type UnitWorkspaceProps = {
 
 export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
   const router = useRouter();
+  const { access } = useAppAccess();
   const [currentStep, setCurrentStep] = useState<Step>("dashboard");
   const [therapyModuleKey, setTherapyModuleKey] = useState<string | undefined>(undefined);
   const [residentsDefaultRollCall, setResidentsDefaultRollCall] = useState(false);
   const unit = UnitDefinitions[unitId];
+  const canSeeGlobalAdministration = hasSuperAdminAccess(access.roles);
 
   const goTo = (step: string) => {
     if (step === "residents") {
@@ -122,19 +126,21 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
                   Program Manager
                 </button>
               </div>
-              <div className="mt-6 border-t border-gray-200 pt-4">
-                <h3 className="text-sm font-semibold text-gray-900">Global Settings</h3>
-                <p className="mt-1 text-xs text-gray-600">
-                  Global configuration applies across all units and is intentionally separate.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => router.push("/units/config")}
-                  className="mt-3 rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  Open Global Configuration
-                </button>
-              </div>
+              {canSeeGlobalAdministration && (
+                <div className="mt-6 border-t border-gray-200 pt-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Global Administration</h3>
+                  <p className="mt-1 text-xs text-gray-600">
+                    Units are created and administered centrally. Use the global area for unit records, roles, and system-wide settings.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/units/config")}
+                    className="mt-3 rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    Open Global Administration
+                  </button>
+                </div>
+              )}
             </div>
             <UnitMediaConfiguration unitId={unitId} />
           </div>
