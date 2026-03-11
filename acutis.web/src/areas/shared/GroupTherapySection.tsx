@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import termRatingsData from "@/data/groupTherapyTermsRatings.json";
 import termsData from "@/data/groupTherapyTerms.json";
 import { User, CheckCircle } from "lucide-react";
@@ -178,6 +179,7 @@ const pickQuestionsForSession = (questions: string[], sessionNumber: number): st
 };
 
 const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionProps) => {
+  const { loadKeys, t } = useLocalization();
   const [sessionRemarks, setSessionRemarks] = useState<Record<number, ResidentRemarkState>>({});
   const [selectedResident, setSelectedResident] = useState<Participant | null>(null);
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
@@ -191,6 +193,28 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
   const [modules, setModules] = useState<Record<string, GroupModule>>(GROUP_MODULES);
   const [isSaving, setIsSaving] = useState(false);
   const [currentSessionNumber, setCurrentSessionNumber] = useState(1);
+
+  useEffect(() => {
+    void loadKeys([
+      "group_therapy.no_module",
+      "group_therapy.loading_participants",
+      "group_therapy.no_participants",
+      "group_therapy.no_questions",
+      "group_therapy.observation_search",
+      "group_therapy.observation_empty",
+      "group_therapy.categorized_notes_placeholder",
+      "group_therapy.free_text_placeholder",
+      "group_therapy.cancel",
+      "group_therapy.saving",
+      "group_therapy.save_notes",
+      "group_therapy.active_question",
+    ]);
+  }, [loadKeys]);
+
+  const text = (key: string, fallback: string) => {
+    const resolved = t(key);
+    return resolved === key ? fallback : resolved;
+  };
 
   const ratingLookup = useMemo(() => {
     const lookup = new Map<number, TherapyTermRating>();
@@ -456,7 +480,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
 
       markAsSpoken(selectedResident.id);
       closeModal();
-      alert("Notes saved successfully.");
+      alert(text("group_therapy.save_notes", "Save Notes"));
     } catch {
       alert("Failed to save notes. Please try again.");
     } finally {
@@ -465,7 +489,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
   };
 
   if (!currentModule) {
-    return <div className="p-6 text-sm text-gray-600">No group therapy module is available.</div>;
+    return <div className="p-6 text-sm text-gray-600">{text("group_therapy.no_module", "No group therapy module is available.")}</div>;
   }
 
   return (
@@ -510,7 +534,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
         <div className="lg:col-span-3 bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
           <h3 className="text-xl font-semibold mb-4 text-indigo-800">Participants</h3>
           {participantsLoading ? (
-            <p className="text-sm text-gray-500">Loading participants from API...</p>
+            <p className="text-sm text-gray-500">{text("group_therapy.loading_participants", "Loading participants from API...")}</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
               {sessionParticipants.map((resident) => (
@@ -552,7 +576,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
               ))}
               {sessionParticipants.length === 0 && (
                 <div className="col-span-full text-sm text-gray-500 border border-dashed border-gray-300 rounded-lg p-4">
-                  No participants found for unit <span className="font-semibold">{unitId}</span>.
+                  {text("group_therapy.no_participants", "No participants found for unit")} <span className="font-semibold">{unitId}</span>.
                 </div>
               )}
             </div>
@@ -577,7 +601,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
             ))}
             {sessionQuestions.length === 0 && (
               <div className="text-sm text-gray-500 border border-dashed border-gray-300 rounded-lg p-4">
-                No questions available for this session.
+                {text("group_therapy.no_questions", "No questions available for this session.")}
               </div>
             )}
           </div>
@@ -684,7 +708,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                   value={termSearch}
                   onChange={(event) => setTermSearch(event.target.value)}
                   type="text"
-                  placeholder="Search by term or description..."
+                  placeholder={text("group_therapy.observation_search", "Search by term or description...")}
                   className="w-full mb-3 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
 
@@ -723,7 +747,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                   })}
                   {filteredTerms.length === 0 && (
                     <div className="col-span-full text-center text-sm text-gray-500 py-6 border-2 border-dashed border-gray-200 rounded-lg">
-                      No matching terms. Try adjusting your filters.
+                      {text("group_therapy.observation_empty", "No matching terms. Try adjusting your filters.")}
                     </div>
                   )}
                 </div>
@@ -736,7 +760,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                     readOnly
                     value={currentNoteLines.map((line) => `- ${line}`).join("\n")}
                     className="w-full h-36 p-3 border-2 border-gray-200 rounded-xl text-sm text-gray-700 resize-none bg-gray-50"
-                    placeholder="Use quick comments and observation terms to build categorized notes."
+                    placeholder={text("group_therapy.categorized_notes_placeholder", "Use quick comments and observation terms to build categorized notes.")}
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     Terms/comments selected from the left are stored as structured note lines.
@@ -748,7 +772,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                     value={currentFreeText}
                     onChange={(event) => setCurrentFreeText(event.target.value)}
                     className="w-full h-44 p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 resize-none"
-                    placeholder="Add clinician free text for context, detail, and follow-up..."
+                    placeholder={text("group_therapy.free_text_placeholder", "Add clinician free text for context, detail, and follow-up...")}
                   />
                 </div>
               </div>
@@ -760,7 +784,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                 onClick={closeModal}
                 className="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-all duration-200 font-semibold"
               >
-                Cancel
+                {text("group_therapy.cancel", "Cancel")}
               </button>
               <button
                 type="button"
@@ -768,7 +792,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                 onClick={saveNotes}
                 className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-blue-600 text-white rounded-xl hover:from-indigo-600 hover:to-blue-700 transition-all duration-200 font-semibold shadow-lg disabled:opacity-60"
               >
-                {isSaving ? "Saving..." : "Save Notes"}
+                {isSaving ? text("group_therapy.saving", "Saving...") : text("group_therapy.save_notes", "Save Notes")}
               </button>
             </div>
           </div>
@@ -777,8 +801,8 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
 
       {activeQuestion && (
         <div className="mt-6 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl shadow-lg border border-indigo-200 p-6">
-          <h3 className="text-lg font-semibold mb-3 text-indigo-800">Active Question</h3>
-          <p className="text-gray-700 text-base italic">"{activeQuestion}"</p>
+          <h3 className="text-lg font-semibold mb-3 text-indigo-800">{text("group_therapy.active_question", "Active Question")}</h3>
+          <p className="text-gray-700 text-base italic">&quot;{activeQuestion}&quot;</p>
         </div>
       )}
     </div>

@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, Clock, User, Calendar } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import type { CallLog } from '@/data/mock/callLogs';
 import CallLoggingModal, {
   type CallLoggingFormState,
@@ -20,6 +21,7 @@ import { getScreeningControl } from '@/areas/screening/services/screeningControl
 
 const CallLogging: React.FC = () => {
   const { data: session, status } = useSession();
+  const { loadKeys, t } = useLocalization();
   const [showNewCallForm, setShowNewCallForm] = useState(false);
   const [activeRangeDays, setActiveRangeDays] = useState<CallLogRangeDays>(2);
   const [timeSort, setTimeSort] = useState<'desc' | 'asc'>('desc');
@@ -37,6 +39,36 @@ const CallLogging: React.FC = () => {
     phoneNumber: '',
     notes: '',
   });
+
+  useEffect(() => {
+    void loadKeys([
+      "call_logging.title",
+      "call_logging.description",
+      "call_logging.log_new",
+      "call_logging.range.last_2_days",
+      "call_logging.range.last_week",
+      "call_logging.range.last_2_weeks",
+      "call_logging.range.last_month",
+      "call_logging.showing",
+      "call_logging.calls",
+      "call_logging.table.time",
+      "call_logging.table.surname",
+      "call_logging.table.name",
+      "call_logging.table.unit",
+      "call_logging.table.note",
+      "call_logging.loading",
+      "call_logging.empty",
+      "call_logging.required_fields",
+      "call_logging.sign_in_required",
+      "call_logging.save_failed",
+      "call_logging.load_failed",
+    ]);
+  }, [loadKeys]);
+
+  const text = (key: string, fallback: string) => {
+    const resolved = t(key);
+    return resolved === key ? fallback : resolved;
+  };
 
   const loadCalls = useCallback(async (forceRefresh = false, withLoader = false) => {
     try {
@@ -125,7 +157,7 @@ const CallLogging: React.FC = () => {
 
   const handleSaveCallLog = async () => {
     if (!formState.firstName || !formState.surname || !formState.concernType) {
-      setErrorMessage('Please complete the required fields.');
+      setErrorMessage(text("call_logging.required_fields", "Please complete the required fields."));
       return;
     }
 
@@ -134,7 +166,7 @@ const CallLogging: React.FC = () => {
 
     try {
       if (status !== 'authenticated') {
-        throw new Error('You must be signed in to save a call.');
+        throw new Error(text("call_logging.sign_in_required", "You must be signed in to save a call."));
       }
       const newCall = await createCallLog({
         ...formState,
@@ -148,7 +180,7 @@ const CallLogging: React.FC = () => {
       setShowNewCallForm(false);
       resetForm();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to save call log.');
+      setErrorMessage(error instanceof Error ? error.message : text("call_logging.save_failed", "Failed to save call log."));
     } finally {
       setIsSaving(false);
     }
@@ -163,8 +195,8 @@ const CallLogging: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Call Logging</h2>
-          <p className="text-sm text-gray-500">Track incoming calls by day and unit.</p>
+          <h2 className="text-2xl font-bold text-gray-900">{text("call_logging.title", "Call Logging")}</h2>
+          <p className="text-sm text-gray-500">{text("call_logging.description", "Track incoming calls by day and unit.")}</p>
         </div>
         <button
           onClick={() => {
@@ -174,17 +206,17 @@ const CallLogging: React.FC = () => {
           className="flex items-center space-x-2 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
         >
           <Plus className="h-5 w-5" />
-          <span>Log New Call</span>
+          <span>{text("call_logging.log_new", "Log New Call")}</span>
         </button>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-2 shadow-sm">
           {([
-            { label: 'Last 2 Days', value: 2 },
-            { label: 'Last Week', value: 7 },
-            { label: 'Last 2 Weeks', value: 14 },
-            { label: 'Last Month', value: 30 },
+            { label: text("call_logging.range.last_2_days", 'Last 2 Days'), value: 2 },
+            { label: text("call_logging.range.last_week", 'Last Week'), value: 7 },
+            { label: text("call_logging.range.last_2_weeks", 'Last 2 Weeks'), value: 14 },
+            { label: text("call_logging.range.last_month", 'Last Month'), value: 30 },
           ] as const).map((item) => (
             <button
               key={item.value}
@@ -201,7 +233,7 @@ const CallLogging: React.FC = () => {
         </div>
         <div className="text-sm text-gray-500 flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          Showing {filteredCalls.length} calls
+          {text("call_logging.showing", "Showing")} {filteredCalls.length} {text("call_logging.calls", "calls")}
         </div>
       </div>
 
@@ -220,23 +252,23 @@ const CallLogging: React.FC = () => {
                   onClick={() => setTimeSort((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
                   className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-700"
                 >
-                  Time
+                  {text("call_logging.table.time", "Time")}
                   <span className="text-[10px] text-gray-400">
                     {timeSort === 'asc' ? '▲' : '▼'}
                   </span>
                 </button>
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Surname
+                {text("call_logging.table.surname", "Surname")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Name
+                {text("call_logging.table.name", "Name")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Unit
+                {text("call_logging.table.unit", "Unit")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Note
+                {text("call_logging.table.note", "Note")}
               </th>
             </tr>
           </thead>
@@ -244,13 +276,13 @@ const CallLogging: React.FC = () => {
             {isLoading ? (
               <tr>
                 <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
-                  Loading call logs...
+                  {text("call_logging.loading", "Loading call logs...")}
                 </td>
               </tr>
             ) : filteredCalls.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
-                  No calls logged for this range.
+                  {text("call_logging.empty", "No calls logged for this range.")}
                 </td>
               </tr>
             ) : (
@@ -295,3 +327,4 @@ const CallLogging: React.FC = () => {
 };
 
 export default CallLogging;
+

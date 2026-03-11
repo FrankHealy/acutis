@@ -1,4 +1,5 @@
 using Acutis.Api.Contracts;
+using Acutis.Domain.Entities;
 using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,6 +7,10 @@ namespace Acutis.Api.Services.Configuration;
 
 public interface IGlobalConfigurationService
 {
+    Task<IReadOnlyList<CentreConfigurationDto>> GetCentresAsync(bool includeInactive, CancellationToken cancellationToken = default);
+    Task<CentreConfigurationDto> CreateCentreAsync(UpsertCentreRequest request, CancellationToken cancellationToken = default);
+    Task<CentreConfigurationDto> UpdateCentreAsync(Guid centreId, UpsertCentreRequest request, CancellationToken cancellationToken = default);
+    Task ArchiveCentreAsync(Guid centreId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UnitConfigurationDto>> GetUnitsAsync(bool includeInactive, CancellationToken cancellationToken = default);
     Task<UnitConfigurationDto> CreateUnitAsync(UpsertUnitRequest request, CancellationToken cancellationToken = default);
     Task<UnitConfigurationDto> UpdateUnitAsync(Guid unitId, UpsertUnitRequest request, CancellationToken cancellationToken = default);
@@ -36,11 +41,111 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         _dbContext = dbContext;
     }
 
+    public async Task<IReadOnlyList<CentreConfigurationDto>> GetCentresAsync(
+        bool includeInactive,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Centres
+            .AsNoTracking()
+            .Include(x => x.Units)
+            .AsQueryable();
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.IsActive);
+        }
+
+        var centres = await query
+            .OrderBy(x => x.DisplayOrder)
+            .ThenBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+        return centres.Select(MapCentre).ToList();
+    }
+
+    public async Task<CentreConfigurationDto> CreateCentreAsync(
+        UpsertCentreRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateCentreRequest(request);
+        var code = NormalizeKey(request.CentreCode);
+
+        if (await _dbContext.Centres.AnyAsync(x => x.Code == code, cancellationToken))
+        {
+            throw new ArgumentException($"A centre with code '{code}' already exists.", nameof(request));
+        }
+
+        var now = DateTime.UtcNow;
+        var centre = new Centre
+        {
+            Id = Guid.NewGuid(),
+            Code = code,
+            Name = request.DisplayName.Trim(),
+            Description = request.Description.Trim(),
+            DisplayOrder = request.DisplayOrder,
+            IsActive = request.IsActive,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.Centres.Add(centre);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapCentre(centre);
+    }
+
+    public async Task<CentreConfigurationDto> UpdateCentreAsync(
+        Guid centreId,
+        UpsertCentreRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateCentreRequest(request);
+        var centre = await _dbContext.Centres
+            .Include(x => x.Units)
+            .FirstOrDefaultAsync(x => x.Id == centreId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Centre '{centreId}' was not found.");
+
+        var code = NormalizeKey(request.CentreCode);
+        if (await _dbContext.Centres.AnyAsync(x => x.Id != centreId && x.Code == code, cancellationToken))
+        {
+            throw new ArgumentException($"A centre with code '{code}' already exists.", nameof(request));
+        }
+
+        centre.Code = code;
+        centre.Name = request.DisplayName.Trim();
+        centre.Description = request.Description.Trim();
+        centre.DisplayOrder = request.DisplayOrder;
+        centre.IsActive = request.IsActive;
+        centre.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapCentre(centre);
+    }
+
+    public async Task ArchiveCentreAsync(Guid centreId, CancellationToken cancellationToken = default)
+    {
+        var centre = await _dbContext.Centres
+            .Include(x => x.Units)
+            .FirstOrDefaultAsync(x => x.Id == centreId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Centre '{centreId}' was not found.");
+
+        centre.IsActive = false;
+        centre.UpdatedAtUtc = DateTime.UtcNow;
+
+        foreach (var unit in centre.Units.Where(x => x.IsActive))
+        {
+            unit.IsActive = false;
+            unit.UpdatedAtUtc = centre.UpdatedAtUtc;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<UnitConfigurationDto>> GetUnitsAsync(
         bool includeInactive,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Units.AsNoTracking();
+        var query = _dbContext.Units
+            .AsNoTracking()
+            .Include(x => x.Centre)
+            .AsQueryable();
         if (!includeInactive)
         {
             query = query.Where(x => x.IsActive);
@@ -57,6 +162,10 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
     {
         ValidateUnitRequest(request);
         var code = NormalizeKey(request.UnitCode);
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
 
         if (await _dbContext.Units.AnyAsync(x => x.Code == code, cancellationToken))
         {
@@ -67,6 +176,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         var unit = new Acutis.Domain.Entities.Unit
         {
             Id = Guid.NewGuid(),
+            CentreId = centre.Id,
+            Centre = centre,
             Code = code,
             Name = request.DisplayName.Trim(),
             Description = request.Description.Trim(),
@@ -105,9 +216,15 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         CancellationToken cancellationToken = default)
     {
         ValidateUnitRequest(request);
-        var unit = await _dbContext.Units.FirstOrDefaultAsync(x => x.Id == unitId, cancellationToken)
+        var unit = await _dbContext.Units
+            .Include(x => x.Centre)
+            .FirstOrDefaultAsync(x => x.Id == unitId, cancellationToken)
             ?? throw new KeyNotFoundException($"Unit '{unitId}' was not found.");
         var previousCode = unit.Code;
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
 
         var code = NormalizeKey(request.UnitCode);
         if (await _dbContext.Units.AnyAsync(x => x.Id != unitId && x.Code == code, cancellationToken))
@@ -115,6 +232,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             throw new ArgumentException($"A unit with code '{code}' already exists.", nameof(request));
         }
 
+        unit.CentreId = centre.Id;
+        unit.Centre = centre;
         unit.Code = code;
         unit.Name = request.DisplayName.Trim();
         unit.Description = request.Description.Trim();
@@ -272,6 +391,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             Name = request.Name.Trim(),
             Description = request.Description.Trim(),
             ExternalRoleName = request.ExternalRoleName.Trim(),
+            DefaultScopeType = NormalizeScopeType(request.DefaultScopeType),
             IsSystemRole = request.IsSystemRole,
             IsActive = request.IsActive
         };
@@ -308,6 +428,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         role.Name = request.Name.Trim();
         role.Description = request.Description.Trim();
         role.ExternalRoleName = request.ExternalRoleName.Trim();
+        role.DefaultScopeType = NormalizeScopeType(request.DefaultScopeType);
         role.IsSystemRole = request.IsSystemRole;
         role.IsActive = request.IsActive;
 
@@ -341,6 +462,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             .AsNoTracking()
             .Include(x => x.RoleAssignments)
             .ThenInclude(x => x.AppRole)
+            .Include(x => x.RoleAssignments)
+            .ThenInclude(x => x.Centre)
             .Include(x => x.RoleAssignments)
             .ThenInclude(x => x.Unit)
             .OrderBy(x => x.DisplayName)
@@ -419,28 +542,73 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             throw new ArgumentException("One or more roleIds were not found or are inactive.", nameof(request));
         }
 
-        var unitIds = request.Assignments.Where(x => x.UnitId.HasValue).Select(x => x.UnitId!.Value).Distinct().ToList();
+        var normalizedAssignments = request.Assignments
+            .Select(x => new
+            {
+                x.RoleId,
+                ScopeType = NormalizeScopeType(x.ScopeType),
+                x.CentreId,
+                x.UnitId,
+                x.IsActive
+            })
+            .ToList();
+
+        var centreIds = normalizedAssignments.Select(x => x.CentreId).Distinct().ToList();
+        var knownCentres = await _dbContext.Centres
+            .Where(x => centreIds.Contains(x.Id) && x.IsActive)
+            .Select(x => x.Id)
+            .ToListAsync(cancellationToken);
+        if (knownCentres.Count != centreIds.Count)
+        {
+            throw new ArgumentException("One or more centreIds were not found or are inactive.", nameof(request));
+        }
+
+        var unitIds = normalizedAssignments.Where(x => x.UnitId.HasValue).Select(x => x.UnitId!.Value).Distinct().ToList();
         var knownUnitIds = await _dbContext.Units
             .Where(x => unitIds.Contains(x.Id) && x.IsActive)
-            .Select(x => x.Id)
+            .Select(x => new { x.Id, x.CentreId })
             .ToListAsync(cancellationToken);
         if (knownUnitIds.Count != unitIds.Count)
         {
             throw new ArgumentException("One or more unitIds were not found or are inactive.", nameof(request));
         }
 
+        var unitsById = knownUnitIds.ToDictionary(x => x.Id, x => x.CentreId);
+
+        foreach (var assignment in normalizedAssignments)
+        {
+            if (assignment.ScopeType == ConfigurationScopeTypes.Centre && assignment.UnitId.HasValue)
+            {
+                throw new ArgumentException("Centre-scoped assignments cannot include a unitId.", nameof(request));
+            }
+
+            if (assignment.ScopeType == ConfigurationScopeTypes.Unit && !assignment.UnitId.HasValue)
+            {
+                throw new ArgumentException("Unit-scoped assignments require a unitId.", nameof(request));
+            }
+
+            if (assignment.UnitId.HasValue &&
+                unitsById.TryGetValue(assignment.UnitId.Value, out var unitCentreId) &&
+                unitCentreId != assignment.CentreId)
+            {
+                throw new ArgumentException("The selected unit does not belong to the selected centre.", nameof(request));
+            }
+        }
+
         _dbContext.AppUserRoleAssignments.RemoveRange(user.RoleAssignments);
         user.RoleAssignments.Clear();
         var now = DateTime.UtcNow;
 
-        foreach (var assignment in request.Assignments
-                     .DistinctBy(x => new { x.RoleId, x.UnitId }))
+        foreach (var assignment in normalizedAssignments
+                     .DistinctBy(x => new { x.RoleId, x.ScopeType, x.CentreId, x.UnitId }))
         {
             user.RoleAssignments.Add(new Acutis.Domain.Entities.AppUserRoleAssignment
             {
                 Id = Guid.NewGuid(),
                 AppUserId = user.Id,
                 AppRoleId = assignment.RoleId,
+                ScopeType = assignment.ScopeType,
+                CentreId = assignment.CentreId,
                 UnitId = assignment.UnitId,
                 IsActive = assignment.IsActive,
                 CreatedAtUtc = now,
@@ -499,9 +667,25 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             .Include(x => x.RoleAssignments)
             .ThenInclude(x => x.AppRole)
             .Include(x => x.RoleAssignments)
+            .ThenInclude(x => x.Centre)
+            .Include(x => x.RoleAssignments)
             .ThenInclude(x => x.Unit)
             .FirstAsync(x => x.Id == userId, cancellationToken);
         return MapUser(user);
+    }
+
+    private static CentreConfigurationDto MapCentre(Centre centre)
+    {
+        return new CentreConfigurationDto
+        {
+            CentreId = centre.Id,
+            CentreCode = centre.Code,
+            DisplayName = centre.Name,
+            Description = centre.Description,
+            DisplayOrder = centre.DisplayOrder,
+            UnitCount = centre.Units.Count(x => x.IsActive),
+            IsActive = centre.IsActive
+        };
     }
 
     private static UnitConfigurationDto MapUnit(Acutis.Domain.Entities.Unit unit)
@@ -509,6 +693,9 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         return new UnitConfigurationDto
         {
             UnitId = unit.Id,
+            CentreId = unit.CentreId,
+            CentreCode = unit.Centre.Code,
+            CentreName = unit.Centre.Name,
             UnitCode = unit.Code,
             DisplayName = unit.Name,
             Description = unit.Description,
@@ -543,6 +730,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             Name = role.Name,
             Description = role.Description,
             ExternalRoleName = role.ExternalRoleName,
+            DefaultScopeType = role.DefaultScopeType,
             IsSystemRole = role.IsSystemRole,
             IsActive = role.IsActive,
             PermissionKeys = role.RolePermissions
@@ -566,12 +754,17 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             LastSeenAtUtc = user.LastSeenAtUtc,
             Assignments = user.RoleAssignments
                 .OrderBy(x => x.AppRole.Name)
+                .ThenBy(x => x.Centre.Name)
                 .ThenBy(x => x.UnitId.HasValue ? x.Unit!.Name : string.Empty)
                 .Select(x => new AppUserRoleAssignmentDto
                 {
                     AssignmentId = x.Id,
                     RoleId = x.AppRoleId,
                     RoleKey = x.AppRole.Key,
+                    ScopeType = x.ScopeType,
+                    CentreId = x.CentreId,
+                    CentreCode = x.Centre.Code,
+                    CentreName = x.Centre.Name,
                     UnitId = x.UnitId,
                     UnitCode = x.Unit?.Code ?? string.Empty,
                     UnitName = x.Unit?.Name ?? string.Empty,
@@ -586,8 +779,37 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         return key.Trim().ToLowerInvariant();
     }
 
+    private static string NormalizeScopeType(string scopeType)
+    {
+        var normalized = NormalizeKey(scopeType);
+        if (!ConfigurationScopeTypes.All.Contains(normalized))
+        {
+            throw new ArgumentException($"Unsupported scope type '{scopeType}'.");
+        }
+
+        return normalized;
+    }
+
+    private static void ValidateCentreRequest(UpsertCentreRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.CentreCode))
+        {
+            throw new ArgumentException("Centre code is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.DisplayName))
+        {
+            throw new ArgumentException("Centre display name is required.", nameof(request));
+        }
+    }
+
     private static void ValidateUnitRequest(UpsertUnitRequest request)
     {
+        if (request.CentreId == Guid.Empty)
+        {
+            throw new ArgumentException("Centre is required.", nameof(request));
+        }
+
         if (string.IsNullOrWhiteSpace(request.UnitCode))
         {
             throw new ArgumentException("Unit code is required.", nameof(request));
@@ -625,6 +847,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         {
             throw new ArgumentException("Role key and name are required.", nameof(request));
         }
+
+        NormalizeScopeType(request.DefaultScopeType);
     }
 
     private static void ValidateUserRequest(UpsertAppUserRequest request)

@@ -4,10 +4,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { User } from "lucide-react";
 import { operationsService, type UnitOtDaySchedule, type UnitOtSession } from "@/services/operationsService";
 import type { UnitId } from "./unit/unitTypes";
+import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 
 const Weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-const SessionTable: React.FC<{ session: UnitOtSession }> = ({ session }) => (
+const SessionTable: React.FC<{ session: UnitOtSession; text: (key: string, fallback: string) => string }> = ({ session, text }) => (
   <div className="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm">
     <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2">
       <div>
@@ -17,18 +18,18 @@ const SessionTable: React.FC<{ session: UnitOtSession }> = ({ session }) => (
         </p>
       </div>
       <span className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
-        {session.residents.length} residents
+        {session.residents.length} {text("operations.residents", "residents")}
       </span>
     </div>
     <table className="w-full">
       <thead className="bg-gray-100">
         <tr>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Photo</th>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">First Name</th>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Surname</th>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Age</th>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Nationality</th>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Room</th>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{text("operations.photo", "Photo")}</th>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{text("operations.first_name", "First Name")}</th>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{text("operations.surname", "Surname")}</th>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{text("operations.age", "Age")}</th>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{text("operations.nationality", "Nationality")}</th>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{text("operations.room", "Room")}</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-200">
@@ -60,10 +61,36 @@ const SessionTable: React.FC<{ session: UnitOtSession }> = ({ session }) => (
 );
 
 const OperationsSection: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
+  const { loadKeys, t } = useLocalization();
   const [schedule, setSchedule] = useState<UnitOtDaySchedule[]>([]);
   const [activeDay, setActiveDay] = useState(Weekdays[new Date().getDay() - 1] || "Monday");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void loadKeys([
+      "operations.loading",
+      "operations.unable_to_load",
+      "operations.summary",
+      "operations.residents",
+      "operations.photo",
+      "operations.first_name",
+      "operations.surname",
+      "operations.age",
+      "operations.nationality",
+      "operations.room",
+      "operations.weekday.monday",
+      "operations.weekday.tuesday",
+      "operations.weekday.wednesday",
+      "operations.weekday.thursday",
+      "operations.weekday.friday",
+    ]);
+  }, [loadKeys]);
+
+  const text = (key: string, fallback: string) => {
+    const resolved = t(key);
+    return resolved === key ? fallback : resolved;
+  };
 
   useEffect(() => {
     let active = true;
@@ -100,8 +127,16 @@ const OperationsSection: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
     [activeDay, schedule]
   );
 
+  const weekdayLabels: Record<string, string> = {
+    Monday: text("operations.weekday.monday", "Monday"),
+    Tuesday: text("operations.weekday.tuesday", "Tuesday"),
+    Wednesday: text("operations.weekday.wednesday", "Wednesday"),
+    Thursday: text("operations.weekday.thursday", "Thursday"),
+    Friday: text("operations.weekday.friday", "Friday"),
+  };
+
   if (loading) {
-    return <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">Loading OT schedule...</div>;
+    return <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">{text("operations.loading", "Loading OT schedule...")}</div>;
   }
 
   if (error) {
@@ -120,15 +155,15 @@ const OperationsSection: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
                 activeDay === day ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"
               }`}
             >
-              {day}
+              {weekdayLabels[day] ?? day}
             </button>
           ))}
         </div>
-        <div className="text-sm text-slate-500">Unit-scoped OT and focus sessions</div>
+        <div className="text-sm text-slate-500">{text("operations.summary", "Unit-scoped OT and focus sessions")}</div>
       </div>
 
       {daySchedule ? daySchedule.sessions.map((session) => (
-        <SessionTable key={`${daySchedule.day}-${session.id}`} session={session} />
+        <SessionTable key={`${daySchedule.day}-${session.id}`} session={session} text={text} />
       )) : null}
     </div>
   );

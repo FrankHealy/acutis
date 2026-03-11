@@ -39,6 +39,8 @@ const ConfigurationLanding: React.FC = () => {
       "config.dashboard.global_only_blocked",
       "config.dashboard.units.title",
       "config.dashboard.units.description",
+      "config.dashboard.centres.title",
+      "config.dashboard.centres.description",
       "config.dashboard.forms.title",
       "config.dashboard.forms.description",
       "config.dashboard.elements.title",
@@ -96,7 +98,7 @@ const ConfigurationLanding: React.FC = () => {
               <div>
                 <h2 className="text-base font-semibold text-gray-900">{text("config.dashboard.global_only_title", "Global administration only")}</h2>
                 <p className="mt-1 text-sm text-gray-700">
-                  {text("config.dashboard.global_only_description", "Units are administered centrally. Roles remain global, but user assignments can be scoped to a specific unit.")}
+                  {text("config.dashboard.global_only_description", "Centres are the main boundary for configuration. Units sit inside a centre, and user access can be configured at centre or unit scope.")}
                 </p>
                 {!isAuthorizationDisabled && !canAdministerGlobally && (
                   <p className="mt-2 text-sm text-red-700">
@@ -109,6 +111,19 @@ const ConfigurationLanding: React.FC = () => {
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <button
+              onClick={() => router.push("/units/config/centres")}
+              className="text-left bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <Building2 className="h-6 w-6 text-teal-600" />
+                <h2 className="text-lg font-semibold text-gray-900">{text("config.dashboard.centres.title", "Centre Administration")}</h2>
+              </div>
+              <p className="text-sm text-gray-600">
+                {text("config.dashboard.centres.description", "Create and maintain centres as the main configuration boundary for units and access.")}
+              </p>
+            </button>
+
+            <button
               onClick={() => router.push("/units/config/units")}
               className="text-left bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
             >
@@ -117,7 +132,7 @@ const ConfigurationLanding: React.FC = () => {
                 <h2 className="text-lg font-semibold text-gray-900">{text("config.dashboard.units.title", "Unit Administration")}</h2>
               </div>
               <p className="text-sm text-gray-600">
-                {text("config.dashboard.units.description", "Add units once globally and maintain capacity, naming, and status from one place.")}
+                {text("config.dashboard.units.description", "Add units under a centre and maintain capacity, naming, and status from one place.")}
               </p>
             </button>
 
@@ -169,7 +184,7 @@ const ConfigurationLanding: React.FC = () => {
                 <h2 className="text-lg font-semibold text-gray-900">{text("config.dashboard.users_roles.title", "Users, Roles & Permissions")}</h2>
               </div>
               <p className="text-sm text-gray-600">
-                {text("config.dashboard.users_roles.description", "Manage role definitions and assign them globally or per unit.")}
+                {text("config.dashboard.users_roles.description", "Manage role definitions and assign them at centre or unit scope.")}
               </p>
             </button>
 

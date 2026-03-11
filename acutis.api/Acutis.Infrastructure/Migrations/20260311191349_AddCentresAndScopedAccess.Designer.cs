@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260311191349_AddCentresAndScopedAccess")]
+    partial class AddCentresAndScopedAccess
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4611,7 +4614,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("e368b1f6-3bf5-40d6-bf5e-f2f8d16a3ca4"),
                             Key = "screening.form.alcohol_screening_call.title",
                             Locale = "ga-IE",
-                            Text = "Scagadh Glao Alcóil"
+                            Text = "Scagadh Glao AlcÃ³il"
                         },
                         new
                         {
@@ -4625,7 +4628,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("6341dabe-b53c-45a2-bcb9-4ff0fbd7c40d"),
                             Key = "screening.form.alcohol_screening_call.description",
                             Locale = "ga-IE",
-                            Text = "Gabh sonraí scagtha ón gcéad ghlao."
+                            Text = "Gabh sonraÃ­ scagtha Ã³n gcÃ©ad ghlao."
                         },
                         new
                         {
@@ -4639,7 +4642,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("46e89eb3-0dff-4f27-a4f7-dde66f8ef067"),
                             Key = "screening.section.caller_details",
                             Locale = "ga-IE",
-                            Text = "Sonraí an Ghlaoiteora"
+                            Text = "SonraÃ­ an Ghlaoiteora"
                         },
                         new
                         {
@@ -4653,7 +4656,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("6d27e8bc-6c00-4ed1-bd6e-8d0f03e76fe9"),
                             Key = "screening.section.alcohol_use",
                             Locale = "ga-IE",
-                            Text = "Úsáid Alcóil"
+                            Text = "ÃšsÃ¡id AlcÃ³il"
                         },
                         new
                         {
@@ -4695,7 +4698,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("2d3f8ea2-a2e4-4b82-aca8-df3fe1b1092b"),
                             Key = "screening.field.drinks_per_day.label",
                             Locale = "ga-IE",
-                            Text = "Deochanna sa Lá"
+                            Text = "Deochanna sa LÃ¡"
                         },
                         new
                         {
@@ -4737,7 +4740,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("6ccb80f3-f60f-4112-9ba0-cc9ec9bcbf18"),
                             Key = "screening.options.referral_source.gp",
                             Locale = "ga-IE",
-                            Text = "Dochtúir Teaghlaigh"
+                            Text = "DochtÃºir Teaghlaigh"
                         },
                         new
                         {
@@ -4765,7 +4768,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("46e35a4f-e5bf-4c17-86ea-f3a3d5ad3e87"),
                             Key = "screening.options.referral_source.self",
                             Locale = "ga-IE",
-                            Text = "Féin"
+                            Text = "FÃ©in"
                         },
                         new
                         {
@@ -4807,7 +4810,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("722449a8-6b10-4c6f-aa79-8734aef62e3d"),
                             Key = "app.centre.bruree",
                             Locale = "ga-IE",
-                            Text = "Ionad Cóireála Brú Rí"
+                            Text = "Ionad CÃ³ireÃ¡la BrÃº RÃ­"
                         },
                         new
                         {
@@ -4849,7 +4852,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("1c920635-c1b3-4f25-9033-f104ace6192c"),
                             Key = "header.signed_in_as",
                             Locale = "ga-IE",
-                            Text = "Logáilte isteach mar"
+                            Text = "LogÃ¡ilte isteach mar"
                         },
                         new
                         {
@@ -4863,7 +4866,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("28f2d9e0-2c6f-453f-bd0a-adce33d28153"),
                             Key = "header.login_different_user",
                             Locale = "ga-IE",
-                            Text = "Logáil isteach mar úsáideoir eile"
+                            Text = "LogÃ¡il isteach mar ÃºsÃ¡ideoir eile"
                         },
                         new
                         {
@@ -4877,7 +4880,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("f3748ca5-c6ab-4810-a4dc-8f6d78d7f8cb"),
                             Key = "header.logout",
                             Locale = "ga-IE",
-                            Text = "Logáil amach"
+                            Text = "LogÃ¡il amach"
                         },
                         new
                         {
@@ -4891,7 +4894,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("a5f4ff2f-d318-4549-8a4e-5eb0c8188d8b"),
                             Key = "screening.tab.calls",
                             Locale = "ga-IE",
-                            Text = "Logáil Glaonna"
+                            Text = "LogÃ¡il Glaonna"
                         },
                         new
                         {
@@ -4905,7 +4908,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("6138db68-8907-4f99-8ca9-188f9eea6d01"),
                             Key = "screening.tab.evaluation",
                             Locale = "ga-IE",
-                            Text = "Meastóireacht"
+                            Text = "MeastÃ³ireacht"
                         },
                         new
                         {

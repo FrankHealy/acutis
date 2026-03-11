@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,18 +20,20 @@ import {
   type AppPermissionDto,
   type AppRoleDto,
   type AppUserDto,
+  type CentreConfigurationDto,
   type UnitConfigurationDto,
 } from "@/services/globalConfigurationService";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 
-const globalScope = "__global__";
+const emptyCentre = "__centre__";
 
 type RoleForm = {
   key: string;
   name: string;
   description: string;
   externalRoleName: string;
+  defaultScopeType: string;
   isSystemRole: boolean;
   isActive: boolean;
   permissionKeys: string[];
@@ -47,6 +49,8 @@ type UserForm = {
 
 type AssignmentDraft = {
   roleId: string;
+  scopeType: string;
+  centreId: string;
   unitId: string;
   isActive: boolean;
 };
@@ -56,6 +60,7 @@ const emptyRoleForm = (): RoleForm => ({
   name: "",
   description: "",
   externalRoleName: "",
+  defaultScopeType: "unit",
   isSystemRole: false,
   isActive: true,
   permissionKeys: [],
@@ -71,7 +76,9 @@ const emptyUserForm = (): UserForm => ({
 
 const emptyAssignment = (): AssignmentDraft => ({
   roleId: "",
-  unitId: globalScope,
+  scopeType: "unit",
+  centreId: emptyCentre,
+  unitId: "",
   isActive: true,
 });
 
@@ -90,6 +97,7 @@ export default function UsersRoles() {
   const [roles, setRoles] = useState<AppRoleDto[]>([]);
   const [permissions, setPermissions] = useState<AppPermissionDto[]>([]);
   const [users, setUsers] = useState<AppUserDto[]>([]);
+  const [centres, setCentres] = useState<CentreConfigurationDto[]>([]);
   const [units, setUnits] = useState<UnitConfigurationDto[]>([]);
   const [roleForm, setRoleForm] = useState<RoleForm>(emptyRoleForm);
   const [userForm, setUserForm] = useState<UserForm>(emptyUserForm);
@@ -129,6 +137,14 @@ export default function UsersRoles() {
     }, {});
   }, [permissions]);
 
+  const unitsByCentre = useMemo(() => {
+    return units.reduce<Record<string, UnitConfigurationDto[]>>((lookup, unit) => {
+      lookup[unit.centreId] ??= [];
+      lookup[unit.centreId].push(unit);
+      return lookup;
+    }, {});
+  }, [units]);
+
   const text = (key: string, fallback: string) => {
     const resolved = t(key);
     return resolved === key ? fallback : resolved;
@@ -140,16 +156,18 @@ export default function UsersRoles() {
     setLoading(true);
     try {
       setError(null);
-      const [rolesResult, permissionsResult, usersResult, unitsResult] = await Promise.all([
+      const [rolesResult, permissionsResult, usersResult, centresResult, unitsResult] = await Promise.all([
         globalConfigurationService.getRoles(accessToken),
         globalConfigurationService.getPermissions(accessToken),
         globalConfigurationService.getUsers(accessToken),
+        globalConfigurationService.getCentres(accessToken),
         globalConfigurationService.getUnits(accessToken),
       ]);
 
       setRoles(rolesResult);
       setPermissions(permissionsResult);
       setUsers(usersResult);
+      setCentres(centresResult.filter((centre) => centre.isActive));
       setUnits(unitsResult.filter((unit) => unit.isActive));
       setSelectedUserId((current) => current ?? usersResult[0]?.userId ?? null);
     } catch (nextError) {
@@ -169,11 +187,38 @@ export default function UsersRoles() {
       "config.users_roles.description",
       "config.users_roles.back",
       "config.users_roles.loading",
+      "config.users_roles.users.record_count",
+      "config.users_roles.users.no_email",
+      "config.users_roles.users.form_description",
+      "config.users_roles.users.external_subject",
+      "config.users_roles.users.external_subject_placeholder",
+      "config.users_roles.users.username",
+      "config.users_roles.users.username_placeholder",
+      "config.users_roles.users.display_name",
+      "config.users_roles.users.display_name_placeholder",
+      "config.users_roles.users.email",
+      "config.users_roles.users.email_placeholder",
+      "config.users_roles.users.active_label",
+      "config.users_roles.users.assignments_description",
       "config.users_roles.roles.create",
       "config.users_roles.roles.edit",
       "config.users_roles.roles.clear",
       "config.users_roles.roles.catalogue",
       "config.users_roles.roles.permissions",
+      "config.users_roles.roles.catalogue_description",
+      "config.users_roles.roles.form_description",
+      "config.users_roles.roles.no_description",
+      "config.users_roles.roles.external_role_label",
+      "config.users_roles.roles.edit_button",
+      "config.users_roles.roles.key",
+      "config.users_roles.roles.key_placeholder",
+      "config.users_roles.roles.name",
+      "config.users_roles.roles.name_placeholder",
+      "config.users_roles.roles.description_label",
+      "config.users_roles.roles.description_placeholder",
+      "config.users_roles.roles.external_reference",
+      "config.users_roles.roles.external_reference_placeholder",
+      "config.users_roles.roles.system_role",
       "config.users_roles.roles.create_button",
       "config.users_roles.roles.save_button",
       "config.users_roles.users.title",
@@ -192,6 +237,18 @@ export default function UsersRoles() {
       "config.users_roles.state.no_assignments",
       "config.users_roles.external_role.none",
       "config.users_roles.select_role",
+      "config.users_roles.scope.centre",
+      "config.users_roles.scope.unit",
+      "config.users_roles.scope.select_centre",
+      "config.users_roles.scope.select_unit",
+      "config.users_roles.scope.not_used",
+      "config.users_roles.roles.default_scope",
+      "config.users_roles.scope.centre_access",
+      "config.users_roles.scope.unit_access",
+      "config.users_roles.assignments.access_included",
+      "config.users_roles.assignments.no_permissions",
+      "config.users_roles.errors.user_id_missing",
+      "config.users_roles.permission_category.other",
     ]);
   }, [loadKeys]);
 
@@ -202,6 +259,7 @@ export default function UsersRoles() {
       name: role.name,
       description: role.description,
       externalRoleName: role.externalRoleName,
+      defaultScopeType: role.defaultScopeType || "unit",
       isSystemRole: role.isSystemRole,
       isActive: role.isActive,
       permissionKeys: [...role.permissionKeys],
@@ -222,7 +280,9 @@ export default function UsersRoles() {
       user.assignments.length > 0
         ? user.assignments.map((assignment) => ({
             roleId: assignment.roleId,
-            unitId: assignment.unitId ?? globalScope,
+            scopeType: assignment.scopeType || "unit",
+            centreId: assignment.centreId,
+            unitId: assignment.unitId ?? "",
             isActive: assignment.isActive,
           }))
         : [emptyAssignment()],
@@ -279,7 +339,7 @@ export default function UsersRoles() {
       }
 
       if (!userId) {
-        throw new Error("User id not available.");
+        throw new Error(text("config.users_roles.errors.user_id_missing", "User ID is not available."));
       }
 
       await globalConfigurationService.replaceUserAssignments(
@@ -289,7 +349,9 @@ export default function UsersRoles() {
           .filter((item) => item.roleId)
           .map((item) => ({
             roleId: item.roleId,
-            unitId: item.unitId === globalScope ? null : item.unitId,
+            scopeType: item.scopeType,
+            centreId: item.centreId,
+            unitId: item.scopeType === "unit" ? item.unitId || null : null,
             isActive: item.isActive,
           })),
       );
@@ -324,10 +386,15 @@ export default function UsersRoles() {
     );
   };
 
-  const assignmentSummary = (assignment: { roleKey: string; unitName: string; unitId?: string | null }) =>
+  const assignmentSummary = (assignment: {
+    roleKey: string;
+    centreName: string;
+    unitName: string;
+    unitId?: string | null;
+  }) =>
     assignment.unitId
-      ? `${titleCase(assignment.roleKey)} · ${assignment.unitName}`
-      : `${titleCase(assignment.roleKey)} · ${text("config.users_roles.scope.all_units", "All units")}`;
+      ? `${titleCase(assignment.roleKey)} - ${assignment.unitName}`
+      : `${titleCase(assignment.roleKey)} - ${assignment.centreName}`;
 
   return (
     <SuperAdminGuard
@@ -353,7 +420,7 @@ export default function UsersRoles() {
                 <p className="mt-1 text-base text-gray-600">
                   {text(
                     "config.users_roles.description",
-                    "Users come first. Roles define permissions, then each user gets the right access globally or per unit.",
+                    "Users come first. Roles define permissions, then each user gets the right access at centre or unit level.",
                   )}
                 </p>
               </div>
@@ -381,7 +448,9 @@ export default function UsersRoles() {
                         <h2 className="text-2xl font-semibold text-gray-900">
                           {text("config.users_roles.users.title", "Users")}
                         </h2>
-                        <p className="text-sm text-gray-500">{users.length} user records</p>
+                        <p className="text-sm text-gray-500">
+                          {users.length} {text("config.users_roles.users.record_count", "user records")}
+                        </p>
                       </div>
                     </div>
                     <button
@@ -412,7 +481,9 @@ export default function UsersRoles() {
                             <div>
                               <p className="text-lg font-semibold text-gray-900">{user.displayName}</p>
                               <p className="mt-1 text-sm text-gray-600">{user.userName}</p>
-                              <p className="mt-1 text-sm text-gray-500">{user.email || "No email"}</p>
+                              <p className="mt-1 text-sm text-gray-500">
+                                {user.email || text("config.users_roles.users.no_email", "No email")}
+                              </p>
                             </div>
                             <span
                               className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -457,7 +528,10 @@ export default function UsersRoles() {
                           : text("config.users_roles.users.create", "Create user")}
                       </h2>
                       <p className="mt-1 text-base text-gray-600">
-                        Set user access by assigning roles. Roles carry the permissions.
+                        {text(
+                          "config.users_roles.users.form_description",
+                          "Set user access by assigning roles. Roles carry the permissions.",
+                        )}
                       </p>
                     </div>
                     {selectedUser && (
@@ -474,26 +548,34 @@ export default function UsersRoles() {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <label className="space-y-2">
-                      <span className="text-sm font-semibold text-gray-700">External subject</span>
-                      <input value={userForm.externalSubject} onChange={(event) => setUserForm((current) => ({ ...current, externalSubject: event.target.value }))} placeholder="User subject from login" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
+                      <span className="text-sm font-semibold text-gray-700">
+                        {text("config.users_roles.users.external_subject", "External subject")}
+                      </span>
+                      <input value={userForm.externalSubject} onChange={(event) => setUserForm((current) => ({ ...current, externalSubject: event.target.value }))} placeholder={text("config.users_roles.users.external_subject_placeholder", "User subject from login")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
                     </label>
                     <label className="space-y-2">
-                      <span className="text-sm font-semibold text-gray-700">Username</span>
-                      <input value={userForm.userName} onChange={(event) => setUserForm((current) => ({ ...current, userName: event.target.value }))} placeholder="Username" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
+                      <span className="text-sm font-semibold text-gray-700">
+                        {text("config.users_roles.users.username", "Username")}
+                      </span>
+                      <input value={userForm.userName} onChange={(event) => setUserForm((current) => ({ ...current, userName: event.target.value }))} placeholder={text("config.users_roles.users.username_placeholder", "Username")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
                     </label>
                     <label className="space-y-2">
-                      <span className="text-sm font-semibold text-gray-700">Display name</span>
-                      <input value={userForm.displayName} onChange={(event) => setUserForm((current) => ({ ...current, displayName: event.target.value }))} placeholder="Display name" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
+                      <span className="text-sm font-semibold text-gray-700">
+                        {text("config.users_roles.users.display_name", "Display name")}
+                      </span>
+                      <input value={userForm.displayName} onChange={(event) => setUserForm((current) => ({ ...current, displayName: event.target.value }))} placeholder={text("config.users_roles.users.display_name_placeholder", "Display name")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
                     </label>
                     <label className="space-y-2">
-                      <span className="text-sm font-semibold text-gray-700">Email</span>
-                      <input value={userForm.email} onChange={(event) => setUserForm((current) => ({ ...current, email: event.target.value }))} placeholder="Email" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
+                      <span className="text-sm font-semibold text-gray-700">
+                        {text("config.users_roles.users.email", "Email")}
+                      </span>
+                      <input value={userForm.email} onChange={(event) => setUserForm((current) => ({ ...current, email: event.target.value }))} placeholder={text("config.users_roles.users.email_placeholder", "Email")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
                     </label>
                   </div>
 
                   <label className="mt-5 inline-flex items-center gap-3 text-base font-medium text-gray-700">
                     <input type="checkbox" checked={userForm.isActive} onChange={(event) => setUserForm((current) => ({ ...current, isActive: event.target.checked }))} />
-                    {text("config.users_roles.state.active", "Active")} user
+                    {text("config.users_roles.users.active_label", "Active user")}
                   </label>
 
                   <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -505,7 +587,10 @@ export default function UsersRoles() {
                             {text("config.users_roles.users.assignments", "User access")}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            Choose a role, then decide whether it applies to all units or one specific unit.
+                            {text(
+                              "config.users_roles.users.assignments_description",
+                              "Choose a role, then set whether it applies at centre level or only to one unit.",
+                            )}
                           </p>
                         </div>
                       </div>
@@ -518,10 +603,22 @@ export default function UsersRoles() {
                     <div className="space-y-3">
                       {assignments.map((assignment, index) => {
                         const selectedRole = assignment.roleId ? roleLookup[assignment.roleId] : null;
+                        const availableUnits = assignment.centreId !== emptyCentre ? unitsByCentre[assignment.centreId] ?? [] : [];
                         return (
                           <div key={`${index}-${assignment.roleId}-${assignment.unitId}`} className="rounded-2xl border border-gray-200 bg-white p-4">
-                            <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto_auto]">
-                              <select value={assignment.roleId} onChange={(event) => updateAssignment(index, { roleId: event.target.value })} className="rounded-xl border border-gray-200 px-4 py-3 text-base">
+                            <div className="grid gap-3 lg:grid-cols-[1.1fr_0.8fr_1fr_1fr_auto_auto]">
+                              <select
+                                value={assignment.roleId}
+                                onChange={(event) => {
+                                  const nextRole = roleLookup[event.target.value];
+                                  updateAssignment(index, {
+                                    roleId: event.target.value,
+                                    scopeType: nextRole?.defaultScopeType ?? assignment.scopeType,
+                                    unitId: nextRole?.defaultScopeType === "centre" ? "" : assignment.unitId,
+                                  });
+                                }}
+                                className="rounded-xl border border-gray-200 px-4 py-3 text-base"
+                              >
                                 <option value="">{text("config.users_roles.select_role", "Select role")}</option>
                                 {roles.filter((role) => role.isActive).map((role) => (
                                   <option key={role.roleId} value={role.roleId}>
@@ -529,9 +626,43 @@ export default function UsersRoles() {
                                   </option>
                                 ))}
                               </select>
-                              <select value={assignment.unitId} onChange={(event) => updateAssignment(index, { unitId: event.target.value })} className="rounded-xl border border-gray-200 px-4 py-3 text-base">
-                                <option value={globalScope}>{text("config.users_roles.scope.all_units", "All units")}</option>
-                                {units.map((unit) => (
+                              <select
+                                value={assignment.scopeType}
+                                onChange={(event) =>
+                                  updateAssignment(index, {
+                                    scopeType: event.target.value,
+                                    unitId: event.target.value === "centre" ? "" : assignment.unitId,
+                                  })
+                                }
+                                className="rounded-xl border border-gray-200 px-4 py-3 text-base"
+                              >
+                                <option value="centre">{text("config.users_roles.scope.centre_access", "Centre access")}</option>
+                                <option value="unit">{text("config.users_roles.scope.unit_access", "Unit access")}</option>
+                              </select>
+                              <select
+                                value={assignment.centreId}
+                                onChange={(event) => updateAssignment(index, { centreId: event.target.value, unitId: "" })}
+                                className="rounded-xl border border-gray-200 px-4 py-3 text-base"
+                              >
+                                <option value={emptyCentre}>{text("config.users_roles.scope.select_centre", "Select centre")}</option>
+                                {centres.map((centre) => (
+                                  <option key={centre.centreId} value={centre.centreId}>
+                                    {centre.displayName}
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                value={assignment.unitId}
+                                disabled={assignment.scopeType !== "unit" || assignment.centreId === emptyCentre}
+                                onChange={(event) => updateAssignment(index, { unitId: event.target.value })}
+                                className="rounded-xl border border-gray-200 px-4 py-3 text-base disabled:bg-gray-50 disabled:text-gray-400"
+                              >
+                                <option value="">
+                                  {assignment.scopeType === "centre"
+                                    ? text("config.users_roles.scope.not_used", "Not used for centre access")
+                                    : text("config.users_roles.scope.select_unit", "Select unit")}
+                                </option>
+                                {availableUnits.map((unit) => (
                                   <option key={unit.unitId} value={unit.unitId}>
                                     {unit.displayName}
                                   </option>
@@ -548,7 +679,9 @@ export default function UsersRoles() {
 
                             {selectedRole && (
                               <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-                                <p className="text-sm font-semibold text-slate-700">Access included in this role</p>
+                                <p className="text-sm font-semibold text-slate-700">
+                                  {text("config.users_roles.assignments.access_included", "Access included in this role")}
+                                </p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                   {selectedRole.permissionKeys.map((permissionKey) => (
                                     <span key={permissionKey} className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
@@ -557,7 +690,7 @@ export default function UsersRoles() {
                                   ))}
                                   {selectedRole.permissionKeys.length === 0 && (
                                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-500">
-                                      No permissions
+                                      {text("config.users_roles.assignments.no_permissions", "No permissions")}
                                     </span>
                                   )}
                                 </div>
@@ -591,7 +724,10 @@ export default function UsersRoles() {
                           {text("config.users_roles.roles.catalogue", "Role catalogue")}
                         </h2>
                         <p className="text-sm text-gray-500">
-                          Roles define the access bundles available to users.
+                          {text(
+                            "config.users_roles.roles.catalogue_description",
+                            "Roles define the access bundles available to users.",
+                          )}
                         </p>
                       </div>
                     </div>
@@ -613,14 +749,23 @@ export default function UsersRoles() {
                                 {role.isActive ? text("config.users_roles.state.active", "Active") : text("config.users_roles.state.inactive", "Inactive")}
                               </span>
                             </div>
-                            <p className="mt-2 text-base text-gray-600">{role.description || "No description."}</p>
+                            <p className="mt-2 text-base text-gray-600">
+                              {role.description || text("config.users_roles.roles.no_description", "No description.")}
+                            </p>
                             <p className="mt-2 text-sm text-gray-500">
-                              External role: {role.externalRoleName || text("config.users_roles.external_role.none", "none")}
+                              {text("config.users_roles.roles.external_role_label", "External role")}:{" "}
+                              {role.externalRoleName || text("config.users_roles.external_role.none", "none")}
+                            </p>
+                            <p className="mt-1 text-sm text-gray-500">
+                              {text("config.users_roles.roles.default_scope", "Default access scope")}:{" "}
+                              {role.defaultScopeType === "centre"
+                                ? text("config.users_roles.scope.centre", "Centre")
+                                : text("config.users_roles.scope.unit", "Unit")}
                             </p>
                           </div>
                           <button type="button" onClick={() => startRoleEdit(role)} className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
                             <PencilLine className="h-4 w-4" />
-                            Edit
+                            {text("config.users_roles.roles.edit_button", "Edit")}
                           </button>
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
@@ -631,7 +776,7 @@ export default function UsersRoles() {
                           ))}
                           {role.permissionKeys.length === 0 && (
                             <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-500">
-                              No permissions
+                              {text("config.users_roles.assignments.no_permissions", "No permissions")}
                             </span>
                           )}
                         </div>
@@ -647,7 +792,10 @@ export default function UsersRoles() {
                         {editingRoleId ? text("config.users_roles.roles.edit", "Edit role") : text("config.users_roles.roles.create", "Create role")}
                       </h2>
                       <p className="mt-1 text-base text-gray-600">
-                        Add or remove permissions from the role. Users inherit access through the roles assigned to them.
+                        {text(
+                          "config.users_roles.roles.form_description",
+                          "Add or remove permissions from the role. Users inherit access through the roles assigned to them.",
+                        )}
                       </p>
                     </div>
                     {editingRoleId && (
@@ -659,27 +807,38 @@ export default function UsersRoles() {
 
                   <div className="grid gap-4">
                     <label className="space-y-2">
-                      <span className="text-sm font-semibold text-gray-700">Role key</span>
-                      <input value={roleForm.key} onChange={(event) => setRoleForm((current) => ({ ...current, key: event.target.value }))} placeholder="role_key" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
+                      <span className="text-sm font-semibold text-gray-700">{text("config.users_roles.roles.key", "Role key")}</span>
+                      <input value={roleForm.key} onChange={(event) => setRoleForm((current) => ({ ...current, key: event.target.value }))} placeholder={text("config.users_roles.roles.key_placeholder", "role_key")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
                     </label>
                     <label className="space-y-2">
-                      <span className="text-sm font-semibold text-gray-700">Role name</span>
-                      <input value={roleForm.name} onChange={(event) => setRoleForm((current) => ({ ...current, name: event.target.value }))} placeholder="Role name" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
+                      <span className="text-sm font-semibold text-gray-700">{text("config.users_roles.roles.name", "Role name")}</span>
+                      <input value={roleForm.name} onChange={(event) => setRoleForm((current) => ({ ...current, name: event.target.value }))} placeholder={text("config.users_roles.roles.name_placeholder", "Role name")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
                     </label>
                     <label className="space-y-2">
-                      <span className="text-sm font-semibold text-gray-700">Description</span>
-                      <textarea value={roleForm.description} onChange={(event) => setRoleForm((current) => ({ ...current, description: event.target.value }))} rows={3} placeholder="Describe what this role is for" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
+                      <span className="text-sm font-semibold text-gray-700">{text("config.users_roles.roles.description_label", "Description")}</span>
+                      <textarea value={roleForm.description} onChange={(event) => setRoleForm((current) => ({ ...current, description: event.target.value }))} rows={3} placeholder={text("config.users_roles.roles.description_placeholder", "Describe what this role is for")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
                     </label>
                     <label className="space-y-2">
-                      <span className="text-sm font-semibold text-gray-700">External login role reference</span>
-                      <input value={roleForm.externalRoleName} onChange={(event) => setRoleForm((current) => ({ ...current, externalRoleName: event.target.value }))} placeholder="Optional legacy mapping" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
+                      <span className="text-sm font-semibold text-gray-700">{text("config.users_roles.roles.external_reference", "External login role reference")}</span>
+                      <input value={roleForm.externalRoleName} onChange={(event) => setRoleForm((current) => ({ ...current, externalRoleName: event.target.value }))} placeholder={text("config.users_roles.roles.external_reference_placeholder", "Optional legacy mapping")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-sm font-semibold text-gray-700">{text("config.users_roles.roles.default_scope", "Default access scope")}</span>
+                      <select
+                        value={roleForm.defaultScopeType}
+                        onChange={(event) => setRoleForm((current) => ({ ...current, defaultScopeType: event.target.value }))}
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base"
+                      >
+                        <option value="centre">{text("config.users_roles.scope.centre", "Centre")}</option>
+                        <option value="unit">{text("config.users_roles.scope.unit", "Unit")}</option>
+                      </select>
                     </label>
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-4">
                     <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
                       <input type="checkbox" checked={roleForm.isSystemRole} onChange={(event) => setRoleForm((current) => ({ ...current, isSystemRole: event.target.checked }))} />
-                      System role
+                      {text("config.users_roles.roles.system_role", "System role")}
                     </label>
                     <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
                       <input type="checkbox" checked={roleForm.isActive} onChange={(event) => setRoleForm((current) => ({ ...current, isActive: event.target.checked }))} />
@@ -690,7 +849,9 @@ export default function UsersRoles() {
                   <div className="mt-6 space-y-4">
                     {Object.entries(groupedPermissions).map(([category, group]) => (
                       <div key={category} className="rounded-2xl border border-gray-200 bg-slate-50 p-4">
-                        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">{titleCase(category)}</p>
+                        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                          {text(`config.users_roles.permission_category.${category}`, titleCase(category))}
+                        </p>
                         <div className="space-y-2">
                           {group.map((permission) => {
                             const selected = roleForm.permissionKeys.includes(permission.key);
@@ -728,3 +889,4 @@ export default function UsersRoles() {
     </SuperAdminGuard>
   );
 }
+

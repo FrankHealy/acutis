@@ -4,6 +4,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5
 
 export type UnitConfigurationDto = {
   unitId: string;
+  centreId: string;
+  centreCode: string;
+  centreName: string;
   unitCode: string;
   displayName: string;
   description: string;
@@ -15,7 +18,26 @@ export type UnitConfigurationDto = {
   isActive: boolean;
 };
 
+export type CentreConfigurationDto = {
+  centreId: string;
+  centreCode: string;
+  displayName: string;
+  description: string;
+  displayOrder: number;
+  unitCount: number;
+  isActive: boolean;
+};
+
+export type UpsertCentreRequest = {
+  centreCode: string;
+  displayName: string;
+  description: string;
+  displayOrder: number;
+  isActive: boolean;
+};
+
 export type UpsertUnitRequest = {
+  centreId: string;
   unitCode: string;
   displayName: string;
   description: string;
@@ -41,6 +63,7 @@ export type AppRoleDto = {
   name: string;
   description: string;
   externalRoleName: string;
+  defaultScopeType: string;
   isSystemRole: boolean;
   isActive: boolean;
   permissionKeys: string[];
@@ -51,6 +74,7 @@ export type UpsertAppRoleRequest = {
   name: string;
   description: string;
   externalRoleName: string;
+  defaultScopeType: string;
   isSystemRole: boolean;
   isActive: boolean;
   permissionKeys: string[];
@@ -60,6 +84,10 @@ export type AppUserRoleAssignmentDto = {
   assignmentId: string;
   roleId: string;
   roleKey: string;
+  scopeType: string;
+  centreId: string;
+  centreCode: string;
+  centreName: string;
   unitId?: string | null;
   unitCode: string;
   unitName: string;
@@ -87,6 +115,8 @@ export type UpsertAppUserRequest = {
 
 export type UpsertUserRoleAssignmentItem = {
   roleId: string;
+  scopeType: string;
+  centreId: string;
   unitId?: string | null;
   isActive: boolean;
 };
@@ -115,6 +145,29 @@ async function request<T>(path: string, accessToken: string | undefined, init?: 
 }
 
 export const globalConfigurationService = {
+  getCentres(accessToken?: string, includeInactive = true) {
+    return request<CentreConfigurationDto[]>(
+      `/api/configuration/centres?includeInactive=${includeInactive ? "true" : "false"}`,
+      accessToken,
+    );
+  },
+  createCentre(accessToken: string | undefined, payload: UpsertCentreRequest) {
+    return request<CentreConfigurationDto>("/api/configuration/centres", accessToken, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateCentre(accessToken: string | undefined, centreId: string, payload: UpsertCentreRequest) {
+    return request<CentreConfigurationDto>(`/api/configuration/centres/${encodeURIComponent(centreId)}`, accessToken, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+  archiveCentre(accessToken: string | undefined, centreId: string) {
+    return request<void>(`/api/configuration/centres/${encodeURIComponent(centreId)}`, accessToken, {
+      method: "DELETE",
+    });
+  },
   getUnits(accessToken?: string, includeInactive = true) {
     return request<UnitConfigurationDto[]>(
       `/api/configuration/units?includeInactive=${includeInactive ? "true" : "false"}`,

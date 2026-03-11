@@ -74,6 +74,7 @@ public sealed class AcutisDbContext : DbContext
     private static readonly Guid TrScreeningTabSchedulingEn = Guid.Parse("ec0552e9-c6dc-4eb5-a80d-62f5548f252f");
     private static readonly Guid TrScreeningTabSchedulingGa = Guid.Parse("c562be30-0d52-43f4-bef7-c7ca01a61ac0");
     private static readonly Guid DefaultScreeningControlId = Guid.Parse("9df9c2b5-e728-4327-8a6b-f22f73dcd22d");
+    private static readonly Guid BrureeCentreId = Guid.Parse("aaaaaaaa-1111-1111-1111-111111111111");
     private static readonly Guid AlcoholUnitId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid DetoxUnitId = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid DrugsUnitId = Guid.Parse("33333333-3333-3333-3333-333333333333");
@@ -420,6 +421,7 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<AppPermission> AppPermissions => Set<AppPermission>();
     public DbSet<AppRolePermission> AppRolePermissions => Set<AppRolePermission>();
     public DbSet<AppUserRoleAssignment> AppUserRoleAssignments => Set<AppUserRoleAssignment>();
+    public DbSet<Centre> Centres => Set<Centre>();
 
     private void IncrementLookupTypeVersions()
     {
@@ -653,6 +655,7 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new AppPermissionConfiguration());
         modelBuilder.ApplyConfiguration(new AppRolePermissionConfiguration());
         modelBuilder.ApplyConfiguration(new AppUserRoleAssignmentConfiguration());
+        modelBuilder.ApplyConfiguration(new CentreConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapySubjectTemplateConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyDailyQuestionConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyResidentRemarkConfiguration());
@@ -673,12 +676,30 @@ public sealed class AcutisDbContext : DbContext
         SeedFormDefinition(modelBuilder);
         SeedOptionSets(modelBuilder);
         SeedTranslations(modelBuilder);
+        SeedCentres(modelBuilder);
         SeedUnits(modelBuilder);
+        SeedResidents(modelBuilder);
         SeedAuthorizationModel(modelBuilder);
         SeedScreeningControls(modelBuilder);
         SeedGroupTherapyProgram(modelBuilder);
         SeedGroupTherapyRemarks(modelBuilder);
         SeedTherapyTopics(modelBuilder);
+    }
+
+    private static void SeedCentres(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Centre>().HasData(
+            new Centre
+            {
+                Id = BrureeCentreId,
+                Code = "bruree",
+                Name = "Bruree",
+                Description = "Primary centre used for the current unit configuration.",
+                DisplayOrder = 1,
+                IsActive = true,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            });
     }
 
     private static void SeedUnits(ModelBuilder modelBuilder)
@@ -687,6 +708,7 @@ public sealed class AcutisDbContext : DbContext
             new Unit
             {
                 Id = AlcoholUnitId,
+                CentreId = BrureeCentreId,
                 Code = "alcohol",
                 Name = "Alcohol",
                 Description = "Primary alcohol treatment unit.",
@@ -701,11 +723,12 @@ public sealed class AcutisDbContext : DbContext
             new Unit
             {
                 Id = DetoxUnitId,
+                CentreId = BrureeCentreId,
                 Code = "detox",
                 Name = "Detox",
                 Description = "Detox and medically supervised stabilisation unit.",
                 Capacity = 16,
-                CurrentOccupancy = 12,
+                CurrentOccupancy = 11,
                 CapacityWarningThreshold = 14,
                 DisplayOrder = 2,
                 IsActive = true,
@@ -715,6 +738,7 @@ public sealed class AcutisDbContext : DbContext
             new Unit
             {
                 Id = DrugsUnitId,
+                CentreId = BrureeCentreId,
                 Code = "drugs",
                 Name = "Drugs",
                 Description = "Drug recovery residential unit.",
@@ -729,6 +753,7 @@ public sealed class AcutisDbContext : DbContext
             new Unit
             {
                 Id = LadiesUnitId,
+                CentreId = BrureeCentreId,
                 Code = "ladies",
                 Name = "Ladies",
                 Description = "Women-specific residential recovery unit.",
@@ -826,6 +851,7 @@ public sealed class AcutisDbContext : DbContext
                 Name = "Platform admin",
                 Description = "Global administrator role for configuration and access control.",
                 ExternalRoleName = "admin",
+                DefaultScopeType = ConfigurationScopeTypes.Centre,
                 IsSystemRole = true,
                 IsActive = true
             },
@@ -836,6 +862,7 @@ public sealed class AcutisDbContext : DbContext
                 Name = "Clinical viewer",
                 Description = "Read-only role for operational unit features.",
                 ExternalRoleName = string.Empty,
+                DefaultScopeType = ConfigurationScopeTypes.Unit,
                 IsSystemRole = true,
                 IsActive = true
             });
@@ -854,6 +881,107 @@ public sealed class AcutisDbContext : DbContext
             new AppRolePermission { AppRoleId = ClinicalViewerRoleId, AppPermissionId = MediaViewPermissionId },
             new AppRolePermission { AppRoleId = ClinicalViewerRoleId, AppPermissionId = GroupTherapyViewPermissionId },
             new AppRolePermission { AppRoleId = ClinicalViewerRoleId, AppPermissionId = UnitOperationsViewPermissionId });
+    }
+
+    private static void SeedResidents(ModelBuilder modelBuilder)
+    {
+        var residentSeeds = new (string FirstName, string Surname, int WeekNumber, string RoomNumber, string Nationality)[]
+        {
+            ("Aidan", "Byrne", 1, "D01", "Irish"),
+            ("Brian", "O'Neill", 2, "D02", "Irish"),
+            ("Cian", "Murphy", 3, "D03", "Irish"),
+            ("Darragh", "Walsh", 4, "D04", "Irish"),
+            ("Eoin", "Ryan", 5, "D05", "Irish"),
+            ("Fintan", "Hayes", 6, "D06", "Irish"),
+            ("Gavin", "Doyle", 7, "D07", "Irish"),
+            ("Hugh", "Kavanagh", 8, "D08", "Irish"),
+            ("Ian", "Fitzgerald", 9, "D09", "Irish"),
+            ("John", "McCarthy", 10, "D10", "Irish"),
+            ("Kevin", "Power", 11, "D11", "Irish")
+        };
+
+        var residents = residentSeeds.Select((resident, index) =>
+        {
+            var residentNumber = index + 1;
+            return new Resident
+            {
+                Id = CreateDeterministicGuid($"resident:detox:{residentNumber:00}"),
+                Psn = BuildResidentSecondaryKey("BRU", "DET", 26, resident.WeekNumber, residentNumber),
+                UnitId = DetoxUnitId,
+                UnitCode = "detox",
+                FirstName = resident.FirstName,
+                Surname = resident.Surname,
+                Nationality = resident.Nationality,
+                DateOfBirth = new DateTime(1984 + (residentNumber % 8), Math.Max(1, residentNumber), Math.Min(20, 8 + residentNumber), 0, 0, 0, DateTimeKind.Utc),
+                WeekNumber = resident.WeekNumber,
+                RoomNumber = resident.RoomNumber,
+                PhotoUrl = null,
+                AdmissionDate = new DateTime(2026, 1, 5, 0, 0, 0, DateTimeKind.Utc).AddDays((resident.WeekNumber - 1) * 7),
+                ExpectedCompletionDate = new DateTime(2026, 1, 5, 0, 0, 0, DateTimeKind.Utc).AddDays((resident.WeekNumber + 11) * 7),
+                PrimaryAddiction = "Alcohol",
+                IsDrug = false,
+                IsGambeler = residentNumber % 5 == 0,
+                IsPreviousResident = residentNumber % 4 == 0,
+                DietaryNeedsCode = residentNumber % 3,
+                IsSnorer = residentNumber % 2 == 0,
+                HasCriminalHistory = residentNumber % 3 == 0,
+                IsOnProbation = residentNumber % 4 == 0,
+                ArgumentativeScale = residentNumber % 5,
+                LearningDifficultyScale = residentNumber % 4,
+                LiteracyScale = residentNumber % 3,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            };
+        }).ToArray();
+
+        var episodes = residents.Select((resident, index) => new ResidentProgrammeEpisode
+        {
+            Id = CreateDeterministicGuid($"episode:{resident.Id:D}"),
+            ResidentId = resident.Id,
+            CentreId = BrureeCentreId,
+            UnitId = DetoxUnitId,
+            StartDate = new DateOnly(2026, 1, 5),
+            EndDate = null,
+            ProgrammeType = ProgrammeType.Alcohol,
+            CurrentWeekNumber = residentSeeds[index].WeekNumber,
+            ParticipationMode = ParticipationMode.FullProgramme,
+            CohortId = null
+        }).ToArray();
+
+        var topicCodes = new[]
+        {
+            "RELAPSE_PREVENTION",
+            "COPING_SKILLS",
+            "TRIGGERS_AND_CRAVINGS",
+            "TOPIC_04",
+            "TOPIC_05",
+            "TOPIC_06",
+            "TOPIC_07",
+            "TOPIC_08",
+            "TOPIC_09",
+            "TOPIC_10",
+            "RELAPSE_PREVENTION",
+            "COPING_SKILLS"
+        };
+
+        var assignments = residents.SelectMany((resident, residentIndex) =>
+            Enumerable.Range(0, 12).Select(weekOffset => new ResidentWeeklyTherapyAssignment
+            {
+                Id = CreateDeterministicGuid($"resident-weekly-assignment:{resident.Id:D}:{weekOffset + 1:00}"),
+                ResidentId = resident.Id,
+                EpisodeId = episodes[residentIndex].Id,
+                WeekStartDate = new DateOnly(2026, 1, 5).AddDays(weekOffset * 7),
+                TherapyTopicId = CreateDeterministicGuid($"therapy-topic:{topicCodes[weekOffset]}"),
+                AssignmentSource = AssignmentSource.Auto,
+                OverrideReason = null,
+                SupersedesAssignmentId = null,
+                CreatedAt = SeedCreatedAt.AddDays(weekOffset),
+                CreatedByUserId = CreateDeterministicGuid("system:seed")
+            }));
+
+        modelBuilder.Entity<Resident>().HasData(residents);
+        modelBuilder.Entity<ResidentProgrammeEpisode>().HasData(episodes);
+        modelBuilder.Entity<ResidentWeeklyTherapyAssignment>().HasData(assignments);
     }
 
     private static void SeedFormDefinition(ModelBuilder modelBuilder)
@@ -1086,49 +1214,49 @@ public sealed class AcutisDbContext : DbContext
 
         modelBuilder.Entity<TextTranslation>().HasData(
             new TextTranslation { Id = TrScreeningFormTitleEn, Key = "screening.form.alcohol_screening_call.title", Locale = "en-IE", Text = "Alcohol Screening Call" },
-            new TextTranslation { Id = TrScreeningFormTitleGa, Key = "screening.form.alcohol_screening_call.title", Locale = "ga-IE", Text = "Scagadh Glao AlcÃ³il" },
+            new TextTranslation { Id = TrScreeningFormTitleGa, Key = "screening.form.alcohol_screening_call.title", Locale = "ga-IE", Text = "Scagadh Glao Alcóil" },
             new TextTranslation { Id = TrScreeningFormDescriptionEn, Key = "screening.form.alcohol_screening_call.description", Locale = "en-IE", Text = "Capture first-call screening details." },
-            new TextTranslation { Id = TrScreeningFormDescriptionGa, Key = "screening.form.alcohol_screening_call.description", Locale = "ga-IE", Text = "Gabh sonraÃ­ scagtha Ã³n gcÃ©ad ghlao." },
+            new TextTranslation { Id = TrScreeningFormDescriptionGa, Key = "screening.form.alcohol_screening_call.description", Locale = "ga-IE", Text = "Gabh sonraí scagtha ón gcéad ghlao." },
             new TextTranslation { Id = TrCallerDetailsEn, Key = "screening.section.caller_details", Locale = "en-IE", Text = "Caller Details" },
-            new TextTranslation { Id = TrCallerDetailsGa, Key = "screening.section.caller_details", Locale = "ga-IE", Text = "SonraÃ­ an Ghlaoiteora" },
+            new TextTranslation { Id = TrCallerDetailsGa, Key = "screening.section.caller_details", Locale = "ga-IE", Text = "Sonraí an Ghlaoiteora" },
             new TextTranslation { Id = TrAlcoholUseEn, Key = "screening.section.alcohol_use", Locale = "en-IE", Text = "Alcohol Use" },
-            new TextTranslation { Id = TrAlcoholUseGa, Key = "screening.section.alcohol_use", Locale = "ga-IE", Text = "ÃšsÃ¡id AlcÃ³il" },
+            new TextTranslation { Id = TrAlcoholUseGa, Key = "screening.section.alcohol_use", Locale = "ga-IE", Text = "Úsáid Alcóil" },
             new TextTranslation { Id = TrCallerNameLabelEn, Key = "screening.field.caller_name.label", Locale = "en-IE", Text = "Caller Name" },
             new TextTranslation { Id = TrCallerNameLabelGa, Key = "screening.field.caller_name.label", Locale = "ga-IE", Text = "Ainm an Ghlaoiteora" },
             new TextTranslation { Id = TrAgeLabelEn, Key = "screening.field.age.label", Locale = "en-IE", Text = "Age" },
             new TextTranslation { Id = TrAgeLabelGa, Key = "screening.field.age.label", Locale = "ga-IE", Text = "Aois" },
             new TextTranslation { Id = TrDrinksPerDayLabelEn, Key = "screening.field.drinks_per_day.label", Locale = "en-IE", Text = "Drinks Per Day (for selected type)" },
-            new TextTranslation { Id = TrDrinksPerDayLabelGa, Key = "screening.field.drinks_per_day.label", Locale = "ga-IE", Text = "Deochanna sa LÃ¡" },
+            new TextTranslation { Id = TrDrinksPerDayLabelGa, Key = "screening.field.drinks_per_day.label", Locale = "ga-IE", Text = "Deochanna sa Lá" },
             new TextTranslation { Id = TrWithdrawalHistoryLabelEn, Key = "screening.field.withdrawal_history.label", Locale = "en-IE", Text = "Has withdrawal history?" },
             new TextTranslation { Id = TrWithdrawalHistoryLabelGa, Key = "screening.field.withdrawal_history.label", Locale = "ga-IE", Text = "Stair Aistarraingthe" },
             new TextTranslation { Id = TrReferralSourceLabelEn, Key = "screening.field.referral_source.label", Locale = "en-IE", Text = "Referral Source" },
             new TextTranslation { Id = TrReferralSourceLabelGa, Key = "screening.field.referral_source.label", Locale = "ga-IE", Text = "Foinse Atreoraithe" },
             new TextTranslation { Id = TrReferralGpEn, Key = "screening.options.referral_source.gp", Locale = "en-IE", Text = "GP" },
-            new TextTranslation { Id = TrReferralGpGa, Key = "screening.options.referral_source.gp", Locale = "ga-IE", Text = "DochtÃºir Teaghlaigh" },
+            new TextTranslation { Id = TrReferralGpGa, Key = "screening.options.referral_source.gp", Locale = "ga-IE", Text = "Dochtúir Teaghlaigh" },
             new TextTranslation { Id = TrReferralFamilyEn, Key = "screening.options.referral_source.family", Locale = "en-IE", Text = "Family" },
             new TextTranslation { Id = TrReferralFamilyGa, Key = "screening.options.referral_source.family", Locale = "ga-IE", Text = "Teaghlach" },
             new TextTranslation { Id = TrReferralSelfEn, Key = "screening.options.referral_source.self", Locale = "en-IE", Text = "Self" },
-            new TextTranslation { Id = TrReferralSelfGa, Key = "screening.options.referral_source.self", Locale = "ga-IE", Text = "FÃ©in" },
+            new TextTranslation { Id = TrReferralSelfGa, Key = "screening.options.referral_source.self", Locale = "ga-IE", Text = "Féin" },
             new TextTranslation { Id = TrReferralOtherEn, Key = "screening.options.referral_source.other", Locale = "en-IE", Text = "Other" },
             new TextTranslation { Id = TrReferralOtherGa, Key = "screening.options.referral_source.other", Locale = "ga-IE", Text = "Eile" },
             new TextTranslation { Id = TrAppBrandEn, Key = "app.brand", Locale = "en-IE", Text = "Acutis" },
             new TextTranslation { Id = TrAppBrandGa, Key = "app.brand", Locale = "ga-IE", Text = "Acutis" },
             new TextTranslation { Id = TrAppCentreBrureeEn, Key = "app.centre.bruree", Locale = "en-IE", Text = "Bruree Treatment Center" },
-            new TextTranslation { Id = TrAppCentreBrureeGa, Key = "app.centre.bruree", Locale = "ga-IE", Text = "Ionad CÃ³ireÃ¡la BrÃº RÃ­" },
+            new TextTranslation { Id = TrAppCentreBrureeGa, Key = "app.centre.bruree", Locale = "ga-IE", Text = "Ionad Cóireála Brú Rí" },
             new TextTranslation { Id = TrHeaderCapacityEn, Key = "header.capacity", Locale = "en-IE", Text = "Capacity" },
             new TextTranslation { Id = TrHeaderCapacityGa, Key = "header.capacity", Locale = "ga-IE", Text = "Acmhainn" },
             new TextTranslation { Id = TrHeaderCurrentTimeEn, Key = "header.current_time", Locale = "en-IE", Text = "Current Time" },
             new TextTranslation { Id = TrHeaderCurrentTimeGa, Key = "header.current_time", Locale = "ga-IE", Text = "Am Reatha" },
             new TextTranslation { Id = TrHeaderSignedInAsEn, Key = "header.signed_in_as", Locale = "en-IE", Text = "Signed in as" },
-            new TextTranslation { Id = TrHeaderSignedInAsGa, Key = "header.signed_in_as", Locale = "ga-IE", Text = "LogÃ¡ilte isteach mar" },
+            new TextTranslation { Id = TrHeaderSignedInAsGa, Key = "header.signed_in_as", Locale = "ga-IE", Text = "Logáilte isteach mar" },
             new TextTranslation { Id = TrHeaderLoginDifferentEn, Key = "header.login_different_user", Locale = "en-IE", Text = "Log in as different user" },
-            new TextTranslation { Id = TrHeaderLoginDifferentGa, Key = "header.login_different_user", Locale = "ga-IE", Text = "LogÃ¡il isteach mar ÃºsÃ¡ideoir eile" },
+            new TextTranslation { Id = TrHeaderLoginDifferentGa, Key = "header.login_different_user", Locale = "ga-IE", Text = "Logáil isteach mar úsáideoir eile" },
             new TextTranslation { Id = TrHeaderLogoutEn, Key = "header.logout", Locale = "en-IE", Text = "Log out" },
-            new TextTranslation { Id = TrHeaderLogoutGa, Key = "header.logout", Locale = "ga-IE", Text = "LogÃ¡il amach" },
+            new TextTranslation { Id = TrHeaderLogoutGa, Key = "header.logout", Locale = "ga-IE", Text = "Logáil amach" },
             new TextTranslation { Id = TrScreeningTabCallsEn, Key = "screening.tab.calls", Locale = "en-IE", Text = "Call Logging" },
-            new TextTranslation { Id = TrScreeningTabCallsGa, Key = "screening.tab.calls", Locale = "ga-IE", Text = "LogÃ¡il Glaonna" },
+            new TextTranslation { Id = TrScreeningTabCallsGa, Key = "screening.tab.calls", Locale = "ga-IE", Text = "Logáil Glaonna" },
             new TextTranslation { Id = TrScreeningTabEvaluationEn, Key = "screening.tab.evaluation", Locale = "en-IE", Text = "Evaluation" },
-            new TextTranslation { Id = TrScreeningTabEvaluationGa, Key = "screening.tab.evaluation", Locale = "ga-IE", Text = "MeastÃ³ireacht" },
+            new TextTranslation { Id = TrScreeningTabEvaluationGa, Key = "screening.tab.evaluation", Locale = "ga-IE", Text = "Meastóireacht" },
             new TextTranslation { Id = TrScreeningTabSchedulingEn, Key = "screening.tab.scheduling", Locale = "en-IE", Text = "Scheduling" },
             new TextTranslation { Id = TrScreeningTabSchedulingGa, Key = "screening.tab.scheduling", Locale = "ga-IE", Text = "Sceidealú" },
             new TextTranslation { Id = Guid.Parse("9e0ddd4f-3339-46e1-8ab8-d485be7fca8d"), Key = "screening.field.currently_unsafe.label", Locale = "en-IE", Text = "Is immediate concern?" },
@@ -1563,6 +1691,11 @@ public sealed class AcutisDbContext : DbContext
         var bytes = Encoding.UTF8.GetBytes(value);
         var hash = MD5.HashData(bytes);
         return new Guid(hash);
+    }
+
+    private static string BuildResidentSecondaryKey(string centreCode, string unitCode, int year, int weekNumber, int residentNumber)
+    {
+        return $"{centreCode}-{unitCode}-{year:00}-{weekNumber:00}-{residentNumber:00}";
     }
 
     private static void SeedScreeningControls(ModelBuilder modelBuilder)

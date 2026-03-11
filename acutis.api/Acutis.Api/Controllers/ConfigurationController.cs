@@ -246,6 +246,41 @@ public sealed class ConfigurationController : ControllerBase
         return Ok(await _globalConfigurationService.GetUnitsAsync(includeInactive, cancellationToken));
     }
 
+    [HttpGet("centres")]
+    public async Task<ActionResult<IReadOnlyList<CentreConfigurationDto>>> GetCentres(
+        [FromQuery] bool includeInactive = true,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetCentresAsync(includeInactive, cancellationToken));
+    }
+
+    [HttpPost("centres")]
+    public async Task<ActionResult<CentreConfigurationDto>> CreateCentre(
+        [FromBody] UpsertCentreRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateCentreAsync(request, cancellationToken));
+    }
+
+    [HttpPut("centres/{centreId:guid}")]
+    public async Task<ActionResult<CentreConfigurationDto>> UpdateCentre(
+        Guid centreId,
+        [FromBody] UpsertCentreRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateCentreAsync(centreId, request, cancellationToken));
+    }
+
+    [HttpDelete("centres/{centreId:guid}")]
+    public async Task<IActionResult> ArchiveCentre(Guid centreId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchiveCentreAsync(centreId, cancellationToken);
+            return NoContent();
+        });
+    }
+
     [HttpPost("units")]
     public async Task<ActionResult<UnitConfigurationDto>> CreateUnit(
         [FromBody] UpsertUnitRequest request,

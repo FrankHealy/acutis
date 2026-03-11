@@ -3,8 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import DetoxFloorPlan from "@/areas/detox/components/DetoxFloorPlan";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
-import { operationsService, type UnitRoomAssignment } from "@/services/operationsService";
+import { operationsService } from "@/services/operationsService";
 import { residentService } from "@/services/residentService";
+import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 
 type Resident = {
   id: string;
@@ -31,6 +32,7 @@ const shuffleResidents = <T,>(items: T[]): T[] => {
 };
 
 const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
+  const { loadKeys, t } = useLocalization();
   const [roomAssignments, setRoomAssignments] = useState<Record<number, Resident[]>>({});
   const [roomList, setRoomList] = useState<number[]>([]);
   const [capacityPerRoom, setCapacityPerRoom] = useState(2);
@@ -38,6 +40,28 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+    void loadKeys([
+      "room_assignments.title",
+      "room_assignments.description",
+      "room_assignments.zoom_out",
+      "room_assignments.zoom_in",
+      "room_assignments.loading",
+      "room_assignments.unable_to_load",
+      "room_assignments.courtyard",
+      "room_assignments.reception",
+      "room_assignments.clocktower",
+      "room_assignments.st_josephs_side",
+      "room_assignments.green_mile",
+      "room_assignments.over_drug_unit",
+    ]);
+  }, [loadKeys]);
+
+  const text = (key: string, fallback: string) => {
+    const resolved = t(key);
+    return resolved === key ? fallback : resolved;
+  };
 
   useEffect(() => {
     let active = true;
@@ -381,8 +405,8 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Room Assignments</h2>
-          <p className="text-sm text-gray-600">Drag and drop resident initials between available room slots.</p>
+          <h2 className="text-lg font-semibold text-gray-900">{text("room_assignments.title", "Room Assignments")}</h2>
+          <p className="text-sm text-gray-600">{text("room_assignments.description", "Drag and drop resident initials between available room slots.")}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -390,7 +414,7 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
             onClick={() => setZoom((current) => Math.max(0.6, current - 0.1))}
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
           >
-            Zoom Out
+            {text("room_assignments.zoom_out", "Zoom Out")}
           </button>
           <div className="min-w-16 text-center text-sm font-medium text-gray-600">{zoomPercent}%</div>
           <button
@@ -398,12 +422,12 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
             onClick={() => setZoom((current) => Math.min(1.8, current + 0.1))}
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
           >
-            Zoom In
+            {text("room_assignments.zoom_in", "Zoom In")}
           </button>
         </div>
       </div>
 
-      {loading ? <div className="mb-4 text-sm text-gray-600">Loading room assignments...</div> : null}
+      {loading ? <div className="mb-4 text-sm text-gray-600">{text("room_assignments.loading", "Loading room assignments...")}</div> : null}
       {error ? <div className="mb-4 text-sm text-red-600">{error}</div> : null}
 
       {!loading && !error ? (
@@ -448,38 +472,38 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
                   style={{ gridColumn: `2 / ${gridSize}`, gridRow: `2 / ${gridSize}` }}
                   className="border-4 border-gray-300 bg-green-200/70 flex items-center justify-center text-green-700 text-sm font-semibold rounded-lg"
                 >
-                  Courtyard
+                  {text("room_assignments.courtyard", "Courtyard")}
                 </div>
 
                 <div style={corridorStyle} />
 
                 <div style={receptionStyle}>
-                  <span style={receptionLabelStyle}>Reception</span>
+                  <span style={receptionLabelStyle}>{text("room_assignments.reception", "Reception")}</span>
                 </div>
 
                 <div
                   className="absolute text-sm font-semibold text-gray-700"
                   style={{ top: "-27px", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}
                 >
-                  Clocktower
+                  {text("room_assignments.clocktower", "Clocktower")}
                 </div>
                 <div
                   className="absolute text-sm font-semibold text-gray-700"
                   style={{ bottom: "-27px", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}
                 >
-                  St Joseph&apos;s Side
+                  {text("room_assignments.st_josephs_side", "St Joseph's Side")}
                 </div>
                 <div
                   className="absolute text-sm font-semibold text-gray-700"
                   style={{ left: "-56px", top: "50%", transform: "translateY(-50%) rotate(-90deg)", pointerEvents: "none" }}
                 >
-                  Green Mile
+                  {text("room_assignments.green_mile", "Green Mile")}
                 </div>
                 <div
                   className="absolute text-sm font-semibold text-gray-700"
                   style={{ right: "-72px", top: "50%", transform: "translateY(-50%) rotate(90deg)", pointerEvents: "none" }}
                 >
-                  Over Drug Unit
+                  {text("room_assignments.over_drug_unit", "Over Drug Unit")}
                 </div>
               </div>
             </div>

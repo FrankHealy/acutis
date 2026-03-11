@@ -7,6 +7,7 @@ import { ArrowLeft, Building2, PencilLine, Plus, Save, Trash2 } from "lucide-rea
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
 import {
   globalConfigurationService,
+  type CentreConfigurationDto,
   type UnitConfigurationDto,
   type UpsertUnitRequest,
 } from "@/services/globalConfigurationService";
@@ -14,6 +15,7 @@ import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 
 const emptyForm: UpsertUnitRequest = {
+  centreId: "",
   unitCode: "",
   displayName: "",
   description: "",
@@ -30,6 +32,7 @@ export default function UnitsAdmin() {
   const { loadKeys, t } = useLocalization();
   const accessToken = session?.accessToken;
   const [units, setUnits] = useState<UnitConfigurationDto[]>([]);
+  const [centres, setCentres] = useState<CentreConfigurationDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +47,12 @@ export default function UnitsAdmin() {
     setLoading(true);
     try {
       setError(null);
-      const result = await globalConfigurationService.getUnits(accessToken);
-      setUnits(result);
+      const [centresResult, unitsResult] = await Promise.all([
+        globalConfigurationService.getCentres(accessToken),
+        globalConfigurationService.getUnits(accessToken),
+      ]);
+      setCentres(centresResult.filter((centre) => centre.isActive));
+      setUnits(unitsResult);
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -79,6 +86,8 @@ export default function UnitsAdmin() {
       "config.units.form.warning_threshold_placeholder",
       "config.units.form.display_order",
       "config.units.form.display_order_placeholder",
+      "config.units.form.centre",
+      "config.units.form.select_centre",
       "config.units.form.active_unit",
       "config.units.form.create_button",
       "config.units.form.save_button",
@@ -111,7 +120,8 @@ export default function UnitsAdmin() {
 
   const startEdit = (unit: UnitConfigurationDto) => {
     setEditingUnitId(unit.unitId);
-    setForm({
+      setForm({
+      centreId: unit.centreId,
       unitCode: unit.unitCode,
       displayName: unit.displayName,
       description: unit.description,
@@ -233,6 +243,9 @@ export default function UnitsAdmin() {
                             <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">
                               {unit.unitCode}
                             </span>
+                            <span className="rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700">
+                              {unit.centreName}
+                            </span>
                             {!unit.isActive && (
                               <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
                                 {text("config.units.list.archived", "Archived")}
@@ -309,6 +322,21 @@ export default function UnitsAdmin() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-1 text-sm text-gray-700">
+                  <span>{text("config.units.form.centre", "Centre")}</span>
+                  <select
+                    value={form.centreId}
+                    onChange={(event) => setForm((current) => ({ ...current, centreId: event.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2"
+                  >
+                    <option value="">{text("config.units.form.select_centre", "Select centre")}</option>
+                    {centres.map((centre) => (
+                      <option key={centre.centreId} value={centre.centreId}>
+                        {centre.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="space-y-1 text-sm text-gray-700">
                   <span>{text("config.units.form.unit_code", "Unit code")}</span>
                   <input

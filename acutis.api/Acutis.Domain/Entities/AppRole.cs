@@ -7,6 +7,7 @@ public sealed class AppRole
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string ExternalRoleName { get; set; } = string.Empty;
+    public string DefaultScopeType { get; set; } = ConfigurationScopeTypes.Unit;
     public bool IsSystemRole { get; set; }
     public bool IsActive { get; set; }
 

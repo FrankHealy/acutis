@@ -11,6 +11,7 @@ import Toast from '@/units/shared/ui/Toast';
 import type { UnitId } from './unit/unitTypes';
 import QuoteOfTheDay from './QuoteOfTheDay';
 import RecoveryVideos from './RecoveryVideos';
+import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 
 type ResidentsSectionProps = {
   unitId: UnitId;
@@ -25,6 +26,7 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({
   initialRollCallView = false,
   onOpenMeditation,
 }) => {
+  const { loadKeys, t } = useLocalization();
   const [selectedResidentId, setSelectedResidentId] = useState<number | null>(null);
   const {
     residents,
@@ -55,6 +57,18 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({
     [selectedResidentId, residents]
   );
 
+  React.useEffect(() => {
+    void loadKeys([
+      "residents.loading",
+      "residents.error",
+    ]);
+  }, [loadKeys]);
+
+  const text = (key: string, fallback: string) => {
+    const resolved = t(key);
+    return resolved === key ? fallback : resolved;
+  };
+
   // bulk actions for roll call
   const handleMarkAllPresent = () => {
     residents.forEach((resident) => {
@@ -72,8 +86,8 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({
     });
   };
 
-  if (loading) return <div className="flex justify-center p-8">Loading residents...</div>;
-  if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
+  if (loading) return <div className="flex justify-center p-8">{text("residents.loading", "Loading residents...")}</div>;
+  if (error) return <div className="text-red-500 p-4">{text("residents.error", "Error")}: {error}</div>;
 
   // Detail view when a resident is selected
   if (selectedResident) {

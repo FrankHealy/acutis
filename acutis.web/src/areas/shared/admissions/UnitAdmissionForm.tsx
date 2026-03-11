@@ -41,7 +41,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   setCurrentStep,
 }) => {
   const { data: session, status } = useSession();
-  const { locale, mergeTranslations } = useLocalization();
+  const { locale, mergeTranslations, loadKeys, t } = useLocalization();
   const [formData, setFormData] = useState<GetActiveFormResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +51,28 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const Icon = iconByUnit[unitIconKey];
+
+  useEffect(() => {
+    void loadKeys([
+      "admission.loading",
+      "admission.sign_in_required",
+      "admission.session_expired",
+      "admission.unable_to_load",
+      "admission.no_active_form",
+      "admission.back_to_dashboard",
+      "admission.photo_capture",
+      "admission.no_photo",
+      "admission.open_camera",
+      "admission.capture",
+      "admission.cancel_camera",
+      "admission.upload_photo",
+    ]);
+  }, [loadKeys]);
+
+  const text = (key: string, fallback: string) => {
+    const resolved = t(key);
+    return resolved === key ? fallback : resolved;
+  };
 
   useEffect(() => {
     let active = true;
@@ -169,7 +191,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   if (loading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
-        Loading admission form...
+        {text("admission.loading", "Loading admission form...")}
       </div>
     );
   }
@@ -177,7 +199,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   if (!isAuthorizedClient(status, session?.accessToken)) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
-        Please sign in to access admissions.
+        {text("admission.sign_in_required", "Please sign in to access admissions.")}
       </div>
     );
   }
@@ -187,7 +209,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-amber-900">{unitName} Admission</h2>
-        <p className="mt-2 text-sm text-amber-800">Session expired.</p>
+        <p className="mt-2 text-sm text-amber-800">{text("admission.session_expired", "Session expired.")}</p>
       </div>
     );
   }
@@ -207,7 +229,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   if (!formData) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
-        No active admission form available.
+        {text("admission.no_active_form", "No active admission form available.")}
       </div>
     );
   }
@@ -271,7 +293,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
             className="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
           >
             <UserRoundCheck className="h-4 w-4" />
-            Back to Dashboard
+            {text("admission.back_to_dashboard", "Back to Dashboard")}
           </button>
         </div>
       </div>
@@ -279,7 +301,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-900">
           <Camera className="h-4 w-4 text-blue-600" />
-          Resident Photo Capture
+          {text("admission.photo_capture", "Resident Photo Capture")}
         </h3>
 
         <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
@@ -287,7 +309,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
             {photoDataUrl ? (
               <img src={photoDataUrl} alt="Captured resident" className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-gray-500">No photo captured</div>
+              <div className="flex h-full items-center justify-center text-sm text-gray-500">{text("admission.no_photo", "No photo captured")}</div>
             )}
           </div>
 
@@ -298,7 +320,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
                 onClick={() => void openCamera()}
                 className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
               >
-                Open Camera
+                {text("admission.open_camera", "Open Camera")}
               </button>
             ) : (
               <div className="space-y-2">
@@ -309,21 +331,21 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
                     onClick={capturePhoto}
                     className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
                   >
-                    Capture
+                    {text("admission.capture", "Capture")}
                   </button>
                   <button
                     type="button"
                     onClick={stopCamera}
                     className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                   >
-                    Cancel Camera
+                    {text("admission.cancel_camera", "Cancel Camera")}
                   </button>
                 </div>
               </div>
             )}
 
             <label className="inline-flex cursor-pointer items-center rounded border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-              Upload Photo
+              {text("admission.upload_photo", "Upload Photo")}
               <input type="file" accept="image/*" onChange={onPhotoFileSelected} className="hidden" />
             </label>
             {cameraError && <p className="text-sm text-red-600">{cameraError}</p>}
