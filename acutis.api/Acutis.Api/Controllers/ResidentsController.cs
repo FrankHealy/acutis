@@ -1,4 +1,5 @@
 using Acutis.Api.Contracts;
+using Acutis.Api.Security;
 using Acutis.Api.Services.Residents;
 using Acutis.Api.Services.Units;
 using Microsoft.AspNetCore.Authorization;
@@ -8,16 +9,21 @@ namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api/residents")]
-[AllowAnonymous]
+[Authorize]
 public sealed class ResidentsController : ControllerBase
 {
     private readonly IResidentService _residentService;
     private readonly IUnitIdentityService _unitIdentityService;
+    private readonly IApplicationAccessService _accessService;
 
-    public ResidentsController(IResidentService residentService, IUnitIdentityService unitIdentityService)
+    public ResidentsController(
+        IResidentService residentService,
+        IUnitIdentityService unitIdentityService,
+        IApplicationAccessService accessService)
     {
         _residentService = residentService;
         _unitIdentityService = unitIdentityService;
+        _accessService = accessService;
     }
 
     [HttpGet]
@@ -25,7 +31,18 @@ public sealed class ResidentsController : ControllerBase
         [FromQuery] string unitId = "alcohol",
         CancellationToken cancellationToken = default)
     {
-        var residents = await _residentService.GetAllResidentsAsync(unitId, cancellationToken);
+        var unit = await _unitIdentityService.GetByCodeAsync(unitId, cancellationToken);
+        if (unit is null)
+        {
+            return NotFound();
+        }
+
+        if (!_accessService.HasUnitPermission(User, unit.UnitId, ApplicationPermissions.ResidentsView))
+        {
+            return Forbid();
+        }
+
+        var residents = await _residentService.GetAllResidentsAsync(unit.UnitCode, cancellationToken);
         return Ok(residents);
     }
 
@@ -34,9 +51,15 @@ public sealed class ResidentsController : ControllerBase
         Guid unitId,
         CancellationToken cancellationToken = default)
     {
-        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
         {
             return NotFound();
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.ResidentsView))
+        {
+            return Forbid();
         }
 
         var residents = await _residentService.GetAllResidentsAsync(unit.UnitCode, cancellationToken);

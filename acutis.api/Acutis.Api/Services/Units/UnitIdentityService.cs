@@ -1,35 +1,87 @@
 using Acutis.Api.Contracts;
+using Acutis.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Acutis.Api.Services.Units;
 
 public interface IUnitIdentityService
 {
-    IReadOnlyList<UnitIdentityDto> GetAll();
-    bool TryGetByCode(string unitCode, out UnitIdentityDto unit);
-    bool TryGetById(Guid unitId, out UnitIdentityDto unit);
+    Task<IReadOnlyList<UnitIdentityDto>> GetAllAsync(bool includeInactive = false, CancellationToken cancellationToken = default);
+    Task<UnitIdentityDto?> GetByCodeAsync(string unitCode, CancellationToken cancellationToken = default);
+    Task<UnitIdentityDto?> GetByIdAsync(Guid unitId, CancellationToken cancellationToken = default);
 }
 
 public sealed class UnitIdentityService : IUnitIdentityService
 {
-    private static readonly IReadOnlyList<UnitIdentityDto> Units =
-    [
-        new() { UnitId = Guid.Parse("11111111-1111-1111-1111-111111111111"), UnitCode = "alcohol", DisplayName = "Alcohol" },
-        new() { UnitId = Guid.Parse("22222222-2222-2222-2222-222222222222"), UnitCode = "detox", DisplayName = "Detox" },
-        new() { UnitId = Guid.Parse("33333333-3333-3333-3333-333333333333"), UnitCode = "drugs", DisplayName = "Drugs" },
-        new() { UnitId = Guid.Parse("44444444-4444-4444-4444-444444444444"), UnitCode = "ladies", DisplayName = "Ladies" }
-    ];
+    private readonly AcutisDbContext _dbContext;
 
-    public IReadOnlyList<UnitIdentityDto> GetAll() => Units;
-
-    public bool TryGetByCode(string unitCode, out UnitIdentityDto unit)
+    public UnitIdentityService(AcutisDbContext dbContext)
     {
-        unit = Units.FirstOrDefault(x => x.UnitCode.Equals(unitCode.Trim(), StringComparison.OrdinalIgnoreCase)) ?? new UnitIdentityDto();
-        return unit.UnitId != Guid.Empty;
+        _dbContext = dbContext;
     }
 
-    public bool TryGetById(Guid unitId, out UnitIdentityDto unit)
+    public async Task<IReadOnlyList<UnitIdentityDto>> GetAllAsync(
+        bool includeInactive = false,
+        CancellationToken cancellationToken = default)
     {
-        unit = Units.FirstOrDefault(x => x.UnitId == unitId) ?? new UnitIdentityDto();
-        return unit.UnitId != Guid.Empty;
+        var query = _dbContext.Units.AsNoTracking();
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.IsActive);
+        }
+
+        return await query
+            .OrderBy(x => x.DisplayOrder)
+            .ThenBy(x => x.Name)
+            .Select(Map)
+            .ToListAsync(cancellationToken);
     }
+
+    public async Task<UnitIdentityDto?> GetByCodeAsync(
+        string unitCode,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = NormalizeCode(unitCode);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
+
+        return await _dbContext.Units
+            .AsNoTracking()
+            .Where(x => x.Code == normalized && x.IsActive)
+            .Select(Map)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<UnitIdentityDto?> GetByIdAsync(
+        Guid unitId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Units
+            .AsNoTracking()
+            .Where(x => x.Id == unitId && x.IsActive)
+            .Select(Map)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private static string NormalizeCode(string unitCode)
+    {
+        return string.IsNullOrWhiteSpace(unitCode) ? string.Empty : unitCode.Trim().ToLowerInvariant();
+    }
+
+    private static readonly Expression<Func<Acutis.Domain.Entities.Unit, UnitIdentityDto>> Map = unit => new UnitIdentityDto
+    {
+        UnitId = unit.Id,
+        UnitCode = unit.Code,
+        DisplayName = unit.Name,
+        Description = unit.Description,
+        UnitCapacity = unit.Capacity,
+        CurrentOccupancy = unit.CurrentOccupancy,
+        FreeBeds = unit.Capacity - unit.CurrentOccupancy < 0 ? 0 : unit.Capacity - unit.CurrentOccupancy,
+        CapacityWarningThreshold = unit.CapacityWarningThreshold,
+        DisplayOrder = unit.DisplayOrder,
+        IsActive = unit.IsActive
+    };
 }

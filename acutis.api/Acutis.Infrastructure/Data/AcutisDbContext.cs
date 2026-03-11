@@ -74,6 +74,20 @@ public sealed class AcutisDbContext : DbContext
     private static readonly Guid TrScreeningTabSchedulingEn = Guid.Parse("ec0552e9-c6dc-4eb5-a80d-62f5548f252f");
     private static readonly Guid TrScreeningTabSchedulingGa = Guid.Parse("c562be30-0d52-43f4-bef7-c7ca01a61ac0");
     private static readonly Guid DefaultScreeningControlId = Guid.Parse("9df9c2b5-e728-4327-8a6b-f22f73dcd22d");
+    private static readonly Guid AlcoholUnitId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid DetoxUnitId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid DrugsUnitId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    private static readonly Guid LadiesUnitId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+    private static readonly Guid ConfigurationManagePermissionId = Guid.Parse("55555555-1111-1111-1111-111111111111");
+    private static readonly Guid UnitsManagePermissionId = Guid.Parse("55555555-2222-2222-2222-222222222222");
+    private static readonly Guid AccessManagePermissionId = Guid.Parse("55555555-3333-3333-3333-333333333333");
+    private static readonly Guid ScreeningViewPermissionId = Guid.Parse("55555555-4444-4444-4444-444444444444");
+    private static readonly Guid ResidentsViewPermissionId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+    private static readonly Guid MediaViewPermissionId = Guid.Parse("55555555-6666-6666-6666-666666666666");
+    private static readonly Guid GroupTherapyViewPermissionId = Guid.Parse("55555555-7777-7777-7777-777777777777");
+    private static readonly Guid UnitOperationsViewPermissionId = Guid.Parse("55555555-8888-8888-8888-888888888888");
+    private static readonly Guid PlatformAdminRoleId = Guid.Parse("66666666-1111-1111-1111-111111111111");
+    private static readonly Guid ClinicalViewerRoleId = Guid.Parse("66666666-2222-2222-2222-222222222222");
 
     private const string SchemaJson = """
         {
@@ -379,6 +393,7 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<TextResource> TextResources => Set<TextResource>();
     public DbSet<TextTranslation> TextTranslations => Set<TextTranslation>();
     public DbSet<FormSubmission> FormSubmissions => Set<FormSubmission>();
+    public DbSet<Unit> Units => Set<Unit>();
     public DbSet<ScreeningControl> ScreeningControls => Set<ScreeningControl>();
     public DbSet<Resident> Residents => Set<Resident>();
     public DbSet<GroupTherapySubjectTemplate> GroupTherapySubjectTemplates => Set<GroupTherapySubjectTemplate>();
@@ -400,6 +415,11 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<LookupType> LookupTypes => Set<LookupType>();
     public DbSet<LookupValue> LookupValues => Set<LookupValue>();
     public DbSet<LookupValueLabel> LookupValueLabels => Set<LookupValueLabel>();
+    public DbSet<AppUser> AppUsers => Set<AppUser>();
+    public DbSet<AppRole> AppRoles => Set<AppRole>();
+    public DbSet<AppPermission> AppPermissions => Set<AppPermission>();
+    public DbSet<AppRolePermission> AppRolePermissions => Set<AppRolePermission>();
+    public DbSet<AppUserRoleAssignment> AppUserRoleAssignments => Set<AppUserRoleAssignment>();
 
     private void IncrementLookupTypeVersions()
     {
@@ -588,6 +608,8 @@ public sealed class AcutisDbContext : DbContext
             });
         });
 
+        modelBuilder.ApplyConfiguration(new UnitConfiguration());
+
         modelBuilder.Entity<ScreeningControl>(entity =>
         {
             entity.ToTable("ScreeningControl");
@@ -626,6 +648,11 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new LookupTypeConfiguration());
         modelBuilder.ApplyConfiguration(new LookupValueConfiguration());
         modelBuilder.ApplyConfiguration(new LookupValueLabelConfiguration());
+        modelBuilder.ApplyConfiguration(new AppUserConfiguration());
+        modelBuilder.ApplyConfiguration(new AppRoleConfiguration());
+        modelBuilder.ApplyConfiguration(new AppPermissionConfiguration());
+        modelBuilder.ApplyConfiguration(new AppRolePermissionConfiguration());
+        modelBuilder.ApplyConfiguration(new AppUserRoleAssignmentConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapySubjectTemplateConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyDailyQuestionConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyResidentRemarkConfiguration());
@@ -646,10 +673,187 @@ public sealed class AcutisDbContext : DbContext
         SeedFormDefinition(modelBuilder);
         SeedOptionSets(modelBuilder);
         SeedTranslations(modelBuilder);
+        SeedUnits(modelBuilder);
+        SeedAuthorizationModel(modelBuilder);
         SeedScreeningControls(modelBuilder);
         SeedGroupTherapyProgram(modelBuilder);
         SeedGroupTherapyRemarks(modelBuilder);
         SeedTherapyTopics(modelBuilder);
+    }
+
+    private static void SeedUnits(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Unit>().HasData(
+            new Unit
+            {
+                Id = AlcoholUnitId,
+                Code = "alcohol",
+                Name = "Alcohol",
+                Description = "Primary alcohol treatment unit.",
+                Capacity = 120,
+                CurrentOccupancy = 92,
+                CapacityWarningThreshold = 96,
+                DisplayOrder = 1,
+                IsActive = true,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            },
+            new Unit
+            {
+                Id = DetoxUnitId,
+                Code = "detox",
+                Name = "Detox",
+                Description = "Detox and medically supervised stabilisation unit.",
+                Capacity = 16,
+                CurrentOccupancy = 12,
+                CapacityWarningThreshold = 14,
+                DisplayOrder = 2,
+                IsActive = true,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            },
+            new Unit
+            {
+                Id = DrugsUnitId,
+                Code = "drugs",
+                Name = "Drugs",
+                Description = "Drug recovery residential unit.",
+                Capacity = 22,
+                CurrentOccupancy = 18,
+                CapacityWarningThreshold = 20,
+                DisplayOrder = 3,
+                IsActive = true,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            },
+            new Unit
+            {
+                Id = LadiesUnitId,
+                Code = "ladies",
+                Name = "Ladies",
+                Description = "Women-specific residential recovery unit.",
+                Capacity = 18,
+                CurrentOccupancy = 14,
+                CapacityWarningThreshold = 16,
+                DisplayOrder = 4,
+                IsActive = true,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            });
+    }
+
+    private static void SeedAuthorizationModel(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AppPermission>().HasData(
+            new AppPermission
+            {
+                Id = ConfigurationManagePermissionId,
+                Key = "configuration.manage",
+                Name = "Manage configuration",
+                Description = "Manage global application configuration.",
+                Category = "configuration",
+                IsActive = true
+            },
+            new AppPermission
+            {
+                Id = UnitsManagePermissionId,
+                Key = "units.manage",
+                Name = "Manage units",
+                Description = "Create, update, and archive units.",
+                Category = "units",
+                IsActive = true
+            },
+            new AppPermission
+            {
+                Id = AccessManagePermissionId,
+                Key = "access.manage",
+                Name = "Manage access",
+                Description = "Manage users, roles, and role assignments.",
+                Category = "security",
+                IsActive = true
+            },
+            new AppPermission
+            {
+                Id = ScreeningViewPermissionId,
+                Key = "screening.view",
+                Name = "View screening",
+                Description = "Access screening controls and screening workflow data.",
+                Category = "screening",
+                IsActive = true
+            },
+            new AppPermission
+            {
+                Id = ResidentsViewPermissionId,
+                Key = "residents.view",
+                Name = "View residents",
+                Description = "Access resident lists scoped to a unit.",
+                Category = "residents",
+                IsActive = true
+            },
+            new AppPermission
+            {
+                Id = MediaViewPermissionId,
+                Key = "media.view",
+                Name = "View media",
+                Description = "Access unit media catalogues and media assets.",
+                Category = "media",
+                IsActive = true
+            },
+            new AppPermission
+            {
+                Id = GroupTherapyViewPermissionId,
+                Key = "group_therapy.view",
+                Name = "View group therapy",
+                Description = "Access group therapy programmes and remarks.",
+                Category = "group_therapy",
+                IsActive = true
+            },
+            new AppPermission
+            {
+                Id = UnitOperationsViewPermissionId,
+                Key = "unit_operations.view",
+                Name = "View unit operations",
+                Description = "Access room assignments and OT schedules.",
+                Category = "units",
+                IsActive = true
+            });
+
+        modelBuilder.Entity<AppRole>().HasData(
+            new AppRole
+            {
+                Id = PlatformAdminRoleId,
+                Key = "platform_admin",
+                Name = "Platform admin",
+                Description = "Global administrator role for configuration and access control.",
+                ExternalRoleName = "admin",
+                IsSystemRole = true,
+                IsActive = true
+            },
+            new AppRole
+            {
+                Id = ClinicalViewerRoleId,
+                Key = "clinical_viewer",
+                Name = "Clinical viewer",
+                Description = "Read-only role for operational unit features.",
+                ExternalRoleName = string.Empty,
+                IsSystemRole = true,
+                IsActive = true
+            });
+
+        modelBuilder.Entity<AppRolePermission>().HasData(
+            new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = ConfigurationManagePermissionId },
+            new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = UnitsManagePermissionId },
+            new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = AccessManagePermissionId },
+            new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = ScreeningViewPermissionId },
+            new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = ResidentsViewPermissionId },
+            new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = MediaViewPermissionId },
+            new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = GroupTherapyViewPermissionId },
+            new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = UnitOperationsViewPermissionId },
+            new AppRolePermission { AppRoleId = ClinicalViewerRoleId, AppPermissionId = ScreeningViewPermissionId },
+            new AppRolePermission { AppRoleId = ClinicalViewerRoleId, AppPermissionId = ResidentsViewPermissionId },
+            new AppRolePermission { AppRoleId = ClinicalViewerRoleId, AppPermissionId = MediaViewPermissionId },
+            new AppRolePermission { AppRoleId = ClinicalViewerRoleId, AppPermissionId = GroupTherapyViewPermissionId },
+            new AppRolePermission { AppRoleId = ClinicalViewerRoleId, AppPermissionId = UnitOperationsViewPermissionId });
     }
 
     private static void SeedFormDefinition(ModelBuilder modelBuilder)

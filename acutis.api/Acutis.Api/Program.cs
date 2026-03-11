@@ -1,4 +1,5 @@
 using Acutis.Api.Security;
+using Acutis.Api.Services.Configuration;
 using Acutis.Api.Services.Forms;
 using Acutis.Api.Services.GroupTherapy;
 using Acutis.Api.Services.Lookups;
@@ -37,6 +38,7 @@ builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<IFormValidationService, FormValidationService>();
 builder.Services.AddScoped<IScreeningControlService, ScreeningControlService>();
+builder.Services.AddScoped<IGlobalConfigurationService, GlobalConfigurationService>();
 builder.Services.AddScoped<IFormConfigurationService, FormConfigurationService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IGroupTherapyService, GroupTherapyService>();
@@ -48,7 +50,8 @@ builder.Services.AddScoped<IMediaPlayerService, MediaPlayerService>();
 builder.Services.AddScoped<IQuoteService, QuoteService>();
 builder.Services.AddScoped<IUnitVideoService, UnitVideoService>();
 builder.Services.AddScoped<IUnitVideoAdminService, UnitVideoService>();
-builder.Services.AddSingleton<IUnitIdentityService, UnitIdentityService>();
+builder.Services.AddScoped<IUnitIdentityService, UnitIdentityService>();
+builder.Services.AddSingleton<IApplicationAccessService, ApplicationAccessService>();
 builder.Services.Configure<OfflineWindowPolicyOptions>(builder.Configuration.GetSection("OfflineWindowPolicy"));
 builder.Services.Configure<AuthorizationOptions>(builder.Configuration.GetSection(AuthorizationOptions.SectionName));
 builder.Services.AddSingleton<IOfflineWindowPolicyService, OfflineWindowPolicyService>();
@@ -122,8 +125,13 @@ if (!authorizationOptions.Disabled)
             };
         });
 
-    builder.Services.AddSingleton<IClaimsTransformation, KeycloakClientRoleClaimsTransformation>();
-    builder.Services.AddAuthorization();
+    builder.Services.AddScoped<IClaimsTransformation, KeycloakClientRoleClaimsTransformation>();
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy(
+            ApplicationPolicies.ConfigurationManage,
+            policy => policy.RequireClaim(ApplicationClaimTypes.Permission, ApplicationPermissions.ConfigurationManage));
+    });
 }
 
 var app = builder.Build();

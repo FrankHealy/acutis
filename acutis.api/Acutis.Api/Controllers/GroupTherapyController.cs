@@ -1,4 +1,5 @@
 using Acutis.Api.Contracts;
+using Acutis.Api.Security;
 using Acutis.Api.Services.GroupTherapy;
 using Acutis.Api.Services.Units;
 using Microsoft.AspNetCore.Authorization;
@@ -8,16 +9,21 @@ namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api/grouptherapy")]
-[AllowAnonymous]
+[Authorize]
 public sealed class GroupTherapyController : ControllerBase
 {
     private readonly IGroupTherapyService _groupTherapyService;
     private readonly IUnitIdentityService _unitIdentityService;
+    private readonly IApplicationAccessService _accessService;
 
-    public GroupTherapyController(IGroupTherapyService groupTherapyService, IUnitIdentityService unitIdentityService)
+    public GroupTherapyController(
+        IGroupTherapyService groupTherapyService,
+        IUnitIdentityService unitIdentityService,
+        IApplicationAccessService accessService)
     {
         _groupTherapyService = groupTherapyService;
         _unitIdentityService = unitIdentityService;
+        _accessService = accessService;
     }
 
     [HttpGet("program")]
@@ -36,7 +42,18 @@ public sealed class GroupTherapyController : ControllerBase
             return BadRequest("Query parameter 'programCode' is required.");
         }
 
-        var program = await _groupTherapyService.GetProgramAsync(unitCode, programCode, cancellationToken);
+        var unit = await _unitIdentityService.GetByCodeAsync(unitCode, cancellationToken);
+        if (unit is null)
+        {
+            return NotFound($"No unit mapping found for unitCode '{unitCode}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unit.UnitId, ApplicationPermissions.GroupTherapyView))
+        {
+            return Forbid();
+        }
+
+        var program = await _groupTherapyService.GetProgramAsync(unit.UnitCode, programCode, cancellationToken);
         if (program is null)
         {
             return NotFound(
@@ -52,9 +69,15 @@ public sealed class GroupTherapyController : ControllerBase
         [FromQuery] string programCode = "bruree_alcohol_gt",
         CancellationToken cancellationToken = default)
     {
-        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
         {
             return NotFound($"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.GroupTherapyView))
+        {
+            return Forbid();
         }
 
         var program = await _groupTherapyService.GetProgramAsync(unit.UnitCode, programCode, cancellationToken);
@@ -89,7 +112,18 @@ public sealed class GroupTherapyController : ControllerBase
             return BadRequest("Query parameter 'moduleKey' is required.");
         }
 
-        var remarks = await _groupTherapyService.GetRemarksAsync(unitCode, programCode, moduleKey, cancellationToken);
+        var unit = await _unitIdentityService.GetByCodeAsync(unitCode, cancellationToken);
+        if (unit is null)
+        {
+            return NotFound($"No unit mapping found for unitCode '{unitCode}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unit.UnitId, ApplicationPermissions.GroupTherapyView))
+        {
+            return Forbid();
+        }
+
+        var remarks = await _groupTherapyService.GetRemarksAsync(unit.UnitCode, programCode, moduleKey, cancellationToken);
         return Ok(remarks);
     }
 
@@ -100,7 +134,8 @@ public sealed class GroupTherapyController : ControllerBase
         [FromQuery] string moduleKey = "spirituality",
         CancellationToken cancellationToken = default)
     {
-        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
         {
             return NotFound($"No unit mapping found for unitId '{unitId}'.");
         }
@@ -113,6 +148,11 @@ public sealed class GroupTherapyController : ControllerBase
         if (string.IsNullOrWhiteSpace(moduleKey))
         {
             return BadRequest("Query parameter 'moduleKey' is required.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.GroupTherapyView))
+        {
+            return Forbid();
         }
 
         var remarks = await _groupTherapyService.GetRemarksAsync(unit.UnitCode, programCode, moduleKey, cancellationToken);
@@ -149,6 +189,18 @@ public sealed class GroupTherapyController : ControllerBase
             return BadRequest("Request field 'moduleKey' is required.");
         }
 
+        var unit = await _unitIdentityService.GetByCodeAsync(request.UnitCode, cancellationToken);
+        if (unit is null)
+        {
+            return NotFound($"No unit mapping found for unitCode '{request.UnitCode}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unit.UnitId, ApplicationPermissions.GroupTherapyView))
+        {
+            return Forbid();
+        }
+
+        request.UnitCode = unit.UnitCode;
         var remark = await _groupTherapyService.UpsertRemarkAsync(request, cancellationToken);
         return Ok(remark);
     }
@@ -159,9 +211,15 @@ public sealed class GroupTherapyController : ControllerBase
         [FromBody] UpsertGroupTherapyResidentRemarkRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
         {
             return NotFound($"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.GroupTherapyView))
+        {
+            return Forbid();
         }
 
         request.UnitCode = unit.UnitCode;

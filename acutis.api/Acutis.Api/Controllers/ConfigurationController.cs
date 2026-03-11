@@ -1,4 +1,6 @@
 using Acutis.Api.Contracts;
+using Acutis.Api.Security;
+using Acutis.Api.Services.Configuration;
 using Acutis.Api.Services.Forms;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +9,7 @@ namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api/configuration")]
-[Authorize]
+[Authorize(Policy = ApplicationPolicies.ConfigurationManage)]
 public sealed class ConfigurationController : ControllerBase
 {
     private const string AlcoholScreeningFormCode = "alcohol_screening_call";
@@ -15,10 +17,14 @@ public sealed class ConfigurationController : ControllerBase
     private const string SurveyFormPrefix = "survey_";
 
     private readonly IFormConfigurationService _formConfigurationService;
+    private readonly IGlobalConfigurationService _globalConfigurationService;
 
-    public ConfigurationController(IFormConfigurationService formConfigurationService)
+    public ConfigurationController(
+        IFormConfigurationService formConfigurationService,
+        IGlobalConfigurationService globalConfigurationService)
     {
         _formConfigurationService = formConfigurationService;
+        _globalConfigurationService = globalConfigurationService;
     }
 
     [HttpPost("CreateAlcoholScreeningForm")]
@@ -230,6 +236,141 @@ public sealed class ConfigurationController : ControllerBase
     {
         return await Execute(async () =>
             await _formConfigurationService.GetVersionsAsync(formCode, cancellationToken));
+    }
+
+    [HttpGet("units")]
+    public async Task<ActionResult<IReadOnlyList<UnitConfigurationDto>>> GetUnits(
+        [FromQuery] bool includeInactive = true,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetUnitsAsync(includeInactive, cancellationToken));
+    }
+
+    [HttpPost("units")]
+    public async Task<ActionResult<UnitConfigurationDto>> CreateUnit(
+        [FromBody] UpsertUnitRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateUnitAsync(request, cancellationToken));
+    }
+
+    [HttpPut("units/{unitId:guid}")]
+    public async Task<ActionResult<UnitConfigurationDto>> UpdateUnit(
+        Guid unitId,
+        [FromBody] UpsertUnitRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateUnitAsync(unitId, request, cancellationToken));
+    }
+
+    [HttpDelete("units/{unitId:guid}")]
+    public async Task<IActionResult> ArchiveUnit(Guid unitId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchiveUnitAsync(unitId, cancellationToken);
+            return NoContent();
+        });
+    }
+
+    [HttpGet("permissions")]
+    public async Task<ActionResult<IReadOnlyList<AppPermissionDto>>> GetPermissions(CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetPermissionsAsync(cancellationToken));
+    }
+
+    [HttpPost("permissions")]
+    public async Task<ActionResult<AppPermissionDto>> CreatePermission(
+        [FromBody] UpsertAppPermissionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreatePermissionAsync(request, cancellationToken));
+    }
+
+    [HttpPut("permissions/{permissionId:guid}")]
+    public async Task<ActionResult<AppPermissionDto>> UpdatePermission(
+        Guid permissionId,
+        [FromBody] UpsertAppPermissionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () =>
+            await _globalConfigurationService.UpdatePermissionAsync(permissionId, request, cancellationToken));
+    }
+
+    [HttpDelete("permissions/{permissionId:guid}")]
+    public async Task<IActionResult> ArchivePermission(Guid permissionId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchivePermissionAsync(permissionId, cancellationToken);
+            return NoContent();
+        });
+    }
+
+    [HttpGet("roles")]
+    public async Task<ActionResult<IReadOnlyList<AppRoleDto>>> GetRoles(CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetRolesAsync(cancellationToken));
+    }
+
+    [HttpPost("roles")]
+    public async Task<ActionResult<AppRoleDto>> CreateRole(
+        [FromBody] UpsertAppRoleRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateRoleAsync(request, cancellationToken));
+    }
+
+    [HttpPut("roles/{roleId:guid}")]
+    public async Task<ActionResult<AppRoleDto>> UpdateRole(
+        Guid roleId,
+        [FromBody] UpsertAppRoleRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateRoleAsync(roleId, request, cancellationToken));
+    }
+
+    [HttpDelete("roles/{roleId:guid}")]
+    public async Task<IActionResult> ArchiveRole(Guid roleId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchiveRoleAsync(roleId, cancellationToken);
+            return NoContent();
+        });
+    }
+
+    [HttpGet("users")]
+    public async Task<ActionResult<IReadOnlyList<AppUserDto>>> GetUsers(CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetUsersAsync(cancellationToken));
+    }
+
+    [HttpPost("users")]
+    public async Task<ActionResult<AppUserDto>> CreateUser(
+        [FromBody] UpsertAppUserRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateUserAsync(request, cancellationToken));
+    }
+
+    [HttpPut("users/{userId:guid}")]
+    public async Task<ActionResult<AppUserDto>> UpdateUser(
+        Guid userId,
+        [FromBody] UpsertAppUserRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateUserAsync(userId, request, cancellationToken));
+    }
+
+    [HttpPut("users/{userId:guid}/assignments")]
+    public async Task<ActionResult<IReadOnlyList<AppUserRoleAssignmentDto>>> ReplaceUserAssignments(
+        Guid userId,
+        [FromBody] ReplaceUserRoleAssignmentsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () =>
+            await _globalConfigurationService.ReplaceUserAssignmentsAsync(userId, request, cancellationToken));
     }
 
     private async Task<ActionResult<T>> Execute<T>(Func<Task<T>> action)

@@ -22,27 +22,48 @@ public sealed class ScreeningControlService : IScreeningControlService
     {
         var normalized = string.IsNullOrWhiteSpace(unitCode) ? "alcohol" : unitCode.Trim().ToLowerInvariant();
 
+        var unit = await _dbContext.Units
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Code == normalized && item.IsActive, cancellationToken);
+
+        if (unit is null)
+        {
+            return null;
+        }
+
         var control = await _dbContext.ScreeningControls
             .AsNoTracking()
             .FirstOrDefaultAsync(item => item.UnitCode == normalized, cancellationToken);
 
         if (control is null)
         {
-            return null;
+            return new ScreeningControlDto
+            {
+                UnitCode = unit.Code,
+                UnitName = unit.Name,
+                UnitCapacity = unit.Capacity,
+                CurrentOccupancy = unit.CurrentOccupancy,
+                CapacityWarningThreshold = unit.CapacityWarningThreshold,
+                CallLogsCacheSeconds = 15,
+                EvaluationQueueCacheSeconds = 30,
+                LocalizationCacheSeconds = 300,
+                EnableClientCacheOverride = true,
+                UpdatedAt = unit.UpdatedAtUtc
+            };
         }
 
         return new ScreeningControlDto
         {
-            UnitCode = control.UnitCode,
-            UnitName = control.UnitName,
-            UnitCapacity = control.UnitCapacity,
-            CurrentOccupancy = control.CurrentOccupancy,
-            CapacityWarningThreshold = control.CapacityWarningThreshold,
+            UnitCode = unit.Code,
+            UnitName = unit.Name,
+            UnitCapacity = unit.Capacity,
+            CurrentOccupancy = unit.CurrentOccupancy,
+            CapacityWarningThreshold = unit.CapacityWarningThreshold,
             CallLogsCacheSeconds = control.CallLogsCacheSeconds,
             EvaluationQueueCacheSeconds = control.EvaluationQueueCacheSeconds,
             LocalizationCacheSeconds = control.LocalizationCacheSeconds,
             EnableClientCacheOverride = control.EnableClientCacheOverride,
-            UpdatedAt = control.UpdatedAt
+            UpdatedAt = unit.UpdatedAtUtc > control.UpdatedAt ? unit.UpdatedAtUtc : control.UpdatedAt
         };
     }
 }

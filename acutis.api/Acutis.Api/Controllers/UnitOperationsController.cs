@@ -1,4 +1,5 @@
 using Acutis.Api.Contracts;
+using Acutis.Api.Security;
 using Acutis.Api.Services.Units;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,16 +7,21 @@ using Microsoft.AspNetCore.Mvc;
 namespace Acutis.Api.Controllers;
 
 [ApiController]
-[AllowAnonymous]
+[Authorize]
 public sealed class UnitOperationsController : ControllerBase
 {
     private readonly IUnitOperationsService _unitOperationsService;
     private readonly IUnitIdentityService _unitIdentityService;
+    private readonly IApplicationAccessService _accessService;
 
-    public UnitOperationsController(IUnitOperationsService unitOperationsService, IUnitIdentityService unitIdentityService)
+    public UnitOperationsController(
+        IUnitOperationsService unitOperationsService,
+        IUnitIdentityService unitIdentityService,
+        IApplicationAccessService accessService)
     {
         _unitOperationsService = unitOperationsService;
         _unitIdentityService = unitIdentityService;
+        _accessService = accessService;
     }
 
     [HttpGet("/api/units/{unitId:guid}/room-assignments")]
@@ -23,9 +29,15 @@ public sealed class UnitOperationsController : ControllerBase
         Guid unitId,
         CancellationToken cancellationToken = default)
     {
-        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
         {
             return NotFound();
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.UnitOperationsView))
+        {
+            return Forbid();
         }
 
         var result = await _unitOperationsService.GetRoomAssignmentsAsync(unit.UnitCode, cancellationToken);
@@ -37,9 +49,15 @@ public sealed class UnitOperationsController : ControllerBase
         Guid unitId,
         CancellationToken cancellationToken = default)
     {
-        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
         {
             return NotFound();
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.UnitOperationsView))
+        {
+            return Forbid();
         }
 
         var result = await _unitOperationsService.GetOtScheduleAsync(unit.UnitCode, cancellationToken);

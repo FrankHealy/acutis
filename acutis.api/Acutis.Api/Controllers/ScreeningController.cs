@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Acutis.Api.Contracts;
+using Acutis.Api.Security;
 using Acutis.Api.Services.Screening;
 using Acutis.Api.Services.Units;
 using Microsoft.AspNetCore.Authorization;
@@ -22,6 +23,7 @@ public sealed class ScreeningController : ControllerBase
     private readonly IFormValidationService _validationService;
     private readonly IScreeningControlService _screeningControlService;
     private readonly IUnitIdentityService _unitIdentityService;
+    private readonly IApplicationAccessService _accessService;
 
     public ScreeningController(
         IFormService formService,
@@ -30,7 +32,8 @@ public sealed class ScreeningController : ControllerBase
         ISubmissionService submissionService,
         IFormValidationService validationService,
         IScreeningControlService screeningControlService,
-        IUnitIdentityService unitIdentityService)
+        IUnitIdentityService unitIdentityService,
+        IApplicationAccessService accessService)
     {
         _formService = formService;
         _optionService = optionService;
@@ -39,6 +42,7 @@ public sealed class ScreeningController : ControllerBase
         _validationService = validationService;
         _screeningControlService = screeningControlService;
         _unitIdentityService = unitIdentityService;
+        _accessService = accessService;
     }
 
     [HttpGet("control")]
@@ -46,7 +50,18 @@ public sealed class ScreeningController : ControllerBase
         [FromQuery] string unitCode = "alcohol",
         CancellationToken cancellationToken = default)
     {
-        var control = await _screeningControlService.GetByUnitCodeAsync(unitCode, cancellationToken);
+        var unit = await _unitIdentityService.GetByCodeAsync(unitCode, cancellationToken);
+        if (unit is null)
+        {
+            return NotFound($"No screening control found for unit '{unitCode}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unit.UnitId, ApplicationPermissions.ScreeningView))
+        {
+            return Forbid();
+        }
+
+        var control = await _screeningControlService.GetByUnitCodeAsync(unit.UnitCode, cancellationToken);
         if (control is null)
         {
             return NotFound($"No screening control found for unit '{unitCode}'.");
@@ -60,9 +75,15 @@ public sealed class ScreeningController : ControllerBase
         Guid unitId,
         CancellationToken cancellationToken = default)
     {
-        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
         {
             return NotFound($"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.ScreeningView))
+        {
+            return Forbid();
         }
 
         var control = await _screeningControlService.GetByUnitCodeAsync(unit.UnitCode, cancellationToken);

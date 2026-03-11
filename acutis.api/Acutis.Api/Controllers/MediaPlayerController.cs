@@ -1,4 +1,5 @@
 using Acutis.Api.Contracts;
+using Acutis.Api.Security;
 using Acutis.Api.Services.MediaPlayer;
 using Acutis.Api.Services.TherapyScheduling;
 using Acutis.Api.Services.Units;
@@ -9,16 +10,21 @@ namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api/mediaplayer")]
-[AllowAnonymous]
+[Authorize]
 public sealed class MediaPlayerController : ControllerBase
 {
     private readonly IMediaPlayerService _mediaPlayerService;
     private readonly IUnitIdentityService _unitIdentityService;
+    private readonly IApplicationAccessService _accessService;
 
-    public MediaPlayerController(IMediaPlayerService mediaPlayerService, IUnitIdentityService unitIdentityService)
+    public MediaPlayerController(
+        IMediaPlayerService mediaPlayerService,
+        IUnitIdentityService unitIdentityService,
+        IApplicationAccessService accessService)
     {
         _mediaPlayerService = mediaPlayerService;
         _unitIdentityService = unitIdentityService;
+        _accessService = accessService;
     }
 
     [HttpGet("catalog")]
@@ -26,7 +32,18 @@ public sealed class MediaPlayerController : ControllerBase
         [FromQuery] string unitCode,
         CancellationToken cancellationToken = default)
     {
-        var catalog = await _mediaPlayerService.GetCatalogAsync(unitCode, cancellationToken);
+        var unit = await _unitIdentityService.GetByCodeAsync(unitCode, cancellationToken);
+        if (unit is null)
+        {
+            return NotFoundEnvelope("UNIT_NOT_FOUND", $"No unit mapping found for unitCode '{unitCode}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unit.UnitId, ApplicationPermissions.MediaView))
+        {
+            return Forbid();
+        }
+
+        var catalog = await _mediaPlayerService.GetCatalogAsync(unit.UnitCode, cancellationToken);
         return OkEnvelope(catalog);
     }
 
@@ -35,9 +52,15 @@ public sealed class MediaPlayerController : ControllerBase
         Guid unitId,
         CancellationToken cancellationToken = default)
     {
-        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
         {
             return NotFoundEnvelope("UNIT_NOT_FOUND", $"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.MediaView))
+        {
+            return Forbid();
         }
 
         var catalog = await _mediaPlayerService.GetCatalogAsync(unit.UnitCode, cancellationToken);
@@ -71,9 +94,15 @@ public sealed class MediaPlayerController : ControllerBase
         [FromBody] MediaAssetActionRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!_unitIdentityService.TryGetById(unitId, out var unit))
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
         {
             return NotFoundEnvelope("UNIT_NOT_FOUND", $"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.MediaView))
+        {
+            return Forbid();
         }
 
         var added = await _mediaPlayerService.SyncAsync(
