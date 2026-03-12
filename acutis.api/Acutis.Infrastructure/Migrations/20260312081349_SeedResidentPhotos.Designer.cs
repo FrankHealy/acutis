@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312081349_SeedResidentPhotos")]
+    partial class SeedResidentPhotos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,15 +70,6 @@ namespace Acutis.Infrastructure.Migrations
                             IsActive = true,
                             Key = "configuration.manage",
                             Name = "Manage configuration"
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-1212-1212-1212-121212121212"),
-                            Category = "configuration",
-                            Description = "Choose and override application themes where allowed.",
-                            IsActive = true,
-                            Key = "theme.manage",
-                            Name = "Manage theme"
                         },
                         new
                         {
@@ -232,11 +226,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             AppRoleId = new Guid("66666666-1111-1111-1111-111111111111"),
                             AppPermissionId = new Guid("55555555-1111-1111-1111-111111111111")
-                        },
-                        new
-                        {
-                            AppRoleId = new Guid("66666666-1111-1111-1111-111111111111"),
-                            AppPermissionId = new Guid("55555555-1212-1212-1212-121212121212")
                         },
                         new
                         {
@@ -514,21 +503,6 @@ namespace Acutis.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("BrandLogoUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("BrandName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("BrandSubtitle")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -553,11 +527,6 @@ namespace Acutis.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("ThemeKey")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -574,16 +543,12 @@ namespace Acutis.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
-                            BrandLogoUrl = "/acutis-icon.svg",
-                            BrandName = "Acutis",
-                            BrandSubtitle = "Bruree Centre",
                             Code = "bruree",
                             CreatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Primary centre used for the current unit configuration.",
                             DisplayOrder = 1,
                             IsActive = true,
                             Name = "Bruree",
-                            ThemeKey = "acutis",
                             UpdatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });

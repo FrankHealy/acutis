@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.Extensions.Options;
 
 namespace Acutis.Api.Security;
 
@@ -10,13 +11,30 @@ public interface IApplicationAccessService
 
 public sealed class ApplicationAccessService : IApplicationAccessService
 {
+    private readonly AuthorizationOptions _authorizationOptions;
+
+    public ApplicationAccessService(IOptions<AuthorizationOptions> authorizationOptions)
+    {
+        _authorizationOptions = authorizationOptions.Value;
+    }
+
     public bool HasPermission(ClaimsPrincipal principal, string permission)
     {
+        if (_authorizationOptions.Disabled)
+        {
+            return true;
+        }
+
         return principal.HasClaim(ApplicationClaimTypes.Permission, permission);
     }
 
     public bool HasUnitPermission(ClaimsPrincipal principal, Guid unitId, string permission)
     {
+        if (_authorizationOptions.Disabled)
+        {
+            return true;
+        }
+
         if (HasPermission(principal, permission))
         {
             return true;

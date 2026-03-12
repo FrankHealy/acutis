@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312102633_AddCentreThemeSelection")]
+    partial class AddCentreThemeSelection
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,15 +70,6 @@ namespace Acutis.Infrastructure.Migrations
                             IsActive = true,
                             Key = "configuration.manage",
                             Name = "Manage configuration"
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-1212-1212-1212-121212121212"),
-                            Category = "configuration",
-                            Description = "Choose and override application themes where allowed.",
-                            IsActive = true,
-                            Key = "theme.manage",
-                            Name = "Manage theme"
                         },
                         new
                         {
@@ -232,11 +226,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             AppRoleId = new Guid("66666666-1111-1111-1111-111111111111"),
                             AppPermissionId = new Guid("55555555-1111-1111-1111-111111111111")
-                        },
-                        new
-                        {
-                            AppRoleId = new Guid("66666666-1111-1111-1111-111111111111"),
-                            AppPermissionId = new Guid("55555555-1212-1212-1212-121212121212")
                         },
                         new
                         {

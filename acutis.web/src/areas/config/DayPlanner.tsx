@@ -47,10 +47,10 @@ type WeekSchedule = Record<string, DaySchedule>;
 const Weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const Units: { id: UnitId; name: string; accent: string; chip: string }[] = [
-  { id: "alcohol", name: "Alcohol Unit", accent: "text-amber-600", chip: "bg-amber-100 text-amber-700" },
-  { id: "detox", name: "Detox Unit", accent: "text-blue-600", chip: "bg-blue-100 text-blue-700" },
-  { id: "drugs", name: "Drugs Unit", accent: "text-emerald-600", chip: "bg-emerald-100 text-emerald-700" },
-  { id: "ladies", name: "Ladies Unit", accent: "text-rose-600", chip: "bg-rose-100 text-rose-700" },
+  { id: "alcohol", name: "Alcohol Unit", accent: "text-[var(--app-warning)]", chip: "bg-[color:color-mix(in_srgb,var(--app-warning)_16%,white)] text-[var(--app-warning)]" },
+  { id: "detox", name: "Detox Unit", accent: "text-[var(--app-primary)]", chip: "bg-[var(--app-primary-soft)] text-[var(--app-primary)]" },
+  { id: "drugs", name: "Drugs Unit", accent: "text-[var(--app-success)]", chip: "bg-[color:color-mix(in_srgb,var(--app-success)_16%,white)] text-[var(--app-success)]" },
+  { id: "ladies", name: "Ladies Unit", accent: "text-[var(--app-accent)]", chip: "bg-[var(--app-accent-soft)] text-[var(--app-accent)]" },
 ];
 
 const EventBank: ScheduleItem[] = [
@@ -272,14 +272,14 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
     const areaHeight = slots.length * SLOT_HEIGHT;
 
     return (
-      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-        <h2 className="text-sm font-semibold text-gray-800 mb-4">{title}</h2>
+      <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4">
+        <h2 className="mb-4 text-sm font-semibold text-[var(--app-text)]">{title}</h2>
         <div className="grid grid-cols-[80px_1fr] gap-4">
           <div className="flex flex-col">
             {slots.map((time) => (
               <div
                 key={`${period}-time-${time}`}
-                className="h-[52px] text-xs font-semibold text-gray-500 flex items-start pt-2"
+                className="flex h-[52px] items-start pt-2 text-xs font-semibold text-[var(--app-text-muted)]"
               >
                 {time}
               </div>
@@ -291,7 +291,7 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
                 key={`${period}-slot-${time}`}
                 onDrop={(event) => handleDrop(event, period, time)}
                 onDragOver={handleDragOver}
-                className="h-[52px] border-b border-gray-200"
+                className="h-[52px] border-b border-[var(--app-border)]"
               >
                 <div className="h-full" />
               </div>
@@ -312,21 +312,21 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
                   onDragStart={(event) => handleDragStart(event, { type: "scheduled", id: item.id })}
                   className={`absolute rounded-lg border px-3 py-2 text-sm font-medium ${
                     item.locked
-                      ? "bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed"
-                      : "bg-white text-gray-800 border-gray-200 cursor-grab hover:shadow-sm"
+                      ? "cursor-not-allowed border-[var(--app-border)] bg-[color:color-mix(in_srgb,var(--app-surface-muted)_85%,white)] text-[var(--app-text-muted)]"
+                      : "cursor-grab border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text)] hover:shadow-sm"
                   }`}
                   style={{ top, left, width, height }}
                 >
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4 text-gray-500" />
+                      <item.icon className="h-4 w-4 text-[var(--app-text-muted)]" />
                       {item.title}
                     </span>
-                    {item.locked && <span className="text-xs text-gray-400">Fixed</span>}
+                    {item.locked && <span className="text-xs text-[var(--app-text-muted)]">Fixed</span>}
                   </div>
                   {!item.locked && (
                     <div
-                      className="absolute bottom-1 left-1/2 -translate-x-1/2 h-2 w-10 rounded-full bg-gray-200 cursor-ns-resize"
+                      className="absolute bottom-1 left-1/2 h-2 w-10 -translate-x-1/2 cursor-ns-resize rounded-full bg-[var(--app-border)]"
                       onMouseDown={(event) => startResize(event, period, item)}
                       title="Drag to extend duration"
                     />
@@ -341,28 +341,28 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
   };
 
   return (
-    <div className={embedded ? "bg-gray-50" : "min-h-screen bg-gray-50"}>
+    <div className={embedded ? "" : "app-page-shell"}>
       <main className={embedded ? "mx-auto max-w-6xl px-0 py-0" : "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10"}>
         <div className="flex items-center gap-3 mb-6">
           {!embedded && (
             <button
               onClick={() => router.push("/units/config")}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 text-sm font-semibold text-[var(--app-primary)] transition-colors hover:text-[var(--app-primary-strong)]"
             >
               <ArrowLeft className="h-5 w-5" />
               <span>Back to Configuration</span>
             </button>
           )}
           <div className="flex items-center gap-3">
-            <CalendarClock className="h-7 w-7 text-gray-700" />
+            <CalendarClock className="h-7 w-7 text-[var(--app-primary)]" />
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
-              <p className="text-gray-600">Drag events into morning and evening timelines.</p>
+              <h1 className="text-2xl font-semibold text-[var(--app-text)]">{title}</h1>
+              <p className="text-[var(--app-text-muted)]">Drag events into morning and evening timelines.</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
+        <div className="app-card space-y-6 rounded-xl p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-2">
               {lockUnit ? (
@@ -376,8 +376,8 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
                     onClick={() => setActiveUnit(unit.id)}
                     className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                       activeUnit === unit.id
-                        ? "bg-gray-900 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "app-primary-button"
+                        : "app-surface-muted border text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
                     }`}
                   >
                     {unit.name}
@@ -388,14 +388,14 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
             <div className="flex items-center gap-3">
               <button
                 onClick={handleGenerate}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200"
+                className="app-secondary-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold"
               >
                 <RotateCcw className="h-4 w-4" />
                 Reset day
               </button>
               <button
                 onClick={handleSave}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700"
+                className="app-primary-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold"
               >
                 <Save className="h-4 w-4" />
                 Save changes
@@ -409,7 +409,7 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
                 key={day}
                 onClick={() => setActiveDay(day)}
                 className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                  activeDay === day ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
+                  activeDay === day ? "bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]"
                 }`}
               >
                 {day}
@@ -419,7 +419,7 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Editing schedule for</p>
+              <p className="text-sm text-[var(--app-text-muted)]">Editing schedule for</p>
               <div className="flex items-center gap-2">
                 <span className={`text-lg font-semibold ${activeUnitMeta.accent}`}>
                   {activeUnitMeta.name}
@@ -429,7 +429,7 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
                 </span>
               </div>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-[var(--app-text-muted)]">
               {lastSaved
                 ? `Last saved ${lastSaved.toLocaleTimeString("en-IE", { hour: "2-digit", minute: "2-digit" })}`
                 : "Unsaved changes"}
@@ -442,25 +442,25 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
               {renderTimeline("evening", EveningSlots, "Evening Timeline")}
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm h-fit sticky top-6">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3">Daily Events</h2>
-              <p className="text-xs text-gray-500 mb-4">Drag from here onto the timeline.</p>
+            <div className="app-card sticky top-6 h-fit rounded-xl p-4">
+              <h2 className="mb-3 text-sm font-semibold text-[var(--app-text)]">Daily Events</h2>
+              <p className="mb-4 text-xs text-[var(--app-text-muted)]">Drag from here onto the timeline.</p>
               <div className="space-y-2">
                 {EventBank.map((event) => (
                   <div
                     key={event.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, { type: "bank", id: event.id })}
-                    className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 cursor-grab hover:bg-gray-100"
+                    className="flex cursor-grab items-center justify-between rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-sm font-medium text-[var(--app-text)] hover:brightness-[0.98]"
                   >
                     <span className="flex items-center gap-2">
-                      <event.icon className="h-4 w-4 text-gray-500" />
+                      <event.icon className="h-4 w-4 text-[var(--app-text-muted)]" />
                       {event.title}
                     </span>
-                    <span className="text-xs text-gray-400">Drag</span>
+                    <span className="text-xs text-[var(--app-text-muted)]">Drag</span>
                   </div>
                 ))}
-                <div className="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400">
+                <div className="rounded-lg border border-dashed border-[var(--app-border)] px-3 py-2 text-xs text-[var(--app-text-muted)]">
                   Wake Up (06:00) and Bedtime (22:00) are fixed by default.
                 </div>
               </div>

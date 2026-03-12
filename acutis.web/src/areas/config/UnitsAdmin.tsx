@@ -22,6 +22,7 @@ const emptyForm: UpsertUnitRequest = {
   unitCapacity: 0,
   currentOccupancy: 0,
   capacityWarningThreshold: 0,
+  defaultResidentWeekNumber: 1,
   displayOrder: 0,
   isActive: true,
 };
@@ -84,6 +85,8 @@ export default function UnitsAdmin() {
       "config.units.form.current_occupancy_placeholder",
       "config.units.form.warning_threshold",
       "config.units.form.warning_threshold_placeholder",
+      "config.units.form.default_week",
+      "config.units.form.default_week_placeholder",
       "config.units.form.display_order",
       "config.units.form.display_order_placeholder",
       "config.units.form.centre",
@@ -104,6 +107,7 @@ export default function UnitsAdmin() {
       "config.units.metrics.capacity",
       "config.units.metrics.occupancy",
       "config.units.metrics.free_beds",
+      "config.units.metrics.default_week",
       "config.units.metrics.display_order",
     ]);
   }, [loadKeys]);
@@ -120,7 +124,7 @@ export default function UnitsAdmin() {
 
   const startEdit = (unit: UnitConfigurationDto) => {
     setEditingUnitId(unit.unitId);
-      setForm({
+    setForm({
       centreId: unit.centreId,
       unitCode: unit.unitCode,
       displayName: unit.displayName,
@@ -128,6 +132,7 @@ export default function UnitsAdmin() {
       unitCapacity: unit.unitCapacity,
       currentOccupancy: unit.currentOccupancy,
       capacityWarningThreshold: unit.capacityWarningThreshold,
+      defaultResidentWeekNumber: unit.defaultResidentWeekNumber,
       displayOrder: unit.displayOrder,
       isActive: unit.isActive,
     });
@@ -294,6 +299,10 @@ export default function UnitsAdmin() {
                           <p className="font-semibold text-gray-900">{unit.freeBeds}</p>
                         </div>
                         <div>
+                          <p className="text-xs uppercase tracking-wide text-gray-400">{text("config.units.metrics.default_week", "Default week")}</p>
+                          <p className="font-semibold text-gray-900">{unit.defaultResidentWeekNumber}</p>
+                        </div>
+                        <div>
                           <p className="text-xs uppercase tracking-wide text-gray-400">{text("config.units.metrics.display_order", "Display order")}</p>
                           <p className="font-semibold text-gray-900">{unit.displayOrder}</p>
                         </div>
@@ -406,6 +415,20 @@ export default function UnitsAdmin() {
                     }
                     className="w-full rounded-lg border border-gray-200 px-3 py-2"
                     placeholder={text("config.units.form.warning_threshold_placeholder", "Warning threshold")}
+                  />
+                </label>
+                <label className="space-y-1 text-sm text-gray-700">
+                  <span>{text("config.units.form.default_week", "Default resident week")}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={form.defaultResidentWeekNumber}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, defaultResidentWeekNumber: Number(event.target.value) }))
+                    }
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2"
+                    placeholder={text("config.units.form.default_week_placeholder", "Default resident week")}
                   />
                 </label>
                 <label className="space-y-1 text-sm text-gray-700">

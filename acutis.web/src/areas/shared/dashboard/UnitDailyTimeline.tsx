@@ -190,9 +190,9 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
   const currentPosition = shouldShowIndicator ? getTimelinePosition(currentMinutes) : 0;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm" style={{ paddingBottom: 24 }}>
-      <h2 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
-        <CalendarDays className="mr-2 h-5 w-5 text-blue-500" />
+    <div className="app-card overflow-hidden rounded-xl p-6" style={{ paddingBottom: 24 }}>
+      <h2 className="mb-4 flex items-center text-lg font-semibold text-[var(--app-text)]">
+        <CalendarDays className="mr-2 h-5 w-5 text-[var(--app-primary)]" />
         {unitName} Daily Timeline
       </h2>
 
@@ -207,8 +207,8 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
         </button>
 
         <div className="text-center">
-          <p className="text-lg font-bold text-gray-900">{viewMode === "morning" ? "Morning Schedule" : "Evening Schedule"}</p>
-          <p className="text-sm text-gray-500">{viewMode === "morning" ? "06:30 - 12:30" : "14:00 - 22:00"}</p>
+          <p className="text-lg font-bold text-[var(--app-text)]">{viewMode === "morning" ? "Morning Schedule" : "Evening Schedule"}</p>
+          <p className="text-sm text-[var(--app-text-muted)]">{viewMode === "morning" ? "06:30 - 12:30" : "14:00 - 22:00"}</p>
         </div>
 
         <button
@@ -222,13 +222,13 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
       </div>
 
       <div className="relative" style={{ height: timelineHeight }}>
-        <div className="absolute left-0 right-0 rounded-full bg-gray-200" style={{ top: baseTop, height: trackThickness }} />
+        <div className="absolute left-0 right-0 rounded-full bg-[var(--app-border)]" style={{ top: baseTop, height: trackThickness }} />
 
         {shouldShowIndicator && (
           <div className="pointer-events-none absolute z-40 -translate-x-1/2" style={{ left: `${currentPosition}%`, top: baseTop - 2 }}>
             <div className="h-3 w-3 rounded-full border-2 border-white bg-red-500 shadow" />
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-              <span className="rounded bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 shadow-sm">NOW</span>
+              <span className="rounded bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)] px-2 py-0.5 text-xs font-semibold text-[var(--app-danger)] shadow-sm">NOW</span>
             </div>
           </div>
         )}
@@ -251,13 +251,13 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
                   onClick={() => handleEventClick(event)}
                   className={`relative group transition-all duration-200 ${isCurrent ? "scale-125" : "hover:scale-110"}`}
                 >
-                  <div className={`w-14 h-14 ${event.color} rounded-full flex items-center justify-center shadow-lg ${isCurrent ? "ring-4 ring-yellow-400 ring-offset-2" : ""} ${isSpecial ? "ring-4 ring-gray-300 ring-offset-2" : ""}`}>
+                  <div className={`h-14 w-14 ${event.color} flex items-center justify-center rounded-full shadow-lg ${isCurrent ? "ring-4 ring-[var(--app-warning)] ring-offset-2" : ""} ${isSpecial ? "ring-4 ring-[var(--app-border)] ring-offset-2" : ""}`}>
                     <IconComponent className="h-7 w-7 text-white" />
                   </div>
                   <div className="absolute left-1/2 top-16 w-32 -translate-x-1/2 text-center leading-tight">
-                    <div className={`text-xs font-bold ${isCurrent ? "text-gray-900" : "text-gray-600"}`}>{event.time}</div>
-                    <div className={`mt-1 max-w-[120px] text-xs ${isCurrent ? "font-bold text-gray-900" : "text-gray-500"}`}>{event.title}</div>
-                    {event.days && <div className="mt-0.5 text-[10px] text-gray-400">{event.days}</div>}
+                    <div className={`text-xs font-bold ${isCurrent ? "text-[var(--app-text)]" : "text-[var(--app-text-muted)]"}`}>{event.time}</div>
+                    <div className={`mt-1 max-w-[120px] text-xs ${isCurrent ? "font-bold text-[var(--app-text)]" : "text-[var(--app-text-muted)]"}`}>{event.title}</div>
+                    {event.days && <div className="mt-0.5 text-[10px] text-[color:color-mix(in_srgb,var(--app-text-muted)_70%,white)]">{event.days}</div>}
                   </div>
                 </button>
               </div>
@@ -267,38 +267,38 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
       </div>
 
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={() => setSelectedEvent(null)}>
-          <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setSelectedEvent(null)}>
+          <div className="mx-4 w-full max-w-md rounded-xl bg-[var(--app-surface)] p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-start justify-between">
               <div className="flex items-center">
                 <div className={`mr-3 flex h-12 w-12 items-center justify-center rounded-full ${selectedEvent.color}`}>
                   <selectedEvent.icon className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">{selectedEvent.title}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="text-xl font-bold text-[var(--app-text)]">{selectedEvent.title}</h3>
+                  <p className="text-sm text-[var(--app-text-muted)]">
                     {selectedEvent.time}
                     {selectedEvent.endTime && ` - ${selectedEvent.endTime}`}
                   </p>
                 </div>
               </div>
-              <button onClick={() => setSelectedEvent(null)} className="text-2xl leading-none text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSelectedEvent(null)} className="text-2xl leading-none text-[var(--app-text-muted)] hover:text-[var(--app-text)]">
                 x
               </button>
             </div>
 
             <div className="space-y-3">
-              <p className="text-gray-700">{selectedEvent.description}</p>
+              <p className="text-[var(--app-text)]">{selectedEvent.description}</p>
               {selectedEvent.days && (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                  <p className="text-sm font-medium text-blue-900">{selectedEvent.days}</p>
+                <div className="rounded-lg border border-[color:color-mix(in_srgb,var(--app-primary)_16%,var(--app-border))] bg-[var(--app-primary-soft)] p-3">
+                  <p className="text-sm font-medium text-[var(--app-primary-strong)]">{selectedEvent.days}</p>
                 </div>
               )}
             </div>
 
             <button
               onClick={() => setSelectedEvent(null)}
-              className="mt-6 w-full rounded-lg bg-blue-500 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-600"
+              className="app-primary-button mt-6 w-full rounded-lg px-4 py-2 font-medium transition-colors"
             >
               Close
             </button>

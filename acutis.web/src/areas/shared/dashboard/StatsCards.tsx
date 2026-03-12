@@ -20,22 +20,22 @@ const StatsCards = ({ unitName }: StatsCardsProps) => {
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+      <div className="app-card rounded-xl p-4 transition-shadow hover:shadow-md">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">{unitName} Unit Occupancy</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.occupancy}</p>
+            <p className="text-sm font-medium text-[var(--app-text-muted)]">{unitName} Unit Occupancy</p>
+            <p className="text-2xl font-bold text-[var(--app-text)]">{stats.occupancy}</p>
           </div>
           <div className={`h-3 w-3 rounded-full ${stats.color}`} />
         </div>
       </div>
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-        <p className="text-sm font-medium text-gray-600">Admissions Today</p>
-        <p className="text-2xl font-bold text-gray-900">{stats.admissionsToday}</p>
+      <div className="app-card rounded-xl p-4 transition-shadow hover:shadow-md">
+        <p className="text-sm font-medium text-[var(--app-text-muted)]">Admissions Today</p>
+        <p className="text-2xl font-bold text-[var(--app-text)]">{stats.admissionsToday}</p>
       </div>
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-        <p className="text-sm font-medium text-gray-600">Active Residents</p>
-        <p className="text-2xl font-bold text-gray-900">{stats.activeResidents}</p>
+      <div className="app-card rounded-xl p-4 transition-shadow hover:shadow-md">
+        <p className="text-sm font-medium text-[var(--app-text-muted)]">Active Residents</p>
+        <p className="text-2xl font-bold text-[var(--app-text)]">{stats.activeResidents}</p>
       </div>
     </div>
   );

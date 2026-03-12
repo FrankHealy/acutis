@@ -98,44 +98,44 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
       case "configuration":
         return (
           <div className="space-y-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="app-card rounded-xl p-6">
               <h2 className={`text-xl font-semibold ${unit.accentClass}`}>{unit.name} Configuration</h2>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-[var(--app-text-muted)]">
                 Unit configuration uses shared controls with unit-specific data.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => router.push("/units/config/day-planner")}
-                  className="rounded bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  className="app-primary-button rounded px-3 py-2 text-sm font-semibold"
                 >
                   Day Planner
                 </button>
                 <button
                   type="button"
                   onClick={() => router.push("/units/config/forms")}
-                  className="rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  className="app-outline-button rounded px-3 py-2 text-sm font-semibold"
                 >
                   Forms
                 </button>
                 <button
                   type="button"
                   onClick={() => router.push("/units/config/program-manager")}
-                  className="rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  className="app-outline-button rounded px-3 py-2 text-sm font-semibold"
                 >
                   Program Manager
                 </button>
               </div>
               {canSeeGlobalAdministration && (
-                <div className="mt-6 border-t border-gray-200 pt-4">
-                  <h3 className="text-sm font-semibold text-gray-900">Global Administration</h3>
-                  <p className="mt-1 text-xs text-gray-600">
+                <div className="mt-6 border-t border-[var(--app-border)] pt-4">
+                  <h3 className="text-sm font-semibold text-[var(--app-text)]">Global Administration</h3>
+                  <p className="mt-1 text-xs text-[var(--app-text-muted)]">
                     Units are created and administered centrally. Use the global area for unit records, roles, and system-wide settings.
                   </p>
                   <button
                     type="button"
                     onClick={() => router.push("/units/config")}
-                    className="mt-3 rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    className="app-outline-button mt-3 rounded px-3 py-2 text-sm font-semibold"
                   >
                     Open Global Administration
                   </button>
@@ -168,16 +168,19 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="app-page-shell">
       <div className="sticky top-0 z-40">
-        <Header showCapacity={false} />
+        <Header
+          showCapacity={false}
+          unitCode={unitId}
+          unitName={unit.name}
+          unitAccentClass={unit.accentClass}
+          unitIconKey={unit.iconKey}
+        />
         <Navigation
           currentStep={currentStep}
           setCurrentStep={goTo}
           showAdmissions={unit.admissionsEnabled}
-          unitName={unit.name}
-          unitAccentClass={unit.accentClass}
-          unitIconKey={unit.iconKey}
         />
       </div>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{renderStep()}</main>

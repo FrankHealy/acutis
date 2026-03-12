@@ -1,23 +1,46 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Pill, Shield, Venus, Wine } from 'lucide-react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
 import { getScreeningControl } from '@/areas/screening/services/screeningControlService';
 import { isAuthorizationDisabled } from '@/lib/authMode';
+import type { UnitDefinition } from '@/areas/shared/unit/unitTypes';
+import { unitIdentityService } from '@/services/unitIdentityService';
+import { availableThemes, useTheme } from '@/areas/shared/theme/ThemeProvider';
+import type { ThemeKey } from '@/areas/shared/theme/themeSystem';
+import { useAppAccess } from '@/areas/shared/hooks/useAppAccess';
+
+const THEME_MANAGE_PERMISSION = 'theme.manage';
 
 interface HeaderProps {
   showCapacity?: boolean;
+  unitCode?: string;
+  unitName?: string;
+  unitAccentClass?: string;
+  unitIconKey?: UnitDefinition["iconKey"];
 }
 
-const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
+const Header: React.FC<HeaderProps> = ({
+  showCapacity = true,
+  unitCode,
+  unitName,
+  unitAccentClass,
+  unitIconKey,
+}) => {
+  const { access } = useAppAccess();
+  const { centreThemeKey, userThemeKey, setCentreThemeKey, setUserThemeKey } = useTheme();
   const { data: session } = useSession();
   const { locale, setLocale, t, loadKeys } = useLocalization();
   const [today, setToday] = useState<string>("");
   const [now, setNow] = useState<string>("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [capacityText, setCapacityText] = useState('92/120');
+  const [brandName, setBrandName] = useState<string>("");
+  const [brandSubtitle, setBrandSubtitle] = useState<string>("");
+  const [brandLogoUrl, setBrandLogoUrl] = useState<string>("");
+  const [resolvedUnitId, setResolvedUnitId] = useState<string>("");
   const menuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const displayName =
@@ -30,6 +53,20 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
       .map((part) => part[0]?.toUpperCase())
       .join('') || 'U';
   }, [displayName]);
+  const unitIconMap = {
+    wine: Wine,
+    shield: Shield,
+    pill: Pill,
+    venus: Venus,
+  } as const;
+  const unitTabletThemeMap = {
+    wine: "border-blue-200 bg-blue-50 text-blue-800 shadow-blue-100/80",
+    shield: "border-red-200 bg-red-50 text-red-800 shadow-red-100/80",
+    pill: "border-orange-200 bg-orange-50 text-orange-800 shadow-orange-100/80",
+    venus: "border-pink-200 bg-pink-50 text-pink-800 shadow-pink-100/80",
+  } as const;
+  const UnitIcon = unitIconKey ? unitIconMap[unitIconKey] : null;
+  const unitTabletTheme = unitIconKey ? unitTabletThemeMap[unitIconKey] : "";
 
   useEffect(() => {
     void loadKeys([
@@ -42,6 +79,45 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
       'header.logout',
     ]);
   }, [loadKeys]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadBranding = async () => {
+      if (!unitCode) {
+        return;
+      }
+
+      try {
+        const unit = await unitIdentityService.resolveByCode(unitCode, session?.accessToken);
+        if (!active) {
+          return;
+        }
+
+        setBrandName(unit.brandName?.trim() || "");
+        setBrandSubtitle(unit.brandSubtitle?.trim() || "");
+        setBrandLogoUrl(unit.brandLogoUrl?.trim() || "");
+        setResolvedUnitId(unit.unitId);
+        setCentreThemeKey((unit.themeKey?.trim().toLowerCase() || "acutis") as ThemeKey);
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setBrandName("");
+        setBrandSubtitle("");
+        setBrandLogoUrl("");
+        setResolvedUnitId("");
+        setCentreThemeKey("acutis");
+      }
+    };
+
+    void loadBranding();
+
+    return () => {
+      active = false;
+    };
+  }, [session?.accessToken, setCentreThemeKey, unitCode]);
 
   useEffect(() => {
     let active = true;
@@ -109,25 +185,58 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
     };
   }, [menuOpen]);
 
+  const resolvedBrandName = brandName || t('app.brand');
+  const resolvedBrandSubtitle = brandSubtitle || t('app.centre.bruree');
+  const resolvedBrandLogoUrl = brandLogoUrl || "/acutis-icon.svg";
+  const canManageTheme =
+    access.permissions.includes(THEME_MANAGE_PERMISSION) ||
+    (resolvedUnitId
+      ? access.unitPermissions.includes(`${resolvedUnitId}|${THEME_MANAGE_PERMISSION}`)
+      : false);
+  const selectedThemeKey = userThemeKey ?? centreThemeKey;
+
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="app-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+        <div className="flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-3 lg:gap-4">
+            <div className="flex items-center gap-2">
               <button
                 aria-label="Go to home"
                 onClick={() => router.push('/')}
-                className="w-8 h-8 rounded-lg overflow-hidden bg-white border border-blue-200 flex items-center justify-center hover:ring-2 hover:ring-blue-200 transition"
+                className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border bg-[var(--app-surface)] transition hover:ring-2 hover:ring-[color:var(--app-primary-soft)] sm:h-16 sm:w-16"
               >
-                <img src="/acutis-icon.svg" alt="Acutis" className="h-6 w-6" />
+                <img
+                  src={resolvedBrandLogoUrl}
+                  alt={resolvedBrandName}
+                  className="h-10 w-10 object-contain sm:h-12 sm:w-12"
+                  onError={(event) => {
+                    if (event.currentTarget.src.endsWith("/acutis-icon.svg")) {
+                      return;
+                    }
+
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = "/acutis-icon.svg";
+                  }}
+                />
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{t('app.brand')}</h1>
-                <p className="text-xs text-gray-500">{t('app.centre.bruree')}</p>
+                <h1 className="text-3xl font-bold tracking-tight text-[var(--app-text)] sm:text-4xl">{resolvedBrandName}</h1>
+                <p className="text-sm text-[var(--app-text-muted)]">{resolvedBrandSubtitle}</p>
               </div>
             </div>
-            <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
+            {unitName && UnitIcon && (
+              <div className={`flex min-h-14 items-center gap-3 rounded-2xl border px-4 py-3 shadow-sm ${unitTabletTheme}`}>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-inner">
+                  <UnitIcon className={`h-5 w-5 ${unitAccentClass ?? ""}`} />
+                </div>
+                <div className="leading-tight">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Current Unit</p>
+                  <p className={`text-base font-bold sm:text-lg ${unitAccentClass ?? ""}`}>{unitName}</p>
+                </div>
+              </div>
+            )}
+            <div className="hidden xl:flex items-center space-x-4 text-sm text-[var(--app-text-muted)]">
               {showCapacity && (
                 <>
                   <span>{t('header.capacity')}: {capacityText}</span>
@@ -139,22 +248,51 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
               <span>{t('header.current_time')}: {now || "\u00A0"}</span>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <label className="hidden md:flex items-center gap-2 text-xs text-gray-600">
+          <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4">
+            <div className="text-right">
+              <div className="text-sm font-semibold text-[var(--app-text-muted)]">{today || "\u00A0"}</div>
+              <div className="text-xl font-bold tracking-tight text-[var(--app-text)]">{now || "\u00A0"}</div>
+            </div>
+            <label className="hidden md:flex items-center gap-2 text-xs text-[var(--app-text-muted)]">
               <span>Language</span>
               <select
                 value={locale}
                 onChange={(event) => setLocale(event.target.value)}
-                className="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700"
+                className="rounded border bg-[var(--app-surface)] px-2 py-1 text-xs text-[var(--app-text)]"
               >
                 <option value="en-IE">EN</option>
                 <option value="ga-IE">GA</option>
                 <option value="ar">AR</option>
               </select>
             </label>
+            {canManageTheme && (
+              <label className="hidden md:flex items-center gap-2 text-xs text-[var(--app-text-muted)]">
+                <span>Theme</span>
+                <select
+                  value={selectedThemeKey}
+                  onChange={(event) => setUserThemeKey(event.target.value as ThemeKey)}
+                  className="rounded border bg-[var(--app-surface)] px-2 py-1 text-xs text-[var(--app-text)]"
+                >
+                  {availableThemes.map((theme) => (
+                    <option key={theme.key} value={theme.key}>
+                      {theme.name}
+                    </option>
+                  ))}
+                </select>
+                {userThemeKey && (
+                  <button
+                    type="button"
+                    onClick={() => setUserThemeKey(null)}
+                    className="text-xs font-semibold text-[var(--app-primary)] hover:text-[var(--app-primary-strong)]"
+                  >
+                    Reset
+                  </button>
+                )}
+              </label>
+            )}
             <div className="relative">
               <div className="w-2 h-2 bg-red-500 rounded-full absolute -top-1 -right-1"></div>
-              <button className="p-2 text-gray-400 hover:text-gray-600">
+              <button className="p-2 text-[var(--app-text-muted)] hover:text-[var(--app-text)]">
                 <AlertTriangle className="h-5 w-5" />
               </button>
             </div>
@@ -162,7 +300,7 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
               <button
                 type="button"
                 onClick={() => setMenuOpen((open) => !open)}
-                className="w-9 h-9 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-sm font-semibold flex items-center justify-center"
+                className="flex h-9 w-9 items-center justify-center rounded-full border bg-[var(--app-primary-soft)] text-sm font-semibold text-[var(--app-primary-strong)]"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 aria-label="Account menu"
@@ -172,9 +310,9 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-2 w-60 rounded-xl border border-emerald-100 bg-white shadow-lg z-50"
+                  className="absolute right-0 z-50 mt-2 w-60 rounded-xl border bg-[var(--app-surface)] shadow-lg"
                 >
-                  <div className="px-4 py-3 text-sm text-gray-700 border-b border-emerald-50">
+                  <div className="border-b px-4 py-3 text-sm text-[var(--app-text)]">
                     {t('header.signed_in_as')} <span className="font-semibold">{displayName}</span>
                   </div>
                   {!isAuthorizationDisabled && (
@@ -183,7 +321,7 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
                         type="button"
                         role="menuitem"
                         onClick={() => signIn('keycloak')}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-emerald-50"
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-[var(--app-surface-muted)]"
                       >
                         {t('header.login_different_user')}
                       </button>
@@ -206,7 +344,7 @@ const Header: React.FC<HeaderProps> = ({ showCapacity = true }) => {
                           }
                           signIn('keycloak', { prompt: 'login' });
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                        className="w-full px-4 py-2 text-left text-sm text-[var(--app-danger)] hover:bg-[var(--app-surface-muted)]"
                       >
                         {t('header.logout')}
                       </button>

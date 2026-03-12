@@ -206,7 +206,7 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
   const corridorLength = corridorRight - corridorLeft;
 
   const roomCellClass =
-    "relative w-full h-full bg-gray-100 text-xs font-medium text-gray-700 overflow-hidden rounded-md shadow-sm";
+    "relative h-full w-full overflow-hidden rounded-md bg-[var(--app-surface-muted)] text-xs font-medium text-[var(--app-text)] shadow-sm";
 
   const roomsPerimeterStyle: React.CSSProperties = {
     position: "relative",
@@ -221,8 +221,8 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
     top: `${receptionCenterY - corridorThickness / 2}px`,
     width: `${corridorLength}px`,
     height: `${corridorThickness}px`,
-    backgroundColor: "#f8fafc",
-    border: "1px solid #94a3b8",
+    backgroundColor: "var(--app-surface-muted)",
+    border: "1px solid var(--app-border)",
     borderLeft: "none",
     borderRadius: "0",
     pointerEvents: "none",
@@ -237,8 +237,8 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
     top: `${receptionTop}px`,
     transformOrigin: "center",
     transform: "rotate(45deg)",
-    backgroundColor: "#f8fafc",
-    border: "1px solid #94a3b8",
+    backgroundColor: "var(--app-surface-muted)",
+    border: "1px solid var(--app-border)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -247,7 +247,7 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
 
   const receptionLabelStyle: React.CSSProperties = {
     transform: "rotate(-45deg)",
-    color: "#1f2937",
+    color: "var(--app-text)",
     fontWeight: 600,
     fontSize: "0.75rem",
   };
@@ -351,11 +351,11 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
     return (
       <div
         className={roomCellClass}
-        style={{ boxShadow: "0 0 0 1px #cbd5f5 inset" }}
+        style={{ boxShadow: "0 0 0 1px var(--app-border) inset" }}
         onDragOver={handleDragOver(num)}
         onDrop={handleDrop(num)}
       >
-        <span className="absolute top-1 left-1 text-[11px] font-semibold text-gray-700">
+        <span className="absolute left-1 top-1 text-[11px] font-semibold text-[var(--app-text)]">
           {num}
         </span>
 
@@ -374,7 +374,7 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
                 draggable
                 onDragStart={handleDragStart(resident.id, num)}
                 onDragEnd={handleDragEnd}
-                className={`${baseClasses} bg-blue-500 text-white cursor-grab active:cursor-grabbing select-none`}
+                className={`${baseClasses} cursor-grab select-none bg-[var(--app-primary)] text-white active:cursor-grabbing`}
                 style={dragStyle}
               >
                 {resident.initials}
@@ -385,7 +385,7 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
           return (
             <div
               key={`placeholder-${num}-${index}`}
-              className={`${baseClasses} border border-dashed border-slate-300/80 bg-blue-200/20 text-transparent pointer-events-none`}
+              className={`${baseClasses} pointer-events-none border border-dashed border-[var(--app-border)] bg-[color:color-mix(in_srgb,var(--app-primary-soft)_55%,transparent)] text-transparent`}
               style={styleConfig}
             />
           );
@@ -402,39 +402,39 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
   const zoomPercent = Math.round(zoom * 100);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="app-card rounded-xl p-6">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">{text("room_assignments.title", "Room Assignments")}</h2>
-          <p className="text-sm text-gray-600">{text("room_assignments.description", "Drag and drop resident initials between available room slots.")}</p>
+          <h2 className="text-lg font-semibold text-[var(--app-text)]">{text("room_assignments.title", "Room Assignments")}</h2>
+          <p className="text-sm text-[var(--app-text-muted)]">{text("room_assignments.description", "Drag and drop resident initials between available room slots.")}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setZoom((current) => Math.max(0.6, current - 0.1))}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            className="app-outline-button rounded-md px-3 py-1.5 text-sm font-medium transition"
           >
             {text("room_assignments.zoom_out", "Zoom Out")}
           </button>
-          <div className="min-w-16 text-center text-sm font-medium text-gray-600">{zoomPercent}%</div>
+          <div className="min-w-16 text-center text-sm font-medium text-[var(--app-text-muted)]">{zoomPercent}%</div>
           <button
             type="button"
             onClick={() => setZoom((current) => Math.min(1.8, current + 0.1))}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            className="app-outline-button rounded-md px-3 py-1.5 text-sm font-medium transition"
           >
             {text("room_assignments.zoom_in", "Zoom In")}
           </button>
         </div>
       </div>
 
-      {loading ? <div className="mb-4 text-sm text-gray-600">{text("room_assignments.loading", "Loading room assignments...")}</div> : null}
-      {error ? <div className="mb-4 text-sm text-red-600">{error}</div> : null}
+      {loading ? <div className="mb-4 text-sm text-[var(--app-text-muted)]">{text("room_assignments.loading", "Loading room assignments...")}</div> : null}
+      {error ? <div className="mb-4 text-sm text-[var(--app-danger)]">{error}</div> : null}
 
       {!loading && !error ? (
         <div className="overflow-x-auto">
           <div className="min-w-[780px] py-2 flex justify-center">
             <div
-              className="relative inline-flex items-center justify-center border-4 border-gray-300 rounded-lg bg-yellow-100"
+              className="relative inline-flex items-center justify-center rounded-lg border-4 border-[var(--app-border)] bg-[color:color-mix(in_srgb,var(--app-warning)_16%,white)]"
               style={{ padding: `${corridorPadding}px`, transform: `scale(${zoom})`, transformOrigin: "center top" }}
             >
               <div style={roomsPerimeterStyle}>
@@ -470,7 +470,7 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
 
                 <div
                   style={{ gridColumn: `2 / ${gridSize}`, gridRow: `2 / ${gridSize}` }}
-                  className="border-4 border-gray-300 bg-green-200/70 flex items-center justify-center text-green-700 text-sm font-semibold rounded-lg"
+                  className="flex items-center justify-center rounded-lg border-4 border-[var(--app-border)] bg-[color:color-mix(in_srgb,var(--app-success)_18%,white)] text-sm font-semibold text-[var(--app-success)]"
                 >
                   {text("room_assignments.courtyard", "Courtyard")}
                 </div>
@@ -482,25 +482,25 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
                 </div>
 
                 <div
-                  className="absolute text-sm font-semibold text-gray-700"
+                  className="absolute text-sm font-semibold text-[var(--app-text)]"
                   style={{ top: "-27px", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}
                 >
                   {text("room_assignments.clocktower", "Clocktower")}
                 </div>
                 <div
-                  className="absolute text-sm font-semibold text-gray-700"
+                  className="absolute text-sm font-semibold text-[var(--app-text)]"
                   style={{ bottom: "-27px", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}
                 >
                   {text("room_assignments.st_josephs_side", "St Joseph's Side")}
                 </div>
                 <div
-                  className="absolute text-sm font-semibold text-gray-700"
+                  className="absolute text-sm font-semibold text-[var(--app-text)]"
                   style={{ left: "-56px", top: "50%", transform: "translateY(-50%) rotate(-90deg)", pointerEvents: "none" }}
                 >
                   {text("room_assignments.green_mile", "Green Mile")}
                 </div>
                 <div
-                  className="absolute text-sm font-semibold text-gray-700"
+                  className="absolute text-sm font-semibold text-[var(--app-text)]"
                   style={{ right: "-72px", top: "50%", transform: "translateY(-50%) rotate(90deg)", pointerEvents: "none" }}
                 >
                   {text("room_assignments.over_drug_unit", "Over Drug Unit")}

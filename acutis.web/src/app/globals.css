@@ -1,8 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #eef4ff;
+  --foreground: #0f172a;
+  --app-bg: #eef4ff;
+  --app-bg-accent: #f7fbff;
+  --app-surface: #ffffff;
+  --app-surface-muted: #f3f7fd;
+  --app-border: #d7e2f1;
+  --app-text: #0f172a;
+  --app-text-muted: #5b6b82;
+  --app-primary: #2563eb;
+  --app-primary-strong: #1d4ed8;
+  --app-primary-soft: #dbeafe;
+  --app-accent: #0891b2;
+  --app-accent-soft: #cffafe;
+  --app-success: #0f9f6e;
+  --app-warning: #d97706;
+  --app-danger: #dc2626;
+  --app-shadow: 37 99 235;
 }
 
 @theme inline {
@@ -12,15 +28,83 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--app-primary-soft) 65%, white) 0%, transparent 35%),
+    linear-gradient(180deg, var(--app-bg-accent) 0%, var(--app-bg) 100%);
+  color: var(--app-text);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.app-page-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--app-accent-soft) 70%, white) 0%, transparent 30%),
+    linear-gradient(180deg, var(--app-bg-accent) 0%, var(--app-bg) 100%);
+}
+
+* {
+  border-color: var(--app-border);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--app-primary) 22%, white);
+  color: var(--app-text);
+}
+
+.app-surface {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  box-shadow: 0 18px 40px -28px rgb(var(--app-shadow) / 0.35);
+}
+
+.app-surface-muted {
+  background: var(--app-surface-muted);
+  border-color: var(--app-border);
+}
+
+.app-card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 18px 40px -28px rgb(var(--app-shadow) / 0.35);
+}
+
+.app-card-muted {
+  background: color-mix(in srgb, var(--app-surface-muted) 86%, white);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 18px 40px -28px rgb(var(--app-shadow) / 0.2);
+}
+
+.app-gradient-bar {
+  background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-accent) 100%);
+}
+
+.app-primary-button {
+  background: var(--app-primary);
+  color: white;
+}
+
+.app-primary-button:hover {
+  background: var(--app-primary-strong);
+}
+
+.app-secondary-button {
+  background: color-mix(in srgb, var(--app-primary-soft) 55%, white);
+  color: var(--app-primary-strong);
+  border: 1px solid color-mix(in srgb, var(--app-primary) 18%, var(--app-border));
+}
+
+.app-secondary-button:hover {
+  background: color-mix(in srgb, var(--app-primary-soft) 75%, white);
+}
+
+.app-outline-button {
+  background: var(--app-surface);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+}
+
+.app-outline-button:hover {
+  background: var(--app-surface-muted);
 }

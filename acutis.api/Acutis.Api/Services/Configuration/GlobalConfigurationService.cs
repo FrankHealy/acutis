@@ -80,6 +80,10 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             Code = code,
             Name = request.DisplayName.Trim(),
             Description = request.Description.Trim(),
+            BrandName = request.BrandName.Trim(),
+            BrandSubtitle = request.BrandSubtitle.Trim(),
+            BrandLogoUrl = request.BrandLogoUrl.Trim(),
+            ThemeKey = request.ThemeKey.Trim().ToLowerInvariant(),
             DisplayOrder = request.DisplayOrder,
             IsActive = request.IsActive,
             CreatedAtUtc = now,
@@ -111,6 +115,10 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         centre.Code = code;
         centre.Name = request.DisplayName.Trim();
         centre.Description = request.Description.Trim();
+        centre.BrandName = request.BrandName.Trim();
+        centre.BrandSubtitle = request.BrandSubtitle.Trim();
+        centre.BrandLogoUrl = request.BrandLogoUrl.Trim();
+        centre.ThemeKey = request.ThemeKey.Trim().ToLowerInvariant();
         centre.DisplayOrder = request.DisplayOrder;
         centre.IsActive = request.IsActive;
         centre.UpdatedAtUtc = DateTime.UtcNow;
@@ -184,6 +192,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             Capacity = request.UnitCapacity,
             CurrentOccupancy = request.CurrentOccupancy,
             CapacityWarningThreshold = request.CapacityWarningThreshold,
+            DefaultResidentWeekNumber = request.DefaultResidentWeekNumber,
             DisplayOrder = request.DisplayOrder,
             IsActive = request.IsActive,
             CreatedAtUtc = now,
@@ -240,6 +249,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         unit.Capacity = request.UnitCapacity;
         unit.CurrentOccupancy = request.CurrentOccupancy;
         unit.CapacityWarningThreshold = request.CapacityWarningThreshold;
+        unit.DefaultResidentWeekNumber = request.DefaultResidentWeekNumber;
         unit.DisplayOrder = request.DisplayOrder;
         unit.IsActive = request.IsActive;
         unit.UpdatedAtUtc = DateTime.UtcNow;
@@ -682,6 +692,10 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             CentreCode = centre.Code,
             DisplayName = centre.Name,
             Description = centre.Description,
+            BrandName = centre.BrandName,
+            BrandSubtitle = centre.BrandSubtitle,
+            BrandLogoUrl = centre.BrandLogoUrl,
+            ThemeKey = centre.ThemeKey,
             DisplayOrder = centre.DisplayOrder,
             UnitCount = centre.Units.Count(x => x.IsActive),
             IsActive = centre.IsActive
@@ -703,6 +717,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             CurrentOccupancy = unit.CurrentOccupancy,
             FreeBeds = Math.Max(0, unit.Capacity - unit.CurrentOccupancy),
             CapacityWarningThreshold = unit.CapacityWarningThreshold,
+            DefaultResidentWeekNumber = unit.DefaultResidentWeekNumber,
             DisplayOrder = unit.DisplayOrder,
             IsActive = unit.IsActive
         };
@@ -801,6 +816,28 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         {
             throw new ArgumentException("Centre display name is required.", nameof(request));
         }
+
+        if (string.IsNullOrWhiteSpace(request.BrandName))
+        {
+            throw new ArgumentException("Centre brand name is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.BrandSubtitle))
+        {
+            throw new ArgumentException("Centre brand subtitle is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.BrandLogoUrl))
+        {
+            throw new ArgumentException("Centre brand logo URL is required.", nameof(request));
+        }
+
+        var normalizedThemeKey = request.ThemeKey.Trim().ToLowerInvariant();
+        var allowedThemeKeys = new[] { "acutis", "harbor", "evergreen", "high_contrast" };
+        if (!allowedThemeKeys.Contains(normalizedThemeKey, StringComparer.Ordinal))
+        {
+            throw new ArgumentException("Centre theme key must be one of: acutis, harbor, evergreen, high_contrast.", nameof(request));
+        }
     }
 
     private static void ValidateUnitRequest(UpsertUnitRequest request)
@@ -828,6 +865,11 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         if (request.CurrentOccupancy > request.UnitCapacity)
         {
             throw new ArgumentException("Current occupancy cannot exceed unit capacity.", nameof(request));
+        }
+
+        if (request.DefaultResidentWeekNumber < 1 || request.DefaultResidentWeekNumber > 12)
+        {
+            throw new ArgumentException("Default resident week number must be between 1 and 12.", nameof(request));
         }
     }
 

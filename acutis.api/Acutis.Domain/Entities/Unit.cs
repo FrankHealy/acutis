@@ -11,6 +11,7 @@ public sealed class Unit
     public int Capacity { get; set; }
     public int CurrentOccupancy { get; set; }
     public int CapacityWarningThreshold { get; set; }
+    public int DefaultResidentWeekNumber { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAtUtc { get; set; }

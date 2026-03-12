@@ -14,6 +14,7 @@ export type UnitConfigurationDto = {
   currentOccupancy: number;
   freeBeds: number;
   capacityWarningThreshold: number;
+  defaultResidentWeekNumber: number;
   displayOrder: number;
   isActive: boolean;
 };
@@ -23,6 +24,10 @@ export type CentreConfigurationDto = {
   centreCode: string;
   displayName: string;
   description: string;
+  brandName: string;
+  brandSubtitle: string;
+  brandLogoUrl: string;
+  themeKey: string;
   displayOrder: number;
   unitCount: number;
   isActive: boolean;
@@ -32,6 +37,10 @@ export type UpsertCentreRequest = {
   centreCode: string;
   displayName: string;
   description: string;
+  brandName: string;
+  brandSubtitle: string;
+  brandLogoUrl: string;
+  themeKey: string;
   displayOrder: number;
   isActive: boolean;
 };
@@ -44,6 +53,7 @@ export type UpsertUnitRequest = {
   unitCapacity: number;
   currentOccupancy: number;
   capacityWarningThreshold: number;
+  defaultResidentWeekNumber: number;
   displayOrder: number;
   isActive: boolean;
 };

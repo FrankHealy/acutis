@@ -6,6 +6,10 @@ public sealed class CentreConfigurationDto
     public string CentreCode { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string BrandName { get; set; } = string.Empty;
+    public string BrandSubtitle { get; set; } = string.Empty;
+    public string BrandLogoUrl { get; set; } = string.Empty;
+    public string ThemeKey { get; set; } = string.Empty;
     public int DisplayOrder { get; set; }
     public int UnitCount { get; set; }
     public bool IsActive { get; set; }
@@ -16,6 +20,10 @@ public sealed class UpsertCentreRequest
     public string CentreCode { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string BrandName { get; set; } = string.Empty;
+    public string BrandSubtitle { get; set; } = string.Empty;
+    public string BrandLogoUrl { get; set; } = string.Empty;
+    public string ThemeKey { get; set; } = string.Empty;
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; } = true;
 }
@@ -33,6 +41,7 @@ public sealed class UnitConfigurationDto
     public int CurrentOccupancy { get; set; }
     public int FreeBeds { get; set; }
     public int CapacityWarningThreshold { get; set; }
+    public int DefaultResidentWeekNumber { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; }
 }
@@ -46,6 +55,7 @@ public sealed class UpsertUnitRequest
     public int UnitCapacity { get; set; }
     public int CurrentOccupancy { get; set; }
     public int CapacityWarningThreshold { get; set; }
+    public int DefaultResidentWeekNumber { get; set; } = 1;
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; } = true;
 }

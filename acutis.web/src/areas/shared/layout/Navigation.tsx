@@ -1,43 +1,27 @@
 // src/units/shared/layout/Navigation.tsx
 
 import React from 'react';
-import { Pill, Shield, Venus, Wine } from "lucide-react";
-import type { UnitDefinition } from "@/areas/shared/unit/unitTypes";
 
 interface NavigationProps {
   currentStep: string;
   setCurrentStep: (step: string) => void;
   showAdmissions: boolean;
-  unitName: string;
-  unitAccentClass: string;
-  unitIconKey: UnitDefinition["iconKey"];
 }
 
 const Navigation: React.FC<NavigationProps> = ({
   currentStep,
   setCurrentStep,
   showAdmissions,
-  unitName,
-  unitAccentClass,
-  unitIconKey,
 }) => {
-  const unitIconMap = {
-    wine: Wine,
-    shield: Shield,
-    pill: Pill,
-    venus: Venus,
-  } as const;
-  const UnitIcon = unitIconMap[unitIconKey];
-
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
+    <nav className="app-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
           <div className="flex space-x-6 items-center">
           <button
             onClick={() => setCurrentStep('dashboard')}
             className={`text-sm font-medium ${
-              currentStep === 'dashboard' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+              currentStep === 'dashboard' ? 'text-[var(--app-primary)]' : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
             }`}
           >
             Dashboard
@@ -47,7 +31,7 @@ const Navigation: React.FC<NavigationProps> = ({
             <button
               onClick={() => setCurrentStep('new-admission')}
               className={`text-sm font-medium ${
-                currentStep === 'new-admission' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+                currentStep === 'new-admission' ? 'text-[var(--app-primary)]' : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
               }`}
             >
               Admissions
@@ -57,7 +41,7 @@ const Navigation: React.FC<NavigationProps> = ({
           <button
             onClick={() => setCurrentStep('residents')}
             className={`text-sm font-medium ${
-              currentStep === 'residents' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+              currentStep === 'residents' ? 'text-[var(--app-primary)]' : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
             }`}
           >
             Residents
@@ -66,7 +50,7 @@ const Navigation: React.FC<NavigationProps> = ({
           <button
             onClick={() => setCurrentStep('configuration')}
             className={`text-sm font-medium ${
-              currentStep === 'configuration' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+              currentStep === 'configuration' ? 'text-[var(--app-primary)]' : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
             }`}
           >
             Configuration
@@ -77,13 +61,13 @@ const Navigation: React.FC<NavigationProps> = ({
             <button
               className={`text-sm font-medium ${
                 currentStep.startsWith('operations')
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-[var(--app-primary)]'
+                  : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
               }`}
             >
               Operations
             </button>
-            <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute left-0 mt-2 w-56 rounded-lg border bg-[var(--app-surface)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
               {[
                 { key: 'operations/day-planner', label: 'Day Planner' },
                 { key: 'operations/room-mapping', label: 'Room Assignments' },
@@ -96,8 +80,8 @@ const Navigation: React.FC<NavigationProps> = ({
                   onClick={() => setCurrentStep(item.key)}
                   className={`block w-full text-left px-4 py-2 text-sm ${
                     currentStep === item.key
-                      ? 'bg-blue-50 text-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-[var(--app-primary-soft)] text-[var(--app-primary)] font-medium'
+                      : 'text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]'
                   }`}
                 >
                   {item.label}
@@ -106,11 +90,6 @@ const Navigation: React.FC<NavigationProps> = ({
             </div>
           </div>
         </div>
-          <div className="hidden md:flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1">
-            <UnitIcon className={`h-4 w-4 ${unitAccentClass}`} />
-            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Unit</span>
-            <span className={`text-sm font-semibold ${unitAccentClass}`}>{unitName}</span>
-          </div>
         </div>
       </div>
     </nav>

@@ -18,7 +18,7 @@ const emptyAccess: AppAccess = {
 const developmentAccess: AppAccess = {
   ...emptyAccess,
   roles: ["platform_admin"],
-  permissions: ["configuration.manage"],
+  permissions: ["configuration.manage", "theme.manage"],
 };
 
 export const useAppAccess = () => {

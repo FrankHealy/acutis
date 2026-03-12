@@ -80,6 +80,7 @@ public sealed class AcutisDbContext : DbContext
     private static readonly Guid DrugsUnitId = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid LadiesUnitId = Guid.Parse("44444444-4444-4444-4444-444444444444");
     private static readonly Guid ConfigurationManagePermissionId = Guid.Parse("55555555-1111-1111-1111-111111111111");
+    private static readonly Guid ThemeManagePermissionId = Guid.Parse("55555555-1212-1212-1212-121212121212");
     private static readonly Guid UnitsManagePermissionId = Guid.Parse("55555555-2222-2222-2222-222222222222");
     private static readonly Guid AccessManagePermissionId = Guid.Parse("55555555-3333-3333-3333-333333333333");
     private static readonly Guid ScreeningViewPermissionId = Guid.Parse("55555555-4444-4444-4444-444444444444");
@@ -695,6 +696,10 @@ public sealed class AcutisDbContext : DbContext
                 Code = "bruree",
                 Name = "Bruree",
                 Description = "Primary centre used for the current unit configuration.",
+                BrandName = "Acutis",
+                BrandSubtitle = "Bruree Centre",
+                BrandLogoUrl = "/acutis-icon.svg",
+                ThemeKey = "acutis",
                 DisplayOrder = 1,
                 IsActive = true,
                 CreatedAtUtc = SeedCreatedAt,
@@ -715,6 +720,7 @@ public sealed class AcutisDbContext : DbContext
                 Capacity = 120,
                 CurrentOccupancy = 92,
                 CapacityWarningThreshold = 96,
+                DefaultResidentWeekNumber = 1,
                 DisplayOrder = 1,
                 IsActive = true,
                 CreatedAtUtc = SeedCreatedAt,
@@ -730,6 +736,7 @@ public sealed class AcutisDbContext : DbContext
                 Capacity = 16,
                 CurrentOccupancy = 11,
                 CapacityWarningThreshold = 14,
+                DefaultResidentWeekNumber = 1,
                 DisplayOrder = 2,
                 IsActive = true,
                 CreatedAtUtc = SeedCreatedAt,
@@ -745,6 +752,7 @@ public sealed class AcutisDbContext : DbContext
                 Capacity = 22,
                 CurrentOccupancy = 18,
                 CapacityWarningThreshold = 20,
+                DefaultResidentWeekNumber = 1,
                 DisplayOrder = 3,
                 IsActive = true,
                 CreatedAtUtc = SeedCreatedAt,
@@ -760,6 +768,7 @@ public sealed class AcutisDbContext : DbContext
                 Capacity = 18,
                 CurrentOccupancy = 14,
                 CapacityWarningThreshold = 16,
+                DefaultResidentWeekNumber = 1,
                 DisplayOrder = 4,
                 IsActive = true,
                 CreatedAtUtc = SeedCreatedAt,
@@ -776,6 +785,15 @@ public sealed class AcutisDbContext : DbContext
                 Key = "configuration.manage",
                 Name = "Manage configuration",
                 Description = "Manage global application configuration.",
+                Category = "configuration",
+                IsActive = true
+            },
+            new AppPermission
+            {
+                Id = ThemeManagePermissionId,
+                Key = "theme.manage",
+                Name = "Manage theme",
+                Description = "Choose and override application themes where allowed.",
                 Category = "configuration",
                 IsActive = true
             },
@@ -869,6 +887,7 @@ public sealed class AcutisDbContext : DbContext
 
         modelBuilder.Entity<AppRolePermission>().HasData(
             new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = ConfigurationManagePermissionId },
+            new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = ThemeManagePermissionId },
             new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = UnitsManagePermissionId },
             new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = AccessManagePermissionId },
             new AppRolePermission { AppRoleId = PlatformAdminRoleId, AppPermissionId = ScreeningViewPermissionId },
@@ -915,7 +934,7 @@ public sealed class AcutisDbContext : DbContext
                 DateOfBirth = new DateTime(1984 + (residentNumber % 8), Math.Max(1, residentNumber), Math.Min(20, 8 + residentNumber), 0, 0, 0, DateTimeKind.Utc),
                 WeekNumber = resident.WeekNumber,
                 RoomNumber = resident.RoomNumber,
-                PhotoUrl = null,
+                PhotoUrl = BuildResidentPhotoUrl(residentNumber),
                 AdmissionDate = new DateTime(2026, 1, 5, 0, 0, 0, DateTimeKind.Utc).AddDays((resident.WeekNumber - 1) * 7),
                 ExpectedCompletionDate = new DateTime(2026, 1, 5, 0, 0, 0, DateTimeKind.Utc).AddDays((resident.WeekNumber + 11) * 7),
                 PrimaryAddiction = "Alcohol",
@@ -1696,6 +1715,12 @@ public sealed class AcutisDbContext : DbContext
     private static string BuildResidentSecondaryKey(string centreCode, string unitCode, int year, int weekNumber, int residentNumber)
     {
         return $"{centreCode}-{unitCode}-{year:00}-{weekNumber:00}-{residentNumber:00}";
+    }
+
+    private static string BuildResidentPhotoUrl(int residentNumber)
+    {
+        var avatarNumber = ((residentNumber - 1) % 70) + 1;
+        return $"https://i.pravatar.cc/300?img={avatarNumber}";
     }
 
     private static void SeedScreeningControls(ModelBuilder modelBuilder)

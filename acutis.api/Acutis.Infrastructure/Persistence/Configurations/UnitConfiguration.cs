@@ -17,6 +17,7 @@ public sealed class UnitConfiguration : IEntityTypeConfiguration<Unit>
         builder.Property(x => x.Capacity).IsRequired();
         builder.Property(x => x.CurrentOccupancy).IsRequired();
         builder.Property(x => x.CapacityWarningThreshold).IsRequired();
+        builder.Property(x => x.DefaultResidentWeekNumber).HasDefaultValue(1).IsRequired();
         builder.Property(x => x.DisplayOrder).IsRequired();
         builder.Property(x => x.IsActive).IsRequired();
         builder.Property(x => x.CreatedAtUtc).HasColumnType("datetime2").IsRequired();

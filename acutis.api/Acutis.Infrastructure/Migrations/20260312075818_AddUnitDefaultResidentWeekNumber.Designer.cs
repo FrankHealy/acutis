@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312075818_AddUnitDefaultResidentWeekNumber")]
+    partial class AddUnitDefaultResidentWeekNumber
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,15 +70,6 @@ namespace Acutis.Infrastructure.Migrations
                             IsActive = true,
                             Key = "configuration.manage",
                             Name = "Manage configuration"
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-1212-1212-1212-121212121212"),
-                            Category = "configuration",
-                            Description = "Choose and override application themes where allowed.",
-                            IsActive = true,
-                            Key = "theme.manage",
-                            Name = "Manage theme"
                         },
                         new
                         {
@@ -232,11 +226,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             AppRoleId = new Guid("66666666-1111-1111-1111-111111111111"),
                             AppPermissionId = new Guid("55555555-1111-1111-1111-111111111111")
-                        },
-                        new
-                        {
-                            AppRoleId = new Guid("66666666-1111-1111-1111-111111111111"),
-                            AppPermissionId = new Guid("55555555-1212-1212-1212-121212121212")
                         },
                         new
                         {
@@ -514,21 +503,6 @@ namespace Acutis.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("BrandLogoUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("BrandName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("BrandSubtitle")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -553,11 +527,6 @@ namespace Acutis.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("ThemeKey")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -574,16 +543,12 @@ namespace Acutis.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
-                            BrandLogoUrl = "/acutis-icon.svg",
-                            BrandName = "Acutis",
-                            BrandSubtitle = "Bruree Centre",
                             Code = "bruree",
                             CreatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Primary centre used for the current unit configuration.",
                             DisplayOrder = 1,
                             IsActive = true,
                             Name = "Bruree",
-                            ThemeKey = "acutis",
                             UpdatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
@@ -2222,7 +2187,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 1,
                             LiteracyScale = 1,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=1",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-01-01",
                             RoomNumber = "D01",
@@ -2251,7 +2215,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 2,
                             LiteracyScale = 2,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=2",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-02-02",
                             RoomNumber = "D02",
@@ -2280,7 +2243,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 3,
                             LiteracyScale = 0,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=3",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-03-03",
                             RoomNumber = "D03",
@@ -2309,7 +2271,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 0,
                             LiteracyScale = 1,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=4",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-04-04",
                             RoomNumber = "D04",
@@ -2338,7 +2299,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 1,
                             LiteracyScale = 2,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=5",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-05-05",
                             RoomNumber = "D05",
@@ -2367,7 +2327,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 2,
                             LiteracyScale = 0,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=6",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-06-06",
                             RoomNumber = "D06",
@@ -2396,7 +2355,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 3,
                             LiteracyScale = 1,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=7",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-07-07",
                             RoomNumber = "D07",
@@ -2425,7 +2383,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 0,
                             LiteracyScale = 2,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=8",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-08-08",
                             RoomNumber = "D08",
@@ -2454,7 +2411,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 1,
                             LiteracyScale = 0,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=9",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-09-09",
                             RoomNumber = "D09",
@@ -2483,7 +2439,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 2,
                             LiteracyScale = 1,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=10",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-10-10",
                             RoomNumber = "D10",
@@ -2512,7 +2467,6 @@ namespace Acutis.Infrastructure.Migrations
                             LearningDifficultyScale = 3,
                             LiteracyScale = 2,
                             Nationality = "Irish",
-                            PhotoUrl = "https://i.pravatar.cc/300?img=11",
                             PrimaryAddiction = "Alcohol",
                             Psn = "BRU-DET-26-11-11",
                             RoomNumber = "D11",

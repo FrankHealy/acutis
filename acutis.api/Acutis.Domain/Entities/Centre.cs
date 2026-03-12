@@ -6,6 +6,10 @@ public sealed class Centre
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string BrandName { get; set; } = string.Empty;
+    public string BrandSubtitle { get; set; } = string.Empty;
+    public string BrandLogoUrl { get; set; } = string.Empty;
+    public string ThemeKey { get; set; } = string.Empty;
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAtUtc { get; set; }

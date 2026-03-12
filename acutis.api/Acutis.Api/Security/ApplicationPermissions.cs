@@ -3,6 +3,7 @@ namespace Acutis.Api.Security;
 public static class ApplicationPermissions
 {
     public const string ConfigurationManage = "configuration.manage";
+    public const string ThemeManage = "theme.manage";
     public const string UnitsManage = "units.manage";
     public const string AccessManage = "access.manage";
     public const string ScreeningView = "screening.view";
