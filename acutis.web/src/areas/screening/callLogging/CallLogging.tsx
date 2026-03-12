@@ -34,7 +34,6 @@ const CallLogging: React.FC = () => {
     surname: '',
     callerType: 'self' as CallLog['callerType'],
     concernType: '' as '' | CallLog['concernType'],
-    unit: 'Alcohol' as CallLog['unit'],
     location: '',
     phoneNumber: '',
     notes: '',
@@ -54,7 +53,11 @@ const CallLogging: React.FC = () => {
       "call_logging.table.time",
       "call_logging.table.surname",
       "call_logging.table.name",
-      "call_logging.table.unit",
+      "call_logging.table.concern",
+      "call_logging.modal.concern_type.alcohol",
+      "call_logging.modal.concern_type.drugs",
+      "call_logging.modal.concern_type.gambling",
+      "call_logging.modal.concern_type.general",
       "call_logging.table.note",
       "call_logging.loading",
       "call_logging.empty",
@@ -68,6 +71,19 @@ const CallLogging: React.FC = () => {
   const text = (key: string, fallback: string) => {
     const resolved = t(key);
     return resolved === key ? fallback : resolved;
+  };
+
+  const concernText = (concernType: CallLog['concernType']) => {
+    switch (concernType) {
+      case 'alcohol':
+        return text("call_logging.modal.concern_type.alcohol", "Alcohol");
+      case 'drugs':
+        return text("call_logging.modal.concern_type.drugs", "Drugs");
+      case 'gambling':
+        return text("call_logging.modal.concern_type.gambling", "Gambling");
+      default:
+        return text("call_logging.modal.concern_type.general", "General Inquiry");
+    }
   };
 
   const loadCalls = useCallback(async (forceRefresh = false, withLoader = false) => {
@@ -148,7 +164,6 @@ const CallLogging: React.FC = () => {
       surname: '',
       callerType: 'self',
       concernType: '',
-      unit: 'Alcohol',
       location: '',
       phoneNumber: '',
       notes: '',
@@ -265,7 +280,7 @@ const CallLogging: React.FC = () => {
                 {text("call_logging.table.name", "Name")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                {text("call_logging.table.unit", "Unit")}
+                {text("call_logging.table.concern", "Concern")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 {text("call_logging.table.note", "Note")}
@@ -296,7 +311,7 @@ const CallLogging: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">{call.surname}</td>
                   <td className="px-6 py-4 text-sm text-gray-700">{call.firstName}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{call.unit}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{concernText(call.concernType)}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     <div className="flex items-start gap-2">
                       <User className="h-4 w-4 text-gray-400 mt-0.5" />

@@ -3,6 +3,7 @@ import {
   readLocalCache,
   writeLocalCache,
 } from "@/areas/screening/services/screeningControlService";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 import { createAuthHeaders } from "@/lib/authMode";
 
 export type EvaluationQueueItem = {
@@ -14,8 +15,6 @@ export type EvaluationQueueItem = {
   status: string;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
-const EVALUEES_ENDPOINT = `${API_BASE_URL}/api/screenings/evaluees`;
 const EVALUATION_CACHE_KEY = "screening.evaluees";
 
 const getAuthHeaders = (accessToken?: string) => {
@@ -36,7 +35,7 @@ export const fetchEvaluationQueue = async (
     }
   }
 
-  const response = await fetch(EVALUEES_ENDPOINT, {
+  const response = await fetch(`${getApiBaseUrl()}/api/screenings/evaluees`, {
     method: "GET",
     headers: getAuthHeaders(accessToken),
     cache: "no-store",

@@ -6,6 +6,7 @@ import {
   readLocalCache,
   writeLocalCache,
 } from '@/areas/screening/services/screeningControlService';
+import { getApiBaseUrl } from '@/lib/apiBaseUrl';
 import { createAuthHeaders } from '@/lib/authMode';
 
 type ApiCall = {
@@ -17,10 +18,21 @@ type ApiCall = {
   source?: string | null;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5009';
-const CALLS_ENDPOINT = `${API_BASE_URL}/api/screenings/calls`;
 const CALL_LOG_CACHE_KEY_PREFIX = 'screening.calls';
 const CALL_LOG_CACHE_RANGES: ReadonlyArray<CallLogRangeDays> = [2, 7, 14, 30];
+
+const normalizeConcernType = (source?: string | null): CallLog['concernType'] => {
+  switch ((source ?? '').trim().toLowerCase()) {
+    case 'alcohol':
+      return 'alcohol';
+    case 'drugs':
+      return 'drugs';
+    case 'gambling':
+      return 'gambling';
+    default:
+      return 'general';
+  }
+};
 
 const splitCaller = (caller?: string | null) => {
   if (!caller) return { firstName: '', surname: '' };
@@ -38,8 +50,7 @@ const mapApiCallToUi = (call: ApiCall): CallLog => {
     firstName,
     surname,
     callerType: 'other',
-    concernType: 'general',
-    unit: 'Alcohol',
+    concernType: normalizeConcernType(call.source),
     location: '',
     phoneNumber: call.phoneNumber ?? '',
     timestamp: call.callTimeUtc ?? new Date().toISOString(),
@@ -51,14 +62,13 @@ const mapApiCallToUi = (call: ApiCall): CallLog => {
 
 const mapUiToApiCall = (payload: Omit<CallLog, 'id'>): ApiCall => {
   const caller = [payload.firstName, payload.surname].filter(Boolean).join(' ').trim();
-  const source = payload.concernType || payload.unit || 'Screening';
   return {
     id: crypto.randomUUID(),
     callTimeUtc: payload.timestamp || new Date().toISOString(),
     caller: caller || null,
     phoneNumber: payload.phoneNumber || null,
     notes: payload.notes || null,
-    source,
+    source: payload.concernType || 'general',
   };
 };
 
@@ -95,7 +105,7 @@ export const fetchCallLogs = async (
     }
   }
 
-  const response = await fetch(`${CALLS_ENDPOINT}?lastDays=${rangeDays}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/screenings/calls?lastDays=${rangeDays}`, {
     method: 'GET',
     headers: getAuthHeaders(accessToken),
     cache: 'no-store',
@@ -121,7 +131,7 @@ export const createCallLog = async (
   payload: Omit<CallLog, 'id'>,
   accessToken?: string,
 ): Promise<CallLog> => {
-  const response = await fetch(CALLS_ENDPOINT, {
+  const response = await fetch(`${getApiBaseUrl()}/api/screenings/calls`, {
     method: 'POST',
     headers: {
       ...getAuthHeaders(accessToken),

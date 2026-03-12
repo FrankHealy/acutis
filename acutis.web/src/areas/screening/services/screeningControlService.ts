@@ -1,5 +1,6 @@
 import { UNIT_GUIDS } from "@/services/unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 import { createAuthHeaders } from "@/lib/authMode";
 
 export type ScreeningControl = {
@@ -20,7 +21,6 @@ type CacheEnvelope<T> = {
   value: T;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
 const DEFAULT_UNIT: UnitId = "alcohol";
 
 const getAuthHeaders = (accessToken?: string) => {
@@ -90,7 +90,7 @@ export const getScreeningControl = async (
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/screening/control`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/screening/control`, {
     method: "GET",
     headers: getAuthHeaders(accessToken),
     cache: "no-store",

@@ -4,7 +4,6 @@ export interface CallLog {
   surname: string;
   callerType: 'self' | 'family' | 'professional' | 'other';
   concernType: 'alcohol' | 'drugs' | 'gambling' | 'general';
-  unit: 'Alcohol' | 'Detox' | 'Drugs' | 'Ladies';
   location: string;
   phoneNumber: string;
   timestamp: string;
@@ -25,7 +24,6 @@ function buildMockCallLogs(): CallLog[] {
       surname: 'Murphy',
       callerType: 'family',
       concernType: 'alcohol',
-      unit: 'Alcohol',
       location: 'Dublin',
       phoneNumber: '087 123 4567',
       timestamp: new Date(now).toISOString(),
@@ -39,7 +37,6 @@ function buildMockCallLogs(): CallLog[] {
       surname: "O'Brien",
       callerType: 'self',
       concernType: 'drugs',
-      unit: 'Drugs',
       location: 'Cork',
       phoneNumber: '086 987 6543',
       timestamp: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
@@ -53,7 +50,6 @@ function buildMockCallLogs(): CallLog[] {
       surname: 'Ryan',
       callerType: 'professional',
       concernType: 'gambling',
-      unit: 'Detox',
       location: 'Galway',
       phoneNumber: '091 765 432',
       timestamp: new Date(now - 4 * 60 * 60 * 1000).toISOString(),
@@ -67,7 +63,6 @@ function buildMockCallLogs(): CallLog[] {
       surname: 'Kelly',
       callerType: 'self',
       concernType: 'alcohol',
-      unit: 'Detox',
       location: 'Limerick',
       phoneNumber: '085 555 1122',
       timestamp: new Date(now - 24 * 60 * 60 * 1000 + 45 * 60 * 1000).toISOString(),
@@ -81,7 +76,6 @@ function buildMockCallLogs(): CallLog[] {
       surname: 'Fitzgerald',
       callerType: 'family',
       concernType: 'drugs',
-      unit: 'Drugs',
       location: 'Waterford',
       phoneNumber: '083 222 1199',
       timestamp: new Date(now - 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
@@ -95,7 +89,6 @@ function buildMockCallLogs(): CallLog[] {
       surname: 'Sweeney',
       callerType: 'professional',
       concernType: 'gambling',
-      unit: 'Alcohol',
       location: 'Dublin',
       phoneNumber: '01 600 2233',
       timestamp: new Date(now - 48 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
@@ -109,7 +102,6 @@ function buildMockCallLogs(): CallLog[] {
       surname: 'Doyle',
       callerType: 'self',
       concernType: 'general',
-      unit: 'Ladies',
       location: 'Kilkenny',
       phoneNumber: '087 333 5511',
       timestamp: new Date(now - 48 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString(),

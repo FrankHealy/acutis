@@ -10,7 +10,6 @@ export type CallLoggingFormState = {
   surname: string;
   callerType: CallLog['callerType'];
   concernType: '' | CallLog['concernType'];
-  unit: CallLog['unit'];
   location: string;
   phoneNumber: string;
   notes: string;
@@ -56,7 +55,6 @@ const CallLoggingModal: React.FC<CallLoggingModalProps> = ({
       "call_logging.modal.concern_type.drugs",
       "call_logging.modal.concern_type.gambling",
       "call_logging.modal.concern_type.general",
-      "call_logging.modal.unit",
       "call_logging.modal.phone",
       "call_logging.modal.phone_placeholder",
       "call_logging.modal.location",
@@ -159,22 +157,6 @@ const CallLoggingModal: React.FC<CallLoggingModalProps> = ({
                 <option value="drugs">{text("call_logging.modal.concern_type.drugs", "Drugs")}</option>
                 <option value="gambling">{text("call_logging.modal.concern_type.gambling", "Gambling")}</option>
                 <option value="general">{text("call_logging.modal.concern_type.general", "General Inquiry")}</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {text("call_logging.modal.unit", "Unit")} <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
-                value={formState.unit}
-                onChange={(event) => onChange('unit', event.target.value)}
-              >
-                <option value="Alcohol">Alcohol</option>
-                <option value="Detox">Detox</option>
-                <option value="Drugs">Drugs</option>
-                <option value="Ladies">Ladies</option>
               </select>
             </div>
 

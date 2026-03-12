@@ -21,6 +21,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
 
+DotEnvLoader.LoadForCurrentEnvironment();
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -127,6 +129,14 @@ if (!authorizationOptions.Disabled)
 
     builder.Services.AddScoped<IClaimsTransformation, KeycloakClientRoleClaimsTransformation>();
 }
+else
+{
+    builder.Services
+        .AddAuthentication(DevelopmentAuthenticationHandler.SchemeName)
+        .AddScheme<AuthenticationSchemeOptions, DevelopmentAuthenticationHandler>(
+            DevelopmentAuthenticationHandler.SchemeName,
+            _ => { });
+}
 
 builder.Services.AddAuthorization(options =>
 {
@@ -157,12 +167,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseMiddleware<RequestCorrelationMiddleware>();
 app.UseCors("WebApp");
-
-if (!app.Services.GetRequiredService<IOptions<AuthorizationOptions>>().Value.Disabled)
-{
-    app.UseAuthentication();
-    app.UseAuthorization();
-}
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

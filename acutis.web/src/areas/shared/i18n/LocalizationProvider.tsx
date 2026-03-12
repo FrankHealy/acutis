@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 type TranslationsMap = Record<string, string>;
 
@@ -14,8 +15,6 @@ type LocalizationContextValue = {
 
 const LocalizationContext = createContext<LocalizationContextValue | null>(null);
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
-
 const fetchTranslations = async (locale: string, keys: string[]): Promise<TranslationsMap> => {
   if (keys.length === 0) {
     return {};
@@ -26,7 +25,7 @@ const fetchTranslations = async (locale: string, keys: string[]): Promise<Transl
     params.append("keys", key);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/localization/translations?${params.toString()}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/localization/translations?${params.toString()}`, {
     method: "GET",
     headers: {
       Accept: "application/json",
