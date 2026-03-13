@@ -11,6 +11,7 @@ public sealed class EpisodeEventConfiguration : IEntityTypeConfiguration<Episode
         builder.ToTable("EpisodeEvent");
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.ClientEventId);
         builder.Property(x => x.EventType).HasConversion<string>().HasMaxLength(40).IsRequired();
         builder.Property(x => x.EventDate).HasColumnType("date").IsRequired();
         builder.Property(x => x.PayloadJson).HasColumnType("nvarchar(max)").IsRequired();
@@ -18,5 +19,6 @@ public sealed class EpisodeEventConfiguration : IEntityTypeConfiguration<Episode
         builder.Property(x => x.CreatedAt).HasColumnType("datetime2").IsRequired();
 
         builder.HasIndex(x => new { x.EpisodeId, x.EventDate, x.CreatedAt });
+        builder.HasIndex(x => x.ClientEventId).IsUnique().HasFilter("[ClientEventId] IS NOT NULL");
     }
 }

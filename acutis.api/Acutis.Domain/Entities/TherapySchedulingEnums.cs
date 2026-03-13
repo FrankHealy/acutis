@@ -33,5 +33,8 @@ public enum EpisodeEventType
     CohortChanged = 4,
     ParticipationModeChanged = 5,
     Ejected = 6,
-    Completed = 7
+    Completed = 7,
+    SelfDischarge = 8,
+    ExtendedStay = 9,
+    ClinicalDischarge = 10
 }

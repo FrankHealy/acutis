@@ -1,4 +1,5 @@
 using Acutis.Api.Contracts;
+using Acutis.Domain.Entities;
 using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,12 @@ public interface IResidentService
 {
     Task<IReadOnlyList<ResidentListItemDto>> GetAllResidentsAsync(
         string unitId,
+        CancellationToken cancellationToken = default);
+
+    Task<RecordDischargeResponse> RecordDischargeAsync(
+        Guid residentGuid,
+        RecordDischargeRequest request,
+        Guid actorUserId,
         CancellationToken cancellationToken = default);
 }
 
@@ -36,6 +43,7 @@ public sealed class ResidentService : IResidentService
             .Select(resident => new ResidentListItemDto
             {
                 Id = ToLegacyResidentId(resident.Id),
+                ResidentGuid = resident.Id,
                 Psn = resident.Psn?.Trim() ?? string.Empty,
                 UnitGuid = resident.UnitId,
                 FirstName = resident.FirstName?.Trim() ?? string.Empty,
@@ -63,6 +71,69 @@ public sealed class ResidentService : IResidentService
                 LiteracyScale = resident.LiteracyScale
             })
             .ToList();
+    }
+
+    public async Task<RecordDischargeResponse> RecordDischargeAsync(
+        Guid residentGuid,
+        RecordDischargeRequest request,
+        Guid actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        // Idempotency: if this clientEventId was already recorded, return it without creating a duplicate.
+        var existing = await _dbContext.EpisodeEvents
+            .AsNoTracking()
+            .Where(e => e.ClientEventId == request.ClientEventId)
+            .Select(e => new { e.Id, e.EpisodeId })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (existing is not null)
+        {
+            return new RecordDischargeResponse
+            {
+                EpisodeEventId = existing.Id,
+                EpisodeId = existing.EpisodeId,
+                WasAlreadyRecorded = true
+            };
+        }
+
+        var episode = await _dbContext.ResidentProgrammeEpisodes
+            .Where(e => e.ResidentId == residentGuid && e.EndDate == null)
+            .OrderByDescending(e => e.StartDate)
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new KeyNotFoundException($"No active episode found for resident '{residentGuid}'.");
+
+        var exitType = (EpisodeEventType)request.ExitType;
+
+        var episodeEvent = new EpisodeEvent
+        {
+            Id = Guid.NewGuid(),
+            ClientEventId = request.ClientEventId,
+            EpisodeId = episode.Id,
+            EventType = exitType,
+            EventDate = request.EventDate,
+            Reason = request.Reason,
+            CreatedAt = DateTime.UtcNow,
+            CreatedByUserId = actorUserId,
+            PayloadJson = "{}"
+        };
+
+        _dbContext.EpisodeEvents.Add(episodeEvent);
+
+        // ExtendedStay keeps the episode open — resident is staying on past their programme end date.
+        // All other exit types close the episode.
+        if (exitType != EpisodeEventType.ExtendedStay)
+        {
+            episode.EndDate = request.EventDate;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new RecordDischargeResponse
+        {
+            EpisodeEventId = episodeEvent.Id,
+            EpisodeId = episode.Id,
+            WasAlreadyRecorded = false
+        };
     }
 
     private static int ToLegacyResidentId(Guid residentId)

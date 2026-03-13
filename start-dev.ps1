@@ -16,14 +16,30 @@ if (-not (Test-Path $webDir)) {
     throw "Web directory not found: $webDir"
 }
 
-$apiCmd = "dotnet run --project .\Acutis.Api\Acutis.Api.csproj"
+$apiExeDir = Join-Path $apiDir "Acutis.Api\bin\Debug\net8.0"
+$apiExePath = Join-Path $apiExeDir "Acutis.Api.exe"
 $webCmd = "npm run dev"
+$apiUsesBuiltExecutable = Test-Path $apiExePath
+
+if ($apiUsesBuiltExecutable) {
+    $apiCmd = "`$env:ASPNETCORE_URLS='http://localhost:5009'; `$env:ASPNETCORE_ENVIRONMENT='Development'; & '$apiExePath'"
+} else {
+    $apiCmd = "dotnet run --project .\Acutis.Api\Acutis.Api.csproj"
+}
 
 Write-Host "Starting API from $apiDir ..."
 if ($NoNewWindow) {
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", $apiCmd -WorkingDirectory $apiDir
+    if ($apiUsesBuiltExecutable) {
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", $apiCmd -WorkingDirectory $apiExeDir
+    } else {
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", $apiCmd -WorkingDirectory $apiDir
+    }
 } else {
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", $apiCmd -WorkingDirectory $apiDir -WindowStyle Normal
+    if ($apiUsesBuiltExecutable) {
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", $apiCmd -WorkingDirectory $apiExeDir -WindowStyle Normal
+    } else {
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", $apiCmd -WorkingDirectory $apiDir -WindowStyle Normal
+    }
 }
 
 Start-Sleep -Seconds 3
@@ -37,9 +53,17 @@ if ($NoNewWindow) {
 
 Write-Host ""
 Write-Host "Started:"
-Write-Host "- API: dotnet run (Acutis.Api)"
+if ($apiUsesBuiltExecutable) {
+    Write-Host "- API: built executable (http://localhost:5009)"
+} else {
+    Write-Host "- API: dotnet run fallback (Acutis.Api)"
+}
 Write-Host "- UI : npm run dev (acutis.web)"
 Write-Host ""
 Write-Host "Default URLs:"
-Write-Host "- API: https://localhost:5001 or http://localhost:5000 (per launch settings)"
+if ($apiUsesBuiltExecutable) {
+    Write-Host "- API: http://localhost:5009"
+} else {
+    Write-Host "- API: https://localhost:5001 or http://localhost:5000 (per launch settings)"
+}
 Write-Host "- UI : http://localhost:3000"

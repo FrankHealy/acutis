@@ -3,6 +3,7 @@ namespace Acutis.Api.Contracts;
 public sealed class ResidentListItemDto
 {
     public int Id { get; set; }
+    public Guid ResidentGuid { get; set; }
     public string Psn { get; set; } = string.Empty;
     public Guid? UnitGuid { get; set; }
     public string FirstName { get; set; } = string.Empty;
@@ -26,4 +27,35 @@ public sealed class ResidentListItemDto
     public int ArgumentativeScale { get; set; }
     public int LearningDifficultyScale { get; set; }
     public int LiteracyScale { get; set; }
+}
+
+public sealed class RecordDischargeRequest
+{
+    /// <summary>
+    /// Client-generated idempotency key. Allows offline/RN clients to safely retry submission.
+    /// </summary>
+    public Guid ClientEventId { get; set; }
+
+    /// <summary>
+    /// The exit type: SelfDischarge (8), ExtendedStay (9), ClinicalDischarge (10),
+    /// Completed (7), or Ejected (6).
+    /// </summary>
+    public int ExitType { get; set; }
+
+    /// <summary>
+    /// The date the exit actually occurred (may differ from server receipt time for offline sync).
+    /// </summary>
+    public DateOnly EventDate { get; set; }
+
+    /// <summary>
+    /// Optional reason. Avoid storing clinical detail here — use notes forms for that.
+    /// </summary>
+    public string? Reason { get; set; }
+}
+
+public sealed class RecordDischargeResponse
+{
+    public Guid EpisodeEventId { get; set; }
+    public Guid EpisodeId { get; set; }
+    public bool WasAlreadyRecorded { get; set; }
 }

@@ -9,6 +9,27 @@ export type AttendanceRecord = {
   timestamp: string;
 };
 
+export type DischargeExitType =
+  | "Completed"        // 7 - programme completion
+  | "SelfDischarge"    // 8 - resident walked out
+  | "ExtendedStay"     // 9 - staying on past programme end date
+  | "ClinicalDischarge" // 10 - clinical or administrative decision
+  | "Ejected";         // 6 - ejected from programme
+
+const EXIT_TYPE_CODES: Record<DischargeExitType, number> = {
+  Ejected: 6,
+  Completed: 7,
+  SelfDischarge: 8,
+  ExtendedStay: 9,
+  ClinicalDischarge: 10,
+};
+
+export type RecordDischargeResult = {
+  episodeEventId: string;
+  episodeId: string;
+  wasAlreadyRecorded: boolean;
+};
+
 const store: {
   attendance: AttendanceRecord[];
 } = {
@@ -23,6 +44,7 @@ let residentSource: "api" | "mock" = "mock";
 
 type ResidentListItemDto = {
   id: number;
+  residentGuid: string;
   psn: string;
   firstName: string;
   surname: string;
@@ -58,6 +80,7 @@ const mapApiResident = (dto: ResidentListItemDto): Resident => {
 
   return {
     id: dto.id,
+    residentGuid: dto.residentGuid ?? null,
     firstName: dto.firstName,
     surname: dto.surname,
     nationality: dto.nationality,
@@ -127,5 +150,36 @@ export const residentService = {
   async saveAttendance(records: AttendanceRecord[]): Promise<void> {
     await delay(50);
     store.attendance = [...store.attendance, ...records];
+  },
+
+  async recordDischarge(
+    residentGuid: string,
+    exitType: DischargeExitType,
+    eventDate: string,
+    reason: string | null,
+    accessToken: string,
+  ): Promise<RecordDischargeResult> {
+    const clientEventId = crypto.randomUUID();
+    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/discharge`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        clientEventId,
+        exitType: EXIT_TYPE_CODES[exitType],
+        eventDate,
+        reason: reason ?? null,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Discharge failed (${response.status})${text ? `: ${text}` : ""}`);
+    }
+
+    return response.json() as Promise<RecordDischargeResult>;
   },
 };

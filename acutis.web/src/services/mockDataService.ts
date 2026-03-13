@@ -2,6 +2,7 @@ import seededResidents from "../data/mockResidents.json";
 
 export type Resident = {
   id: number;
+  residentGuid: string | null;
   firstName: string;
   surname: string;
   nationality: string;
@@ -103,6 +104,7 @@ const alcoholSeedResidents: Resident[] = (seededResidents as SeedResident[]).map
 
   return {
     id: index + 1,
+    residentGuid: null,
     firstName: seed.firstName,
     surname: seed.surname,
     nationality: seed.nationality,

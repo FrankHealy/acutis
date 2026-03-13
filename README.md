@@ -38,3 +38,4 @@ Logs used during troubleshooting:
 
 Related notes:
 - See `DEPLOYMENT_NOTES.md` for other environment-specific issues already documented in this workspace.
+- See `LOCAL_DEVIATIONS.md` and `LOCAL_DEVIATIONS.txt` for the consolidated record of local workarounds, helper scripts, and non-production-safe deviations.
