@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AF Printed Page 13</title>
+  <style>
+    :root { --ink:#2f2f2f; --muted:#666; --page:#f3f4f6; --sheet:#fff; --line:#d6dbe2; --accent:#d39a57; --panel:#fbf7f2; --note:#ea7b6b; }
+    * { box-sizing:border-box; } body { margin:0; padding:24px; background:var(--page); color:var(--ink); font-family:Arial, Helvetica, sans-serif; }
+    .sheet { max-width:1020px; margin:0 auto; background:var(--sheet); padding:28px; border-radius:18px; box-shadow:0 16px 48px rgba(0,0,0,.08); }
+    .band { background:var(--accent); color:#fff; text-align:center; padding:12px 16px; border-radius:999px; font-size:22px; font-weight:700; text-transform:uppercase; margin-bottom:10px; }
+    .provisional { margin-bottom:14px; padding:10px 12px; background:#fff7d6; border-left:4px solid #cf9b00; color:#6f5800; font-size:13px; }
+    .panel { border:1px solid var(--line); background:var(--panel); padding:14px; margin-bottom:20px; }
+    .panel h2 { margin:0 0 10px; font-size:26px; color:#9e5f1c; text-transform:uppercase; }
+    .bubble { float:right; background:var(--note); color:#fff; padding:10px 14px; border-radius:18px; font-size:13px; width:180px; text-align:center; margin-left:12px; }
+    .question { display:grid; grid-template-columns:1fr auto; gap:18px; align-items:center; margin-bottom:10px; }
+    .checks { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+    .checks label { display:inline-flex; align-items:center; gap:6px; }
+    .field { margin-top:10px; }
+    .field label { display:block; font-weight:600; margin-bottom:6px; }
+    textarea { width:100%; min-height:150px; border:1px solid #bfc4cd; border-radius:6px; padding:8px; font:inherit; resize:vertical; }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <div class="band">Health and Wellbeing</div>
+    <div class="provisional">Best-effort transcription from the photographed page.</div>
+
+    <div class="panel">
+      <div class="bubble">Consider supporting access to sexual health testing</div>
+      <h2>Sexual Wellbeing</h2>
+      <div class="question"><span>Have you any concerns about your sexual health and wellbeing?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Do you use condoms or other physical barriers?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Do you know where condoms and/or other physical barriers are freely available, and can you access them?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Have you ever gone to be screened/tested for a sexually transmitted infection?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="field"><label>Describe</label><textarea></textarea></div>
+    </div>
+
+    <div class="panel">
+      <div class="bubble">Consider PHQ-9 / GAD-7 / other screening tool</div>
+      <h2>Mental Health</h2>
+      <div class="question"><span>Have you any concerns about your mental health?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Have you ever seen, or are you currently seeing, a mental health professional?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Have you a history of psychiatric care?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Do you have a history of self harm and/or suicidal thoughts?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>How would you rate your mood over the last month?</span><div class="checks"><label><input type="checkbox"> Very low</label><label><input type="checkbox"> Low</label><label><input type="checkbox"> Reasonable</label><label><input type="checkbox"> Good</label></div></div>
+      <div class="field"><label>Describe</label><textarea></textarea></div>
+    </div>
+  </main>
+</body>
+</html>

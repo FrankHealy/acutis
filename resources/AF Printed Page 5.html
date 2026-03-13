@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AF Page 5</title>
+  <style>
+    :root {
+      --ink: #2f2f2f;
+      --muted: #666;
+      --page: #f3f4f6;
+      --sheet: #fff;
+      --line: #d7dbe2;
+      --soft: #f8f9fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .sheet {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--sheet);
+      padding: 28px;
+      border-radius: 18px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 28px;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    p {
+      margin: 0 0 14px;
+      line-height: 1.6;
+    }
+
+    .field-box {
+      border: 2px solid var(--line);
+      background: var(--soft);
+      padding: 18px;
+      margin: 22px 0;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px 28px;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .line {
+      border-bottom: 2px solid #c4c9d2;
+      min-height: 30px;
+    }
+
+    ul {
+      margin: 10px 0 18px 26px;
+      line-height: 1.6;
+    }
+
+    .signature-panel {
+      border: 2px solid var(--line);
+      padding: 18px;
+      margin-top: 28px;
+    }
+
+    .statement {
+      font-size: 17px;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .signature-row {
+      display: grid;
+      grid-template-columns: 1.7fr 0.8fr;
+      gap: 18px 28px;
+      margin-bottom: 22px;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 12px;
+      }
+
+      .sheet {
+        padding: 18px;
+      }
+
+      .field-grid,
+      .signature-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <style>
+    .form-control {
+      width: 100%;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid #bfc4cd;
+      border-radius: 6px;
+      background: #fff;
+      font: inherit;
+      color: inherit;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const getLabel = (el) => {
+        const field = el.closest('.field');
+        const label = field && field.querySelector('.label');
+        return label ? label.textContent.trim() : 'Form field';
+      };
+      document.querySelectorAll('.line').forEach((el) => {
+        const control = document.createElement('input');
+        control.type = 'text';
+        control.className = 'form-control';
+        control.setAttribute('aria-label', getLabel(el));
+        el.replaceWith(control);
+      });
+    });
+  </script>
+</head>
+<body>
+  <main class="sheet">
+    <h1>HSE National Waiting List for Opiate Addiction Treatment Client Consent Form</h1>
+
+    <p>The National Waiting List (NWL) provides information about waiting times for clients who present for treatment for Opiate Dependency. The NWL has been designed to assist with service planning and development within the HSE Addiction Services.</p>
+    <p>All information on the NWL is treated in the strictest confidence in compliance with Data Protection legislation.</p>
+
+    <div class="field-box">
+      <div class="field-grid">
+        <div class="field">
+          <div class="label">Service User Name: Block Capitals</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Date of Birth</div>
+          <div class="line"></div>
+        </div>
+      </div>
+    </div>
+
+    <p>I have been advised and I understand that my details will be placed on the HSE National Waiting List for treatment when the following validation processes are complete:</p>
+    <ul>
+      <li>to establish that my name is not already on a waiting list</li>
+      <li>to establish that I am not currently in receipt of treatment</li>
+    </ul>
+
+    <p>I have been advised and I understand that my details will be dealt with in a confidential manner and will be kept safe and secure and that I can request my details to be removed from the NWL at any time.</p>
+
+    <p>I have been advised and I understand that my details will be removed from the National Waiting List, when:</p>
+    <ul>
+      <li>I commence treatment</li>
+      <li>Or, I no longer require treatment, when offered treatment</li>
+      <li>Or, I cannot be located by the addiction service</li>
+    </ul>
+
+    <section class="signature-panel">
+      <div class="statement">I have been advised and I understand that I should keep in regular contact with the Addiction Service with regard to my status on the NWL.</div>
+
+      <div class="signature-row">
+        <div class="field">
+          <div class="label">Signature of Service User</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Date</div>
+          <div class="line"></div>
+        </div>
+      </div>
+
+      <div class="statement">I have explained the above to the client. A copy has been given to the client. The client has been given the opportunity to ask and verify any queries.</div>
+
+      <div class="signature-row">
+        <div class="field">
+          <div class="label">Signature of Staff</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Date</div>
+          <div class="line"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      This page is transcribed from page 14 of Drug-Alcohol-manual-FV.pdf and aligned to the photographed form.
+    </div>
+  </main>
+</body>
+</html>

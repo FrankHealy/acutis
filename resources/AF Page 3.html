@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AF Page 3</title>
+  <style>
+    :root {
+      --ink: #2f2f2f;
+      --muted: #666;
+      --page: #f3f4f6;
+      --sheet: #fff;
+      --line: #d7dbe2;
+      --band: #4f5563;
+      --soft: #f7f8fa;
+      --alert: #b8564d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .sheet {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--sheet);
+      padding: 28px;
+      border-radius: 18px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+    }
+
+    .panel {
+      border: 2px solid var(--line);
+      background: #fff;
+      margin-bottom: 28px;
+    }
+
+    .panel-header {
+      background: var(--band);
+      color: #fff;
+      text-align: center;
+      padding: 12px 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 18px;
+    }
+
+    .panel-body {
+      padding: 20px 22px 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    h2 {
+      margin: 6px 0 0;
+      font-size: 18px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    p {
+      margin: 0 0 14px;
+      line-height: 1.6;
+    }
+
+    .provisional {
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      background: #fff7d6;
+      border-left: 4px solid #cf9b00;
+      color: #6f5800;
+      font-size: 13px;
+    }
+
+    .bullet-list {
+      list-style: none;
+      padding: 0;
+      margin: 18px 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .bullet-list li::before {
+      content: "➤ ";
+      color: #6b7280;
+      font-weight: 700;
+    }
+
+    .press-copy {
+      margin: 20px 0;
+      display: inline-block;
+      padding: 10px 14px;
+      border: 2px solid #e5b0ac;
+      color: var(--alert);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .small-note {
+      margin-top: 18px;
+      font-size: 14px;
+      color: #444;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .small-note strong {
+      font-weight: 700;
+    }
+
+    .section-title {
+      margin: 0 0 16px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    .label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .line {
+      border-bottom: 2px solid #c4c9d2;
+      min-height: 28px;
+    }
+
+    .paragraph-box {
+      min-height: 84px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      padding: 12px;
+      line-height: 1.55;
+    }
+
+    .footer-note {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+  </style>
+  <style>
+    .form-control {
+      width: 100%;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid #bfc4cd;
+      border-radius: 6px;
+      background: #fff;
+      font: inherit;
+      color: inherit;
+    }
+    textarea.form-control {
+      min-height: 96px;
+      resize: vertical;
+    }
+    .choice-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .native-check {
+      width: 16px;
+      height: 16px;
+      accent-color: #4f5563;
+      flex: 0 0 auto;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const getLabel = (el) => {
+        const field = el.closest('.field');
+        const label = field && field.querySelector('.label');
+        return label ? label.textContent.trim() : 'Form field';
+      };
+      document.querySelectorAll('.line').forEach((el) => {
+        const style = el.getAttribute('style') || '';
+        const match = style.match(/min-height:\s*(\d+)px/i);
+        const large = match && Number(match[1]) >= 44;
+        const control = document.createElement(large ? 'textarea' : 'input');
+        if (!large) control.type = 'text';
+        control.className = 'form-control';
+        control.setAttribute('aria-label', getLabel(el));
+        el.replaceWith(control);
+      });
+      document.querySelectorAll('.checks span, .yesno span').forEach((item, index) => {
+        const label = document.createElement('label');
+        label.className = 'choice-option';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'native-check';
+        input.setAttribute('aria-label', item.textContent.trim() || `Option ${index + 1}`);
+        label.append(input, document.createTextNode(item.textContent.trim()));
+        item.replaceWith(label);
+      });
+    });
+  </script>
+</head>
+<body>
+  <main class="sheet">
+    <section class="panel">
+      <div class="panel-header">Agreement to Share your Information Guidelines</div>
+      <div class="panel-body">
+        <h1>Agreement to Share your Information Guidelines</h1>
+        <h2>Service User Confidentiality / Information</h2>
+
+        <div class="provisional">
+          Best-effort transcription from a blurred photograph. The wording in this top guidance section should be reviewed and corrected.
+        </div>
+
+        <p>We would like your permission to collect and share information between relevant support workers and agencies so that we can better understand your needs, manage services and avoid asking you for the same information more than once.</p>
+        <p>This information will only be shared on a need to know basis. This may involve sharing information with relevant workers assigned by you and yourself and your care support team. This agreement covers information in your assessment and support plan.</p>
+        <p>As some of the information that agencies hold about you is sensitive, they must manage it under the Data Protection Act. This means ensuring that information agencies have is:</p>
+
+        <ul class="bullet-list">
+          <li>Used fairly and legally.</li>
+          <li>Only used for the purposes for which it was collected.</li>
+          <li>Adequate, relevant and not excessive.</li>
+          <li>Correct and up to date.</li>
+          <li>Kept only for as long as needed.</li>
+          <li>Processed in accordance with a person's rights.</li>
+          <li>Stored safely.</li>
+        </ul>
+
+        <div class="press-copy">PRESS COPY</div>
+
+        <div class="small-note">
+          <strong>Your confidentiality is assured.</strong> Coverage will be shared only between support.
+          <br>
+          Child Protection, risk to self, risk to others or Court orders apply.
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-body">
+        <div class="section-title">Care Plan Case Manager Transfer Form</div>
+
+        <div class="field">
+          <div class="label">Previous Case Manager</div>
+          <div class="line"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Agency</div>
+          <div class="line"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Newly Agreed Case Manager</div>
+          <div class="line"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Agency</div>
+          <div class="line"></div>
+        </div>
+
+        <div class="field">
+          <div class="paragraph-box">
+            I am satisfied with the manner in which this review has been conducted and with the agreements that have been reached with my involvement and/or on my behalf.
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Service User Signature (if present)</div>
+          <div class="line"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Previous Case Manager</div>
+          <div class="line"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">New Case Manager</div>
+          <div class="line"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Date</div>
+          <div class="line"></div>
+        </div>
+
+        <div class="footer-note">
+          The transfer form text above is transcribed from page 49 of Drug-Alcohol-manual-FV.pdf. The top information-guidelines panel is provisional and based on the photographed page.
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

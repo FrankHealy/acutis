@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AF Page 7</title>
+  <style>
+    :root {
+      --ink: #2f2f2f;
+      --muted: #666;
+      --page: #f3f4f6;
+      --sheet: #fff;
+      --line: #d8dbe2;
+      --soft: #fbfbfc;
+      --note: #ea7b6b;
+      --accent: #d99b44;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .sheet {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--sheet);
+      padding: 28px;
+      border-radius: 18px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+    }
+
+    .provisional {
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      background: #fff7d6;
+      border-left: 4px solid #cf9b00;
+      color: #6f5800;
+      font-size: 13px;
+    }
+
+    .section {
+      border: 2px solid var(--line);
+      background: var(--soft);
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1.6fr 0.6fr 0.8fr;
+      gap: 14px 18px;
+      align-items: end;
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .line {
+      border-bottom: 2px solid #c4c9d2;
+      min-height: 28px;
+    }
+
+    .checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      line-height: 1.5;
+    }
+
+    .checks span::before {
+      content: "☐ ";
+    }
+
+    .table {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 10px 14px;
+      align-items: end;
+    }
+
+    .cell-title {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .bubble-wrap {
+      position: relative;
+    }
+
+    .bubble {
+      position: absolute;
+      right: 10px;
+      top: 18px;
+      background: var(--note);
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: 18px;
+      font-size: 13px;
+      width: 145px;
+      text-align: center;
+    }
+
+    .two-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 2px solid var(--line);
+      background: var(--soft);
+      margin-bottom: 14px;
+    }
+
+    .two-box > div {
+      padding: 14px 16px;
+      border-left: 2px solid var(--line);
+    }
+
+    .two-box > div:first-child {
+      border-left: 0;
+    }
+
+    .box-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .footer {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 2px solid var(--line);
+      color: var(--accent);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .ticks {
+      margin-top: 10px;
+      color: var(--accent);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+    }
+
+    .ticks span::before {
+      content: "✔ ";
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 12px; }
+      .sheet { padding: 18px; }
+      .grid-2, .grid-3, .table, .two-box { grid-template-columns: 1fr; }
+      .two-box > div { border-left: 0; border-top: 2px solid var(--line); }
+      .two-box > div:first-child { border-top: 0; }
+      .bubble { position: static; margin-bottom: 12px; }
+    }
+  </style>
+  <style>
+    .form-control {
+      width: 100%;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid #bfc4cd;
+      border-radius: 6px;
+      background: #fff;
+      font: inherit;
+      color: inherit;
+    }
+    textarea.form-control {
+      min-height: 96px;
+      resize: vertical;
+    }
+    .choice-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .native-check {
+      width: 16px;
+      height: 16px;
+      accent-color: #4f5563;
+      flex: 0 0 auto;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const getLabel = (el) => {
+        const field = el.closest('.field');
+        const label = field && field.querySelector('.label');
+        return label ? label.textContent.trim() : 'Form field';
+      };
+      document.querySelectorAll('.line').forEach((el) => {
+        const style = el.getAttribute('style') || '';
+        const match = style.match(/min-height:\s*(\d+)px/i);
+        const large = match && Number(match[1]) >= 44;
+        const control = document.createElement(large ? 'textarea' : 'input');
+        if (!large) control.type = 'text';
+        control.className = 'form-control';
+        control.setAttribute('aria-label', getLabel(el));
+        el.replaceWith(control);
+      });
+      document.querySelectorAll('.checks').forEach((wrap) => {
+        const items = Array.from(wrap.querySelectorAll('span'));
+        if (!items.length) return;
+        wrap.innerHTML = '';
+        items.forEach((item, index) => {
+          const label = document.createElement('label');
+          label.className = 'choice-option';
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.className = 'native-check';
+          input.setAttribute('aria-label', item.textContent.trim() || `Option ${index + 1}`);
+          label.append(input, document.createTextNode(item.textContent.trim()));
+          wrap.append(label);
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <main class="sheet">
+    <div class="provisional">
+      Best-effort transcription from the photographed page. Several labels are readable, but some wording may need correction against the physical form.
+    </div>
+
+    <section class="section">
+      <div class="grid-2">
+        <div class="field">
+          <div class="label">Employment Status</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Occupation</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Source of Income</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Amount of Income</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">What days do you work</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">What hours do you work</div>
+          <div class="line"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid-2">
+        <div class="field">
+          <div class="label">GP Name</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">GP Address</div>
+          <div class="line"></div>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-top:8px;">
+        <div class="field">
+          <div class="label">If using alcohol / drugs is your GP aware of your use?</div>
+        </div>
+        <div class="checks"><span>Yes</span><span>No</span></div>
+        <div class="field">
+          <div class="label">GP Mobile</div>
+          <div class="line"></div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="field">
+          <div class="label">Medical Card</div>
+        </div>
+        <div class="checks"><span>Yes</span><span>No</span><span>Applied for</span></div>
+        <div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <div class="label">(Homeless Service) Medical Card Number</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Valid until</div>
+          <div class="line"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="box-title" style="font-size:20px;">Total Number of Children</div>
+
+      <div class="table">
+        <div></div>
+        <div class="cell-title">Male No.</div>
+        <div class="cell-title">Female</div>
+        <div class="cell-title">Not known</div>
+
+        <div class="field"><div class="label">Number of children living with you</div></div>
+        <div class="line"></div><div class="line"></div><div class="line"></div>
+
+        <div class="field"><div class="label">Number living with other parent</div></div>
+        <div class="line"></div><div class="line"></div><div class="line"></div>
+
+        <div class="field"><div class="label">Number in care</div></div>
+        <div class="line"></div><div class="line"></div><div class="line"></div>
+
+        <div class="field"><div class="label">Number living elsewhere</div></div>
+        <div class="line"></div><div class="line"></div><div class="line"></div>
+
+        <div class="field"><div class="label">Child status of child unknown</div></div>
+        <div class="line"></div><div class="line"></div><div class="line"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid-3" style="grid-template-columns:1.8fr 0.6fr 0.6fr;">
+        <div class="field">
+          <div class="label">Have you any current or recent social worker involvement(s)?</div>
+        </div>
+        <div class="checks"><span>Yes</span><span>No</span></div>
+        <div></div>
+      </div>
+
+      <div class="field">
+        <div class="label">If yes, please note details</div>
+        <div class="line" style="min-height:44px;"></div>
+      </div>
+    </section>
+
+    <section class="section bubble-wrap">
+      <div class="bubble">CONSIDER Family Support</div>
+
+      <div class="grid-3" style="grid-template-columns:1.8fr 0.6fr 0.6fr;">
+        <div class="field">
+          <div class="label">Are you living with people who use drugs and/or alcohol, people with a gambling addiction or other addictions</div>
+        </div>
+        <div class="checks"><span>Yes</span><span>No</span></div>
+        <div></div>
+      </div>
+
+      <div class="grid-3" style="grid-template-columns:1.8fr 0.6fr 0.6fr;">
+        <div class="field">
+          <div class="label">Was there ever substance use in your family?</div>
+        </div>
+        <div class="checks"><span>Yes</span><span>No</span></div>
+        <div></div>
+      </div>
+
+      <div class="grid-3" style="grid-template-columns:1.8fr 0.6fr 0.6fr;">
+        <div class="field">
+          <div class="label">Is your loved one or family member(s) worried or family suspect?</div>
+        </div>
+        <div class="checks"><span>Yes</span><span>No</span></div>
+        <div></div>
+      </div>
+
+      <div class="field">
+        <div class="label">If yes, please note details</div>
+        <div class="line" style="min-height:44px;"></div>
+      </div>
+    </section>
+
+    <section class="two-box">
+      <div>
+        <div class="box-title">*Next of Kin</div>
+        <div class="field">
+          <div class="label">Name of Next of Kin</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Relationship to Next of Kin</div>
+          <div class="line"></div>
+        </div>
+        <div class="grid-3" style="grid-template-columns:1.6fr 0.7fr 0.3fr;">
+          <div class="field">
+            <div class="label">Next of kin aware of current problem(s)</div>
+          </div>
+          <div class="checks"><span>Yes</span><span>No</span></div>
+          <div></div>
+        </div>
+        <div class="field">
+          <div class="label">Next of kin contact details</div>
+          <div class="line"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="box-title">**Emergency Contact (EC)</div>
+        <div class="field">
+          <div class="label">Name of EC</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Relationship to EC</div>
+          <div class="line"></div>
+        </div>
+        <div class="grid-3" style="grid-template-columns:1.6fr 0.7fr 0.3fr;">
+          <div class="field">
+            <div class="label">EC aware of current problem(s)</div>
+          </div>
+          <div class="checks"><span>Yes</span><span>No</span></div>
+          <div></div>
+        </div>
+        <div class="field">
+          <div class="label">EC contact details</div>
+          <div class="line"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      <div>*Next of kin is your closest living blood relative including spouse or adopted family member</div>
+      <div>**An Emergency Contact should be:</div>
+      <div class="ticks">
+        <span>Contactable</span>
+        <span>Available</span>
+        <span>Able to contact your next of kin</span>
+        <span>Aware of your health status</span>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

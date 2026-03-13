@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AF Page 10</title>
+  <style>
+    :root{
+      --ink:#2f2f2f;--muted:#666;--page:#f3f4f6;--sheet:#fff;--line:#d8dbe2;--soft:#fbfbfc;--teal:#c3ddd8;--note:#ea7b6b;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;padding:24px;background:var(--page);color:var(--ink);font-family:Arial, Helvetica, sans-serif}
+    .sheet{max-width:980px;margin:0 auto;background:var(--sheet);padding:28px;border-radius:18px;box-shadow:0 16px 48px rgba(0,0,0,.08)}
+    h1,h2{margin:0 0 12px;color:#245d63;text-transform:uppercase}
+    h1{font-size:26px} h2{font-size:24px;margin-top:24px}
+    .provisional{margin-bottom:16px;padding:10px 12px;background:#fff7d6;border-left:4px solid #cf9b00;color:#6f5800;font-size:13px}
+    .top{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;border:2px solid var(--line);padding:16px;background:var(--soft)}
+    .field{margin-bottom:10px}
+    .label{font-size:14px;color:var(--muted);margin-bottom:6px}
+    .line{border-bottom:2px solid #c4c9d2;min-height:28px}
+    .yesno{display:flex;gap:14px;flex-wrap:wrap}
+    .yesno span::before{content:"☐ "}
+    .silhouette{height:260px;border:2px solid #cfd5dd;display:flex;align-items:center;justify-content:center;color:#999;background:#fff}
+    .silhouette svg{height:230px;width:140px}
+    .advice{border:2px solid var(--line);margin-top:18px;background:var(--soft)}
+    .advice-head{background:var(--teal);padding:10px 14px;font-weight:700;text-align:center}
+    .rows{padding:14px}
+    .row{display:grid;grid-template-columns:1.6fr .7fr;gap:18px;align-items:end;margin-bottom:12px}
+    .bubble{float:right;background:var(--note);color:#fff;padding:12px 14px;border-radius:18px;font-size:13px;width:180px;text-align:center;margin:6px 0 12px 18px}
+    @media (max-width:760px){body{padding:12px}.sheet{padding:18px}.top,.row{grid-template-columns:1fr}.bubble{float:none;margin:0 0 12px}}
+  </style>
+  <style>
+    .form-control {
+      width: 100%;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid #bfc4cd;
+      border-radius: 6px;
+      background: #fff;
+      font: inherit;
+      color: inherit;
+    }
+    textarea.form-control {
+      min-height: 120px;
+      resize: vertical;
+    }
+    .choice-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .native-check {
+      width: 16px;
+      height: 16px;
+      accent-color: #4f5563;
+      flex: 0 0 auto;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const getLabel = (el) => {
+        const field = el.closest('.field');
+        const label = field && field.querySelector('.label');
+        return label ? label.textContent.trim() : 'Form field';
+      };
+      document.querySelectorAll('.line').forEach((el) => {
+        const style = el.getAttribute('style') || '';
+        const match = style.match(/min-height:\s*(\d+)px/i);
+        const large = match && Number(match[1]) >= 44;
+        const control = document.createElement(large ? 'textarea' : 'input');
+        if (!large) control.type = 'text';
+        control.className = 'form-control';
+        control.setAttribute('aria-label', getLabel(el));
+        el.replaceWith(control);
+      });
+      document.querySelectorAll('.yesno span').forEach((item, index) => {
+        const label = document.createElement('label');
+        label.className = 'choice-option';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'native-check';
+        input.setAttribute('aria-label', item.textContent.trim() || `Option ${index + 1}`);
+        label.append(input, document.createTextNode(item.textContent.trim()));
+        item.replaceWith(label);
+      });
+    });
+  </script>
+</head>
+<body>
+  <main class="sheet">
+    <h1>Risk Behaviour</h1>
+    <div class="provisional">Best-effort transcription from the photographed page.</div>
+
+    <section class="top">
+      <div>
+        <div class="field"><div class="label"><strong>Ever injected</strong></div></div>
+        <div class="yesno"><span>Injected in last 30 days</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Injected in last 12 months but not in last 30 days</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Injected but not in the last 12 months</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Client did not wish to answer</span><span>Yes</span><span>No</span></div>
+
+        <div class="field" style="margin-top:16px;"><div class="label"><strong>Ever shared needles/syringes</strong></div></div>
+        <div class="yesno"><span>Never shared</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Shared in last 30 days</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Shared in last 12 months but not last 30 days</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Shared but not in last 12 months</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Shared but time period not known</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Client did not wish to answer</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Not known if client ever shared</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>N/A</span><span>Yes</span></div>
+
+        <div class="field" style="margin-top:16px;"><div class="label"><strong>Ever shared other paraphernalia</strong></div></div>
+        <div class="yesno"><span>Never shared</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Shared in last 30 days</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Shared in last 12 months but not last 30 days</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Shared but not in last 12 months</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Shared but time period not known</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Client did not wish to answer</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>Not known if client ever shared</span><span>Yes</span><span>No</span></div>
+        <div class="yesno"><span>N/A</span><span>Yes</span></div>
+      </div>
+
+      <div>
+        <div class="field"><div class="label">Age first injected</div><div class="line"></div></div>
+        <div class="field" style="margin-top:20px;">
+          <div class="label"><strong>If you inject, what part of the body do you mostly inject into?</strong><br>(please indicate below)</div>
+          <div class="silhouette" aria-label="Body diagram for injection site marking">
+            <svg viewBox="0 0 120 220" role="img" aria-hidden="true">
+              <g fill="none" stroke="#9aa3a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="60" cy="24" r="12"></circle>
+                <path d="M50 36 L47 58 L36 78 L33 110 L40 126 L43 101 L49 84 L50 124 L45 170 L49 210"></path>
+                <path d="M70 36 L73 58 L84 78 L87 110 L80 126 L77 101 L71 84 L70 124 L75 170 L71 210"></path>
+                <path d="M50 36 Q60 32 70 36"></path>
+                <path d="M50 124 Q60 132 70 124"></path>
+                <path d="M50 124 L48 165 L51 212"></path>
+                <path d="M70 124 L72 165 L69 212"></path>
+                <path d="M49 212 Q54 218 58 212"></path>
+                <path d="M62 212 Q66 218 71 212"></path>
+                <path d="M33 110 Q28 118 24 126"></path>
+                <path d="M87 110 Q92 118 96 126"></path>
+                <path d="M24 126 Q20 132 18 139"></path>
+                <path d="M96 126 Q100 132 102 139"></path>
+                <path d="M15 140 Q18 146 24 147"></path>
+                <path d="M105 140 Q102 146 96 147"></path>
+                <path d="M24 147 L21 152"></path>
+                <path d="M24 147 L26 153"></path>
+                <path d="M24 147 L29 151"></path>
+                <path d="M96 147 L91 151"></path>
+                <path d="M96 147 L99 153"></path>
+                <path d="M96 147 L102 151"></path>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <h2>Harm Reduction Advice Given</h2>
+    <div class="advice">
+      <div class="advice-head">For the National Clinical Guideline on Hepatitis C go to<br>http://health.gov.ie/national-patient-safety-office/ncec/national-clinical-guidelines/prevention/</div>
+      <div class="rows">
+        <div class="field"><div class="label">If using IV needles how are they obtained?</div><div class="line"></div></div>
+        <div class="field"><div class="label">If using IV needles how are they disposed?</div><div class="line"></div></div>
+        <div class="row"><div class="label">Needle Exchange time and places</div><div class="yesno"><span>Yes</span><span>No</span></div></div>
+        <div class="row"><div class="label">Drug Use</div><div class="yesno"><span>Yes</span><span>No</span></div></div>
+        <div class="row"><div class="label">Drug Interactions</div><div class="yesno"><span>Yes</span><span>No</span></div></div>
+        <div class="row"><div class="label">Alcohol Use</div><div class="yesno"><span>Yes</span><span>No</span></div></div>
+        <div class="row"><div class="label">Overdose Prevention</div><div class="yesno"><span>Yes</span><span>No</span></div></div>
+        <div class="row"><div class="label">Access to Naloxone</div><div class="yesno"><span>Yes</span><span>No</span></div></div>
+        <div class="row"><div class="label">Safe Injecting Practice</div><div class="yesno"><span>Yes</span><span>No</span></div></div>
+        <div class="row"><div class="label">Sexual Activity</div><div class="yesno"><span>Yes</span><span>No</span></div></div>
+        <div class="bubble">RESOURCE<br>www.sexualhealthcentre.com</div>
+        <div class="field"><div class="label">Others give details</div><div class="line" style="min-height:120px;"></div></div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AF Page 6</title>
+  <style>
+    :root {
+      --ink: #2f2f2f;
+      --muted: #666;
+      --page: #f3f4f6;
+      --sheet: #fff;
+      --line: #d8dbe2;
+      --accent: #e7a646;
+      --soft: #fbfbfc;
+      --note: #ea7b6b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .sheet {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--sheet);
+      padding: 28px;
+      border-radius: 18px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+    }
+
+    .band {
+      background: var(--accent);
+      color: #fff;
+      text-align: center;
+      padding: 12px 16px;
+      border-radius: 999px;
+      font-size: 24px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 18px;
+    }
+
+    .provisional {
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      background: #fff7d6;
+      border-left: 4px solid #cf9b00;
+      color: #6f5800;
+      font-size: 13px;
+    }
+
+    .box {
+      border: 2px solid var(--line);
+      background: var(--soft);
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.6fr 0.7fr;
+      gap: 14px 18px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1.6fr 0.6fr 1.3fr;
+      gap: 14px 18px;
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .line {
+      border-bottom: 2px solid #c4c9d2;
+      min-height: 28px;
+    }
+
+    .checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      line-height: 1.5;
+    }
+
+    .checks span::before {
+      content: "☐ ";
+    }
+
+    .section-banner {
+      margin: 8px 0 10px;
+      text-align: center;
+      color: #d48d3c;
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .reason-box {
+      position: relative;
+      padding-top: 22px;
+    }
+
+    .bubble {
+      display: inline-block;
+      background: var(--note);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 13px;
+      max-width: 220px;
+      margin-bottom: 10px;
+    }
+
+    .subtext {
+      margin: 10px 0 0;
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+    }
+
+    .row-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 12px; }
+      .sheet { padding: 18px; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+  <style>
+    .form-control, .cell-input {
+      width: 100%;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid #bfc4cd;
+      border-radius: 6px;
+      background: #fff;
+      font: inherit;
+      color: inherit;
+    }
+    textarea.form-control {
+      min-height: 96px;
+      resize: vertical;
+    }
+    .choice-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .native-check {
+      width: 16px;
+      height: 16px;
+      accent-color: #4f5563;
+      flex: 0 0 auto;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const getLabel = (el) => {
+        const field = el.closest('.field');
+        const label = field && field.querySelector('.label');
+        return label ? label.textContent.trim() : 'Form field';
+      };
+      document.querySelectorAll('.line').forEach((el) => {
+        const style = el.getAttribute('style') || '';
+        const match = style.match(/min-height:\s*(\d+)px/i);
+        const large = match && Number(match[1]) >= 44;
+        const control = document.createElement(large ? 'textarea' : 'input');
+        if (!large) control.type = 'text';
+        control.className = 'form-control';
+        control.setAttribute('aria-label', getLabel(el));
+        el.replaceWith(control);
+      });
+      document.querySelectorAll('.checks').forEach((wrap) => {
+        const items = Array.from(wrap.querySelectorAll('span'));
+        if (!items.length) return;
+        wrap.innerHTML = '';
+        items.forEach((item, index) => {
+          const label = document.createElement('label');
+          label.className = 'choice-option';
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.className = 'native-check';
+          input.setAttribute('aria-label', item.textContent.trim() || `Option ${index + 1}`);
+          label.append(input, document.createTextNode(item.textContent.trim()));
+          wrap.append(label);
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <main class="sheet">
+    <div class="band">Initial Assessment Form</div>
+
+    <div class="provisional">
+      Best-effort transcription from the photographed page. This appears to be a newer version than the initial assessment page in the manual, so some wording should be reviewed.
+    </div>
+
+    <section class="box">
+      <div class="grid-2">
+        <div class="field">
+          <div class="label">Source of Referral</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Ref Number</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Date of Referral</div>
+          <div class="line"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="box">
+      <div class="grid-2">
+        <div>
+          <div class="field">
+            <div class="label">Name of Service User</div>
+            <div class="line"></div>
+          </div>
+          <div class="grid-2" style="grid-template-columns:1fr 0.6fr;">
+            <div class="field">
+              <div class="label">Date of Birth</div>
+              <div class="line"></div>
+            </div>
+            <div class="field">
+              <div class="label">Age</div>
+              <div class="line"></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="checks">
+            <span>Man (including trans man)</span>
+            <span>Woman (including trans woman)</span>
+            <span>Non-binary</span>
+            <span>In another way</span>
+            <span>My gender is not listed here (please describe)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:14px;">
+        <div class="row-title">Self-defined Sexual Orientation</div>
+        <div class="checks">
+          <span>Heterosexual or Straight</span>
+          <span>Lesbian or Gay</span>
+          <span>Bisexual</span>
+          <span>Other sexual orientation not listed</span>
+          <span>Client does not know or is unsure</span>
+          <span>Client did not wish to answer this question</span>
+          <span>Not known</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="box reason-box">
+      <div class="bubble">It is necessary for the care plan that relevant appendices are fully completed</div>
+      <div class="section-banner">All information must be considered for care plan</div>
+
+      <div class="row-title" style="text-align:center; font-weight:400;">What is the main reason for your referral / access to this service?</div>
+      <div class="checks" style="justify-content:center; margin-bottom:10px;">
+        <span>Alcohol Use</span>
+        <span>Drug Use</span>
+        <span>Homelessness</span>
+        <span>Concerned person</span>
+        <span>Other</span>
+      </div>
+      <div class="subtext">Tick all appropriate boxes</div>
+
+      <div class="field" style="margin-top:14px;">
+        <div class="label">If "Other" selected above give details</div>
+        <div class="line"></div>
+      </div>
+    </section>
+
+    <section class="box">
+      <div class="row-title">Most Recent Address</div>
+      <div class="field"><div class="line"></div></div>
+
+      <div class="grid-2" style="margin-top:8px;">
+        <div class="field">
+          <div class="label">Phone Number</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Mobile Number</div>
+          <div class="line"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">Email (optional)</div>
+        <div class="line"></div>
+      </div>
+
+      <div class="grid-3">
+        <div class="field"><div class="label">Do you agree to be contacted at the above address?</div></div>
+        <div class="checks"><span>Yes</span><span>No</span></div>
+        <div></div>
+        <div class="field"><div class="label">Do you agree to be contact via phone text?</div></div>
+        <div class="checks"><span>Yes</span><span>No</span></div>
+        <div></div>
+        <div class="field"><div class="label">Do you agree to be contacted by email?</div></div>
+        <div class="checks"><span>Yes</span><span>No</span></div>
+        <div></div>
+      </div>
+    </section>
+
+    <section class="box">
+      <div class="grid-2" style="grid-template-columns:0.8fr 2fr;">
+        <div class="row-title">Living Where</div>
+        <div class="checks">
+          <span>Stable accommodation</span>
+          <span>Homeless</span>
+          <span>Other unstable accommodation / details</span>
+          <span>Domestic Violence refuge</span>
+          <span>Prison, institution (residential care / halting) house</span>
+          <span>Not known</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="box">
+      <div class="grid-2" style="grid-template-columns:0.8fr 2fr;">
+        <div class="row-title">Living With</div>
+        <div class="checks">
+          <span>Alone</span>
+          <span>Parents / Family</span>
+          <span>Friends</span>
+          <span>Partner (alone)</span>
+          <span>Partner &amp; Children</span>
+          <span>Alone &amp; Children</span>
+          <span>Foster Care</span>
+          <span>Other</span>
+          <span>Not known</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="box">
+      <div class="grid-2">
+        <div class="field">
+          <div class="label">Country of Birth</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Nationality</div>
+          <div class="line"></div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:10px;">
+        <div class="row-title">Ethnicity</div>
+        <div class="checks">
+          <span>White Irish</span>
+          <span>Irish Traveller</span>
+          <span>Roma</span>
+          <span>Any other white background</span>
+          <span>Black or Black Irish</span>
+          <span>Black</span>
+          <span>Any other black background</span>
+          <span>Asian or Asian Irish</span>
+          <span>Chinese</span>
+          <span>Indian / Pakistani / Bangladeshi</span>
+          <span>Any other Asian background</span>
+          <span>Other, including mixed group / background</span>
+          <span>Arab</span>
+          <span>Mixed / multiple ethnic group / section</span>
+          <span>Other, write in description</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">Description</div>
+        <div class="line"></div>
+      </div>
+
+      <div class="grid-3">
+        <div class="field"><div class="label">Language other than English or Irish at home?</div></div>
+        <div class="checks"><span>Yes</span><span>No</span><span>Not known</span></div>
+        <div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <div class="label">If Yes specify</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Preferred language to work with</div>
+          <div class="line"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">Age left Primary or Secondary School for the first time</div>
+        <div class="line"></div>
+      </div>
+
+      <div class="checks">
+        <span>Primary level incomplete</span>
+        <span>Primary level</span>
+        <span>Junior cert</span>
+        <span>Leaving Cert</span>
+        <span>Third level</span>
+        <span>Never went to school</span>
+        <span>Not known</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

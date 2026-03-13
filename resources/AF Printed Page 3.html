@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Service User Information & Consent Form</title>
+  <style>
+    :root {
+      --ink: #2f2f2f;
+      --muted: #666;
+      --page: #f4f5f7;
+      --sheet: #fff;
+      --line: #d7d9de;
+      --dark-band: #50545f;
+      --accent: #eef0f3;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .sheet {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--sheet);
+      padding: 28px;
+      border-radius: 18px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+    }
+
+    .band {
+      background: var(--dark-band);
+      color: #fff;
+      border-radius: 999px;
+      text-align: center;
+      padding: 12px 20px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      font-size: 22px;
+    }
+
+    .intro {
+      text-align: center;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    .intro strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 18px;
+    }
+
+    .top-fields {
+      border: 2px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 1.4fr 0.8fr;
+      gap: 18px;
+    }
+
+    .field {
+      min-height: 56px;
+    }
+
+    .label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .line {
+      border-bottom: 2px solid #bfc4cd;
+      min-height: 30px;
+    }
+
+    .sex-row {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      min-height: 30px;
+      flex-wrap: wrap;
+    }
+
+    .check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .box {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #8b8f98;
+      display: inline-block;
+    }
+
+    ol {
+      margin: 0 0 18px 22px;
+      padding: 0;
+      line-height: 1.55;
+      display: grid;
+      gap: 10px;
+    }
+
+    .note {
+      margin: 18px 0;
+      padding: 14px 16px;
+      background: var(--accent);
+      border-left: 4px solid #9aa2b1;
+      line-height: 1.5;
+    }
+
+    .confirm {
+      border: 2px solid var(--line);
+      padding: 18px;
+      margin: 20px 0 28px;
+    }
+
+    .confirm-title {
+      text-align: center;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      margin-bottom: 18px;
+      line-height: 1.45;
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 0.8fr;
+      gap: 18px 28px;
+    }
+
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 24px;
+      text-transform: uppercase;
+    }
+
+    .provisional {
+      color: #7a5d00;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .text-block {
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
+
+    .mental-grid {
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .mental-row {
+      display: grid;
+      grid-template-columns: 1.4fr 0.9fr;
+      border-top: 1px solid var(--line);
+    }
+
+    .mental-row:first-child {
+      border-top: 0;
+    }
+
+    .mental-cell {
+      min-height: 74px;
+      padding: 12px 14px;
+      border-left: 1px solid var(--line);
+    }
+
+    .mental-cell:first-child {
+      border-left: 0;
+    }
+
+    .subnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 12px;
+      }
+
+      .sheet {
+        padding: 18px;
+      }
+
+      .top-fields,
+      .signature-grid,
+      .mental-row {
+        grid-template-columns: 1fr;
+      }
+
+      .mental-cell {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .mental-row .mental-cell:first-child {
+        border-top: 0;
+      }
+    }
+  </style>
+  <style>
+    .form-control, .cell-input {
+      width: 100%;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid #bfc4cd;
+      border-radius: 6px;
+      background: #fff;
+      font: inherit;
+      color: inherit;
+    }
+    textarea.form-control {
+      min-height: 96px;
+      resize: vertical;
+    }
+    .choice-option, .check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .native-check {
+      width: 16px;
+      height: 16px;
+      accent-color: #4f5563;
+      flex: 0 0 auto;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const getLabel = (el) => {
+        const field = el.closest('.field, .mental-cell');
+        const label = field && field.querySelector('.label');
+        return label ? label.textContent.trim() : 'Form field';
+      };
+      document.querySelectorAll('.line').forEach((el) => {
+        const control = document.createElement('input');
+        control.type = 'text';
+        control.className = 'form-control';
+        control.setAttribute('aria-label', getLabel(el));
+        el.replaceWith(control);
+      });
+      document.querySelectorAll('.box').forEach((el) => {
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'native-check';
+        input.setAttribute('aria-label', el.parentElement ? el.parentElement.textContent.trim() : 'Checkbox');
+        el.replaceWith(input);
+      });
+    });
+  </script>
+</head>
+<body>
+  <main class="sheet">
+    <div class="band">Service User Information &amp; Consent Forms</div>
+
+    <section class="intro">
+      <strong>This consent &amp; confidentiality form is designed to give you an understanding of:</strong>
+      <div>What happens to the information you give</div>
+      <div>Who has access to the information you give</div>
+    </section>
+
+    <section class="top-fields">
+      <div class="field">
+        <div class="label">Service User Name: Block Capitals</div>
+        <div class="line"></div>
+      </div>
+      <div class="field">
+        <div class="label">Sex</div>
+        <div class="sex-row">
+          <span class="check"><span class="box"></span> Male</span>
+          <span class="check"><span class="box"></span> Female</span>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Date of Birth</div>
+        <div class="line"></div>
+      </div>
+    </section>
+
+    <ol>
+      <li>I understand that by signing / marking this form below, I give consent to the recording of my personal information which is ordinarily confidential to the Service. Consent does allow that information to be discussed as a team.</li>
+      <li>I understand that I have the right to withdraw consent for the sharing of information at any time, except where there is a professional obligation for confidentiality to be extended (e.g. Child Protection, risk to self, risk to others, Court order).</li>
+      <li>I understand that the information I provide is ordinarily not disclosed to people outside the Service without further written consent from myself or from my legal guardian, if I am under 18 years of age.</li>
+      <li>I understand that my information / records are retained in electronic [computer] and, or paper form, and are the property of the service provider.</li>
+      <li>I understand that I have the right to access any information held in that record.</li>
+      <li>I understand that consent applies to the duration of this current assessment and the service provided following on from this assessment.</li>
+      <li>I understand that attending this service requires appropriate behaviour.</li>
+      <li>I also understand that selected information from my records is also retained by the Health Research Board without the use of my name (Drug &amp; Alcohol Services only).</li>
+      <li>All requests for a report for an external agency regarding my attendance at or my treatment with this service must be requested in writing with 10 working days advance notice. Such reports may require some additional consent.</li>
+    </ol>
+
+    <div class="note">
+      <strong>Please note:</strong> In the event of the team becoming aware of information that would indicate that you, or someone in your care, or any other person, may be at risk, then staff of this Service have a professional responsibility to report that concern to a relevant authority.
+    </div>
+
+    <section class="confirm">
+      <div class="confirm-title">
+        I confirm that the above conditions have been explained to me and that I fully understand and agree to them.
+      </div>
+      <div class="signature-grid">
+        <div class="field">
+          <div class="label">Signature of Service User</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Date</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Signature of Staff</div>
+          <div class="line"></div>
+        </div>
+        <div class="field">
+          <div class="label">Date</div>
+          <div class="line"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Consent Specific to Mental Health Services</h2>
+      <div class="provisional">Best-effort transcription from the photo. This section should be reviewed and corrected where needed.</div>
+      <div class="text-block">
+        I consent to a shared health record between Mental Health Service and HSE Addiction Services including Community Voluntary Partners that may be involved in my care. I understand that information recorded by one service will be accessible by the other service. I understand I can withdraw consent at any time.
+      </div>
+
+      <div class="mental-grid">
+        <div class="mental-row">
+          <div class="mental-cell">
+            <div class="label">Signed</div>
+            <div class="line"></div>
+            <div class="label" style="margin-top:8px;">(service user)</div>
+          </div>
+          <div class="mental-cell">
+            <div class="label">Service</div>
+            <div class="line"></div>
+          </div>
+        </div>
+        <div class="mental-row">
+          <div class="mental-cell">
+            <div class="label">Signed</div>
+            <div class="line"></div>
+            <div class="label" style="margin-top:8px;">(staff)</div>
+          </div>
+          <div class="mental-cell">
+            <div class="label">Service</div>
+            <div class="line"></div>
+          </div>
+        </div>
+        <div class="mental-row">
+          <div class="mental-cell">
+            <div class="label">Name of Staff</div>
+            <div class="line"></div>
+          </div>
+          <div class="mental-cell"></div>
+        </div>
+        <div class="mental-row">
+          <div class="mental-cell">
+            <div class="label">Employing agency</div>
+            <div class="line"></div>
+          </div>
+          <div class="mental-cell">
+            <div class="label">Location</div>
+            <div class="line"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="subnote">
+      Main consent text above is transcribed from page 12 of [Drug-Alcohol-manual-FV.pdf]. The mental health section is reconstructed from the photographed page and may need edits.
+    </div>
+  </main>
+</body>
+</html>

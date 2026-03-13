@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AF Page 9</title>
+  <style>
+    :root {
+      --ink:#2f2f2f; --muted:#666; --page:#f3f4f6; --sheet:#fff; --line:#d8dbe2; --soft:#fbfbfc; --teal:#b9d4d3; --note:#ea7b6b;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;padding:24px;background:var(--page);color:var(--ink);font-family:Arial, Helvetica, sans-serif}
+    .sheet{max-width:980px;margin:0 auto;background:var(--sheet);padding:28px;border-radius:18px;box-shadow:0 16px 48px rgba(0,0,0,.08)}
+    .title{font-size:28px;font-weight:700;color:#245d63;margin:0 0 10px;text-transform:uppercase}
+    .provisional{margin-bottom:16px;padding:10px 12px;background:#fff7d6;border-left:4px solid #cf9b00;color:#6f5800;font-size:13px}
+    table{width:100%;border-collapse:collapse;margin-bottom:14px}
+    th,td{border:1px solid #cfd5dd;padding:10px 8px;vertical-align:top}
+    th{background:var(--teal);font-size:14px;text-align:left}
+    td{height:48px}
+    .type::before{content:"☐ "; margin-right:6px}
+    .note{display:inline-block;background:var(--note);color:#fff;padding:10px 14px;border-radius:18px;font-size:13px}
+    .section{margin-top:20px;border:2px solid var(--line);padding:16px;background:var(--soft)}
+    .section h2{margin:0 0 12px;font-size:24px;color:#245d63;text-transform:uppercase}
+    .row{display:grid;grid-template-columns:1.3fr .8fr .8fr .8fr;gap:12px 18px;align-items:end;margin-bottom:12px}
+    .field{margin-bottom:10px}
+    .label{font-size:14px;color:var(--muted);margin-bottom:6px}
+    .line{border-bottom:2px solid #c4c9d2;min-height:28px}
+    .checks{display:flex;gap:14px;flex-wrap:wrap}
+    .checks span::before{content:"☐ "}
+    @media (max-width:760px){body{padding:12px}.sheet{padding:18px}.row{grid-template-columns:1fr}}
+  </style>
+  <style>
+    .form-control, .cell-input {
+      width: 100%;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid #bfc4cd;
+      border-radius: 6px;
+      background: #fff;
+      font: inherit;
+      color: inherit;
+    }
+    textarea.form-control {
+      min-height: 96px;
+      resize: vertical;
+    }
+    .choice-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .native-check {
+      width: 16px;
+      height: 16px;
+      accent-color: #4f5563;
+      flex: 0 0 auto;
+    }
+    .type-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const getLabel = (el) => {
+        const field = el.closest('.field');
+        const label = field && field.querySelector('.label');
+        return label ? label.textContent.trim() : 'Form field';
+      };
+      document.querySelectorAll('.line').forEach((el) => {
+        const style = el.getAttribute('style') || '';
+        const match = style.match(/min-height:\s*(\d+)px/i);
+        const large = match && Number(match[1]) >= 44;
+        const control = document.createElement(large ? 'textarea' : 'input');
+        if (!large) control.type = 'text';
+        control.className = 'form-control';
+        control.setAttribute('aria-label', getLabel(el));
+        el.replaceWith(control);
+      });
+      document.querySelectorAll('.checks span').forEach((item, index) => {
+        const label = document.createElement('label');
+        label.className = 'choice-option';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'native-check';
+        input.setAttribute('aria-label', item.textContent.trim() || `Option ${index + 1}`);
+        label.append(input, document.createTextNode(item.textContent.trim()));
+        item.replaceWith(label);
+      });
+      document.querySelectorAll('td.type').forEach((td, index) => {
+        const text = td.textContent.trim();
+        td.textContent = '';
+        const label = document.createElement('label');
+        label.className = 'type-label';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'native-check';
+        input.setAttribute('aria-label', text || `Type ${index + 1}`);
+        label.append(input, document.createTextNode(text));
+        td.append(label);
+      });
+      document.querySelectorAll('tbody td:not(.type)').forEach((td) => {
+        if (!td.children.length && !td.textContent.trim()) {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'cell-input';
+          td.append(input);
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <main class="sheet">
+    <h1 class="title">Alcohol</h1>
+    <div class="provisional">Best-effort transcription from the photographed page.</div>
+    <div class="note">CONSIDER AUDIT</div>
+    <table>
+      <thead>
+        <tr>
+          <th>TYPE</th>
+          <th>Route of administration</th>
+          <th>Frequency of use in the last month</th>
+          <th>Number of standard drinks consumed on a typical drinking day (not 50 euro)</th>
+          <th>Duration of use in the last month</th>
+          <th>Age 1st used</th>
+          <th>Reason used</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="type">Beer</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td class="type">Spirits</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td class="type">Wine</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td class="type">Fortified wine</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td class="type">Cider</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td class="type">Alcopops</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td class="type">Others</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+
+    <div class="checks" style="margin-bottom:20px;">
+      <span>Please categorise the extent of the drinking problem</span>
+      <span>Hazardous</span>
+      <span>Harmful</span>
+      <span>Dependent</span>
+      <span>Not known</span>
+    </div>
+
+    <section class="section">
+      <h2>Previous Treatment</h2>
+      <div class="checks" style="margin-bottom:12px;">
+        <span>Ever treated for Substance Use Yes</span>
+        <span>No</span>
+        <span>Alcohol Yes</span>
+        <span>No</span>
+        <span>Gambling Yes</span>
+        <span>No</span>
+      </div>
+
+      <div class="row">
+        <div class="field"><div class="label">Total number of previous treatments</div><div class="line"></div></div>
+        <div class="field"><div class="label">Age first treated</div><div class="line"></div></div>
+        <div></div><div></div>
+      </div>
+
+      <div class="field"><div class="label">Treatment Type(s)</div><div class="line" style="min-height:72px;"></div></div>
+
+      <div class="checks" style="margin-bottom:12px;">
+        <span>Do you attend AA, NA or another self help support group? Yes</span>
+        <span>No</span>
+      </div>
+
+      <div class="row" style="grid-template-columns:1.6fr .8fr;">
+        <div class="field"><div class="label">Total number of previous medically supervised alcohol only detoxes</div><div class="line"></div></div>
+        <div></div>
+      </div>
+
+      <div class="row" style="grid-template-columns:1.6fr .8fr;">
+        <div class="field"><div class="label">Longest time abstinent</div><div class="line"></div></div>
+        <div class="field"><div class="label">Date</div><div class="line"></div></div>
+      </div>
+
+      <div class="field"><div class="label">Name of treatment provider(s)</div><div class="line" style="min-height:64px;"></div></div>
+      <div class="field"><div class="label">Reason for leaving</div><div class="line"></div></div>
+
+      <div class="checks" style="margin-bottom:12px;">
+        <span>Current opiate agonist treatment (e.g. methadone, buprenorphine) Yes</span>
+        <span>No</span>
+      </div>
+      <div class="checks" style="margin-bottom:12px;">
+        <span>Other current treatment/prescribed medications Yes</span>
+        <span>No</span>
+      </div>
+      <div class="field"><div class="label">Details</div><div class="line" style="min-height:70px;"></div></div>
+      <div class="checks" style="margin-bottom:12px;">
+        <span>Previous methadone maintenance Yes</span>
+        <span>No</span>
+      </div>
+      <div class="field"><div class="label">Age first received any opiate substitution</div><div class="line"></div></div>
+    </section>
+  </main>
+</body>
+</html>

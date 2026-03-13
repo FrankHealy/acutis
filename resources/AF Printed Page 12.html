@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AF Printed Page 12</title>
+  <style>
+    :root { --ink:#2f2f2f; --muted:#666; --page:#f3f4f6; --sheet:#fff; --line:#d6dbe2; --accent:#d9a05b; --panel:#fbf7f2; --note:#ea7b6b; }
+    * { box-sizing:border-box; } body { margin:0; padding:24px; background:var(--page); color:var(--ink); font-family:Arial, Helvetica, sans-serif; }
+    .sheet { max-width:1020px; margin:0 auto; background:var(--sheet); padding:28px; border-radius:18px; box-shadow:0 16px 48px rgba(0,0,0,.08); }
+    .band { background:var(--accent); color:#fff; text-align:center; padding:12px 16px; border-radius:999px; font-size:22px; font-weight:700; text-transform:uppercase; margin-bottom:10px; }
+    .provisional { margin-bottom:14px; padding:10px 12px; background:#fff7d6; border-left:4px solid #cf9b00; color:#6f5800; font-size:13px; }
+    .panel { border:1px solid var(--line); background:var(--panel); padding:14px; margin-bottom:18px; }
+    .panel h2 { margin:0 0 10px; font-size:26px; color:#9e5f1c; text-transform:uppercase; }
+    .question { display:grid; grid-template-columns:1fr auto; gap:18px; align-items:center; margin-bottom:10px; }
+    .checks { display:flex; gap:16px; align-items:center; }
+    .checks label { display:inline-flex; align-items:center; gap:6px; }
+    .field { margin-top:10px; }
+    .field label { display:block; font-weight:600; margin-bottom:6px; }
+    textarea, input[type="text"] { width:100%; border:1px solid #bfc4cd; border-radius:6px; padding:8px; font:inherit; }
+    textarea { min-height:110px; resize:vertical; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td { border:1px solid var(--line); padding:8px; text-align:left; }
+    th { background:#efe5d7; }
+    .bubble { float:right; background:var(--note); color:#fff; padding:10px 14px; border-radius:18px; font-size:13px; width:180px; text-align:center; margin-left:12px; }
+    .muted { color:var(--muted); margin-bottom:10px; }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <div class="band">Health</div>
+    <div class="provisional">Best-effort transcription from the photographed page.</div>
+    <div class="panel">
+      <h2>Physical Health</h2>
+      <div class="question"><span>Have you any concerns about your physical health?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Have you any known allergies (medical or any other)?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Have you ever had a head injury?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="field"><label>When was the last time you had a check up with your GP?</label><input type="text"></div>
+      <div class="field"><label>Please list any relevant medical history</label><textarea></textarea></div>
+      <div class="field"><label>List currently prescribed medications</label><textarea></textarea></div>
+      <div class="question"><span>Can you access your medication?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Do you adhere to your medication?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="question"><span>Have you any history of seizures?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <div class="field"><label>If "Yes" to any of the above please give details</label><textarea></textarea></div>
+
+      <table>
+        <thead>
+          <tr><th>Viral Screening(s)</th><th>Hepatitis C</th><th>Hepatitis B</th><th>HIV</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Never screened</td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td></tr>
+          <tr><td>Screened in last 12 months</td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td></tr>
+          <tr><td>Screened but not in last 12 months</td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td></tr>
+          <tr><td>Client did not wish to answer</td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td></tr>
+          <tr><td>Unknown</td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td><td><label><input type="checkbox"> Yes</label> <label><input type="checkbox"> No</label></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div class="bubble">Consider if there are barriers for transgender and non-binary people in accessing screening</div>
+      <h2>HSE National Screening Service</h2>
+      <p class="muted">Improving access so that everyone has access to screening regardless of who they are, where they are from, and how they define themselves (HSE).</p>
+      <p>The National Screening Service is responsible for:</p>
+      <ul>
+        <li>The National Breast Screening Programme</li>
+        <li>The National Cervical Screening Programme</li>
+        <li>The National Bowel Screening Programme</li>
+        <li>The National Diabetic Retinal Screening Programme</li>
+      </ul>
+      <div class="question"><span>Would you like to access screening to check for changes or early signs of disease?</span><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+      <p>If yes, you can be added to the register for screening and will be contacted in due course.</p>
+    </div>
+  </main>
+</body>
+</html>

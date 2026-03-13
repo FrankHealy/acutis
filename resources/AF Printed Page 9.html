@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AF Printed Page 9</title>
+  <style>
+    :root { --ink:#2f2f2f; --muted:#666; --page:#f3f4f6; --sheet:#fff; --line:#d6dbe2; --teal:#3ca9b5; --head:#d7e7e9; --note:#ea7b6b; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:24px; background:var(--page); color:var(--ink); font-family:Arial, Helvetica, sans-serif; }
+    .sheet { max-width:1020px; margin:0 auto; background:var(--sheet); padding:28px; border-radius:18px; box-shadow:0 16px 48px rgba(0,0,0,.08); }
+    .band { background:var(--teal); color:#fff; text-align:center; padding:12px 16px; border-radius:999px; font-size:22px; font-weight:700; text-transform:uppercase; margin-bottom:10px; }
+    .provisional { margin-bottom:14px; padding:10px 12px; background:#fff7d6; border-left:4px solid #cf9b00; color:#6f5800; font-size:13px; }
+    .hint { text-align:center; line-height:1.45; margin-bottom:14px; }
+    .note-bubble { float:right; background:var(--note); color:#fff; padding:10px 14px; border-radius:18px; font-size:13px; margin-left:12px; }
+    table { width:100%; border-collapse:collapse; margin:14px 0; }
+    th, td { border:1px solid var(--line); padding:10px 8px; vertical-align:top; }
+    th { background:var(--head); font-size:14px; }
+    td input, td textarea { width:100%; border:1px solid #bfc4cd; border-radius:6px; min-height:34px; padding:6px 8px; font:inherit; }
+    td textarea { min-height:64px; resize:vertical; }
+    .sublist { margin:6px 0 0 18px; color:var(--muted); font-size:14px; }
+    .section-box { border:1px solid var(--line); background:#f8fbfb; padding:14px; margin-top:14px; }
+    .field { margin-bottom:12px; }
+    .label { display:block; font-weight:600; margin-bottom:6px; }
+    .checks { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+    .checks label { display:inline-flex; align-items:center; gap:6px; }
+    @media (max-width:760px){ body{padding:12px;} .sheet{padding:18px;} .note-bubble{float:none;display:inline-block;margin:0 0 12px;} }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <div class="band">Substance Use, Gambling, Eating Disorders, Histories</div>
+    <div class="provisional">Best-effort transcription from the photographed page. Wording in the guidance bubbles is approximate.</div>
+    <div class="note-bubble">RISK OF OVERDOSE?</div>
+    <div class="note-bubble">POLY SUBSTANCE USE?</div>
+    <p class="hint">Here you can discuss your drug and alcohol use and other addictions and identify what needs you may have at this time that can floor your care plan.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Drug Used</th>
+          <th>Route of administration</th>
+          <th>Frequency of use in the last month</th>
+          <th>Quantity</th>
+          <th>Duration of use in the last month</th>
+          <th>Age 1st used</th>
+          <th>Date last used</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cannabis<div class="sublist">(including synthetic cannabinoids)</div></td>
+          <td><input type="text" aria-label="Cannabis route of administration"></td>
+          <td><input type="text" aria-label="Cannabis frequency"></td>
+          <td><input type="text" aria-label="Cannabis quantity"></td>
+          <td><input type="text" aria-label="Cannabis duration"></td>
+          <td><input type="text" aria-label="Cannabis age first used"></td>
+          <td><input type="text" aria-label="Cannabis date last used"></td>
+        </tr>
+        <tr><td>Hallucinogens</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+        <tr><td>Benzodiazepine(s)<div class="sublist">Source: Prescribed, Street, Internet, Multiple, Other</div></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+        <tr><td>Heroin</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+        <tr><td>Methadone</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+        <tr><td>Other Opiates</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+        <tr><td>Cocaine<div class="sublist">Powder, Crack, Other</div></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+        <tr><td>Amphetamine</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+        <tr><td>Ecstasy/MDMA</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+        <tr><td>Over the Counter Drugs</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+        <tr><td>Any other drugs<div class="sublist">e.g. Solvents/Gas, Head-shop/Steroids, Others</div></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+      </tbody>
+    </table>
+
+    <div class="section-box">
+      <div class="field">
+        <label class="label" for="gambling">Gambling</label>
+        <textarea id="gambling"></textarea>
+      </div>
+      <div class="field">
+        <label class="label" for="eating_disorders">Eating Disorders</label>
+        <textarea id="eating_disorders"></textarea>
+      </div>
+      <div class="field">
+        <span class="label">Was it difficult to assess which was the main problem drug?</span>
+        <div class="checks">
+          <label><input type="checkbox"> Yes</label>
+          <label><input type="checkbox"> No</label>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
