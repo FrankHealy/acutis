@@ -4,6 +4,13 @@ public sealed class ResidentListItemDto
 {
     public int Id { get; set; }
     public Guid ResidentGuid { get; set; }
+    public Guid? EpisodeId { get; set; }
+    public Guid? ResidentCaseId { get; set; }
+    public string? CentreEpisodeCode { get; set; }
+    public int? EntryYear { get; set; }
+    public int? EntryWeek { get; set; }
+    public int? EntrySequence { get; set; }
+    public string? CaseStatus { get; set; }
     public string Psn { get; set; } = string.Empty;
     public Guid? UnitGuid { get; set; }
     public string FirstName { get; set; } = string.Empty;

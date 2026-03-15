@@ -32,33 +32,116 @@ public sealed class ResidentService : IResidentService
         CancellationToken cancellationToken = default)
     {
         var normalizedUnit = NormalizeUnit(unitId);
-        var residents = await _dbContext.Residents
+        var unit = await _dbContext.Units
             .AsNoTracking()
-            .Where(resident => resident.UnitCode == normalizedUnit)
-            .OrderBy(resident => resident.Surname)
-            .ThenBy(resident => resident.FirstName)
+            .Where(x => x.Code == normalizedUnit)
+            .Select(x => new { x.Id, x.Code })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var activeEpisodes = unit is null
+            ? []
+            : await _dbContext.ResidentProgrammeEpisodes
+                .AsNoTracking()
+                .Where(x => x.UnitId == unit.Id && x.EndDate == null)
+                .OrderByDescending(x => x.StartDate)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.ResidentId,
+                    x.ResidentCaseId,
+                    x.UnitId,
+                    x.StartDate,
+                    x.CurrentWeekNumber,
+                    x.CentreEpisodeCode,
+                    x.EntryYear,
+                    x.EntryWeek,
+                    x.EntrySequence,
+                    x.RoomNumber,
+                    x.ExpectedCompletionDate,
+                    x.PrimaryAddiction
+                })
+                .ToListAsync(cancellationToken);
+
+        var currentEpisodeByResident = activeEpisodes
+            .GroupBy(x => x.ResidentId)
+            .ToDictionary(x => x.Key, x => x.First());
+
+        var residentIdsWithEpisode = currentEpisodeByResident.Keys.ToHashSet();
+
+        var residentsFromEpisode = residentIdsWithEpisode.Count == 0
+            ? []
+            : await _dbContext.Residents
+                .AsNoTracking()
+                .Where(resident => residentIdsWithEpisode.Contains(resident.Id))
+                .ToListAsync(cancellationToken);
+
+        var residentsFromLegacyUnit = await _dbContext.Residents
+            .AsNoTracking()
+            .Where(resident => resident.UnitCode == normalizedUnit && !residentIdsWithEpisode.Contains(resident.Id))
             .ToListAsync(cancellationToken);
 
+        var residents = residentsFromEpisode
+            .Concat(residentsFromLegacyUnit)
+            .OrderBy(resident => resident.Surname)
+            .ThenBy(resident => resident.FirstName)
+            .ToList();
+
+        var caseIds = currentEpisodeByResident.Values
+            .Where(x => x.ResidentCaseId.HasValue)
+            .Select(x => x.ResidentCaseId!.Value)
+            .Distinct()
+            .ToList();
+
+        var caseStatusById = caseIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _dbContext.ResidentCases
+                .AsNoTracking()
+                .Where(x => caseIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, x => x.CaseStatus, cancellationToken);
+
         return residents
-            .Select(resident => new ResidentListItemDto
+            .Select(resident =>
             {
+                currentEpisodeByResident.TryGetValue(resident.Id, out var episode);
+                var episodeCaseStatus = episode?.ResidentCaseId is Guid residentCaseId &&
+                                        caseStatusById.TryGetValue(residentCaseId, out var status)
+                    ? status
+                    : null;
+
+                var currentWeekNumber = episode?.CurrentWeekNumber ?? resident.WeekNumber;
+                var currentUnitGuid = episode?.UnitId ?? resident.UnitId;
+                var currentUnitCode = unit?.Code ?? resident.UnitCode?.Trim().ToLowerInvariant() ?? normalizedUnit;
+                var admissionDate = episode?.StartDate.ToString("yyyy-MM-dd") ?? resident.AdmissionDate?.ToString("yyyy-MM-dd");
+                var roomNumber = episode?.RoomNumber?.Trim() ?? resident.RoomNumber?.Trim() ?? string.Empty;
+                var expectedCompletion = episode?.ExpectedCompletionDate?.ToString("yyyy-MM-dd") ?? resident.ExpectedCompletionDate?.ToString("yyyy-MM-dd");
+                var primaryAddiction = episode?.PrimaryAddiction?.Trim() ?? resident.PrimaryAddiction?.Trim() ?? string.Empty;
+
+                return new ResidentListItemDto
+                {
                 Id = ToLegacyResidentId(resident.Id),
                 ResidentGuid = resident.Id,
+                EpisodeId = episode?.Id,
+                ResidentCaseId = episode?.ResidentCaseId,
+                CentreEpisodeCode = episode?.CentreEpisodeCode,
+                EntryYear = episode?.EntryYear,
+                EntryWeek = episode?.EntryWeek,
+                EntrySequence = episode?.EntrySequence,
+                CaseStatus = episodeCaseStatus,
                 Psn = resident.Psn?.Trim() ?? string.Empty,
-                UnitGuid = resident.UnitId,
+                UnitGuid = currentUnitGuid,
                 FirstName = resident.FirstName?.Trim() ?? string.Empty,
                 Surname = resident.Surname?.Trim() ?? string.Empty,
                 Nationality = resident.Nationality?.Trim() ?? string.Empty,
                 Age = resident.DateOfBirth.HasValue
                     ? CalculateAge(resident.DateOfBirth.Value.ToString("yyyy-MM-dd"))
                     : 18,
-                WeekNumber = resident.WeekNumber,
-                RoomNumber = resident.RoomNumber?.Trim() ?? string.Empty,
-                UnitId = resident.UnitCode?.Trim().ToLowerInvariant() ?? normalizedUnit,
+                WeekNumber = currentWeekNumber,
+                RoomNumber = roomNumber,
+                UnitId = currentUnitCode,
                 PhotoUrl = resident.PhotoUrl,
-                AdmissionDate = resident.AdmissionDate?.ToString("yyyy-MM-dd"),
-                ExpectedCompletion = resident.ExpectedCompletionDate?.ToString("yyyy-MM-dd"),
-                PrimaryAddiction = resident.PrimaryAddiction?.Trim() ?? string.Empty,
+                AdmissionDate = admissionDate,
+                ExpectedCompletion = expectedCompletion,
+                PrimaryAddiction = primaryAddiction,
                 IsDrug = resident.IsDrug,
                 IsGambeler = resident.IsGambeler,
                 IsPreviousResident = resident.IsPreviousResident,
@@ -69,6 +152,7 @@ public sealed class ResidentService : IResidentService
                 ArgumentativeScale = resident.ArgumentativeScale,
                 LearningDifficultyScale = resident.LearningDifficultyScale,
                 LiteracyScale = resident.LiteracyScale
+                };
             })
             .ToList();
     }

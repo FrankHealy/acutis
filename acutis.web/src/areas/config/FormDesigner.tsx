@@ -6,7 +6,16 @@ import {
   Upload, History, Package, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import ElementsLibraryPanel from './ElementsLibraryPanel';
+import {
+  createAdmissionForm,
+  saveAsDraftAdmissionForm,
+  type JsonSchemaDto,
+  type JsonSchemaPropertyDto,
+  type UpsertFormDefinitionRequest,
+  type UiLayoutDto,
+} from '@/areas/screening/forms/ApiClient';
 
 interface FormField {
   id: string;
@@ -25,6 +34,7 @@ interface FormField {
   };
   helpText?: string;
   defaultValue?: string;
+  group?: string;
 }
 
 interface BoundElement {
@@ -43,6 +53,147 @@ interface FormSection {
   fields: FormField[];
   collapsed: boolean;
 }
+
+type SectionFieldGroup = {
+  name: string;
+  fields: FormField[];
+};
+
+const normalizeGroupName = (group?: string): string | null => {
+  const trimmed = group?.trim();
+  return trimmed ? trimmed : null;
+};
+
+const getSectionFieldLayout = (fields: FormField[]): { ungroupedFields: FormField[]; groups: SectionFieldGroup[] } => {
+  const ungroupedFields: FormField[] = [];
+  const groupsByName = new Map<string, FormField[]>();
+
+  for (const field of fields) {
+    const groupName = normalizeGroupName(field.group);
+    if (!groupName) {
+      ungroupedFields.push(field);
+      continue;
+    }
+
+    const groupFields = groupsByName.get(groupName) ?? [];
+    groupFields.push(field);
+    groupsByName.set(groupName, groupFields);
+  }
+
+  const groups = Array.from(groupsByName.entries()).map(([name, groupedFields]) => ({
+    name,
+    fields: groupedFields,
+  }));
+
+  return { ungroupedFields, groups };
+};
+
+const renderPreviewField = (field: FormField) => (
+  <div key={field.id} className={field.type === 'textarea' ? 'col-span-2' : ''}>
+    <label className="block text-sm font-semibold text-gray-700 mb-2">
+      {field.label}
+      {field.required && <span className="text-red-500 ml-1">*</span>}
+    </label>
+    {field.type === 'textarea' ? (
+      <textarea
+        placeholder={field.placeholder}
+        rows={4}
+        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none resize-none"
+      />
+    ) : field.type === 'select' ? (
+      <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none">
+        <option value="">Select...</option>
+        {field.options?.map((option, i) => (
+          <option key={i} value={option}>{option}</option>
+        ))}
+      </select>
+    ) : field.type === 'checkbox' ? (
+      <label className="flex items-center space-x-3 cursor-pointer">
+        <input type="checkbox" className="w-5 h-5 rounded border-2 border-gray-300" />
+        <span className="text-gray-700">{field.placeholder || field.label}</span>
+      </label>
+    ) : (
+      <input
+        type={field.type}
+        placeholder={field.placeholder}
+        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+      />
+    )}
+    {field.helpText && (
+      <p className="text-xs text-gray-500 mt-1">{field.helpText}</p>
+    )}
+  </div>
+);
+
+const slugifyKey = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "") || "field";
+
+const getWidgetType = (field: FormField): string => {
+  switch (field.type) {
+    case 'number':
+      return 'number';
+    case 'textarea':
+      return 'textarea';
+    case 'checkbox':
+      return 'toggle';
+    case 'select':
+      return 'select';
+    default:
+      return 'input';
+  }
+};
+
+const getSchemaProperty = (field: FormField): JsonSchemaPropertyDto => {
+  const fieldDataType = field.dataType ?? 'string';
+  const schemaType: JsonSchemaPropertyDto["type"] =
+    field.type === 'checkbox' ? 'boolean'
+    : field.type === 'date' ? 'date'
+    : field.type === 'textarea' ? 'text'
+    : field.type === 'select' ? 'string'
+    : fieldDataType === 'integer' ? 'integer'
+    : fieldDataType === 'number' ? 'number'
+    : fieldDataType === 'boolean' ? 'boolean'
+    : fieldDataType === 'date' ? 'date'
+    : fieldDataType === 'text' ? 'text'
+    : 'string';
+
+  const property: JsonSchemaPropertyDto = { type: schemaType };
+
+  if (schemaType === 'string' || schemaType === 'text') {
+    if (field.validation?.min !== undefined) {
+      property.minLength = field.validation.min;
+    }
+    if (field.validation?.max !== undefined) {
+      property.maxLength = field.validation.max;
+    }
+    if (field.validation?.pattern) {
+      property.pattern = field.validation.pattern;
+    }
+  }
+
+  if (schemaType === 'integer' || schemaType === 'number') {
+    if (field.validation?.min !== undefined) {
+      property.minimum = field.validation.min;
+    }
+    if (field.validation?.max !== undefined) {
+      property.maximum = field.validation.max;
+    }
+  }
+
+  if (field.type === 'email' || fieldDataType === 'email') {
+    property.format = 'email';
+  }
+
+  if (field.type === 'phone' || fieldDataType === 'phone') {
+    property.format = 'phone';
+  }
+
+  return property;
+};
 
 const alcoholEvaluationBoundElements: BoundElement[] = [
   {
@@ -204,6 +355,7 @@ const alcoholEvaluationBoundElements: BoundElement[] = [
 
 const FormDesigner = () => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [formName, setFormName] = useState('Admission Form v4');
   const [formVersion, setFormVersion] = useState(4);
   const [selectedUnit, setSelectedUnit] = useState('all');
@@ -529,36 +681,63 @@ const FormDesigner = () => {
     }));
   };
 
-  const buildFormPayload = (status: 'draft' | 'active') => {
+  const buildFormPayload = (): UpsertFormDefinitionRequest => {
+    const schema: JsonSchemaDto = {
+      type: 'object',
+      properties: {},
+      required: [],
+    };
+
+    const ui: UiLayoutDto = {
+      sections: [],
+      widgets: {},
+      labelKeys: {},
+      helpKeys: {},
+      selectOptions: {},
+    };
+
+    for (const section of sections) {
+      const { ungroupedFields, groups } = getSectionFieldLayout(section.fields);
+
+      ui.sections.push({
+        titleKey: section.title,
+        items: ungroupedFields.map((field) => field.fieldName || field.id),
+        groups: groups.map((group) => ({
+          title: group.name,
+          items: group.fields.map((field) => field.fieldName || field.id),
+        })),
+      });
+
+      for (const field of section.fields) {
+        const fieldKey = field.fieldName || field.id;
+        schema.properties[fieldKey] = getSchemaProperty(field);
+        ui.widgets[fieldKey] = getWidgetType(field);
+        ui.labelKeys[fieldKey] = field.label;
+
+        if (field.required) {
+          schema.required.push(fieldKey);
+        }
+
+        if (field.helpText?.trim()) {
+          ui.helpKeys[fieldKey] = field.helpText.trim();
+        }
+
+        if (field.type === 'select' && field.options?.length) {
+          ui.selectOptions![fieldKey] = field.options.map((option) => ({
+            value: option,
+            label: option,
+          }));
+        }
+      }
+    }
+
     return {
-      name: formName.trim() || 'Admission Form',
-      unit: selectedUnit,
-      admissionType: selectedUnit === 'detox' ? admissionType : null,
-      version: String(formVersion),
-      status,
-      steps: [
-        {
-          id: 'step-1',
-          title: formName.trim() || 'Admission Form',
-          order: 1,
-          sections: sections.map((section, index) => ({
-            id: section.id,
-            title: section.title,
-            order: index + 1,
-            fields: section.fields.map((field) => ({
-              id: field.fieldName || field.id,
-              type: field.type,
-              dataType: field.dataType,
-              label: field.label,
-              required: field.required,
-              placeholder: field.placeholder,
-              helpText: field.helpText,
-              validation: field.validation,
-              options: field.options?.map((option) => ({ value: option, label: option })),
-            })),
-          })),
-        },
-      ],
+      titleKey: formName.trim() || 'Admission Form',
+      descriptionKey: `designer.generated.${slugifyKey(formName)}`,
+      schemaJson: JSON.stringify(schema, null, 2),
+      uiJson: JSON.stringify(ui, null, 2),
+      rulesJson: '[]',
+      makeActive: true,
     };
   };
 
@@ -568,15 +747,21 @@ const FormDesigner = () => {
       return;
     }
 
-    try {
-      const response = await fetch(`/api/forms/${selectedUnit}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildFormPayload(status)),
-      });
+    const accessToken = session?.accessToken;
+    if (!accessToken) {
+      alert('You must be signed in to save form configuration.');
+      return;
+    }
 
-      if (!response.ok) {
-        throw new Error('Failed to save form configuration');
+    try {
+      const payload = buildFormPayload();
+      payload.makeActive = status === 'active';
+      const formCode = selectedUnit;
+
+      if (status === 'active') {
+        await createAdmissionForm(accessToken, formCode, payload);
+      } else {
+        await saveAsDraftAdmissionForm(accessToken, formCode, payload);
       }
 
       if (status === 'active') {
@@ -893,6 +1078,7 @@ const FormDesigner = () => {
                       selectedSectionData.fields.map((field, index) => {
                         const FieldIcon = getFieldIcon(field.type);
                         const isSelected = selectedField === field.id;
+                        const groupName = normalizeGroupName(field.group);
 
                         return (
                           <div
@@ -919,6 +1105,9 @@ const FormDesigner = () => {
                                     <p>Type: <span className="font-medium">{field.type}</span></p>
                                     {field.dataType && (
                                       <p>Data Type: <span className="font-medium">{field.dataType}</span></p>
+                                    )}
+                                    {groupName && (
+                                      <p>Group: <span className="font-medium">{groupName}</span></p>
                                     )}
                                     <p>Field Name: <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{field.fieldName}</span></p>
                                     {(field.validation?.min !== undefined || field.validation?.max !== undefined) && (
@@ -1021,6 +1210,18 @@ const FormDesigner = () => {
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none font-mono text-sm"
                   />
                   <p className="text-xs text-gray-500 mt-1">Used in API/database (camelCase recommended)</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Group (optional)</label>
+                  <input
+                    type="text"
+                    value={selectedFieldData.group || ''}
+                    onChange={(e) => updateSelectedField({ group: e.target.value || undefined })}
+                    placeholder="e.g., Next of Kin"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Leave empty to keep this field outside any group.</p>
                 </div>
 
                 <div>
@@ -1287,77 +1488,63 @@ const FormDesigner = () => {
 
             {/* Preview of Form */}
             <div className="space-y-6">
-              {sections.map(section => (
-                <div key={section.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <button
-                    onClick={() => toggleSection(section.id)}
-                    className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div className="text-left">
-                        <h3 className="text-lg font-bold text-gray-900">{section.title}</h3>
-                        {section.required && (
-                          <p className="text-sm text-red-600 font-medium">Required</p>
-                        )}
-                        {section.subtitle && (
-                          <p className="text-sm text-gray-500">{section.subtitle}</p>
-                        )}
-                      </div>
-                    </div>
-                    {section.collapsed ? (
-                      <ChevronDown className="h-6 w-6 text-gray-400" />
-                    ) : (
-                      <ChevronUp className="h-6 w-6 text-gray-400" />
-                    )}
-                  </button>
+              {sections.map(section => {
+                const { ungroupedFields, groups } = getSectionFieldLayout(section.fields);
 
-                  {!section.collapsed && (
-                    <div className="p-6 border-t border-gray-200 bg-gray-50">
-                      <div className="grid grid-cols-2 gap-6">
-                        {section.fields.map(field => (
-                          <div key={field.id} className={field.type === 'textarea' ? 'col-span-2' : ''}>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                              {field.label}
-                              {field.required && <span className="text-red-500 ml-1">*</span>}
-                            </label>
-                            {field.type === 'textarea' ? (
-                              <textarea
-                                placeholder={field.placeholder}
-                                rows={4}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none resize-none"
-                              />
-                            ) : field.type === 'select' ? (
-                              <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none">
-                                <option value="">Select...</option>
-                                {field.options?.map((option, i) => (
-                                  <option key={i} value={option}>{option}</option>
-                                ))}
-                              </select>
-                            ) : field.type === 'checkbox' ? (
-                              <label className="flex items-center space-x-3 cursor-pointer">
-                                <input type="checkbox" className="w-5 h-5 rounded border-2 border-gray-300" />
-                                <span className="text-gray-700">{field.placeholder || field.label}</span>
-                              </label>
-                            ) : (
-                              <input
-                                type={field.type}
-                                placeholder={field.placeholder}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                              />
-                            )}
-                            {field.helpText && (
-                              <p className="text-xs text-gray-500 mt-1">{field.helpText}</p>
-                            )}
-                          </div>
-                        ))}
+                return (
+                  <div key={section.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="text-lg font-bold text-gray-900">{section.title}</h3>
+                          {section.required && (
+                            <p className="text-sm text-red-600 font-medium">Required</p>
+                          )}
+                          {section.subtitle && (
+                            <p className="text-sm text-gray-500">{section.subtitle}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                      {section.collapsed ? (
+                        <ChevronDown className="h-6 w-6 text-gray-400" />
+                      ) : (
+                        <ChevronUp className="h-6 w-6 text-gray-400" />
+                      )}
+                    </button>
+
+                    {!section.collapsed && (
+                      <div className="p-6 border-t border-gray-200 bg-gray-50">
+                        {ungroupedFields.length > 0 && (
+                          <div className="grid grid-cols-2 gap-6">
+                            {ungroupedFields.map((field) => renderPreviewField(field))}
+                          </div>
+                        )}
+
+                        {groups.length > 0 && (
+                          <div className={`${ungroupedFields.length > 0 ? 'mt-6' : ''} space-y-4`}>
+                            {groups.map((group) => (
+                              <div key={`${section.id}-${group.name}`} className="rounded-2xl border border-gray-200 bg-white p-5">
+                                <div className="mb-4">
+                                  <h4 className="text-sm font-bold uppercase tracking-[0.18em] text-gray-500">{group.name}</h4>
+                                </div>
+                                <div className="grid grid-cols-2 gap-6">
+                                  {group.fields.map((field) => renderPreviewField(field))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

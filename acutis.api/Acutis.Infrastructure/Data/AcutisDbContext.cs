@@ -402,11 +402,13 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<GroupTherapyDailyQuestion> GroupTherapyDailyQuestions => Set<GroupTherapyDailyQuestion>();
     public DbSet<GroupTherapyResidentRemark> GroupTherapyResidentRemarks => Set<GroupTherapyResidentRemark>();
     public DbSet<TherapyTopic> TherapyTopics => Set<TherapyTopic>();
+    public DbSet<ResidentCase> ResidentCases => Set<ResidentCase>();
     public DbSet<ResidentProgrammeEpisode> ResidentProgrammeEpisodes => Set<ResidentProgrammeEpisode>();
     public DbSet<WeeklyTherapyRun> WeeklyTherapyRuns => Set<WeeklyTherapyRun>();
     public DbSet<ResidentWeeklyTherapyAssignment> ResidentWeeklyTherapyAssignments => Set<ResidentWeeklyTherapyAssignment>();
     public DbSet<TherapyTopicCompletion> TherapyTopicCompletions => Set<TherapyTopicCompletion>();
     public DbSet<EpisodeEvent> EpisodeEvents => Set<EpisodeEvent>();
+    public DbSet<EpisodeEventTypeLookup> EpisodeEventTypes => Set<EpisodeEventTypeLookup>();
     public DbSet<TherapySchedulingConfig> TherapySchedulingConfigs => Set<TherapySchedulingConfig>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
@@ -661,10 +663,12 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GroupTherapyDailyQuestionConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyResidentRemarkConfiguration());
         modelBuilder.ApplyConfiguration(new TherapyTopicConfiguration());
+        modelBuilder.ApplyConfiguration(new ResidentCaseConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentProgrammeEpisodeConfiguration());
         modelBuilder.ApplyConfiguration(new WeeklyTherapyRunConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentWeeklyTherapyAssignmentConfiguration());
         modelBuilder.ApplyConfiguration(new TherapyTopicCompletionConfiguration());
+        modelBuilder.ApplyConfiguration(new EpisodeEventTypeLookupConfiguration());
         modelBuilder.ApplyConfiguration(new EpisodeEventConfiguration());
         modelBuilder.ApplyConfiguration(new TherapySchedulingConfigConfiguration());
         modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
@@ -685,6 +689,7 @@ public sealed class AcutisDbContext : DbContext
         SeedGroupTherapyProgram(modelBuilder);
         SeedGroupTherapyRemarks(modelBuilder);
         SeedTherapyTopics(modelBuilder);
+        SeedEpisodeEventTypes(modelBuilder);
     }
 
     private static void SeedCentres(ModelBuilder modelBuilder)
@@ -961,6 +966,13 @@ public sealed class AcutisDbContext : DbContext
             UnitId = DetoxUnitId,
             StartDate = new DateOnly(2026, 1, 5),
             EndDate = null,
+            CentreEpisodeCode = BuildCentreEpisodeCode("BRU", resident.AdmissionDate?.Year ?? 2026, residentSeeds[index].WeekNumber, 1),
+            EntryYear = resident.AdmissionDate?.Year ?? 2026,
+            EntryWeek = residentSeeds[index].WeekNumber,
+            EntrySequence = 1,
+            RoomNumber = resident.RoomNumber,
+            ExpectedCompletionDate = resident.ExpectedCompletionDate,
+            PrimaryAddiction = resident.PrimaryAddiction,
             ProgrammeType = ProgrammeType.Alcohol,
             CurrentWeekNumber = residentSeeds[index].WeekNumber,
             ParticipationMode = ParticipationMode.FullProgramme,
@@ -1705,11 +1717,30 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.Entity<TherapyTopic>().HasData(seededTopics);
     }
 
+    private static void SeedEpisodeEventTypes(ModelBuilder modelBuilder)
+    {
+        var eventTypes = Enum.GetValues<EpisodeEventType>()
+            .Select(eventType => new EpisodeEventTypeLookup
+            {
+                Id = (int)eventType,
+                Code = eventType.ToString().ToUpperInvariant(),
+                DefaultName = eventType.ToString(),
+                IsActive = true
+            });
+
+        modelBuilder.Entity<EpisodeEventTypeLookup>().HasData(eventTypes);
+    }
+
     private static Guid CreateDeterministicGuid(string value)
     {
         var bytes = Encoding.UTF8.GetBytes(value);
         var hash = MD5.HashData(bytes);
         return new Guid(hash);
+    }
+
+    private static string BuildCentreEpisodeCode(string centreCode, int year, int weekNumber, int entrySequence)
+    {
+        return $"{centreCode}-{year}W{weekNumber:00}-{entrySequence:000}";
     }
 
     private static string BuildResidentSecondaryKey(string centreCode, string unitCode, int year, int weekNumber, int residentNumber)

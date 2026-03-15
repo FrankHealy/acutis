@@ -8,6 +8,8 @@ import type {
   OptionSetDto,
   SaveProgressResponse,
   SaveResponse,
+  UiGroupDto,
+  UiSectionDto,
 } from "./ApiClient";
 import { applyRules } from "./RuleEngine";
 import { validateAnswers, type ValidationErrors } from "./Validation";
@@ -166,6 +168,18 @@ export default function DynamicFormRenderer({
     );
   };
 
+  const getGroupTitle = (group: UiGroupDto): string => {
+    if (group.title && group.title.trim()) {
+      return group.title;
+    }
+
+    if (group.titleKey) {
+      return t(group.titleKey);
+    }
+
+    return "Group";
+  };
+
   const renderField = (fieldKey: string) => {
     if (ruleState.hiddenFields.has(fieldKey)) {
       return null;
@@ -211,14 +225,20 @@ export default function DynamicFormRenderer({
             onBlur={handleBlur}
           >
             <option value="">Select...</option>
-            {(optionSetLookup.get(schemaProperty.optionSetKey ?? "")?.items ?? [])
-              .filter((item) => item.isActive)
-              .sort((left, right) => left.sortOrder - right.sortOrder)
-              .map((item) => (
-                <option key={item.code} value={item.code}>
-                  {t(item.labelKey)}
-                </option>
-              ))}
+            {schemaProperty.optionSetKey
+              ? (optionSetLookup.get(schemaProperty.optionSetKey)?.items ?? [])
+                  .filter((item) => item.isActive)
+                  .sort((left, right) => left.sortOrder - right.sortOrder)
+                  .map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {t(item.labelKey)}
+                    </option>
+                  ))
+              : (form.ui.selectOptions?.[fieldKey] ?? []).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
           </select>
         )}
 
@@ -275,6 +295,37 @@ export default function DynamicFormRenderer({
     );
   };
 
+  const renderSectionBody = (section: UiSectionDto) => {
+    const ungroupedItems = section.items ?? [];
+    const groups = section.groups ?? [];
+
+    return (
+      <div className="space-y-4">
+        {ungroupedItems.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {ungroupedItems.map((fieldKey) => renderField(fieldKey))}
+          </div>
+        )}
+
+        {groups.map((group) => (
+          <div
+            key={`${section.titleKey}-${group.titleKey ?? group.title ?? "group"}`}
+            className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+          >
+            <div className="mb-3">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                {getGroupTitle(group)}
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {group.items.map((fieldKey) => renderField(fieldKey))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-6">
       <div className="border-b border-gray-100 pb-4">
@@ -299,9 +350,7 @@ export default function DynamicFormRenderer({
               )}
             </button>
             <div className={isExpanded ? "block border-t border-gray-100 p-4" : "hidden"}>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {section.items.map((fieldKey) => renderField(fieldKey))}
-              </div>
+              {renderSectionBody(section)}
             </div>
           </section>
         );

@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315133449_RefactorResidentLifecycle")]
+    partial class RefactorResidentLifecycle
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2723,17 +2726,10 @@ namespace Acutis.Infrastructure.Migrations
                     b.Property<int>("EntryYear")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("ExpectedCompletionDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("ParticipationMode")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
-
-                    b.Property<string>("PrimaryAddiction")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("ProgrammeType")
                         .IsRequired()
@@ -2745,10 +2741,6 @@ namespace Acutis.Infrastructure.Migrations
 
                     b.Property<Guid>("ResidentId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("RoomNumber")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");
@@ -2783,12 +2775,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 1,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 3, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("5711d7ec-b87f-237d-69bc-921ae521b99a"),
-                            RoomNumber = "D01",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2801,12 +2790,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 2,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 4, 6, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("1c2e4089-bdce-1c37-9e9d-f403a5e2ffe3"),
-                            RoomNumber = "D02",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2819,12 +2805,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 3,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 4, 13, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("f4a51f22-5473-38c7-745c-98fc845e874d"),
-                            RoomNumber = "D03",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2837,12 +2820,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 4,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 4, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("bd9adb8f-ae9a-1e40-bb61-7d0c64e674e4"),
-                            RoomNumber = "D04",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2855,12 +2835,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 5,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 4, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("5e319048-9738-bdfa-0955-62f01c480bf3"),
-                            RoomNumber = "D05",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2873,12 +2850,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 6,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 5, 4, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("89b2f72b-a1c7-7a5d-1d5d-fbaaf88ee8fd"),
-                            RoomNumber = "D06",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2891,12 +2865,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 7,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 5, 11, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("9390d075-2a03-a0af-6054-474038a9541c"),
-                            RoomNumber = "D07",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2909,12 +2880,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 8,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 5, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("441f3e3b-3b70-9852-34fb-f5b65e9d1240"),
-                            RoomNumber = "D08",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2927,12 +2895,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 9,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 5, 25, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("2c0f81c6-5d98-e779-10eb-8d12b898d3ea"),
-                            RoomNumber = "D09",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2945,12 +2910,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 10,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("191d3618-6770-d7c8-9b12-ec85d663d197"),
-                            RoomNumber = "D10",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
@@ -2963,12 +2925,9 @@ namespace Acutis.Infrastructure.Migrations
                             EntrySequence = 1,
                             EntryWeek = 11,
                             EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 6, 8, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("dab0d39b-ef80-0dc0-00da-a1fad79b2685"),
-                            RoomNumber = "D11",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         });
@@ -6278,19 +6237,11 @@ namespace Acutis.Infrastructure.Migrations
 
             modelBuilder.Entity("Acutis.Domain.Entities.EpisodeEvent", b =>
                 {
-                    b.HasOne("Acutis.Domain.Entities.ResidentProgrammeEpisode", "Episode")
-                        .WithMany("EpisodeEvents")
-                        .HasForeignKey("EpisodeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Acutis.Domain.Entities.EpisodeEventTypeLookup", "EventTypeLookup")
                         .WithMany("EpisodeEvents")
                         .HasForeignKey("EventTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Episode");
 
                     b.Navigation("EventTypeLookup");
                 });
@@ -6464,11 +6415,6 @@ namespace Acutis.Infrastructure.Migrations
             modelBuilder.Entity("Acutis.Domain.Entities.ResidentCase", b =>
                 {
                     b.Navigation("Episodes");
-                });
-
-            modelBuilder.Entity("Acutis.Domain.Entities.ResidentProgrammeEpisode", b =>
-                {
-                    b.Navigation("EpisodeEvents");
                 });
 
             modelBuilder.Entity("Acutis.Domain.Entities.TextResource", b =>

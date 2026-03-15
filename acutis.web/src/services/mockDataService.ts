@@ -3,6 +3,13 @@ import seededResidents from "../data/mockResidents.json";
 export type Resident = {
   id: number;
   residentGuid: string | null;
+  episodeId?: string | null;
+  residentCaseId?: string | null;
+  centreEpisodeCode?: string | null;
+  entryYear?: number | null;
+  entryWeek?: number | null;
+  entrySequence?: number | null;
+  caseStatus?: string | null;
   firstName: string;
   surname: string;
   nationality: string;

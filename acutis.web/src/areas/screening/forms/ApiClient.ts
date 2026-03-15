@@ -44,11 +44,24 @@ export type UiLayoutDto = {
   widgets: Record<string, string>;
   labelKeys: Record<string, string>;
   helpKeys: Record<string, string>;
+  selectOptions?: Record<string, UiSelectOptionDto[]>;
+};
+
+export type UiGroupDto = {
+  titleKey?: string;
+  title?: string;
+  items: string[];
+};
+
+export type UiSelectOptionDto = {
+  value: string;
+  label: string;
 };
 
 export type UiSectionDto = {
   titleKey: string;
   items: string[];
+  groups?: UiGroupDto[];
 };
 
 export type RuleDto = {

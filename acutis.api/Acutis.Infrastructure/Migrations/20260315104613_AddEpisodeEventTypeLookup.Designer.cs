@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315104613_AddEpisodeEventTypeLookup")]
+    partial class AddEpisodeEventTypeLookup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2629,78 +2632,11 @@ namespace Acutis.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Acutis.Domain.Entities.ResidentCase", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CasePhase")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
-                    b.Property<string>("CaseStatus")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
-                    b.Property<Guid>("CentreId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("ClosedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("ComprehensiveAssessmentCompleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastContactAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("OpenedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ReferralReference")
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<string>("ReferralSource")
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<bool>("RequiresComprehensiveAssessment")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("ResidentId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("SummaryNotes")
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
-
-                    b.Property<Guid?>("UnitId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UnitId");
-
-                    b.HasIndex("ResidentId", "OpenedAtUtc");
-
-                    b.HasIndex("CentreId", "CaseStatus", "OpenedAtUtc");
-
-                    b.ToTable("ResidentCase", (string)null);
-                });
-
             modelBuilder.Entity("Acutis.Domain.Entities.ResidentProgrammeEpisode", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CentreEpisodeCode")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
 
                     b.Property<Guid>("CentreId")
                         .HasColumnType("uniqueidentifier");
@@ -2714,41 +2650,18 @@ namespace Acutis.Infrastructure.Migrations
                     b.Property<DateOnly?>("EndDate")
                         .HasColumnType("date");
 
-                    b.Property<int>("EntrySequence")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EntryWeek")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EntryYear")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ExpectedCompletionDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("ParticipationMode")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
-
-                    b.Property<string>("PrimaryAddiction")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("ProgrammeType")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
 
-                    b.Property<Guid?>("ResidentCaseId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid>("ResidentId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("RoomNumber")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");
@@ -2758,18 +2671,9 @@ namespace Acutis.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CentreEpisodeCode")
-                        .IsUnique()
-                        .HasFilter("[CentreEpisodeCode] IS NOT NULL");
-
-                    b.HasIndex("ResidentCaseId");
-
                     b.HasIndex("ResidentId", "StartDate");
 
                     b.HasIndex("CentreId", "UnitId", "ProgrammeType");
-
-                    b.HasIndex("CentreId", "EntryYear", "EntryWeek", "EntrySequence")
-                        .IsUnique();
 
                     b.ToTable("ResidentProgrammeEpisode", (string)null);
 
@@ -2777,198 +2681,121 @@ namespace Acutis.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("1cc85180-fc5a-28b1-33ad-7803be7ba365"),
-                            CentreEpisodeCode = "BRU-2026W01-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 1,
-                            EntrySequence = 1,
-                            EntryWeek = 1,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 3, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("5711d7ec-b87f-237d-69bc-921ae521b99a"),
-                            RoomNumber = "D01",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("6707cf6a-b4cf-6c54-c0fb-d4a126a829c5"),
-                            CentreEpisodeCode = "BRU-2026W02-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 2,
-                            EntrySequence = 1,
-                            EntryWeek = 2,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 4, 6, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("1c2e4089-bdce-1c37-9e9d-f403a5e2ffe3"),
-                            RoomNumber = "D02",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("fea40a2b-3f71-7899-e64d-da9418382288"),
-                            CentreEpisodeCode = "BRU-2026W03-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 3,
-                            EntrySequence = 1,
-                            EntryWeek = 3,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 4, 13, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("f4a51f22-5473-38c7-745c-98fc845e874d"),
-                            RoomNumber = "D03",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("1db3c933-3469-71cf-edfa-fbf2c7373a69"),
-                            CentreEpisodeCode = "BRU-2026W04-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 4,
-                            EntrySequence = 1,
-                            EntryWeek = 4,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 4, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("bd9adb8f-ae9a-1e40-bb61-7d0c64e674e4"),
-                            RoomNumber = "D04",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("612d8b81-c7b0-e6dd-c03c-c3cca658710f"),
-                            CentreEpisodeCode = "BRU-2026W05-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 5,
-                            EntrySequence = 1,
-                            EntryWeek = 5,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 4, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("5e319048-9738-bdfa-0955-62f01c480bf3"),
-                            RoomNumber = "D05",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("70d3084e-a990-5311-e1a1-e8831afd7db0"),
-                            CentreEpisodeCode = "BRU-2026W06-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 6,
-                            EntrySequence = 1,
-                            EntryWeek = 6,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 5, 4, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("89b2f72b-a1c7-7a5d-1d5d-fbaaf88ee8fd"),
-                            RoomNumber = "D06",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("6ca58ca7-ad11-947e-9f1d-e453e03825b0"),
-                            CentreEpisodeCode = "BRU-2026W07-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 7,
-                            EntrySequence = 1,
-                            EntryWeek = 7,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 5, 11, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("9390d075-2a03-a0af-6054-474038a9541c"),
-                            RoomNumber = "D07",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("eb64c55e-6f09-3277-9ac5-2ce8c8cab3b3"),
-                            CentreEpisodeCode = "BRU-2026W08-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 8,
-                            EntrySequence = 1,
-                            EntryWeek = 8,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 5, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("441f3e3b-3b70-9852-34fb-f5b65e9d1240"),
-                            RoomNumber = "D08",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("bbb8892a-a06e-d5c1-8594-9502940320b2"),
-                            CentreEpisodeCode = "BRU-2026W09-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 9,
-                            EntrySequence = 1,
-                            EntryWeek = 9,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 5, 25, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("2c0f81c6-5d98-e779-10eb-8d12b898d3ea"),
-                            RoomNumber = "D09",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("c7d129a5-a796-2cb3-f907-977ab7413219"),
-                            CentreEpisodeCode = "BRU-2026W10-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 10,
-                            EntrySequence = 1,
-                            EntryWeek = 10,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("191d3618-6770-d7c8-9b12-ec85d663d197"),
-                            RoomNumber = "D10",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         },
                         new
                         {
                             Id = new Guid("afa87d08-5dfa-38d1-1673-cda88ba623e2"),
-                            CentreEpisodeCode = "BRU-2026W11-001",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             CurrentWeekNumber = 11,
-                            EntrySequence = 1,
-                            EntryWeek = 11,
-                            EntryYear = 2026,
-                            ExpectedCompletionDate = new DateTime(2026, 6, 8, 0, 0, 0, 0, DateTimeKind.Utc),
                             ParticipationMode = "FullProgramme",
-                            PrimaryAddiction = "Alcohol",
                             ProgrammeType = "Alcohol",
                             ResidentId = new Guid("dab0d39b-ef80-0dc0-00da-a1fad79b2685"),
-                            RoomNumber = "D11",
                             StartDate = new DateOnly(2026, 1, 5),
                             UnitId = new Guid("22222222-2222-2222-2222-222222222222")
                         });
@@ -6278,19 +6105,11 @@ namespace Acutis.Infrastructure.Migrations
 
             modelBuilder.Entity("Acutis.Domain.Entities.EpisodeEvent", b =>
                 {
-                    b.HasOne("Acutis.Domain.Entities.ResidentProgrammeEpisode", "Episode")
-                        .WithMany("EpisodeEvents")
-                        .HasForeignKey("EpisodeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Acutis.Domain.Entities.EpisodeEventTypeLookup", "EventTypeLookup")
                         .WithMany("EpisodeEvents")
                         .HasForeignKey("EventTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Episode");
 
                     b.Navigation("EventTypeLookup");
                 });
@@ -6315,41 +6134,6 @@ namespace Acutis.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("OptionSet");
-                });
-
-            modelBuilder.Entity("Acutis.Domain.Entities.ResidentCase", b =>
-                {
-                    b.HasOne("Acutis.Domain.Entities.Centre", "Centre")
-                        .WithMany()
-                        .HasForeignKey("CentreId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Acutis.Domain.Entities.Resident", "Resident")
-                        .WithMany()
-                        .HasForeignKey("ResidentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Acutis.Domain.Entities.Unit", "Unit")
-                        .WithMany()
-                        .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Centre");
-
-                    b.Navigation("Resident");
-
-                    b.Navigation("Unit");
-                });
-
-            modelBuilder.Entity("Acutis.Domain.Entities.ResidentProgrammeEpisode", b =>
-                {
-                    b.HasOne("Acutis.Domain.Entities.ResidentCase", "ResidentCase")
-                        .WithMany("Episodes")
-                        .HasForeignKey("ResidentCaseId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("ResidentCase");
                 });
 
             modelBuilder.Entity("Acutis.Domain.Entities.ResidentWeeklyTherapyAssignment", b =>
@@ -6459,16 +6243,6 @@ namespace Acutis.Infrastructure.Migrations
             modelBuilder.Entity("Acutis.Domain.Entities.OptionSet", b =>
                 {
                     b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("Acutis.Domain.Entities.ResidentCase", b =>
-                {
-                    b.Navigation("Episodes");
-                });
-
-            modelBuilder.Entity("Acutis.Domain.Entities.ResidentProgrammeEpisode", b =>
-                {
-                    b.Navigation("EpisodeEvents");
                 });
 
             modelBuilder.Entity("Acutis.Domain.Entities.TextResource", b =>

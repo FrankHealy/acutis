@@ -45,6 +45,13 @@ let residentSource: "api" | "mock" = "mock";
 type ResidentListItemDto = {
   id: number;
   residentGuid: string;
+  episodeId?: string | null;
+  residentCaseId?: string | null;
+  centreEpisodeCode?: string | null;
+  entryYear?: number | null;
+  entryWeek?: number | null;
+  entrySequence?: number | null;
+  caseStatus?: string | null;
   psn: string;
   firstName: string;
   surname: string;
@@ -81,6 +88,13 @@ const mapApiResident = (dto: ResidentListItemDto): Resident => {
   return {
     id: dto.id,
     residentGuid: dto.residentGuid ?? null,
+    episodeId: dto.episodeId ?? null,
+    residentCaseId: dto.residentCaseId ?? null,
+    centreEpisodeCode: dto.centreEpisodeCode?.trim() ? dto.centreEpisodeCode : null,
+    entryYear: dto.entryYear ?? null,
+    entryWeek: dto.entryWeek ?? null,
+    entrySequence: dto.entrySequence ?? null,
+    caseStatus: dto.caseStatus?.trim() ? dto.caseStatus : null,
     firstName: dto.firstName,
     surname: dto.surname,
     nationality: dto.nationality,

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Acutis.Domain.Entities;
 
 public sealed class EpisodeEvent
@@ -9,10 +11,20 @@ public sealed class EpisodeEvent
     /// </summary>
     public Guid? ClientEventId { get; set; }
     public Guid EpisodeId { get; set; }
-    public EpisodeEventType EventType { get; set; }
+    public int EventTypeId { get; set; }
     public DateOnly EventDate { get; set; }
     public string PayloadJson { get; set; } = "{}";
     public string? Reason { get; set; }
     public DateTime CreatedAt { get; set; }
     public Guid CreatedByUserId { get; set; }
+
+    public ResidentProgrammeEpisode? Episode { get; set; }
+    public EpisodeEventTypeLookup? EventTypeLookup { get; set; }
+
+    [NotMapped]
+    public EpisodeEventType EventType
+    {
+        get => (EpisodeEventType)EventTypeId;
+        set => EventTypeId = (int)value;
+    }
 }
