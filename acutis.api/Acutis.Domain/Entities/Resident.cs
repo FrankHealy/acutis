@@ -28,4 +28,6 @@ public sealed class Resident
     public int LiteracyScale { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
+
+    public ICollection<ResidentPreviousTreatment> PreviousTreatments { get; set; } = new List<ResidentPreviousTreatment>();
 }

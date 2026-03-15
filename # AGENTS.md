@@ -158,3 +158,23 @@ Operational lifecycle data must come from ResidentProgrammeEpisode.
 ResidentCase represents intake/referral context.
 Compatibility DTOs may be composed from multiple tables during migration.
 Do not introduce new lifecycle fields onto Resident.
+## Architectural Guardrails
+The Acutis architecture is intentional and must not be redesigned during routine implementation passes.
+
+The agent must treat the following structures as stable architectural boundaries:
+
+Resident → identity only
+ResidentCase → intake/referral container
+ResidentProgrammeEpisode → operational stay aggregate
+EpisodeEvent → episode-scoped timeline
+
+Rules:
+
+• Do not move lifecycle data back onto Resident
+• Do not rename domain entities or public contracts
+• Do not reorganise service layers or folders
+• Do not introduce alternative architectural patterns
+• Do not refactor unrelated files while implementing a task
+• Limit changes strictly to the scope of the request
+
+If a change appears to require architectural modification, stop and explain the issue instead of implementing it.

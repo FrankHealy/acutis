@@ -1,4 +1,5 @@
 using Acutis.Api.Contracts;
+using Acutis.Api.Services.TherapyScheduling;
 using Acutis.Domain.Entities;
 using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -16,15 +17,37 @@ public interface IResidentService
         RecordDischargeRequest request,
         Guid actorUserId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ResidentPreviousTreatmentDto>> GetPreviousTreatmentsAsync(
+        Guid residentGuid,
+        CancellationToken cancellationToken = default);
+
+    Task<ResidentPreviousTreatmentDto> CreatePreviousTreatmentAsync(
+        Guid residentGuid,
+        UpsertResidentPreviousTreatmentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ResidentPreviousTreatmentDto?> UpdatePreviousTreatmentAsync(
+        Guid residentGuid,
+        Guid treatmentId,
+        UpsertResidentPreviousTreatmentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> DeletePreviousTreatmentAsync(
+        Guid residentGuid,
+        Guid treatmentId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class ResidentService : IResidentService
 {
     private readonly AcutisDbContext _dbContext;
+    private readonly IAuditService _auditService;
 
-    public ResidentService(AcutisDbContext dbContext)
+    public ResidentService(AcutisDbContext dbContext, IAuditService auditService)
     {
         _dbContext = dbContext;
+        _auditService = auditService;
     }
 
     public async Task<IReadOnlyList<ResidentListItemDto>> GetAllResidentsAsync(
@@ -220,6 +243,141 @@ public sealed class ResidentService : IResidentService
         };
     }
 
+    public async Task<IReadOnlyList<ResidentPreviousTreatmentDto>> GetPreviousTreatmentsAsync(
+        Guid residentGuid,
+        CancellationToken cancellationToken = default)
+    {
+        var residentExists = await _dbContext.Residents
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == residentGuid, cancellationToken);
+
+        if (!residentExists)
+        {
+            throw new KeyNotFoundException($"Resident '{residentGuid}' was not found.");
+        }
+
+        return await _dbContext.ResidentPreviousTreatments
+            .AsNoTracking()
+            .Where(x => x.ResidentId == residentGuid)
+            .OrderByDescending(x => x.StartYear)
+            .ThenByDescending(x => x.CreatedAtUtc)
+            .Select(MapPreviousTreatmentDtoExpression())
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<ResidentPreviousTreatmentDto> CreatePreviousTreatmentAsync(
+        Guid residentGuid,
+        UpsertResidentPreviousTreatmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var residentExists = await _dbContext.Residents
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == residentGuid, cancellationToken);
+
+        if (!residentExists)
+        {
+            throw new KeyNotFoundException($"Resident '{residentGuid}' was not found.");
+        }
+
+        ValidatePreviousTreatmentRequest(request);
+
+        var now = DateTime.UtcNow;
+        var treatment = new ResidentPreviousTreatment
+        {
+            Id = Guid.NewGuid(),
+            ResidentId = residentGuid,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        ApplyPreviousTreatmentRequest(treatment, request);
+
+        _dbContext.ResidentPreviousTreatments.Add(treatment);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _auditService.WriteAsync(
+            centreId: null,
+            unitId: null,
+            entityType: nameof(ResidentPreviousTreatment),
+            entityId: treatment.Id.ToString("D"),
+            action: "Create",
+            before: null,
+            after: treatment,
+            reason: null,
+            cancellationToken);
+
+        return MapPreviousTreatmentDto(treatment);
+    }
+
+    public async Task<ResidentPreviousTreatmentDto?> UpdatePreviousTreatmentAsync(
+        Guid residentGuid,
+        Guid treatmentId,
+        UpsertResidentPreviousTreatmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidatePreviousTreatmentRequest(request);
+
+        var treatment = await _dbContext.ResidentPreviousTreatments
+            .FirstOrDefaultAsync(
+                x => x.Id == treatmentId && x.ResidentId == residentGuid,
+                cancellationToken);
+
+        if (treatment is null)
+        {
+            return null;
+        }
+
+        var before = MapPreviousTreatmentDto(treatment);
+
+        ApplyPreviousTreatmentRequest(treatment, request);
+        treatment.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _auditService.WriteAsync(
+            centreId: null,
+            unitId: null,
+            entityType: nameof(ResidentPreviousTreatment),
+            entityId: treatment.Id.ToString("D"),
+            action: "Update",
+            before: before,
+            after: treatment,
+            reason: null,
+            cancellationToken);
+
+        return MapPreviousTreatmentDto(treatment);
+    }
+
+    public async Task<bool> DeletePreviousTreatmentAsync(
+        Guid residentGuid,
+        Guid treatmentId,
+        CancellationToken cancellationToken = default)
+    {
+        var treatment = await _dbContext.ResidentPreviousTreatments
+            .FirstOrDefaultAsync(
+                x => x.Id == treatmentId && x.ResidentId == residentGuid,
+                cancellationToken);
+
+        if (treatment is null)
+        {
+            return false;
+        }
+
+        var before = MapPreviousTreatmentDto(treatment);
+        _dbContext.ResidentPreviousTreatments.Remove(treatment);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _auditService.WriteAsync(
+            centreId: null,
+            unitId: null,
+            entityType: nameof(ResidentPreviousTreatment),
+            entityId: treatmentId.ToString("D"),
+            action: "Delete",
+            before: before,
+            after: null,
+            reason: null,
+            cancellationToken);
+
+        return true;
+    }
+
     private static int ToLegacyResidentId(Guid residentId)
     {
         var value = BitConverter.ToInt32(residentId.ToByteArray(), 0) & int.MaxValue;
@@ -251,5 +409,88 @@ public sealed class ResidentService : IResidentService
         }
 
         return Math.Clamp(age, 16, 120);
+    }
+
+    private static System.Linq.Expressions.Expression<Func<ResidentPreviousTreatment, ResidentPreviousTreatmentDto>> MapPreviousTreatmentDtoExpression()
+    {
+        return treatment => new ResidentPreviousTreatmentDto
+        {
+            Id = treatment.Id,
+            ResidentId = treatment.ResidentId,
+            CentreName = treatment.CentreName,
+            TreatmentType = treatment.TreatmentType,
+            StartYear = treatment.StartYear,
+            DurationValue = treatment.DurationValue,
+            DurationUnit = treatment.DurationUnit,
+            CompletedTreatment = treatment.CompletedTreatment,
+            SobrietyAfterwardsValue = treatment.SobrietyAfterwardsValue,
+            SobrietyAfterwardsUnit = treatment.SobrietyAfterwardsUnit,
+            Notes = treatment.Notes,
+            CreatedAtUtc = treatment.CreatedAtUtc,
+            UpdatedAtUtc = treatment.UpdatedAtUtc
+        };
+    }
+
+    private static ResidentPreviousTreatmentDto MapPreviousTreatmentDto(ResidentPreviousTreatment treatment)
+    {
+        return new ResidentPreviousTreatmentDto
+        {
+            Id = treatment.Id,
+            ResidentId = treatment.ResidentId,
+            CentreName = treatment.CentreName,
+            TreatmentType = treatment.TreatmentType,
+            StartYear = treatment.StartYear,
+            DurationValue = treatment.DurationValue,
+            DurationUnit = treatment.DurationUnit,
+            CompletedTreatment = treatment.CompletedTreatment,
+            SobrietyAfterwardsValue = treatment.SobrietyAfterwardsValue,
+            SobrietyAfterwardsUnit = treatment.SobrietyAfterwardsUnit,
+            Notes = treatment.Notes,
+            CreatedAtUtc = treatment.CreatedAtUtc,
+            UpdatedAtUtc = treatment.UpdatedAtUtc
+        };
+    }
+
+    private static void ApplyPreviousTreatmentRequest(
+        ResidentPreviousTreatment treatment,
+        UpsertResidentPreviousTreatmentRequest request)
+    {
+        treatment.CentreName = request.CentreName.Trim();
+        treatment.TreatmentType = NormalizeOptionalText(request.TreatmentType);
+        treatment.StartYear = request.StartYear;
+        treatment.DurationValue = request.DurationValue;
+        treatment.DurationUnit = NormalizeOptionalText(request.DurationUnit);
+        treatment.CompletedTreatment = request.CompletedTreatment;
+        treatment.SobrietyAfterwardsValue = request.SobrietyAfterwardsValue;
+        treatment.SobrietyAfterwardsUnit = NormalizeOptionalText(request.SobrietyAfterwardsUnit);
+        treatment.Notes = NormalizeOptionalText(request.Notes);
+    }
+
+    private static void ValidatePreviousTreatmentRequest(UpsertResidentPreviousTreatmentRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.CentreName))
+        {
+            throw new InvalidOperationException("CentreName is required.");
+        }
+
+        if (request.StartYear is < 1900 or > 2100)
+        {
+            throw new InvalidOperationException("StartYear must be between 1900 and 2100.");
+        }
+
+        if (request.DurationValue < 0)
+        {
+            throw new InvalidOperationException("DurationValue cannot be negative.");
+        }
+
+        if (request.SobrietyAfterwardsValue < 0)
+        {
+            throw new InvalidOperationException("SobrietyAfterwardsValue cannot be negative.");
+        }
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }

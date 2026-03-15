@@ -36,6 +36,36 @@ public sealed class ResidentListItemDto
     public int LiteracyScale { get; set; }
 }
 
+public sealed class ResidentPreviousTreatmentDto
+{
+    public Guid Id { get; set; }
+    public Guid ResidentId { get; set; }
+    public string CentreName { get; set; } = string.Empty;
+    public string? TreatmentType { get; set; }
+    public int? StartYear { get; set; }
+    public int? DurationValue { get; set; }
+    public string? DurationUnit { get; set; }
+    public bool? CompletedTreatment { get; set; }
+    public int? SobrietyAfterwardsValue { get; set; }
+    public string? SobrietyAfterwardsUnit { get; set; }
+    public string? Notes { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public DateTime UpdatedAtUtc { get; set; }
+}
+
+public sealed class UpsertResidentPreviousTreatmentRequest
+{
+    public string CentreName { get; set; } = string.Empty;
+    public string? TreatmentType { get; set; }
+    public int? StartYear { get; set; }
+    public int? DurationValue { get; set; }
+    public string? DurationUnit { get; set; }
+    public bool? CompletedTreatment { get; set; }
+    public int? SobrietyAfterwardsValue { get; set; }
+    public string? SobrietyAfterwardsUnit { get; set; }
+    public string? Notes { get; set; }
+}
+
 public sealed class RecordDischargeRequest
 {
     /// <summary>

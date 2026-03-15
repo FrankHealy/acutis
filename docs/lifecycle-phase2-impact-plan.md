@@ -330,6 +330,11 @@ Do not drop overloaded `Resident` lifecycle/assessment columns until:
 - `LearningDifficultyScale`
 - `LiteracyScale`
 
+## Resident Historical Treatment
+
+- `ResidentPreviousTreatment` is resident-owned historical data even when captured during intake or case workflows.
+- `TreatmentType` is optional for now because there is no bounded lookup/source in the current model that guarantees a clean mandatory value at capture time.
+
 ### Blockers for dropping old Resident columns
 
 - no authoritative episode/case/form-backed replacement is implemented yet for the assessment/risk flags listed above

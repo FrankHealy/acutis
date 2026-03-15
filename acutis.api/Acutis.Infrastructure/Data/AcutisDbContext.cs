@@ -398,6 +398,7 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<Unit> Units => Set<Unit>();
     public DbSet<ScreeningControl> ScreeningControls => Set<ScreeningControl>();
     public DbSet<Resident> Residents => Set<Resident>();
+    public DbSet<ResidentPreviousTreatment> ResidentPreviousTreatments => Set<ResidentPreviousTreatment>();
     public DbSet<GroupTherapySubjectTemplate> GroupTherapySubjectTemplates => Set<GroupTherapySubjectTemplate>();
     public DbSet<GroupTherapyDailyQuestion> GroupTherapyDailyQuestions => Set<GroupTherapyDailyQuestion>();
     public DbSet<GroupTherapyResidentRemark> GroupTherapyResidentRemarks => Set<GroupTherapyResidentRemark>();
@@ -664,6 +665,7 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GroupTherapyResidentRemarkConfiguration());
         modelBuilder.ApplyConfiguration(new TherapyTopicConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentCaseConfiguration());
+        modelBuilder.ApplyConfiguration(new ResidentPreviousTreatmentConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentProgrammeEpisodeConfiguration());
         modelBuilder.ApplyConfiguration(new WeeklyTherapyRunConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentWeeklyTherapyAssignmentConfiguration());

@@ -123,6 +123,97 @@ public sealed class ResidentsController : ControllerBase
         }
     }
 
+    [HttpGet("{residentGuid:guid}/previous-treatments")]
+    public async Task<ActionResult<IReadOnlyList<ResidentPreviousTreatmentDto>>> GetPreviousTreatments(
+        Guid residentGuid,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_authorizationOptions.Disabled &&
+            !_accessService.HasPermission(User, ApplicationPermissions.ResidentsView))
+        {
+            return Forbid();
+        }
+
+        try
+        {
+            var rows = await _residentService.GetPreviousTreatmentsAsync(residentGuid, cancellationToken);
+            return Ok(rows);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    [HttpPost("{residentGuid:guid}/previous-treatments")]
+    public async Task<ActionResult<ResidentPreviousTreatmentDto>> CreatePreviousTreatment(
+        Guid residentGuid,
+        [FromBody] UpsertResidentPreviousTreatmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_authorizationOptions.Disabled &&
+            !_accessService.HasPermission(User, ApplicationPermissions.ResidentsView))
+        {
+            return Forbid();
+        }
+
+        try
+        {
+            var created = await _residentService.CreatePreviousTreatmentAsync(residentGuid, request, cancellationToken);
+            return CreatedAtAction(nameof(GetPreviousTreatments), new { residentGuid }, created);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPut("{residentGuid:guid}/previous-treatments/{treatmentId:guid}")]
+    public async Task<ActionResult<ResidentPreviousTreatmentDto>> UpdatePreviousTreatment(
+        Guid residentGuid,
+        Guid treatmentId,
+        [FromBody] UpsertResidentPreviousTreatmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_authorizationOptions.Disabled &&
+            !_accessService.HasPermission(User, ApplicationPermissions.ResidentsView))
+        {
+            return Forbid();
+        }
+
+        try
+        {
+            var updated = await _residentService.UpdatePreviousTreatmentAsync(
+                residentGuid, treatmentId, request, cancellationToken);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpDelete("{residentGuid:guid}/previous-treatments/{treatmentId:guid}")]
+    public async Task<ActionResult> DeletePreviousTreatment(
+        Guid residentGuid,
+        Guid treatmentId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_authorizationOptions.Disabled &&
+            !_accessService.HasPermission(User, ApplicationPermissions.ResidentsView))
+        {
+            return Forbid();
+        }
+
+        var deleted = await _residentService.DeletePreviousTreatmentAsync(
+            residentGuid, treatmentId, cancellationToken);
+        return deleted ? NoContent() : NotFound();
+    }
+
     private static Guid ResolveActorUserId(ClaimsPrincipal user)
     {
         var candidateClaims = new[] { ClaimTypes.NameIdentifier, "sub", "app_user_id" };
