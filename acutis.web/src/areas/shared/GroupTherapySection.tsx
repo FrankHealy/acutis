@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import termRatingsData from "@/data/groupTherapyTermsRatings.json";
 import termsData from "@/data/groupTherapyTerms.json";
-import { User, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { residentService } from "@/services/residentService";
 import { type Resident } from "@/services/mockDataService";
 import { groupTherapyService, type GroupTherapyProgram } from "@/services/groupTherapyService";
@@ -14,6 +14,7 @@ type Participant = {
   surname: string;
   age: number;
   photo: string | null;
+  fallbackPhoto: string;
   hasSpoken: boolean;
 };
 
@@ -112,6 +113,7 @@ const mapResidentToParticipant = (resident: Resident): Participant => ({
   surname: resident.surname,
   age: resident.age,
   photo: resident.photo,
+  fallbackPhoto: resident.fallbackPhoto,
   hasSpoken: false,
 });
 
@@ -548,11 +550,19 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                   }`}
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0 overflow-hidden">
-                    {resident.photo ? (
-                      <img src={resident.photo} alt={`${resident.firstName} ${resident.surname}`} className="h-10 w-10 object-cover" />
-                    ) : (
-                      <User className="h-5 w-5 text-gray-500" />
-                    )}
+                    <img
+                      src={resident.photo ?? resident.fallbackPhoto}
+                      alt={`${resident.firstName} ${resident.surname}`}
+                      className="h-10 w-10 object-cover"
+                      onError={(event) => {
+                        if (event.currentTarget.src === resident.fallbackPhoto) {
+                          return;
+                        }
+
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = resident.fallbackPhoto;
+                      }}
+                    />
                   </div>
                   <div className="flex-grow min-w-0">
                     <p className="text-xs font-semibold text-gray-900 truncate">

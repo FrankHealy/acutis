@@ -65,8 +65,7 @@ export const clearLocalCache = (key: string): void => {
   window.localStorage.removeItem(getCacheKey(key));
 };
 
-let inMemoryControl: ScreeningControl | null = null;
-let inMemoryControlExpiresAt = 0;
+const inMemoryControl = new Map<UnitId, CacheEnvelope<ScreeningControl>>();
 
 export const getScreeningControl = async (
   accessToken?: string,
@@ -77,15 +76,18 @@ export const getScreeningControl = async (
   const forceRefresh = Boolean(options?.forceRefresh);
   const cacheKey = `screening.control.${unitId}`;
 
-  if (!forceRefresh && inMemoryControl && Date.now() < inMemoryControlExpiresAt) {
-    return inMemoryControl;
+  const inMemory = inMemoryControl.get(unitId);
+  if (!forceRefresh && inMemory && Date.now() < inMemory.expiresAt) {
+    return inMemory.value;
   }
 
   if (!forceRefresh) {
     const cached = readLocalCache<ScreeningControl>(cacheKey);
     if (cached) {
-      inMemoryControl = cached;
-      inMemoryControlExpiresAt = Date.now() + 60_000;
+      inMemoryControl.set(unitId, {
+        value: cached,
+        expiresAt: Date.now() + 60_000,
+      });
       return cached;
     }
   }
@@ -102,8 +104,10 @@ export const getScreeningControl = async (
   }
 
   const control = (await response.json()) as ScreeningControl;
-  inMemoryControl = control;
-  inMemoryControlExpiresAt = Date.now() + 60_000;
+  inMemoryControl.set(unitId, {
+    value: control,
+    expiresAt: Date.now() + 60_000,
+  });
   writeLocalCache(cacheKey, control, 60);
   return control;
 };

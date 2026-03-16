@@ -9,7 +9,7 @@ import {
 type EvaluationFormParams = {
   accessToken?: string;
   locale: string;
-  subjectId: string;
+  residentCaseId: string;
 };
 
 type EvaluationSaveParams = EvaluationFormParams & {
@@ -22,15 +22,15 @@ type EvaluationSaveParams = EvaluationFormParams & {
 export const loadEvaluationForm = async ({
   accessToken,
   locale,
-  subjectId,
+  residentCaseId,
 }: EvaluationFormParams): Promise<GetActiveFormResponse> => {
-  return getActiveForm(accessToken, locale, "resident", subjectId);
+  return getActiveForm(accessToken, locale, "admission", residentCaseId);
 };
 
 export const saveEvaluationDraft = async ({
   accessToken,
   locale,
-  subjectId,
+  residentCaseId,
   formCode,
   formVersion,
   submissionId,
@@ -40,8 +40,8 @@ export const saveEvaluationDraft = async ({
     formCode,
     formVersion,
     locale,
-    subjectType: "resident",
-    subjectId,
+    subjectType: "admission",
+    subjectId: residentCaseId,
     submissionId,
     answers,
   });
@@ -50,7 +50,7 @@ export const saveEvaluationDraft = async ({
 export const submitEvaluationForm = async ({
   accessToken,
   locale,
-  subjectId,
+  residentCaseId,
   formCode,
   formVersion,
   submissionId,
@@ -60,8 +60,8 @@ export const submitEvaluationForm = async ({
     formCode,
     formVersion,
     locale,
-    subjectType: "resident",
-    subjectId,
+    subjectType: "admission",
+    subjectId: residentCaseId,
     submissionId,
     answers,
   });

@@ -18,8 +18,14 @@ import {
   fetchCallLogs,
 } from '@/areas/screening/services/callLoggingService';
 import { getScreeningControl } from '@/areas/screening/services/screeningControlService';
+import { isAuthorizedClient } from '@/lib/authMode';
+import type { UnitId } from '@/areas/shared/unit/unitTypes';
 
-const CallLogging: React.FC = () => {
+type CallLoggingProps = {
+  unitId?: UnitId;
+};
+
+const CallLogging: React.FC<CallLoggingProps> = ({ unitId = 'alcohol' }) => {
   const { data: session, status } = useSession();
   const { loadKeys, t } = useLocalization();
   const [showNewCallForm, setShowNewCallForm] = useState(false);
@@ -91,13 +97,14 @@ const CallLogging: React.FC = () => {
       if (withLoader) {
         setIsLoading(true);
       }
-      if (status !== 'authenticated') {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
         setIsLoading(false);
         return;
       }
       const data = await fetchCallLogs(session?.accessToken, {
         forceRefresh,
         rangeDays: activeRangeDays,
+        unitId,
       });
       setAllCalls(data);
       setErrorMessage(null);
@@ -108,14 +115,14 @@ const CallLogging: React.FC = () => {
         setIsLoading(false);
       }
     }
-  }, [activeRangeDays, session?.accessToken, status]);
+  }, [activeRangeDays, session?.accessToken, status, unitId]);
 
   useEffect(() => {
     void loadCalls(false, true);
   }, [loadCalls]);
 
   useEffect(() => {
-    if (status !== 'authenticated') {
+    if (!isAuthorizedClient(status, session?.accessToken)) {
       return;
     }
 
@@ -124,7 +131,7 @@ const CallLogging: React.FC = () => {
 
     const start = async () => {
       try {
-        const control = await getScreeningControl(session?.accessToken);
+        const control = await getScreeningControl(session?.accessToken, { unitId });
         if (disposed) return;
         const seconds = Math.max(5, control.callLogsCacheSeconds || 30);
         intervalId = window.setInterval(() => {
@@ -146,7 +153,7 @@ const CallLogging: React.FC = () => {
         window.clearInterval(intervalId);
       }
     };
-  }, [loadCalls, session?.accessToken, status]);
+  }, [loadCalls, session?.accessToken, status, unitId]);
 
   const handleFormChange = (
     field: keyof typeof formState,
@@ -180,7 +187,7 @@ const CallLogging: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      if (status !== 'authenticated') {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
         throw new Error(text("call_logging.sign_in_required", "You must be signed in to save a call."));
       }
       const newCall = await createCallLog({
@@ -189,7 +196,7 @@ const CallLogging: React.FC = () => {
         status: 'new',
         urgency: 'medium',
         timestamp: new Date().toISOString(),
-      }, session?.accessToken);
+      }, session?.accessToken, unitId);
 
       setAllCalls((prev) => [newCall, ...prev]);
       setShowNewCallForm(false);
@@ -210,8 +217,8 @@ const CallLogging: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{text("call_logging.title", "Call Logging")}</h2>
-          <p className="text-sm text-gray-500">{text("call_logging.description", "Track incoming calls by day and unit.")}</p>
+          <h2 className="text-2xl font-bold text-gray-900">{text("call_logging.title", "Screen Calls")}</h2>
+          <p className="text-sm text-gray-500">{text("call_logging.description", "Capture incoming screening and referral calls.")}</p>
         </div>
         <button
           onClick={() => {
@@ -221,7 +228,7 @@ const CallLogging: React.FC = () => {
           className="flex items-center space-x-2 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
         >
           <Plus className="h-5 w-5" />
-          <span>{text("call_logging.log_new", "Log New Call")}</span>
+          <span>{text("call_logging.log_new", "Log Screen Call")}</span>
         </button>
       </div>
 
@@ -283,7 +290,7 @@ const CallLogging: React.FC = () => {
                 {text("call_logging.table.concern", "Concern")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                {text("call_logging.table.note", "Note")}
+                {text("call_logging.table.note", "Notes")}
               </th>
             </tr>
           </thead>

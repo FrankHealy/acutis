@@ -13,15 +13,19 @@ import OperationsSection from "@/areas/shared/OperationsSection";
 import GroupTherapySection from "@/areas/shared/GroupTherapySection";
 import ResidentsSection from "@/areas/shared/ResidentsSection";
 import MeditationSection from "@/areas/shared/MeditationSection";
+import IncidentsSection from "@/areas/shared/incidents/IncidentsSection";
+import IncidentCaptureModal, { type IncidentPrefill } from "@/areas/shared/incidents/IncidentCaptureModal";
 import type { UnitId } from "./unitTypes";
 import { UnitDefinitions } from "./unitTypes";
 import { hasSuperAdminAccess } from "@/lib/adminAccess";
 import { useAppAccess } from "@/areas/shared/hooks/useAppAccess";
+import type { Resident } from "@/services/mockDataService";
 
 type Step =
   | "dashboard"
   | "new-admission"
   | "residents"
+  | "incidents"
   | "configuration"
   | "operations/day-planner"
   | "operations/room-mapping"
@@ -39,6 +43,9 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
   const [currentStep, setCurrentStep] = useState<Step>("dashboard");
   const [therapyModuleKey, setTherapyModuleKey] = useState<string | undefined>(undefined);
   const [residentsDefaultRollCall, setResidentsDefaultRollCall] = useState(false);
+  const [incidentModalOpen, setIncidentModalOpen] = useState(false);
+  const [incidentPrefill, setIncidentPrefill] = useState<IncidentPrefill | null>(null);
+  const [incidentRefreshKey, setIncidentRefreshKey] = useState(0);
   const unit = UnitDefinitions[unitId];
   const canSeeGlobalAdministration = hasSuperAdminAccess(access.roles);
 
@@ -55,6 +62,18 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
   const openRollCall = () => {
     setResidentsDefaultRollCall(true);
     setCurrentStep("residents");
+  };
+  const openIncidentCapture = (prefill?: IncidentPrefill) => {
+    setIncidentPrefill(prefill ?? { scope: "unit" });
+    setIncidentModalOpen(true);
+  };
+  const openIncidentFromResident = (resident?: Resident) => {
+    if (!resident) {
+      openIncidentCapture({ scope: "unit" });
+      return;
+    }
+
+    openIncidentCapture({ scope: resident.residentGuid ? "resident" : "unit", resident });
   };
 
   const renderStep = () => {
@@ -93,6 +112,16 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
             unitName={unit.name}
             initialRollCallView={residentsDefaultRollCall}
             onOpenMeditation={() => setCurrentStep("operations/meditation")}
+            onOpenIncidentCapture={openIncidentFromResident}
+          />
+        );
+      case "incidents":
+        return (
+          <IncidentsSection
+            unitId={unitId}
+            unitName={unit.name}
+            refreshKey={incidentRefreshKey}
+            onOpenIncidentCapture={() => openIncidentCapture({ scope: "unit" })}
           />
         );
       case "configuration":
@@ -176,6 +205,7 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
           unitName={unit.name}
           unitAccentClass={unit.accentClass}
           unitIconKey={unit.iconKey}
+          onOpenIncidentCapture={() => openIncidentCapture({ scope: "unit" })}
         />
         <Navigation
           currentStep={currentStep}
@@ -184,6 +214,14 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
         />
       </div>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{renderStep()}</main>
+      <IncidentCaptureModal
+        open={incidentModalOpen}
+        unitId={unitId}
+        unitName={unit.name}
+        prefill={incidentPrefill}
+        onClose={() => setIncidentModalOpen(false)}
+        onCreated={() => setIncidentRefreshKey((value) => value + 1)}
+      />
     </div>
   );
 }

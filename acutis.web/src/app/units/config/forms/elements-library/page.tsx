@@ -1,10 +1,43 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import ElementsLibraryPanel from "@/areas/config/ElementsLibraryPanel";
+import { getActiveForm, type FormDefinitionDto } from "@/areas/screening/forms/ApiClient";
+import {
+  getFallbackScreeningElementsLibrary,
+  getScreeningElementsLibraryFromForm,
+  type LibraryCategory,
+} from "@/areas/config/screeningFormLibrary";
 
 export default function ElementsLibraryPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const [library, setLibrary] = useState<LibraryCategory[]>(getFallbackScreeningElementsLibrary());
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
+
+  useEffect(() => {
+    const loadLibrary = async () => {
+      const accessToken = session?.accessToken;
+      if (!accessToken) {
+        setIsLoadingLibrary(false);
+        return;
+      }
+
+      try {
+        const response = await getActiveForm(accessToken, "en-IE", "anonymous_call", null, "alcohol_screening_call");
+        setLibrary(getScreeningElementsLibraryFromForm(response.form as FormDefinitionDto));
+      } catch (error) {
+        console.error("Failed to load screening elements library:", error);
+        setLibrary(getFallbackScreeningElementsLibrary());
+      } finally {
+        setIsLoadingLibrary(false);
+      }
+    };
+
+    void loadLibrary();
+  }, [session?.accessToken]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -19,6 +52,8 @@ export default function ElementsLibraryPage() {
         isOpen
         onClose={() => router.push("/units/config/forms")}
         onElementDrop={() => {}}
+        library={library}
+        isLoadingLibrary={isLoadingLibrary}
       />
     </div>
   );

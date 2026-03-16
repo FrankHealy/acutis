@@ -26,21 +26,29 @@ import {
   submitEvaluationForm,
 } from '@/areas/screening/services/evaluationFormService';
 import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
-import { isAuthorizedClient } from '@/lib/authMode';
+import { isAuthorizationDisabled, isAuthorizedClient } from '@/lib/authMode';
+import type { UnitId } from '@/areas/shared/unit/unitTypes';
 
 interface EvaluationCandidate {
-  id: string;
+  caseId: string;
+  residentId: string | null;
   name: string;
   firstName?: string;
   surname?: string;
   unit: string;
+  intakeSource: string;
   numCalls: number;
   lastCallDate: string;
   status: 'pending' | 'in-progress' | 'completed' | 'scheduled';
+  hasScreeningStarted: boolean;
   evaluationData?: Record<string, unknown>;
 }
 
-const EvaluationQueue: React.FC = () => {
+type EvaluationQueueProps = {
+  unitId?: UnitId;
+};
+
+const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' }) => {
   const { data: session, status } = useSession();
   const { locale, mergeTranslations, t, loadKeys } = useLocalization();
   const [selectedCandidate, setSelectedCandidate] = useState<EvaluationCandidate | null>(null);
@@ -69,6 +77,7 @@ const EvaluationQueue: React.FC = () => {
       'evaluation.table.surname',
       'evaluation.table.name',
       'evaluation.table.unit',
+      'evaluation.table.source',
       'evaluation.table.last_call_date',
       'evaluation.table.num_calls',
       'evaluation.table.status',
@@ -95,16 +104,19 @@ const EvaluationQueue: React.FC = () => {
         setIsLoading(false);
         return;
       }
-      const queue = await fetchEvaluationQueue(session?.accessToken, { forceRefresh });
+      const queue = await fetchEvaluationQueue(session?.accessToken, { forceRefresh, unitId });
       const mapped = queue.map((item: EvaluationQueueItem) => ({
-        id: `${item.surname}-${item.name}-${item.unit}`.toLowerCase().replace(/\s+/g, '-'),
+        caseId: item.caseId,
+        residentId: item.residentId,
         name: `${item.name} ${item.surname}`.trim(),
         firstName: item.name,
         surname: item.surname,
         unit: item.unit,
+        intakeSource: item.intakeSource,
         numCalls: item.numCalls,
         lastCallDate: item.lastCallDate,
         status: (item.status as EvaluationCandidate['status']) ?? 'pending',
+        hasScreeningStarted: item.hasScreeningStarted,
         evaluationData: defaultEvaluationData,
       }));
       setCandidates(mapped);
@@ -116,7 +128,7 @@ const EvaluationQueue: React.FC = () => {
         setIsLoading(false);
       }
     }
-  }, [defaultEvaluationData, session?.accessToken, status]);
+  }, [defaultEvaluationData, session?.accessToken, status, unitId]);
 
   useEffect(() => {
     void loadQueue(false, true);
@@ -132,7 +144,7 @@ const EvaluationQueue: React.FC = () => {
 
     const start = async () => {
       try {
-        const control = await getScreeningControl(session?.accessToken);
+        const control = await getScreeningControl(session?.accessToken, { unitId });
         if (disposed) return;
         const seconds = Math.max(5, control.evaluationQueueCacheSeconds || 30);
         intervalId = window.setInterval(() => {
@@ -154,7 +166,7 @@ const EvaluationQueue: React.FC = () => {
         window.clearInterval(intervalId);
       }
     };
-  }, [loadQueue, session?.accessToken, status]);
+  }, [loadQueue, session?.accessToken, status, unitId]);
 
   useEffect(() => {
     let active = true;
@@ -169,15 +181,15 @@ const EvaluationQueue: React.FC = () => {
       try {
         setFormLoading(true);
         const accessToken = session?.accessToken;
-        if (!accessToken) {
+        if (!accessToken && !isAuthorizationDisabled) {
           setFormData(null);
           setFormError("Session expired.");
           return;
         }
-        const response = await loadEvaluationForm({
+          const response = await loadEvaluationForm({
           accessToken,
           locale,
-          subjectId: selectedCandidate.id,
+          residentCaseId: selectedCandidate.caseId,
         });
         if (!active) return;
         setFormData(response);
@@ -274,6 +286,23 @@ const EvaluationQueue: React.FC = () => {
     });
   };
 
+  const getActionLabel = (candidate: EvaluationCandidate) => {
+    return candidate.hasScreeningStarted || candidate.status === 'completed'
+      ? 'Review Screening'
+      : 'Start Screening';
+  };
+
+  const getSourceLabel = (intakeSource: string) => {
+    switch (intakeSource) {
+      case 'face_to_face':
+        return 'Face to Face';
+      case 'self_screening':
+        return 'Self Screening';
+      default:
+        return 'Screening Call';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats */}
@@ -368,6 +397,7 @@ const EvaluationQueue: React.FC = () => {
                     </span>
                   </button>
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('evaluation.table.source')}</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   <button
                     onClick={() => toggleSort('lastCallDate')}
@@ -387,24 +417,24 @@ const EvaluationQueue: React.FC = () => {
             <tbody className="divide-y divide-slate-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
                     {t('evaluation.loading.queue')}
                   </td>
                 </tr>
               ) : errorMessage ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-red-600">
+                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-red-600">
                     {errorMessage}
                   </td>
                 </tr>
               ) : sortedCandidates.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
                     {t('evaluation.empty.queue')}
                   </td>
                 </tr>
               ) : sortedCandidates.map((candidate) => (
-                <tr key={candidate.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={candidate.caseId} className="hover:bg-slate-50 transition-colors">
                   {(() => {
                     const { firstName, surname } = getCandidateNameParts(candidate);
                     return (
@@ -416,6 +446,9 @@ const EvaluationQueue: React.FC = () => {
                   })()}
                   <td className="px-6 py-4">
                     <p className="text-gray-700">{candidate.unit}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="text-gray-700">{getSourceLabel(candidate.intakeSource)}</p>
                   </td>
                   <td className="px-6 py-4">
                     <p className="text-gray-700">{formatDate(candidate.lastCallDate)}</p>
@@ -433,7 +466,7 @@ const EvaluationQueue: React.FC = () => {
                       onClick={() => setSelectedCandidate(candidate)}
                       className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
                     >
-                      {t('evaluation.action.view')}
+                      {getActionLabel(candidate)}
                     </button>
                   </td>
                 </tr>
@@ -452,7 +485,7 @@ const EvaluationQueue: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-2xl font-semibold text-gray-900">{selectedCandidate.name}</h3>
-                  <p className="text-sm text-gray-500">{t('evaluation.modal.subtitle')}</p>
+                  <p className="text-sm text-gray-500">Screening Form</p>
                 </div>
                 <button
                   onClick={() => setSelectedCandidate(null)}
@@ -480,13 +513,13 @@ const EvaluationQueue: React.FC = () => {
                       `${selectedCandidate.firstName ?? ''} ${selectedCandidate.surname ?? ''}`.trim(),
                     ...formData.draftAnswers,
                   } as Record<string, JsonValue>}
-                  subjectType="resident"
-                  subjectId={selectedCandidate.id}
+                  subjectType="admission"
+                  subjectId={selectedCandidate.caseId}
                   onSaveProgress={async ({ submissionId, answers }) =>
                     saveEvaluationDraft({
                       accessToken: session?.accessToken ?? '',
                       locale,
-                      subjectId: selectedCandidate.id,
+                      residentCaseId: selectedCandidate.caseId,
                       formCode: formData.form.code,
                       formVersion: formData.form.version,
                       submissionId,
@@ -497,7 +530,7 @@ const EvaluationQueue: React.FC = () => {
                     submitEvaluationForm({
                       accessToken: session?.accessToken ?? '',
                       locale,
-                      subjectId: selectedCandidate.id,
+                      residentCaseId: selectedCandidate.caseId,
                       formCode: formData.form.code,
                       formVersion: formData.form.version,
                       submissionId,

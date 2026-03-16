@@ -7,6 +7,7 @@ import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
 import { getScreeningControl } from '@/areas/screening/services/screeningControlService';
 import { isAuthorizationDisabled } from '@/lib/authMode';
 import type { UnitDefinition } from '@/areas/shared/unit/unitTypes';
+import { UnitDefinitions } from '@/areas/shared/unit/unitTypes';
 import { unitIdentityService } from '@/services/unitIdentityService';
 import { availableThemes, useTheme } from '@/areas/shared/theme/ThemeProvider';
 import type { ThemeKey } from '@/areas/shared/theme/themeSystem';
@@ -20,6 +21,7 @@ interface HeaderProps {
   unitName?: string;
   unitAccentClass?: string;
   unitIconKey?: UnitDefinition["iconKey"];
+  onOpenIncidentCapture?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -28,6 +30,7 @@ const Header: React.FC<HeaderProps> = ({
   unitName,
   unitAccentClass,
   unitIconKey,
+  onOpenIncidentCapture,
 }) => {
   const { access } = useAppAccess();
   const { centreThemeKey, userThemeKey, setCentreThemeKey, setUserThemeKey } = useTheme();
@@ -124,9 +127,11 @@ const Header: React.FC<HeaderProps> = ({
 
     const loadControl = async () => {
       const accessToken = session?.accessToken;
+      if (!showCapacity) return;
+      if (!unitCode || !(unitCode in UnitDefinitions)) return;
       if (!accessToken && !isAuthorizationDisabled) return;
       try {
-        const control = await getScreeningControl(accessToken);
+        const control = await getScreeningControl(accessToken, { unitId: unitCode as keyof typeof UnitDefinitions });
         if (!active) return;
         setCapacityText(`${control.currentOccupancy}/${control.unitCapacity}`);
       } catch {
@@ -139,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({
     return () => {
       active = false;
     };
-  }, [session?.accessToken]);
+  }, [session?.accessToken, showCapacity, unitCode]);
 
   useEffect(() => {
     // Compute on client to avoid SSR/client mismatch
@@ -289,6 +294,15 @@ const Header: React.FC<HeaderProps> = ({
                   </button>
                 )}
               </label>
+            )}
+            {onOpenIncidentCapture && (
+              <button
+                type="button"
+                onClick={onOpenIncidentCapture}
+                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
+              >
+                New Incident
+              </button>
             )}
             <div className="relative">
               <div className="w-2 h-2 bg-red-500 rounded-full absolute -top-1 -right-1"></div>

@@ -1,7 +1,12 @@
-"use client";
-
 import FormDesigner from "@/areas/config/FormDesigner";
 
-export default function ConfigFormsNewPage() {
-  return <FormDesigner />;
+type ConfigFormsNewPageProps = {
+  searchParams?: Promise<{ formType?: string }>;
+};
+
+export default async function ConfigFormsNewPage({ searchParams }: ConfigFormsNewPageProps) {
+  const params = await searchParams;
+  const initialFormType = params?.formType === "screening" ? "screening" : "admission";
+
+  return <FormDesigner initialFormType={initialFormType} />;
 }

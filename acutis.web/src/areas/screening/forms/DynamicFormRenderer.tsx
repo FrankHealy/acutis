@@ -45,6 +45,35 @@ const getFirstError = (errors: ValidationErrors, fieldKey: string): string | nul
   return errors[fieldKey]?.[0] ?? null;
 };
 
+const parseValidationErrors = (error: unknown): ValidationErrors | null => {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse((error as Error & { bodyText?: string }).bodyText ?? "{}") as {
+      errors?: Array<{ fieldKey: string; message: string }>;
+    };
+
+    if (!Array.isArray(parsed.errors)) {
+      return null;
+    }
+
+    const serverErrors: ValidationErrors = {};
+    for (const item of parsed.errors) {
+      if (!serverErrors[item.fieldKey]) {
+        serverErrors[item.fieldKey] = [];
+      }
+
+      serverErrors[item.fieldKey].push(item.message);
+    }
+
+    return serverErrors;
+  } catch {
+    return null;
+  }
+};
+
 export default function DynamicFormRenderer({
   form,
   optionSets,
@@ -67,6 +96,7 @@ export default function DynamicFormRenderer({
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [lastSavedSignature, setLastSavedSignature] = useState<string>(JSON.stringify(initialAnswers ?? {}));
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [touchedFields, setTouchedFields] = useState<string[]>([]);
 
   useEffect(() => {
     const initialRuleState = applyRules(form.rules, initialAnswers ?? {});
@@ -74,10 +104,24 @@ export default function DynamicFormRenderer({
     setSubmissionId(initialSubmissionId);
     setLastSavedSignature(JSON.stringify(initialRuleState.answers));
     setExpandedSections(form.ui.sections.map((section) => section.titleKey));
+    setValidationErrors({});
+    setTouchedFields([]);
+    setFormError(null);
   }, [form.rules, initialAnswers, initialSubmissionId]);
 
   const ruleState = useMemo(() => applyRules(form.rules, answers), [form.rules, answers]);
   const optionSetLookup = useMemo(() => new Map(optionSets.map((set) => [set.key, set])), [optionSets]);
+  const buildVisibleValidationErrors = (
+    nextAnswers: Record<string, JsonValue>,
+    visibleFieldKeys: string[]
+  ): ValidationErrors => {
+    const allErrors = validateAnswers(form.schema, nextAnswers, optionSets);
+    const allowedFieldKeys = new Set(visibleFieldKeys);
+    return Object.fromEntries(
+      Object.entries(allErrors).filter(([fieldKey]) => allowedFieldKeys.has(fieldKey))
+    );
+  };
+
   const persistProgress = async (snapshot: Record<string, JsonValue>) => {
     const signature = JSON.stringify(snapshot);
     if (signature === lastSavedSignature || submitted) {
@@ -95,7 +139,13 @@ export default function DynamicFormRenderer({
       setDraftSavedAt(new Date().toLocaleTimeString());
       setFormError(null);
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Unable to save progress.");
+      const serverErrors = parseValidationErrors(error);
+      if (serverErrors) {
+        setValidationErrors((previous) => ({ ...previous, ...serverErrors }));
+        setFormError(null);
+      } else {
+        setFormError(error instanceof Error ? error.message : "Unable to save progress.");
+      }
     } finally {
       setIsSavingProgress(false);
     }
@@ -105,16 +155,45 @@ export default function DynamicFormRenderer({
     setAnswers((previousAnswers) => {
       const updatedAnswers = { ...previousAnswers, [fieldKey]: nextValue };
       const nextRuleState = applyRules(form.rules, updatedAnswers);
+      if (touchedFields.includes(fieldKey)) {
+        setValidationErrors((previous) => {
+          const nextErrors = buildVisibleValidationErrors(nextRuleState.answers, touchedFields);
+          return Object.keys(nextErrors).length > 0 ? nextErrors : {};
+        });
+      } else {
+        setValidationErrors((previous) => {
+          if (!previous[fieldKey]) {
+            return previous;
+          }
+
+          const nextErrors = { ...previous };
+          delete nextErrors[fieldKey];
+          return nextErrors;
+        });
+      }
+
+      setFormError(null);
       return nextRuleState.answers;
     });
   };
 
-  const handleBlur = async () => {
+  const handleBlur = async (fieldKey: string) => {
+    const nextTouchedFields = touchedFields.includes(fieldKey) ? touchedFields : [...touchedFields, fieldKey];
+    setTouchedFields(nextTouchedFields);
+
+    const nextErrors = buildVisibleValidationErrors(ruleState.answers, nextTouchedFields);
+    setValidationErrors(nextErrors);
+
+    if (nextErrors[fieldKey]?.length) {
+      return;
+    }
+
     await persistProgress(ruleState.answers);
   };
 
   const handleSubmit = async () => {
     const clientErrors = validateAnswers(form.schema, ruleState.answers, optionSets);
+    setTouchedFields(Object.keys(form.schema.properties));
     setValidationErrors(clientErrors);
     if (Object.keys(clientErrors).length > 0) {
       return;
@@ -128,26 +207,16 @@ export default function DynamicFormRenderer({
       });
       setSubmissionId(result.submissionId);
       setSubmitted(true);
+      setValidationErrors({});
       setFormError(null);
     } catch (error) {
-      if (error instanceof Error) {
-        try {
-          const parsed = JSON.parse((error as Error & { bodyText?: string }).bodyText ?? "{}") as {
-            errors?: Array<{ fieldKey: string; message: string }>;
-          };
-          if (Array.isArray(parsed.errors)) {
-            const serverErrors: ValidationErrors = {};
-            for (const item of parsed.errors) {
-              if (!serverErrors[item.fieldKey]) {
-                serverErrors[item.fieldKey] = [];
-              }
-              serverErrors[item.fieldKey].push(item.message);
-            }
-            setValidationErrors(serverErrors);
-          }
-        } catch {
-          setFormError(error.message);
-        }
+      const serverErrors = parseValidationErrors(error);
+      if (serverErrors) {
+        setTouchedFields(Object.keys(form.schema.properties));
+        setValidationErrors(serverErrors);
+        setFormError(null);
+      } else if (error instanceof Error) {
+        setFormError(error.message);
       } else {
         setFormError("Submission failed.");
       }
@@ -210,7 +279,7 @@ export default function DynamicFormRenderer({
               checked={Boolean(value)}
               disabled={disabled}
               onChange={(event) => handleChange(fieldKey, event.target.checked)}
-              onBlur={handleBlur}
+              onBlur={() => handleBlur(fieldKey)}
             />
             <span>{label}</span>
           </label>
@@ -222,7 +291,7 @@ export default function DynamicFormRenderer({
             value={typeof value === "string" ? value : ""}
             disabled={disabled}
             onChange={(event) => handleChange(fieldKey, event.target.value)}
-            onBlur={handleBlur}
+            onBlur={() => handleBlur(fieldKey)}
           >
             <option value="">Select...</option>
             {schemaProperty.optionSetKey
@@ -250,7 +319,7 @@ export default function DynamicFormRenderer({
             maxLength={typeof schemaProperty.maxLength === "number" ? schemaProperty.maxLength : undefined}
             disabled={disabled}
             onChange={(event) => handleChange(fieldKey, event.target.value)}
-            onBlur={handleBlur}
+            onBlur={() => handleBlur(fieldKey)}
           />
         )}
 
@@ -266,7 +335,7 @@ export default function DynamicFormRenderer({
             onChange={(event) =>
               handleChange(fieldKey, event.target.value === "" ? null : Number(event.target.value))
             }
-            onBlur={handleBlur}
+            onBlur={() => handleBlur(fieldKey)}
           />
         )}
 
@@ -285,7 +354,7 @@ export default function DynamicFormRenderer({
               pattern={schemaProperty.pattern ?? undefined}
               disabled={disabled}
               onChange={(event) => handleChange(fieldKey, event.target.value)}
-              onBlur={handleBlur}
+              onBlur={() => handleBlur(fieldKey)}
             />
           )}
 

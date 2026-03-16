@@ -1,7 +1,6 @@
 // src/components/residents/ResidentRow.tsx
 
 import React from 'react';
-import { User } from 'lucide-react';
 import type { Resident } from '../../services/mockDataService';
 
 interface ResidentRowProps {
@@ -19,6 +18,9 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
   onAttendanceChange,
   onSelect,
 }) => {
+  const formatEnumLabel = (value: string | null | undefined) =>
+    value ? value.replace(/([a-z])([A-Z])/g, "$1 $2") : "Not set";
+
   const fallbackAvatar = resident.fallbackPhoto || `https://i.pravatar.cc/150?img=${((resident.id - 1) % 70) + 1}`;
 
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -43,18 +45,12 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
     >
       {/* Photo */}
       <td className="px-6 py-4 whitespace-nowrap">
-        {resident.photo ? (
-          <img
-            src={resident.photo ?? fallbackAvatar}
-            alt={`${resident.firstName} ${resident.surname}`}
-            onError={handleImageError}
-            className="h-10 w-10 rounded-full object-cover"
-          />
-        ) : (
-          <div className="h-10 w-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-400">
-            <User className="h-6 w-6" />
-          </div>
-        )}
+        <img
+          src={resident.photo ?? fallbackAvatar}
+          alt={`${resident.firstName} ${resident.surname}`}
+          onError={handleImageError}
+          className="h-10 w-10 rounded-full object-cover"
+        />
       </td>
 
       {/* First Name */}
@@ -85,6 +81,14 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
       {/* Room */}
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {resident.roomNumber}
+      </td>
+
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {formatEnumLabel(resident.programmeType)}
+      </td>
+
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {formatEnumLabel(resident.participationMode)}
       </td>
 
       {/* Roll call column */}

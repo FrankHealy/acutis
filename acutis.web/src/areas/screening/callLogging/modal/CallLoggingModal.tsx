@@ -82,8 +82,8 @@ const CallLoggingModal: React.FC<CallLoggingModalProps> = ({
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">{text("call_logging.modal.title", "Log New Call")}</h3>
-              <p className="text-sm text-gray-500">{text("call_logging.modal.description", "Record incoming inquiry")}</p>
+              <h3 className="text-xl font-semibold text-gray-900">{text("call_logging.modal.title", "Log Screen Call")}</h3>
+              <p className="text-sm text-gray-500">{text("call_logging.modal.description", "Record an incoming screening or referral call")}</p>
             </div>
             <button
               onClick={onClose}
@@ -216,7 +216,7 @@ const CallLoggingModal: React.FC<CallLoggingModalProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <Save className="h-5 w-5" />
-                <span>{isSaving ? text("call_logging.modal.saving", "Saving...") : text("call_logging.modal.save", "Save Call Log")}</span>
+                <span>{isSaving ? text("call_logging.modal.saving", "Saving...") : text("call_logging.modal.save", "Save Screen Call")}</span>
               </div>
             </button>
           </div>

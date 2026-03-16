@@ -67,6 +67,12 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
               <SortableHeader column="age">Age</SortableHeader>
               <SortableHeader column="weekNumber">Week</SortableHeader>
               <SortableHeader column="roomNumber">Room</SortableHeader>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Programme
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Participation
+              </th>
               {rollCallView && (
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Present
@@ -94,7 +100,7 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
               })
             ) : (
               <tr>
-                <td colSpan={rollCallView ? 8 : 7} className="text-center py-4 text-gray-500">
+                <td colSpan={rollCallView ? 10 : 9} className="text-center py-4 text-gray-500">
                   No residents found
                 </td>
               </tr>

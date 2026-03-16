@@ -9,6 +9,8 @@ export type Resident = {
   entryYear?: number | null;
   entryWeek?: number | null;
   entrySequence?: number | null;
+  programmeType?: string | null;
+  participationMode?: string | null;
   caseStatus?: string | null;
   firstName: string;
   surname: string;
@@ -112,6 +114,8 @@ const alcoholSeedResidents: Resident[] = (seededResidents as SeedResident[]).map
   return {
     id: index + 1,
     residentGuid: null,
+    programmeType: null,
+    participationMode: null,
     firstName: seed.firstName,
     surname: seed.surname,
     nationality: seed.nationality,

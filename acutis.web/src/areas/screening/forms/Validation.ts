@@ -28,6 +28,18 @@ const hasNumericConstraint = (value: unknown): value is number => {
   return typeof value === "number" && Number.isFinite(value);
 };
 
+const matchesFormat = (format: string, value: string): boolean => {
+  if (format === "email") {
+    return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value);
+  }
+
+  if (format === "phone") {
+    return /^\+?[1-9][0-9()\-\s]{7,19}$/.test(value);
+  }
+
+  return true;
+};
+
 export const validateAnswers = (
   schema: JsonSchemaDto,
   answers: Record<string, JsonValue>,
@@ -88,6 +100,9 @@ export const validateAnswers = (
         if (!regex.test(stringValue)) {
           addError(errors, fieldKey, "Value does not match required format.");
         }
+      }
+      if (property.format && !matchesFormat(property.format, stringValue)) {
+        addError(errors, fieldKey, `Invalid ${property.format} format.`);
       }
     }
 

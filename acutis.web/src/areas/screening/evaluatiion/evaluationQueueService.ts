@@ -5,14 +5,19 @@ import {
 } from "@/areas/screening/services/screeningControlService";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 import { createAuthHeaders } from "@/lib/authMode";
+import type { UnitId } from "@/areas/shared/unit/unitTypes";
 
 export type EvaluationQueueItem = {
+  caseId: string;
+  residentId: string | null;
   surname: string;
   name: string;
   unit: string;
+  intakeSource: string;
   numCalls: number;
   lastCallDate: string;
   status: string;
+  hasScreeningStarted: boolean;
 };
 
 const EVALUATION_CACHE_KEY = "screening.evaluees";
@@ -23,13 +28,18 @@ const getAuthHeaders = (accessToken?: string) => {
 
 export const fetchEvaluationQueue = async (
   accessToken?: string,
-  options?: { forceRefresh?: boolean }
+  options?: { forceRefresh?: boolean; unitId?: UnitId }
 ): Promise<EvaluationQueueItem[]> => {
-  const control = await getScreeningControl(accessToken, { forceRefresh: options?.forceRefresh });
+  const unitId = options?.unitId ?? "alcohol";
+  const control = await getScreeningControl(accessToken, {
+    forceRefresh: options?.forceRefresh,
+    unitId,
+  });
   const canUseCache = !options?.forceRefresh && control.evaluationQueueCacheSeconds > 0;
+  const cacheKey = `${EVALUATION_CACHE_KEY}.${unitId}`;
 
   if (canUseCache) {
-    const cached = readLocalCache<EvaluationQueueItem[]>(EVALUATION_CACHE_KEY);
+    const cached = readLocalCache<EvaluationQueueItem[]>(cacheKey);
     if (cached) {
       return cached;
     }
@@ -49,7 +59,7 @@ export const fetchEvaluationQueue = async (
   const data = (await response.json()) as EvaluationQueueItem[];
   const mapped = Array.isArray(data) ? data : [];
   if (canUseCache) {
-    writeLocalCache(EVALUATION_CACHE_KEY, mapped, control.evaluationQueueCacheSeconds);
+    writeLocalCache(cacheKey, mapped, control.evaluationQueueCacheSeconds);
   }
 
   return mapped;

@@ -9,7 +9,6 @@ import { hasSuperAdminAccess } from "@/lib/adminAccess";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import { useAppAccess } from "@/areas/shared/hooks/useAppAccess";
-import Header from "@/areas/shared/layout/Header";
 
 type SuperAdminGuardProps = {
   title: string;
@@ -38,14 +37,9 @@ export default function SuperAdminGuard({ title, description, children }: SuperA
 
   if (!isAuthorizationDisabled && (status === "loading" || loading)) {
     return (
-      <div className="app-page-shell">
-        <div className="sticky top-0 z-40">
-          <Header showCapacity={false} />
-        </div>
-        <div className="px-4 py-10">
-          <div className="app-card mx-auto max-w-6xl rounded-xl p-6">
-            <p className="text-sm text-[var(--app-text-muted)]">{text("config.guard.checking_access", "Checking administrator access...")}</p>
-          </div>
+      <div className="px-4 py-10">
+        <div className="app-card mx-auto max-w-6xl rounded-xl p-6">
+          <p className="text-sm text-[var(--app-text-muted)]">{text("config.guard.checking_access", "Checking administrator access...")}</p>
         </div>
       </div>
     );
@@ -53,33 +47,28 @@ export default function SuperAdminGuard({ title, description, children }: SuperA
 
   if (!hasSuperAdminAccess(access.roles)) {
     return (
-      <div className="app-page-shell">
-        <div className="sticky top-0 z-40">
-          <Header showCapacity={false} />
-        </div>
-        <div className="px-4 py-10">
-          <div className="mx-auto max-w-3xl rounded-2xl border border-[color:color-mix(in_srgb,var(--app-danger)_20%,var(--app-border))] bg-[var(--app-surface)] p-8 shadow-sm">
-            <div className="flex items-start gap-4">
-              <div className="rounded-full bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)] p-3 text-[var(--app-danger)]">
-                <ShieldAlert className="h-6 w-6" />
+      <div className="px-4 py-10">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-[color:color-mix(in_srgb,var(--app-danger)_20%,var(--app-border))] bg-[var(--app-surface)] p-8 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="rounded-full bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)] p-3 text-[var(--app-danger)]">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <h1 className="text-2xl font-semibold text-[var(--app-text)]">{title}</h1>
+                <p className="mt-1 text-sm text-[var(--app-text-muted)]">{description}</p>
               </div>
-              <div className="space-y-3">
-                <div>
-                  <h1 className="text-2xl font-semibold text-[var(--app-text)]">{title}</h1>
-                  <p className="mt-1 text-sm text-[var(--app-text-muted)]">{description}</p>
-                </div>
-                <p className="text-sm text-[var(--app-danger)]">
-                  {text("config.guard.superadmin_only", "Only SuperAdmin can see and administer all units, roles, and assignments.")}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => router.push("/")}
-                  className="app-outline-button inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  {text("config.guard.back_to_startup", "Back to startup")}
-                </button>
-              </div>
+              <p className="text-sm text-[var(--app-danger)]">
+                {text("config.guard.superadmin_only", "Only SuperAdmin can see and administer all units, roles, and assignments.")}
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="app-outline-button inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {text("config.guard.back_to_startup", "Back to startup")}
+              </button>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { mockResidents, type Resident } from "./mockDataService";
+import { type Resident } from "./mockDataService";
 import { UNIT_GUIDS } from "./unitIdentity";
 
 export type AttendanceRecord = {
@@ -51,6 +51,8 @@ type ResidentListItemDto = {
   entryYear?: number | null;
   entryWeek?: number | null;
   entrySequence?: number | null;
+  programmeType?: string | null;
+  participationMode?: string | null;
   caseStatus?: string | null;
   psn: string;
   firstName: string;
@@ -94,6 +96,8 @@ const mapApiResident = (dto: ResidentListItemDto): Resident => {
     entryYear: dto.entryYear ?? null,
     entryWeek: dto.entryWeek ?? null,
     entrySequence: dto.entrySequence ?? null,
+    programmeType: dto.programmeType?.trim() ? dto.programmeType : null,
+    participationMode: dto.participationMode?.trim() ? dto.participationMode : null,
     caseStatus: dto.caseStatus?.trim() ? dto.caseStatus : null,
     firstName: dto.firstName,
     surname: dto.surname,
@@ -121,12 +125,13 @@ const mapApiResident = (dto: ResidentListItemDto): Resident => {
   };
 };
 
-const fetchResidentsFromApi = async (unit: Resident["unit"]): Promise<Resident[]> => {
+const fetchResidentsFromApi = async (unit: Resident["unit"], accessToken?: string | null): Promise<Resident[]> => {
   const unitGuid = UNIT_GUIDS[unit];
   const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/residents`, {
     method: "GET",
     headers: {
       Accept: "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     cache: "no-store",
   });
@@ -140,25 +145,15 @@ const fetchResidentsFromApi = async (unit: Resident["unit"]): Promise<Resident[]
 };
 
 export const residentService = {
-  async getResidents(unit: Resident["unit"]): Promise<Resident[]> {
-    try {
-      const residents = await fetchResidentsFromApi(unit);
-      if (residents.length === 0) {
-        await delay(50);
-        residentSource = "mock";
-        return mockResidents.filter((resident) => resident.unit === unit);
-      }
-      residentSource = "api";
-      return residents;
-    } catch {
-      await delay(50);
-      residentSource = "mock";
-      return mockResidents.filter((resident) => resident.unit === unit);
-    }
+  async getResidents(unit: Resident["unit"], accessToken?: string | null): Promise<Resident[]> {
+    await delay(50);
+    const residents = await fetchResidentsFromApi(unit, accessToken);
+    residentSource = "api";
+    return residents;
   },
 
-  async getRollCallResidents(unit: Resident["unit"]): Promise<Resident[]> {
-    return this.getResidents(unit);
+  async getRollCallResidents(unit: Resident["unit"], accessToken?: string | null): Promise<Resident[]> {
+    return this.getResidents(unit, accessToken);
   },
 
   async saveAttendance(records: AttendanceRecord[]): Promise<void> {

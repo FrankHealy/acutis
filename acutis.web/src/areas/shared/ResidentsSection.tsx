@@ -18,6 +18,7 @@ type ResidentsSectionProps = {
   unitName: string;
   initialRollCallView?: boolean;
   onOpenMeditation?: () => void;
+  onOpenIncidentCapture?: (resident?: import("@/services/mockDataService").Resident) => void;
 };
 
 const ResidentsSection: React.FC<ResidentsSectionProps> = ({
@@ -25,6 +26,7 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({
   unitName,
   initialRollCallView = false,
   onOpenMeditation,
+  onOpenIncidentCapture,
 }) => {
   const { loadKeys, t } = useLocalization();
   const [selectedResidentId, setSelectedResidentId] = useState<number | null>(null);
@@ -95,6 +97,7 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({
       <ResidentDetail
         resident={selectedResident}
         onBack={() => setSelectedResidentId(null)}
+        onOpenIncidentCapture={onOpenIncidentCapture}
       />
     );
   }

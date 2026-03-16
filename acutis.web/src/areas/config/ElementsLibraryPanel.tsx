@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * ElementsLibraryPanel.tsx
  * Floating sidebar panel with drag & drop elements
@@ -24,6 +26,11 @@ import {
   User,
   X,
 } from "lucide-react";
+import {
+  getFallbackScreeningElementsLibrary,
+  type LibraryCategory,
+  type LibraryElement,
+} from "./screeningFormLibrary";
 
 interface FormField {
   id: string;
@@ -43,43 +50,39 @@ interface FormField {
   defaultValue?: string;
 }
 
-interface FormElement {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  fields: FormField[];
-}
-
-interface ElementCategory {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  elements: FormElement[];
-}
-
 interface ElementsLibraryPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onElementDrop: (element: FormElement, sectionId: string) => void;
+  onElementDrop: (element: LibraryElement, sectionId: string) => void;
+  library?: LibraryCategory[];
+  isLoadingLibrary?: boolean;
 }
 
 const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
   isOpen,
   onClose,
+  library: providedLibrary,
+  isLoadingLibrary = false,
 }) => {
-  const [library, setLibrary] = useState<ElementCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [library, setLibrary] = useState<LibraryCategory[]>(providedLibrary ?? []);
+  const [loading, setLoading] = useState(!providedLibrary && isOpen);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [draggedElement, setDraggedElement] = useState<FormElement | null>(null);
+  const [draggedElement, setDraggedElement] = useState<LibraryElement | null>(null);
 
   useEffect(() => {
+    if (providedLibrary) {
+      setLibrary(providedLibrary);
+      setSelectedCategory(providedLibrary[0]?.id ?? null);
+      setLoading(false);
+      return;
+    }
+
     if (isOpen) {
+      setLoading(true);
       fetchLibrary();
     }
-  }, [isOpen]);
+  }, [isOpen, providedLibrary]);
 
   const fetchLibrary = async () => {
     try {
@@ -91,175 +94,12 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
       }
     } catch (error) {
       console.error("Failed to fetch elements library:", error);
-      setLibrary(getMockLibrary());
-      setSelectedCategory("personal-info");
+      const fallbackLibrary = getFallbackScreeningElementsLibrary();
+      setLibrary(fallbackLibrary);
+      setSelectedCategory(fallbackLibrary[0]?.id ?? null);
     } finally {
       setLoading(false);
     }
-  };
-
-  const getMockLibrary = (): ElementCategory[] => {
-    return [
-      {
-        id: "personal-info",
-        name: "Personal Information",
-        description: "Basic contact and identity fields",
-        icon: "user",
-        elements: [
-          {
-            id: "element-name-basic",
-            name: "Name - Basic",
-            description: "First and Last name",
-            category: "personal-info",
-            fields: [
-              {
-                id: "firstName",
-                fieldName: "firstName",
-                label: "First Name",
-                type: "text",
-                required: true,
-                placeholder: "Enter first name",
-                validation: { min: 2, max: 50 },
-              },
-              {
-                id: "lastName",
-                fieldName: "lastName",
-                label: "Last Name",
-                type: "text",
-                required: true,
-                placeholder: "Enter last name",
-                validation: { min: 2, max: 50 },
-              },
-            ],
-          },
-          {
-            id: "element-contact-basic",
-            name: "Contact - Basic",
-            description: "Phone and Email",
-            category: "personal-info",
-            fields: [
-              {
-                id: "phone",
-                fieldName: "phoneNumber",
-                label: "Phone Number",
-                type: "phone",
-                required: true,
-                placeholder: "087-1234567",
-                validation: { pattern: "^\\d{3}-\\d{7}$" },
-              },
-              {
-                id: "email",
-                fieldName: "email",
-                label: "Email Address",
-                type: "email",
-                required: false,
-                placeholder: "email@example.com",
-              },
-            ],
-          },
-          {
-            id: "element-dob",
-            name: "Date of Birth",
-            description: "Date of birth with age validation",
-            category: "personal-info",
-            fields: [
-              {
-                id: "dateOfBirth",
-                fieldName: "dateOfBirth",
-                label: "Date of Birth",
-                type: "date",
-                required: true,
-                helpText: "Must be 18 or older",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: "medical",
-        name: "Medical Information",
-        description: "Health and medical history",
-        icon: "heart",
-        elements: [
-          {
-            id: "element-medications",
-            name: "Current Medications",
-            description: "List of current medications",
-            category: "medical",
-            fields: [
-              {
-                id: "currentMedications",
-                fieldName: "currentMedications",
-                label: "Current Medications",
-                type: "textarea",
-                required: false,
-                placeholder: "List all current medications",
-                helpText: "Include dosage and frequency",
-              },
-            ],
-          },
-          {
-            id: "element-allergies",
-            name: "Allergies",
-            description: "Drug and food allergies",
-            category: "medical",
-            fields: [
-              {
-                id: "allergies",
-                fieldName: "allergies",
-                label: "Allergies",
-                type: "textarea",
-                required: false,
-                placeholder: "List any known allergies",
-                helpText: "Include drug and food allergies",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: "substance-use",
-        name: "Substance Use",
-        description: "Substance use history and assessment",
-        icon: "alert-triangle",
-        elements: [
-          {
-            id: "element-alcohol-use",
-            name: "Alcohol Use Assessment",
-            description: "Detailed alcohol use history",
-            category: "substance-use",
-            fields: [
-              {
-                id: "drinksPerDay",
-                fieldName: "drinksPerDay",
-                label: "Drinks Per Day",
-                type: "number",
-                required: true,
-                placeholder: "0",
-                validation: { min: 0, max: 100 },
-              },
-              {
-                id: "yearsHeavyDrinking",
-                fieldName: "yearsHeavyDrinking",
-                label: "Years of Heavy Drinking",
-                type: "number",
-                required: true,
-                placeholder: "0",
-                validation: { min: 0, max: 80 },
-              },
-              {
-                id: "withdrawalHistory",
-                fieldName: "withdrawalHistory",
-                label: "Withdrawal History",
-                type: "select",
-                required: false,
-                options: ["None", "Mild", "Moderate", "Severe"],
-              },
-            ],
-          },
-        ],
-      },
-    ];
   };
 
   const categoryIcons = useMemo<Record<string, React.ReactNode>>(
@@ -267,6 +107,10 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
       "personal-info": <User size={20} />,
       medical: <Heart size={20} />,
       "substance-use": <AlertTriangle size={20} />,
+      "hse-caller-details": <User size={20} />,
+      "hse-alcohol-use": <AlertTriangle size={20} />,
+      "hse-stability-safety": <Shield size={20} />,
+      "hse-follow-up": <FileText size={20} />,
       assessment: <FileText size={20} />,
       consent: <Shield size={20} />,
       therapy: <FileText size={20} />,
@@ -292,7 +136,7 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
     []
   );
 
-  const handleDragStart = (element: FormElement, e: React.DragEvent) => {
+  const handleDragStart = (element: LibraryElement, e: React.DragEvent) => {
     setDraggedElement(element);
     e.dataTransfer.effectAllowed = "copy";
     const payload = JSON.stringify(element);
@@ -377,7 +221,7 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {loading ? (
+            {loading || isLoadingLibrary ? (
               <div className="p-8 text-center text-gray-500">Loading elements...</div>
             ) : selectedCategoryData ? (
               <div className="p-4 space-y-3">

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+"use client";
+
+import React, { useEffect, useState } from 'react';
 import { 
   ArrowLeft, Save, Eye, Plus, Trash2, GripVertical, Settings, Copy, 
   ChevronDown, ChevronUp, Type, Hash, Calendar, CheckSquare, List, 
@@ -9,8 +11,20 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import ElementsLibraryPanel from './ElementsLibraryPanel';
 import {
+  getFallbackScreeningElementsLibrary,
+  getFallbackScreeningTemplateSections,
+  getScreeningElementsLibraryFromForm,
+  getScreeningTemplateSectionsFromForm,
+  type LibraryCategory,
+  type ScreeningTemplateSection,
+} from './screeningFormLibrary';
+import {
+  getActiveForm,
+  createAlcoholScreeningForm,
   createAdmissionForm,
+  saveAsDraftAlcoholScreeningForm,
   saveAsDraftAdmissionForm,
+  type FormDefinitionDto,
   type JsonSchemaDto,
   type JsonSchemaPropertyDto,
   type UpsertFormDefinitionRequest,
@@ -21,7 +35,7 @@ interface FormField {
   id: string;
   fieldName: string;
   label: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea' | 'email' | 'phone' | 'file';
+  type: 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea' | 'email' | 'phone' | 'file' | 'tel';
   dataType?: 'string' | 'integer' | 'number' | 'boolean' | 'date' | 'email' | 'phone' | 'text';
   required: boolean;
   placeholder?: string;
@@ -35,13 +49,6 @@ interface FormField {
   helpText?: string;
   defaultValue?: string;
   group?: string;
-}
-
-interface BoundElement {
-  id: string;
-  label: string;
-  category: string;
-  field: Omit<FormField, 'id'>;
 }
 
 interface FormSection {
@@ -195,262 +202,185 @@ const getSchemaProperty = (field: FormField): JsonSchemaPropertyDto => {
   return property;
 };
 
-const alcoholEvaluationBoundElements: BoundElement[] = [
+const cloneTemplateField = (field: Omit<FormField, 'id'> & { id?: string }): FormField => ({
+  ...field,
+  id: `field-${Date.now()}-${Math.random()}`,
+});
+
+const buildSectionFromTemplate = (section: ScreeningTemplateSection): FormSection => ({
+  id: `${section.id}-${Date.now()}-${Math.random()}`,
+  title: section.title,
+  icon: section.icon,
+  subtitle: section.subtitle,
+  required: section.required,
+  collapsed: section.collapsed,
+  fields: section.fields.map((field) => cloneTemplateField(field)),
+});
+
+const createDefaultAdmissionSections = (): FormSection[] => [
   {
-    id: 'callerName',
-    label: 'Caller Name',
-    category: 'Identity',
-    field: {
-      fieldName: 'callerName',
-      label: 'Caller Name',
-      type: 'text',
-      dataType: 'string',
-      required: true,
-      placeholder: 'Enter caller full name',
-      validation: { min: 2, max: 120 }
-    }
+    id: 'personal-identity',
+    title: 'Personal Identity',
+    icon: 'user',
+    required: true,
+    collapsed: false,
+    fields: [
+      {
+        id: 'first-name',
+        fieldName: 'firstName',
+        label: 'First Name',
+        type: 'text',
+        required: true,
+        placeholder: 'Enter first name',
+        validation: { min: 2, max: 50 }
+      },
+      {
+        id: 'middle-name',
+        fieldName: 'middleName',
+        label: 'Middle Name',
+        type: 'text',
+        required: false,
+        placeholder: 'Enter middle name'
+      },
+      {
+        id: 'surname',
+        fieldName: 'surname',
+        label: 'Surname',
+        type: 'text',
+        required: true,
+        placeholder: 'Enter surname',
+        validation: { min: 2, max: 50 }
+      },
+      {
+        id: 'dob',
+        fieldName: 'dateOfBirth',
+        label: 'Date of Birth',
+        type: 'date',
+        required: true
+      },
+      {
+        id: 'sex',
+        fieldName: 'sex',
+        label: 'Sex',
+        type: 'select',
+        required: false,
+        options: ['Male', 'Female', 'Other']
+      },
+      {
+        id: 'previous-resident',
+        fieldName: 'isPreviousResident',
+        label: 'Previous Resident (Returning)',
+        type: 'checkbox',
+        required: false
+      }
+    ]
   },
   {
-    id: 'phoneNumber',
-    label: 'Phone Number',
-    category: 'Identity',
-    field: {
-      fieldName: 'phoneNumber',
-      label: 'Phone Number',
-      type: 'phone',
-      dataType: 'phone',
-      required: true,
-      placeholder: '+353 ...',
-      validation: { min: 8, max: 20, pattern: '^[+0-9()\\-\\s]+$' }
-    }
-  },
-  {
-    id: 'age',
-    label: 'Age',
-    category: 'Identity',
-    field: {
-      fieldName: 'age',
-      label: 'Age',
-      type: 'number',
-      dataType: 'integer',
-      required: true,
-      validation: { min: 16, max: 120 }
-    }
-  },
-  {
-    id: 'drinkType',
-    label: 'Drink Type',
-    category: 'Alcohol Use',
-    field: {
-      fieldName: 'drinkType',
-      label: 'Primary Drink Type',
-      type: 'select',
-      dataType: 'string',
-      required: true,
-      options: ['Beer', 'Wine', 'Spirits', 'Cider', 'Other']
-    }
-  },
-  {
-    id: 'drinksPerDay',
-    label: 'Drinks Per Day',
-    category: 'Alcohol Use',
-    field: {
-      fieldName: 'drinksPerDay',
-      label: 'Drinks Per Day',
-      type: 'number',
-      dataType: 'number',
-      required: true,
-      validation: { min: 0, max: 100 }
-    }
-  },
-  {
-    id: 'daysDrinkingPerWeek',
-    label: 'Days Drinking Per Week',
-    category: 'Alcohol Use',
-    field: {
-      fieldName: 'daysDrinkingPerWeek',
-      label: 'Days Drinking Per Week',
-      type: 'number',
-      dataType: 'integer',
-      required: false,
-      validation: { min: 0, max: 7 }
-    }
-  },
-  {
-    id: 'lastDrinkDate',
-    label: 'Last Drink Date',
-    category: 'Alcohol Use',
-    field: {
-      fieldName: 'lastDrinkDate',
-      label: 'Last Drink Date',
-      type: 'date',
-      dataType: 'date',
-      required: false
-    }
-  },
-  {
-    id: 'withdrawalHistory',
-    label: 'Withdrawal History',
-    category: 'Risk',
-    field: {
-      fieldName: 'withdrawalHistory',
-      label: 'Withdrawal History',
-      type: 'checkbox',
-      dataType: 'boolean',
-      required: false
-    }
-  },
-  {
-    id: 'historyOfSeizures',
-    label: 'History Of Seizures',
-    category: 'Risk',
-    field: {
-      fieldName: 'historyOfSeizures',
-      label: 'History of Seizures',
-      type: 'checkbox',
-      dataType: 'boolean',
-      required: false
-    }
-  },
-  {
-    id: 'suicidalIdeation',
-    label: 'Suicidal Ideation',
-    category: 'Risk',
-    field: {
-      fieldName: 'suicidalIdeation',
-      label: 'Suicidal Ideation',
-      type: 'checkbox',
-      dataType: 'boolean',
-      required: false
-    }
-  },
-  {
-    id: 'referralSource',
-    label: 'Referral Source',
-    category: 'Context',
-    field: {
-      fieldName: 'referralSource',
-      label: 'Referral Source',
-      type: 'select',
-      dataType: 'string',
-      required: true,
-      options: ['GP', 'Family', 'Self', 'Other']
-    }
-  },
-  {
-    id: 'assessorNotes',
-    label: 'Assessor Notes',
-    category: 'Clinical',
-    field: {
-      fieldName: 'assessorNotes',
-      label: 'Assessor Notes',
-      type: 'textarea',
-      dataType: 'text',
-      required: false,
-      validation: { max: 2000 },
-      helpText: 'Clinical notes to support triage decision.'
-    }
+    id: 'contact',
+    title: 'Contact Information',
+    icon: 'phone',
+    required: false,
+    collapsed: true,
+    fields: [
+      {
+        id: 'phone',
+        fieldName: 'phoneNumber',
+        label: 'Phone Number',
+        type: 'phone',
+        required: false,
+        placeholder: 'Enter phone number'
+      },
+      {
+        id: 'email',
+        fieldName: 'email',
+        label: 'Email Address',
+        type: 'email',
+        required: false,
+        placeholder: 'Enter email address'
+      }
+    ]
   }
 ];
 
-const FormDesigner = () => {
+const createDefaultScreeningSections = (): FormSection[] =>
+  getFallbackScreeningTemplateSections().map((section) => buildSectionFromTemplate(section));
+
+type FormDesignerProps = {
+  initialFormType?: 'admission' | 'screening';
+};
+
+const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
   const router = useRouter();
   const { data: session } = useSession();
-  const [formName, setFormName] = useState('Admission Form v4');
+  const [formType, setFormType] = useState<'admission' | 'screening'>(initialFormType);
+  const [formName, setFormName] = useState(initialFormType === 'screening' ? 'Alcohol Screening Form' : 'Admission Form v4');
   const [formVersion, setFormVersion] = useState(4);
-  const [selectedUnit, setSelectedUnit] = useState('all');
+  const [selectedUnit, setSelectedUnit] = useState(initialFormType === 'screening' ? 'alcohol_screening_call' : 'all');
   const [admissionType, setAdmissionType] = useState<'alcohol' | 'drugs' | 'ladies'>('alcohol');
   const [viewMode, setViewMode] = useState<'designer' | 'preview'>('designer');
-  const [selectedSection, setSelectedSection] = useState<string | null>('personal-identity');
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
 
-  // Mock form structure
-  const [sections, setSections] = useState<FormSection[]>([
-    {
-      id: 'personal-identity',
-      title: 'Personal Identity',
-      icon: 'user',
-      required: true,
-      collapsed: false,
-      fields: [
-        {
-          id: 'first-name',
-          fieldName: 'firstName',
-          label: 'First Name',
-          type: 'text',
-          required: true,
-          placeholder: 'Enter first name',
-          validation: { min: 2, max: 50 }
-        },
-        {
-          id: 'middle-name',
-          fieldName: 'middleName',
-          label: 'Middle Name',
-          type: 'text',
-          required: false,
-          placeholder: 'Enter middle name'
-        },
-        {
-          id: 'surname',
-          fieldName: 'surname',
-          label: 'Surname',
-          type: 'text',
-          required: true,
-          placeholder: 'Enter surname',
-          validation: { min: 2, max: 50 }
-        },
-        {
-          id: 'dob',
-          fieldName: 'dateOfBirth',
-          label: 'Date of Birth',
-          type: 'date',
-          required: true
-        },
-        {
-          id: 'sex',
-          fieldName: 'sex',
-          label: 'Sex',
-          type: 'select',
-          required: false,
-          options: ['Male', 'Female', 'Other']
-        },
-        {
-          id: 'previous-resident',
-          fieldName: 'isPreviousResident',
-          label: 'Previous Resident (Returning)',
-          type: 'checkbox',
-          required: false
-        }
-      ]
-    },
-    {
-      id: 'contact',
-      title: 'Contact Information',
-      icon: 'phone',
-      required: false,
-      collapsed: true,
-      fields: [
-        {
-          id: 'phone',
-          fieldName: 'phoneNumber',
-          label: 'Phone Number',
-          type: 'phone',
-          required: false,
-          placeholder: 'Enter phone number'
-        },
-        {
-          id: 'email',
-          fieldName: 'email',
-          label: 'Email Address',
-          type: 'email',
-          required: false,
-          placeholder: 'Enter email address'
-        }
-      ]
-    }
-  ]);
+  const isScreeningForm = formType === 'screening';
+
+  const [sections, setSections] = useState<FormSection[]>(
+    isScreeningForm ? createDefaultScreeningSections() : createDefaultAdmissionSections()
+  );
+  const [screeningLibrary, setScreeningLibrary] = useState<LibraryCategory[]>(getFallbackScreeningElementsLibrary());
+  const [isLoadingScreeningLibrary, setIsLoadingScreeningLibrary] = useState(false);
+
+  useEffect(() => {
+    const nextSections = isScreeningForm ? createDefaultScreeningSections() : createDefaultAdmissionSections();
+    setSections(nextSections);
+    setSelectedSection(nextSections[0]?.id ?? null);
+    setSelectedField(null);
+  }, [isScreeningForm]);
+
+  useEffect(() => {
+    const loadScreeningConfiguration = async () => {
+      if (!isScreeningForm) {
+        setScreeningLibrary(getFallbackScreeningElementsLibrary());
+        setIsLoadingScreeningLibrary(false);
+        return;
+      }
+
+      const accessToken = session?.accessToken;
+      if (!accessToken) {
+        const fallbackSections = createDefaultScreeningSections();
+        setSections(fallbackSections);
+        setSelectedSection(fallbackSections[0]?.id ?? null);
+        setScreeningLibrary(getFallbackScreeningElementsLibrary());
+        setIsLoadingScreeningLibrary(false);
+        return;
+      }
+
+      try {
+        setIsLoadingScreeningLibrary(true);
+        const response = await getActiveForm(accessToken, 'en-IE', 'anonymous_call', null, 'alcohol_screening_call');
+        const activeForm = response.form as FormDefinitionDto;
+        const loadedSections = getScreeningTemplateSectionsFromForm(activeForm).map((section) => buildSectionFromTemplate(section));
+        setSections(loadedSections);
+        setSelectedSection(loadedSections[0]?.id ?? null);
+        setSelectedField(null);
+        setFormName(activeForm.titleKey || 'Alcohol Screening Form');
+        setFormVersion(activeForm.version);
+        setScreeningLibrary(getScreeningElementsLibraryFromForm(activeForm));
+      } catch (error) {
+        console.error('Failed to load active screening form configuration:', error);
+        const fallbackSections = createDefaultScreeningSections();
+        setSections(fallbackSections);
+        setSelectedSection(fallbackSections[0]?.id ?? null);
+        setSelectedField(null);
+        setScreeningLibrary(getFallbackScreeningElementsLibrary());
+      } finally {
+        setIsLoadingScreeningLibrary(false);
+      }
+    };
+
+    void loadScreeningConfiguration();
+  }, [isScreeningForm, session?.accessToken]);
 
   const fieldTypes = [
     { value: 'text', label: 'Text Input', icon: Type },
@@ -461,6 +391,7 @@ const FormDesigner = () => {
     { value: 'textarea', label: 'Text Area', icon: FileText },
     { value: 'email', label: 'Email', icon: Mail },
     { value: 'phone', label: 'Phone', icon: Phone },
+    { value: 'tel', label: 'Telephone', icon: Phone },
     { value: 'file', label: 'File Upload', icon: ImageIcon }
   ];
 
@@ -507,11 +438,8 @@ const FormDesigner = () => {
     setSelectedField(newField.id);
   };
 
-  const addBoundElementField = (sectionId: string, element: BoundElement) => {
-    const newField: FormField = {
-      id: `field-${Date.now()}-${Math.random()}`,
-      ...element.field,
-    };
+  const addBoundElementField = (sectionId: string, field: FormField) => {
+    const newField: FormField = cloneTemplateField(field);
 
     setSections(prev =>
       prev.map(section => {
@@ -525,20 +453,11 @@ const FormDesigner = () => {
     setSelectedField(newField.id);
   };
 
-  const addAlcoholStandardTemplate = (sectionId: string) => {
-    setSections(prev =>
-      prev.map(section => {
-        if (section.id !== sectionId) return section;
-        const newFields: FormField[] = alcoholEvaluationBoundElements.map((element) => ({
-          id: `field-${Date.now()}-${Math.random()}`,
-          ...element.field,
-        }));
-        return {
-          ...section,
-          fields: [...section.fields, ...newFields],
-        };
-      })
-    );
+  const applyScreeningTemplate = () => {
+    const nextSections = createDefaultScreeningSections();
+    setSections(nextSections);
+    setSelectedSection(nextSections[0]?.id ?? null);
+    setSelectedField(null);
   };
 
   const deleteField = (sectionId: string, fieldId: string) => {
@@ -756,12 +675,19 @@ const FormDesigner = () => {
     try {
       const payload = buildFormPayload();
       payload.makeActive = status === 'active';
-      const formCode = selectedUnit;
-
-      if (status === 'active') {
-        await createAdmissionForm(accessToken, formCode, payload);
+      if (isScreeningForm) {
+        if (status === 'active') {
+          await createAlcoholScreeningForm(accessToken, payload);
+        } else {
+          await saveAsDraftAlcoholScreeningForm(accessToken, payload);
+        }
       } else {
-        await saveAsDraftAdmissionForm(accessToken, formCode, payload);
+        const formCode = selectedUnit;
+        if (status === 'active') {
+          await createAdmissionForm(accessToken, formCode, payload);
+        } else {
+          await saveAsDraftAdmissionForm(accessToken, formCode, payload);
+        }
       }
 
       if (status === 'active') {
@@ -795,25 +721,54 @@ const FormDesigner = () => {
                 onChange={(e) => setFormName(e.target.value)}
                 className="text-2xl font-bold text-gray-900 bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none"
               />
-              <p className="text-sm text-gray-500 mt-1">Version {formVersion} - Form Configuration</p>
+              <p className="text-sm text-gray-500 mt-1">Version {formVersion} - {isScreeningForm ? 'Screening' : 'Form'} Configuration</p>
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* Unit Selector */}
             <select
-              value={selectedUnit}
-              onChange={(e) => setSelectedUnit(e.target.value)}
+              value={formType}
+              onChange={(e) => {
+                const nextType = e.target.value as 'admission' | 'screening';
+                setFormType(nextType);
+                if (nextType === 'screening') {
+                  setSelectedUnit('alcohol_screening_call');
+                  setFormName('Alcohol Screening Form');
+                } else {
+                  setSelectedUnit('all');
+                  setFormName('Admission Form v4');
+                }
+              }}
               className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium"
             >
-              <option value="all">All Units (Base Form)</option>
-              <option value="alcohol">Alcohol Unit</option>
-              <option value="detox">Detox Unit</option>
-              <option value="drugs">Drugs Unit</option>
-              <option value="ladies">Ladies Unit</option>
+              <option value="admission">Admission Form</option>
+              <option value="screening">Screening Form</option>
             </select>
 
-            {selectedUnit === 'detox' && (
+            {/* Unit Selector */}
+            {isScreeningForm ? (
+              <input
+                type="text"
+                value={selectedUnit}
+                onChange={(e) => setSelectedUnit(e.target.value)}
+                className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium min-w-[220px]"
+                placeholder="alcohol_screening_call"
+              />
+            ) : (
+              <select
+                value={selectedUnit}
+                onChange={(e) => setSelectedUnit(e.target.value)}
+                className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium"
+              >
+                <option value="all">All Units (Base Form)</option>
+                <option value="alcohol">Alcohol Unit</option>
+                <option value="detox">Detox Unit</option>
+                <option value="drugs">Drugs Unit</option>
+                <option value="ladies">Ladies Unit</option>
+              </select>
+            )}
+
+            {!isScreeningForm && selectedUnit === 'detox' && (
               <select
                 value={admissionType}
                 onChange={(e) => setAdmissionType(e.target.value as typeof admissionType)}
@@ -1020,13 +975,15 @@ const FormDesigner = () => {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-bold text-gray-900">Fields ({selectedSectionData.fields.length})</h3>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => addAlcoholStandardTemplate(selectedSection!)}
-                          className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-semibold"
-                        >
-                          <Package className="h-4 w-4" />
-                          <span>Add Alcohol Standard</span>
-                        </button>
+                        {isScreeningForm && (
+                          <button
+                            onClick={applyScreeningTemplate}
+                            className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-semibold"
+                          >
+                            <Package className="h-4 w-4" />
+                            <span>Apply HSE Screening Template</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => addField(selectedSection!)}
                           className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-semibold"
@@ -1039,24 +996,38 @@ const FormDesigner = () => {
                   </div>
 
                   <div className="p-6 space-y-4">
-                    <div className="border border-blue-100 bg-blue-50 rounded-xl p-4">
-                      <p className="text-sm font-semibold text-blue-900 mb-3">Bound Elements Catalog (Alcohol Evaluation)</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {alcoholEvaluationBoundElements.map((element) => (
-                          <button
-                            key={element.id}
-                            onClick={() => addBoundElementField(selectedSection!, element)}
-                            className="flex items-center justify-between px-3 py-2 rounded-lg border border-blue-200 bg-white hover:bg-blue-100 transition-colors text-left"
-                          >
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900">{element.label}</p>
-                              <p className="text-xs text-gray-500">{element.category}</p>
+                    {isScreeningForm && (
+                      <div className="border border-blue-100 bg-blue-50 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-blue-900 mb-3">Bound Elements Catalog (HSE Screening)</p>
+                        <div className="space-y-4">
+                          {screeningLibrary.map((category) => (
+                            <div key={category.id}>
+                              <div className="mb-2">
+                                <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-800">{category.name}</p>
+                                <p className="text-xs text-blue-700">{category.description}</p>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {category.elements.flatMap((element) =>
+                                  element.fields.map((field) => (
+                                    <button
+                                      key={`${element.id}-${field.fieldName}`}
+                                      onClick={() => addBoundElementField(selectedSection!, field)}
+                                      className="flex items-center justify-between px-3 py-2 rounded-lg border border-blue-200 bg-white hover:bg-blue-100 transition-colors text-left"
+                                    >
+                                      <div>
+                                        <p className="text-sm font-semibold text-gray-900">{field.label}</p>
+                                        <p className="text-xs text-gray-500">{field.group || category.name}</p>
+                                      </div>
+                                      <Plus className="h-4 w-4 text-blue-700" />
+                                    </button>
+                                  ))
+                                )}
+                              </div>
                             </div>
-                            <Plus className="h-4 w-4 text-blue-700" />
-                          </button>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {dragOverSectionId === selectedSectionData.id && (
                       <div className="border-2 border-dashed border-blue-400 bg-blue-50 text-blue-700 rounded-xl px-4 py-3 text-sm font-medium">
@@ -1555,6 +1526,8 @@ const FormDesigner = () => {
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         onElementDrop={addFieldsFromElement}
+        library={isScreeningForm ? screeningLibrary : undefined}
+        isLoadingLibrary={isScreeningForm ? isLoadingScreeningLibrary : false}
       />
     </div>
   );

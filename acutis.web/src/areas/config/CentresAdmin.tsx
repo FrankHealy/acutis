@@ -21,6 +21,8 @@ const emptyForm: UpsertCentreRequest = {
   brandName: "Acutis",
   brandSubtitle: "Bruree Centre",
   brandLogoUrl: "/acutis-icon.svg",
+  browserTitle: "Acutis",
+  faviconUrl: "/acutis-icon.svg",
   themeKey: "acutis",
   displayOrder: 0,
   isActive: true,
@@ -90,6 +92,10 @@ export default function CentresAdmin() {
       "config.centres.form.brand_subtitle_placeholder",
       "config.centres.form.brand_logo_url",
       "config.centres.form.brand_logo_url_placeholder",
+      "config.centres.form.browser_title",
+      "config.centres.form.browser_title_placeholder",
+      "config.centres.form.favicon_url",
+      "config.centres.form.favicon_url_placeholder",
       "config.centres.form.theme",
       "config.centres.form.display_order",
       "config.centres.form.active",
@@ -112,6 +118,8 @@ export default function CentresAdmin() {
       brandName: centre.brandName,
       brandSubtitle: centre.brandSubtitle,
       brandLogoUrl: centre.brandLogoUrl,
+      browserTitle: centre.browserTitle,
+      faviconUrl: centre.faviconUrl,
       themeKey: centre.themeKey,
       displayOrder: centre.displayOrder,
       isActive: centre.isActive,
@@ -286,6 +294,14 @@ export default function CentresAdmin() {
               <label className="block space-y-1 text-sm text-[var(--app-text)]">
                 <span>{text("config.centres.form.brand_logo_url", "Brand logo URL")}</span>
                 <input value={form.brandLogoUrl} onChange={(event) => setForm((current) => ({ ...current, brandLogoUrl: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-[var(--app-text)]" placeholder={text("config.centres.form.brand_logo_url_placeholder", "/acutis-icon.svg")} />
+              </label>
+              <label className="block space-y-1 text-sm text-[var(--app-text)]">
+                <span>{text("config.centres.form.browser_title", "Browser title")}</span>
+                <input value={form.browserTitle} onChange={(event) => setForm((current) => ({ ...current, browserTitle: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-[var(--app-text)]" placeholder={text("config.centres.form.browser_title_placeholder", "Acutis")} />
+              </label>
+              <label className="block space-y-1 text-sm text-[var(--app-text)]">
+                <span>{text("config.centres.form.favicon_url", "Favicon URL")}</span>
+                <input value={form.faviconUrl} onChange={(event) => setForm((current) => ({ ...current, faviconUrl: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-[var(--app-text)]" placeholder={text("config.centres.form.favicon_url_placeholder", "/acutis-icon.svg")} />
               </label>
               <label className="block space-y-1 text-sm text-[var(--app-text)]">
                 <span>{text("config.centres.form.theme", "Theme")}</span>

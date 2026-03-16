@@ -13,6 +13,8 @@ export type UnitIdentityDto = {
   brandName: string;
   brandSubtitle: string;
   brandLogoUrl: string;
+  browserTitle: string;
+  faviconUrl: string;
   themeKey: string;
   unitCapacity: number;
   currentOccupancy: number;

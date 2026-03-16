@@ -27,6 +27,8 @@ export type CentreConfigurationDto = {
   brandName: string;
   brandSubtitle: string;
   brandLogoUrl: string;
+  browserTitle: string;
+  faviconUrl: string;
   themeKey: string;
   displayOrder: number;
   unitCount: number;
@@ -40,6 +42,8 @@ export type UpsertCentreRequest = {
   brandName: string;
   brandSubtitle: string;
   brandLogoUrl: string;
+  browserTitle: string;
+  faviconUrl: string;
   themeKey: string;
   displayOrder: number;
   isActive: boolean;

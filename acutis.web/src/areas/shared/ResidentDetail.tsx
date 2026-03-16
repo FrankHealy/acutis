@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ArrowLeft, User, Calendar, MapPin, Heart, Brain, BookOpen, Shield, Clock, CheckCircle, XCircle, LogOut } from 'lucide-react';
+import { ArrowLeft, User, Calendar, MapPin, Heart, Brain, BookOpen, Shield, Clock, CheckCircle, XCircle, LogOut, AlertTriangle } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import type { Resident } from '../../services/mockDataService';
 import { residentService, type DischargeExitType } from '../../services/residentService';
@@ -20,6 +20,7 @@ type ResidentDetailProps = {
   resident: Resident;
   onBack: () => void;
   onDischarged?: () => void;
+  onOpenIncidentCapture?: (resident: Resident) => void;
 };
 
 type DischargeModalState = {
@@ -39,7 +40,7 @@ const EXIT_TYPE_OPTIONS: { value: DischargeExitType; label: string; description:
   { value: "Ejected", label: "Ejected", description: "Resident has been removed from the programme." },
 ];
 
-const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, onDischarged }) => {
+const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, onDischarged, onOpenIncidentCapture }) => {
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState('overview');
   const [discharge, setDischarge] = useState<DischargeModalState>({
@@ -62,6 +63,9 @@ const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, o
     };
     return dietary[code] ?? "Not specified";
   };
+
+  const formatEnumLabel = (value: string | null | undefined) =>
+    value ? value.replace(/([a-z])([A-Z])/g, "$1 $2") : "Not set";
 
   const ScaleIndicator: React.FC<{ label: string; value: number; max?: number; color?: 'blue' | 'yellow' | 'red' | 'green' }> = ({ label, value, max = 5, color = "blue" }) => {
     const percentage = (value / max) * 100;
@@ -179,6 +183,22 @@ const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, o
                   </div>
                   <button
                     type="button"
+                    onClick={() => onOpenIncidentCapture?.(resident)}
+                    className="flex items-center space-x-2 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-lg font-medium hover:bg-amber-100 transition-colors"
+                  >
+                    <AlertTriangle className="h-5 w-5" />
+                    <span>Log Incident</span>
+                  </button>
+                  <div className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-lg">
+                    <Heart className="h-5 w-5 text-gray-600" />
+                    <span className="font-medium">{formatEnumLabel(resident.programmeType)}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-lg">
+                    <Clock className="h-5 w-5 text-gray-600" />
+                    <span className="font-medium">{formatEnumLabel(resident.participationMode)}</span>
+                  </div>
+                  <button
+                    type="button"
                     onClick={() => setDischarge((d) => ({ ...d, open: true, error: null }))}
                     className="flex items-center space-x-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg font-medium hover:bg-red-100 transition-colors"
                   >
@@ -246,6 +266,16 @@ const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, o
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <p className="text-sm text-gray-600">Expected Completion</p>
                     <p className="font-bold text-green-900">{new Date(resident.expectedCompletion).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                    <p className="text-sm text-gray-600">Programme Type</p>
+                    <p className="font-bold text-indigo-900">{formatEnumLabel(resident.programmeType)}</p>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-sm text-gray-600">Participation Mode</p>
+                    <p className="font-bold text-amber-900">{formatEnumLabel(resident.participationMode)}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">

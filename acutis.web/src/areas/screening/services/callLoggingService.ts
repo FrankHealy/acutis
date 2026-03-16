@@ -8,6 +8,7 @@ import {
 } from '@/areas/screening/services/screeningControlService';
 import { getApiBaseUrl } from '@/lib/apiBaseUrl';
 import { createAuthHeaders } from '@/lib/authMode';
+import type { UnitId } from '@/areas/shared/unit/unitTypes';
 
 type ApiCall = {
   id: string;
@@ -91,11 +92,15 @@ const getAuthHeaders = (accessToken?: string) => {
 
 export const fetchCallLogs = async (
   accessToken?: string,
-  options?: { forceRefresh?: boolean; rangeDays?: CallLogRangeDays },
+  options?: { forceRefresh?: boolean; rangeDays?: CallLogRangeDays; unitId?: UnitId },
 ): Promise<CallLog[]> => {
   const rangeDays = options?.rangeDays ?? 30;
-  const cacheKey = `${CALL_LOG_CACHE_KEY_PREFIX}.${rangeDays}d`;
-  const control = await getScreeningControl(accessToken, { forceRefresh: options?.forceRefresh });
+  const unitId = options?.unitId ?? 'alcohol';
+  const cacheKey = `${CALL_LOG_CACHE_KEY_PREFIX}.${unitId}.${rangeDays}d`;
+  const control = await getScreeningControl(accessToken, {
+    forceRefresh: options?.forceRefresh,
+    unitId,
+  });
   const canUseCache = !options?.forceRefresh && control.callLogsCacheSeconds > 0;
 
   if (canUseCache) {
@@ -130,6 +135,7 @@ export const fetchCallLogs = async (
 export const createCallLog = async (
   payload: Omit<CallLog, 'id'>,
   accessToken?: string,
+  unitId: UnitId = 'alcohol',
 ): Promise<CallLog> => {
   const response = await fetch(`${getApiBaseUrl()}/api/screenings/calls`, {
     method: 'POST',
@@ -147,7 +153,7 @@ export const createCallLog = async (
 
   const data = (await response.json()) as ApiCall;
   for (const rangeDays of CALL_LOG_CACHE_RANGES) {
-    clearLocalCache(`${CALL_LOG_CACHE_KEY_PREFIX}.${rangeDays}d`);
+    clearLocalCache(`${CALL_LOG_CACHE_KEY_PREFIX}.${unitId}.${rangeDays}d`);
   }
   clearLocalCache('screening.evaluees');
   return mapApiCallToUi(data);

@@ -48,6 +48,15 @@ const Navigation: React.FC<NavigationProps> = ({
           </button>
 
           <button
+            onClick={() => setCurrentStep('incidents')}
+            className={`text-sm font-medium ${
+              currentStep === 'incidents' ? 'text-[var(--app-primary)]' : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
+            }`}
+          >
+            Incidents
+          </button>
+
+          <button
             onClick={() => setCurrentStep('configuration')}
             className={`text-sm font-medium ${
               currentStep === 'configuration' ? 'text-[var(--app-primary)]' : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'

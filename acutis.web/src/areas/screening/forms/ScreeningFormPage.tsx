@@ -32,7 +32,7 @@ import {
   type SaveResponse,
   type UpsertFormDefinitionRequest,
 } from "./ApiClient";
-import { isAuthorizedClient } from "@/lib/authMode";
+import { isAuthorizationDisabled, isAuthorizedClient } from "@/lib/authMode";
 
 type SubjectType = "anonymous_call" | "resident" | "admission";
 
@@ -91,7 +91,7 @@ export default function ScreeningFormPage() {
       try {
         setIsLoading(true);
         const accessToken = session?.accessToken;
-        if (!accessToken) {
+        if (!accessToken && !isAuthorizationDisabled) {
           setErrorMessage("Session expired.");
           return;
         }
@@ -138,7 +138,7 @@ export default function ScreeningFormPage() {
       try {
         setIsVersionsLoading(true);
         const accessToken = session?.accessToken;
-        if (!accessToken) {
+        if (!accessToken && !isAuthorizationDisabled) {
           setVersions([]);
           setVersionsError("Session expired.");
           return;
@@ -187,13 +187,13 @@ export default function ScreeningFormPage() {
   };
 
   const handleActivateVersion = async (version: number) => {
-    if (!session?.accessToken) {
+    if (!session?.accessToken && !isAuthorizationDisabled) {
       return;
     }
 
     try {
       setActivatingVersion(version);
-      await activateFormVersion(accessToken, selectedFormCode, version);
+      await activateFormVersion(session?.accessToken, selectedFormCode, version);
       setActivationError(null);
       setReloadKey((value) => value + 1);
     } catch (error) {
@@ -204,7 +204,7 @@ export default function ScreeningFormPage() {
   };
 
   const handleDeleteVersion = async (version: number) => {
-    if (!session?.accessToken) {
+    if (!session?.accessToken && !isAuthorizationDisabled) {
       return;
     }
 
@@ -219,11 +219,11 @@ export default function ScreeningFormPage() {
       setDeletingVersion(version);
       setActivationError(null);
       if (configMode === "alcohol") {
-        await deleteAlcoholScreeningForm(accessToken, version);
+        await deleteAlcoholScreeningForm(session?.accessToken, version);
       } else if (configMode === "admission") {
-        await deleteAdmissionForm(accessToken, selectedFormCode, version);
+        await deleteAdmissionForm(session?.accessToken, selectedFormCode, version);
       } else if (configMode === "survey") {
-        await deleteSurveyForm(accessToken, selectedFormCode, version);
+        await deleteSurveyForm(session?.accessToken, selectedFormCode, version);
       } else {
         throw new Error("Unsupported form code for delete action.");
       }
@@ -236,7 +236,7 @@ export default function ScreeningFormPage() {
   };
 
   const handlePingConfigApi = async () => {
-    if (!session?.accessToken) {
+    if (!session?.accessToken && !isAuthorizationDisabled) {
       return;
     }
 
@@ -244,7 +244,7 @@ export default function ScreeningFormPage() {
       setIsPingingConfigApi(true);
       setPingConfigApiError(null);
       const startedAt = performance.now();
-      const response = await getFormVersions(accessToken, selectedFormCode);
+      const response = await getFormVersions(session?.accessToken, selectedFormCode);
       const elapsedMs = Math.round(performance.now() - startedAt);
       setPingConfigApiMessage(
         `Config API OK (${response.length} version(s), ${elapsedMs} ms, ${new Date().toLocaleTimeString()}).`
@@ -278,7 +278,7 @@ export default function ScreeningFormPage() {
   };
 
   const runDefinitionAction = async (action: "create" | "edit", makeActive: boolean) => {
-    if (!session?.accessToken) {
+    if (!session?.accessToken && !isAuthorizationDisabled) {
       return;
     }
 
@@ -316,32 +316,32 @@ export default function ScreeningFormPage() {
         configMode === "alcohol"
           ? action === "create"
             ? makeActive
-              ? await createAlcoholScreeningForm(accessToken, payload)
-              : await saveAsDraftAlcoholScreeningForm(accessToken, payload)
+              ? await createAlcoholScreeningForm(session?.accessToken, payload)
+              : await saveAsDraftAlcoholScreeningForm(session?.accessToken, payload)
             : makeActive
-              ? await editAlcoholScreeningForm(accessToken, formData.form.version, payload)
-              : await editAsDraftAlcoholScreeningForm(accessToken, formData.form.version, payload)
+              ? await editAlcoholScreeningForm(session?.accessToken, formData.form.version, payload)
+              : await editAsDraftAlcoholScreeningForm(session?.accessToken, formData.form.version, payload)
           : configMode === "admission"
             ? action === "create"
               ? makeActive
-                ? await createAdmissionForm(accessToken, selectedFormCode, payload)
-                : await saveAsDraftAdmissionForm(accessToken, selectedFormCode, payload)
+                ? await createAdmissionForm(session?.accessToken, selectedFormCode, payload)
+                : await saveAsDraftAdmissionForm(session?.accessToken, selectedFormCode, payload)
               : makeActive
-                ? await editAdmissionForm(accessToken, selectedFormCode, formData.form.version, payload)
+                ? await editAdmissionForm(session?.accessToken, selectedFormCode, formData.form.version, payload)
                 : await editAsDraftAdmissionForm(
-                    accessToken,
+                    session?.accessToken,
                     selectedFormCode,
                     formData.form.version,
                     payload
                   )
             : action === "create"
               ? makeActive
-                ? await createSurveyForm(accessToken, selectedFormCode, payload)
-                : await saveAsDraftSurveyForm(accessToken, selectedFormCode, payload)
+                ? await createSurveyForm(session?.accessToken, selectedFormCode, payload)
+                : await saveAsDraftSurveyForm(session?.accessToken, selectedFormCode, payload)
               : makeActive
-                ? await editSurveyForm(accessToken, selectedFormCode, formData.form.version, payload)
+                ? await editSurveyForm(session?.accessToken, selectedFormCode, formData.form.version, payload)
                 : await editAsDraftSurveyForm(
-                    accessToken,
+                    session?.accessToken,
                     selectedFormCode,
                     formData.form.version,
                     payload
@@ -375,7 +375,7 @@ export default function ScreeningFormPage() {
   }
 
   const accessToken = session?.accessToken;
-  if (!accessToken) {
+  if (!accessToken && !isAuthorizationDisabled) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
         Session expired.
