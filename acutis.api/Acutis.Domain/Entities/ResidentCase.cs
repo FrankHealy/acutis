@@ -10,6 +10,13 @@ public sealed class ResidentCase
     public string CasePhase { get; set; } = "intake";
     public string? ReferralSource { get; set; }
     public string? ReferralReference { get; set; }
+    public DateTime? ReferralReceivedAtUtc { get; set; }
+    public DateTime? ScreeningStartedAtUtc { get; set; }
+    public DateTime? ScreeningCompletedAtUtc { get; set; }
+    public DateTime? AdmissionDecisionAtUtc { get; set; }
+    public string? AdmissionDecisionStatus { get; set; }
+    public string? AdmissionDecisionReason { get; set; }
+    public DateTime? ClosedWithoutAdmissionAtUtc { get; set; }
     public bool RequiresComprehensiveAssessment { get; set; }
     public bool ComprehensiveAssessmentCompleted { get; set; }
     public DateTime OpenedAtUtc { get; set; }

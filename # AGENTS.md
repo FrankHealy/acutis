@@ -13,6 +13,36 @@ Verification commands:
 Do not claim environment or SDK failures unless one of these commands actually fails.
 
 File locks from running processes are not environment failures.
+## Technology stack
+
+This repository uses the following technologies.  
+Agents must work within this stack and must not introduce alternative frameworks unless explicitly instructed.
+
+Backend
+- .NET 8 Web API
+- Entity Framework Core
+- SQL Server
+
+Web frontend
+- React
+- Next.js
+- TypeScript
+
+Mobile / tablet client
+- React Native
+- Forms JSON exported from the web forms engine
+
+Authentication
+- Keycloak (JWT based)
+
+Agents must not introduce:
+- alternative ORMs
+- alternative backend frameworks
+- additional persistence technologies
+- architectural rewrites
+
+Architectural behaviour rules are defined later in this document.
+Do not repeat or reinterpret them here.
 
 ---
 
@@ -177,4 +207,7 @@ Rules:
 • Do not refactor unrelated files while implementing a task
 • Limit changes strictly to the scope of the request
 
+
+
+## Architectural Guardrails
 If a change appears to require architectural modification, stop and explain the issue instead of implementing it.

@@ -405,6 +405,8 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<TherapyTopic> TherapyTopics => Set<TherapyTopic>();
     public DbSet<ResidentCase> ResidentCases => Set<ResidentCase>();
     public DbSet<ResidentProgrammeEpisode> ResidentProgrammeEpisodes => Set<ResidentProgrammeEpisode>();
+    public DbSet<Incident> Incidents => Set<Incident>();
+    public DbSet<IncidentType> IncidentTypes => Set<IncidentType>();
     public DbSet<WeeklyTherapyRun> WeeklyTherapyRuns => Set<WeeklyTherapyRun>();
     public DbSet<ResidentWeeklyTherapyAssignment> ResidentWeeklyTherapyAssignments => Set<ResidentWeeklyTherapyAssignment>();
     public DbSet<TherapyTopicCompletion> TherapyTopicCompletions => Set<TherapyTopicCompletion>();
@@ -667,6 +669,8 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new ResidentCaseConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentPreviousTreatmentConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentProgrammeEpisodeConfiguration());
+        modelBuilder.ApplyConfiguration(new IncidentTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new IncidentConfiguration());
         modelBuilder.ApplyConfiguration(new WeeklyTherapyRunConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentWeeklyTherapyAssignmentConfiguration());
         modelBuilder.ApplyConfiguration(new TherapyTopicCompletionConfiguration());
@@ -692,6 +696,7 @@ public sealed class AcutisDbContext : DbContext
         SeedGroupTherapyRemarks(modelBuilder);
         SeedTherapyTopics(modelBuilder);
         SeedEpisodeEventTypes(modelBuilder);
+        SeedIncidentTypes(modelBuilder);
     }
 
     private static void SeedCentres(ModelBuilder modelBuilder)
@@ -1731,6 +1736,20 @@ public sealed class AcutisDbContext : DbContext
             });
 
         modelBuilder.Entity<EpisodeEventTypeLookup>().HasData(eventTypes);
+    }
+
+    private static void SeedIncidentTypes(ModelBuilder modelBuilder)
+    {
+        var incidentTypes = new[]
+        {
+            new IncidentType { Id = 1, Code = "BEHAVIOURAL_INCIDENT", DefaultName = "Behavioural incident", IsActive = true },
+            new IncidentType { Id = 2, Code = "MEDICAL_ISSUE", DefaultName = "Medical issue", IsActive = true },
+            new IncidentType { Id = 3, Code = "SMOKING_BREACH", DefaultName = "Smoking in non-designated area", IsActive = true },
+            new IncidentType { Id = 4, Code = "BOUNDARY_BREACH", DefaultName = "Boundary breach", IsActive = true },
+            new IncidentType { Id = 5, Code = "FIRE_ALARM", DefaultName = "Fire alarm", IsActive = true }
+        };
+
+        modelBuilder.Entity<IncidentType>().HasData(incidentTypes);
     }
 
     private static Guid CreateDeterministicGuid(string value)

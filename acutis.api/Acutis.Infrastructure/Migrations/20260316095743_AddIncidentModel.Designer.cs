@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260316095743_AddIncidentModel")]
+    partial class AddIncidentModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2763,17 +2766,6 @@ namespace Acutis.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("AdmissionDecisionAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("AdmissionDecisionReason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("AdmissionDecisionStatus")
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
                     b.Property<string>("CasePhase")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -2790,9 +2782,6 @@ namespace Acutis.Infrastructure.Migrations
                     b.Property<DateTime?>("ClosedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("ClosedWithoutAdmissionAtUtc")
-                        .HasColumnType("datetime2");
-
                     b.Property<bool>("ComprehensiveAssessmentCompleted")
                         .HasColumnType("bit");
 
@@ -2800,9 +2789,6 @@ namespace Acutis.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("OpenedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ReferralReceivedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ReferralReference")
@@ -2819,12 +2805,6 @@ namespace Acutis.Infrastructure.Migrations
                     b.Property<Guid?>("ResidentId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("ScreeningCompletedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ScreeningStartedAtUtc")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("SummaryNotes")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
@@ -2836,11 +2816,7 @@ namespace Acutis.Infrastructure.Migrations
 
                     b.HasIndex("UnitId");
 
-                    b.HasIndex("CentreId", "ScreeningCompletedAtUtc");
-
                     b.HasIndex("ResidentId", "OpenedAtUtc");
-
-                    b.HasIndex("CentreId", "AdmissionDecisionStatus", "AdmissionDecisionAtUtc");
 
                     b.HasIndex("CentreId", "CaseStatus", "OpenedAtUtc");
 
