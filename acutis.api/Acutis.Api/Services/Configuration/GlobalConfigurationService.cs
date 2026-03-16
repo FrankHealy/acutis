@@ -83,6 +83,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             BrandName = request.BrandName.Trim(),
             BrandSubtitle = request.BrandSubtitle.Trim(),
             BrandLogoUrl = request.BrandLogoUrl.Trim(),
+            BrowserTitle = request.BrowserTitle.Trim(),
+            FaviconUrl = request.FaviconUrl.Trim(),
             ThemeKey = request.ThemeKey.Trim().ToLowerInvariant(),
             DisplayOrder = request.DisplayOrder,
             IsActive = request.IsActive,
@@ -118,6 +120,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         centre.BrandName = request.BrandName.Trim();
         centre.BrandSubtitle = request.BrandSubtitle.Trim();
         centre.BrandLogoUrl = request.BrandLogoUrl.Trim();
+        centre.BrowserTitle = request.BrowserTitle.Trim();
+        centre.FaviconUrl = request.FaviconUrl.Trim();
         centre.ThemeKey = request.ThemeKey.Trim().ToLowerInvariant();
         centre.DisplayOrder = request.DisplayOrder;
         centre.IsActive = request.IsActive;
@@ -695,6 +699,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             BrandName = centre.BrandName,
             BrandSubtitle = centre.BrandSubtitle,
             BrandLogoUrl = centre.BrandLogoUrl,
+            BrowserTitle = centre.BrowserTitle,
+            FaviconUrl = centre.FaviconUrl,
             ThemeKey = centre.ThemeKey,
             DisplayOrder = centre.DisplayOrder,
             UnitCount = centre.Units.Count(x => x.IsActive),
@@ -830,6 +836,16 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         if (string.IsNullOrWhiteSpace(request.BrandLogoUrl))
         {
             throw new ArgumentException("Centre brand logo URL is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.BrowserTitle))
+        {
+            throw new ArgumentException("Centre browser title is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.FaviconUrl))
+        {
+            throw new ArgumentException("Centre favicon URL is required.", nameof(request));
         }
 
         var normalizedThemeKey = request.ThemeKey.Trim().ToLowerInvariant();

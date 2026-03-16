@@ -77,7 +77,8 @@ public sealed class FormService : IFormService
             Sections = new List<UiSectionDto>(),
             Widgets = new Dictionary<string, string>(),
             LabelKeys = new Dictionary<string, string>(),
-            HelpKeys = new Dictionary<string, string>()
+            HelpKeys = new Dictionary<string, string>(),
+            SelectOptions = new Dictionary<string, List<UiSelectOptionDto>>()
         };
 
         var rules = JsonSerializer.Deserialize<List<RuleDto>>(definition.RulesJson, JsonOptions) ?? new List<RuleDto>();

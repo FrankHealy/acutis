@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260316192044_SeedAlcoholResidents")]
+    partial class SeedAlcoholResidents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -819,7 +822,7 @@ namespace Acutis.Infrastructure.Migrations
                             SchemaJson = "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"callerName\": { \"type\": \"string\", \"minLength\": 2, \"maxLength\": 120 },\n    \"age\": { \"type\": \"integer\", \"minimum\": 16, \"maximum\": 120 },\n    \"drinksPerDay\": { \"type\": \"number\", \"minimum\": 0, \"maximum\": 100 },\n    \"withdrawalHistory\": { \"type\": \"boolean\" },\n    \"referralSource\": { \"type\": \"enum\", \"optionSetKey\": \"referral_source\" },\n    \"currentlyUnsafe\": { \"type\": \"boolean\" },\n    \"housingStatus\": { \"type\": \"string\", \"maxLength\": 120 },\n    \"assessorNotes\": { \"type\": \"text\", \"maxLength\": 2000 }\n  },\n  \"required\": [ \"age\", \"drinksPerDay\", \"referralSource\" ]\n}",
                             Status = "published",
                             TitleKey = "screening.form.alcohol_screening_call.title",
-                            UiJson = "{\n  \"sections\": [\n    { \"titleKey\": \"screening.section.caller_details\", \"items\": [ \"callerName\", \"age\" ] },\n    { \"titleKey\": \"screening.section.alcohol_use\", \"items\": [ \"drinksPerDay\", \"withdrawalHistory\", \"referralSource\" ] },\n    { \"titleKey\": \"screening.section.stability\", \"items\": [ \"currentlyUnsafe\", \"housingStatus\" ] },\n    { \"titleKey\": \"screening.section.follow_up\", \"items\": [ \"assessorNotes\" ] }\n  ],\n  \"widgets\": {\n    \"callerName\": \"input\",\n    \"age\": \"number\",\n    \"drinksPerDay\": \"number\",\n    \"withdrawalHistory\": \"toggle\",\n    \"referralSource\": \"select\",\n    \"currentlyUnsafe\": \"toggle\",\n    \"housingStatus\": \"select\",\n    \"assessorNotes\": \"textarea\"\n  },\n  \"labelKeys\": {\n    \"callerName\": \"screening.field.caller_name.label\",\n    \"age\": \"screening.field.age.label\",\n    \"drinksPerDay\": \"screening.field.drinks_per_day.label\",\n    \"withdrawalHistory\": \"screening.field.withdrawal_history.label\",\n    \"referralSource\": \"screening.field.referral_source.label\",\n    \"currentlyUnsafe\": \"screening.field.currently_unsafe.label\",\n    \"housingStatus\": \"screening.field.housing_status.label\",\n    \"assessorNotes\": \"screening.field.assessor_notes.label\"\n  },\n  \"helpKeys\": {\n    \"drinksPerDay\": \"screening.field.drinks_per_day.help\",\n    \"assessorNotes\": \"screening.field.assessor_notes.help\"\n  }\n}",
+                            UiJson = "{\n  \"sections\": [\n    { \"titleKey\": \"screening.section.caller_details\", \"items\": [ \"callerName\", \"age\" ] },\n    { \"titleKey\": \"screening.section.alcohol_use\", \"items\": [ \"drinksPerDay\", \"withdrawalHistory\", \"referralSource\" ] },\n    { \"titleKey\": \"screening.section.stability\", \"items\": [ \"currentlyUnsafe\", \"housingStatus\" ] },\n    { \"titleKey\": \"screening.section.follow_up\", \"items\": [ \"assessorNotes\" ] }\n  ],\n  \"widgets\": {\n    \"callerName\": \"input\",\n    \"age\": \"number\",\n    \"drinksPerDay\": \"number\",\n    \"withdrawalHistory\": \"toggle\",\n    \"referralSource\": \"select\",\n    \"currentlyUnsafe\": \"toggle\",\n    \"housingStatus\": \"input\",\n    \"assessorNotes\": \"textarea\"\n  },\n  \"labelKeys\": {\n    \"callerName\": \"screening.field.caller_name.label\",\n    \"age\": \"screening.field.age.label\",\n    \"drinksPerDay\": \"screening.field.drinks_per_day.label\",\n    \"withdrawalHistory\": \"screening.field.withdrawal_history.label\",\n    \"referralSource\": \"screening.field.referral_source.label\",\n    \"currentlyUnsafe\": \"screening.field.currently_unsafe.label\",\n    \"housingStatus\": \"screening.field.housing_status.label\",\n    \"assessorNotes\": \"screening.field.assessor_notes.label\"\n  },\n  \"helpKeys\": {\n    \"drinksPerDay\": \"screening.field.drinks_per_day.help\",\n    \"assessorNotes\": \"screening.field.assessor_notes.help\"\n  }\n}",
                             Version = 2
                         },
                         new
@@ -832,7 +835,7 @@ namespace Acutis.Infrastructure.Migrations
                             SchemaJson = "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"callerName\": { \"type\": \"string\", \"minLength\": 2, \"maxLength\": 120 },\n    \"phoneNumber\": { \"type\": \"string\", \"minLength\": 8, \"maxLength\": 20, \"pattern\": \"^[+0-9()\\\\-\\\\s]+$\", \"format\": \"phone\" },\n    \"emailAddress\": { \"type\": \"string\", \"maxLength\": 120, \"format\": \"email\" },\n    \"age\": { \"type\": \"integer\", \"minimum\": 16, \"maximum\": 120 },\n    \"drinksPerDay\": { \"type\": \"number\", \"minimum\": 0, \"maximum\": 100 },\n    \"daysDrinkingPerWeek\": { \"type\": \"integer\", \"minimum\": 0, \"maximum\": 7 },\n    \"lastDrinkDate\": { \"type\": \"date\" },\n    \"withdrawalHistory\": { \"type\": \"boolean\" },\n    \"historyOfSeizures\": { \"type\": \"boolean\" },\n    \"currentlyUnsafe\": { \"type\": \"boolean\" },\n    \"suicidalIdeation\": { \"type\": \"boolean\" },\n    \"referralSource\": { \"type\": \"enum\", \"optionSetKey\": \"referral_source\" },\n    \"housingStatus\": { \"type\": \"string\", \"maxLength\": 120 },\n    \"supportNetwork\": { \"type\": \"string\", \"maxLength\": 300 },\n    \"medicalNotes\": { \"type\": \"text\", \"maxLength\": 1000 },\n    \"assessorNotes\": { \"type\": \"text\", \"maxLength\": 2000 },\n    \"nextSteps\": { \"type\": \"text\", \"maxLength\": 1000 }\n  },\n  \"required\": [ \"callerName\", \"phoneNumber\", \"age\", \"drinksPerDay\", \"referralSource\" ]\n}",
                             Status = "published",
                             TitleKey = "screening.form.alcohol_screening_call.title",
-                            UiJson = "{\n  \"sections\": [\n    { \"titleKey\": \"screening.section.caller_details\", \"items\": [ \"callerName\", \"phoneNumber\", \"emailAddress\", \"age\" ] },\n    { \"titleKey\": \"screening.section.alcohol_use\", \"items\": [ \"drinksPerDay\", \"daysDrinkingPerWeek\", \"lastDrinkDate\", \"withdrawalHistory\", \"historyOfSeizures\", \"referralSource\" ] },\n    { \"titleKey\": \"screening.section.stability\", \"items\": [ \"currentlyUnsafe\", \"suicidalIdeation\", \"housingStatus\", \"supportNetwork\" ] },\n    { \"titleKey\": \"screening.section.follow_up\", \"items\": [ \"medicalNotes\", \"assessorNotes\", \"nextSteps\" ] }\n  ],\n  \"widgets\": {\n    \"callerName\": \"input\",\n    \"phoneNumber\": \"input\",\n    \"emailAddress\": \"input\",\n    \"age\": \"number\",\n    \"drinksPerDay\": \"number\",\n    \"daysDrinkingPerWeek\": \"number\",\n    \"lastDrinkDate\": \"input\",\n    \"withdrawalHistory\": \"toggle\",\n    \"historyOfSeizures\": \"toggle\",\n    \"currentlyUnsafe\": \"toggle\",\n    \"suicidalIdeation\": \"toggle\",\n    \"referralSource\": \"select\",\n    \"housingStatus\": \"select\",\n    \"supportNetwork\": \"input\",\n    \"medicalNotes\": \"textarea\",\n    \"assessorNotes\": \"textarea\",\n    \"nextSteps\": \"textarea\"\n  },\n  \"labelKeys\": {\n    \"callerName\": \"screening.field.caller_name.label\",\n    \"phoneNumber\": \"screening.field.phone_number.label\",\n    \"emailAddress\": \"screening.field.email_address.label\",\n    \"age\": \"screening.field.age.label\",\n    \"drinksPerDay\": \"screening.field.drinks_per_day.label\",\n    \"daysDrinkingPerWeek\": \"screening.field.days_drinking_per_week.label\",\n    \"lastDrinkDate\": \"screening.field.last_drink_date.label\",\n    \"withdrawalHistory\": \"screening.field.withdrawal_history.label\",\n    \"historyOfSeizures\": \"screening.field.history_of_seizures.label\",\n    \"currentlyUnsafe\": \"screening.field.currently_unsafe.label\",\n    \"suicidalIdeation\": \"screening.field.suicidal_ideation.label\",\n    \"referralSource\": \"screening.field.referral_source.label\",\n    \"housingStatus\": \"screening.field.housing_status.label\",\n    \"supportNetwork\": \"screening.field.support_network.label\",\n    \"medicalNotes\": \"screening.field.medical_notes.label\",\n    \"assessorNotes\": \"screening.field.assessor_notes.label\",\n    \"nextSteps\": \"screening.field.next_steps.label\"\n  },\n  \"helpKeys\": {\n    \"drinksPerDay\": \"screening.field.drinks_per_day.help\",\n    \"assessorNotes\": \"screening.field.assessor_notes.help\",\n    \"nextSteps\": \"screening.field.next_steps.help\"\n  }\n}",
+                            UiJson = "{\n  \"sections\": [\n    { \"titleKey\": \"screening.section.caller_details\", \"items\": [ \"callerName\", \"phoneNumber\", \"emailAddress\", \"age\" ] },\n    { \"titleKey\": \"screening.section.alcohol_use\", \"items\": [ \"drinksPerDay\", \"daysDrinkingPerWeek\", \"lastDrinkDate\", \"withdrawalHistory\", \"historyOfSeizures\", \"referralSource\" ] },\n    { \"titleKey\": \"screening.section.stability\", \"items\": [ \"currentlyUnsafe\", \"suicidalIdeation\", \"housingStatus\", \"supportNetwork\" ] },\n    { \"titleKey\": \"screening.section.follow_up\", \"items\": [ \"medicalNotes\", \"assessorNotes\", \"nextSteps\" ] }\n  ],\n  \"widgets\": {\n    \"callerName\": \"input\",\n    \"phoneNumber\": \"input\",\n    \"emailAddress\": \"input\",\n    \"age\": \"number\",\n    \"drinksPerDay\": \"number\",\n    \"daysDrinkingPerWeek\": \"number\",\n    \"lastDrinkDate\": \"input\",\n    \"withdrawalHistory\": \"toggle\",\n    \"historyOfSeizures\": \"toggle\",\n    \"currentlyUnsafe\": \"toggle\",\n    \"suicidalIdeation\": \"toggle\",\n    \"referralSource\": \"select\",\n    \"housingStatus\": \"input\",\n    \"supportNetwork\": \"input\",\n    \"medicalNotes\": \"textarea\",\n    \"assessorNotes\": \"textarea\",\n    \"nextSteps\": \"textarea\"\n  },\n  \"labelKeys\": {\n    \"callerName\": \"screening.field.caller_name.label\",\n    \"phoneNumber\": \"screening.field.phone_number.label\",\n    \"emailAddress\": \"screening.field.email_address.label\",\n    \"age\": \"screening.field.age.label\",\n    \"drinksPerDay\": \"screening.field.drinks_per_day.label\",\n    \"daysDrinkingPerWeek\": \"screening.field.days_drinking_per_week.label\",\n    \"lastDrinkDate\": \"screening.field.last_drink_date.label\",\n    \"withdrawalHistory\": \"screening.field.withdrawal_history.label\",\n    \"historyOfSeizures\": \"screening.field.history_of_seizures.label\",\n    \"currentlyUnsafe\": \"screening.field.currently_unsafe.label\",\n    \"suicidalIdeation\": \"screening.field.suicidal_ideation.label\",\n    \"referralSource\": \"screening.field.referral_source.label\",\n    \"housingStatus\": \"screening.field.housing_status.label\",\n    \"supportNetwork\": \"screening.field.support_network.label\",\n    \"medicalNotes\": \"screening.field.medical_notes.label\",\n    \"assessorNotes\": \"screening.field.assessor_notes.label\",\n    \"nextSteps\": \"screening.field.next_steps.label\"\n  },\n  \"helpKeys\": {\n    \"drinksPerDay\": \"screening.field.drinks_per_day.help\",\n    \"assessorNotes\": \"screening.field.assessor_notes.help\",\n    \"nextSteps\": \"screening.field.next_steps.help\"\n  }\n}",
                             Version = 3
                         },
                         new
@@ -842,10 +845,10 @@ namespace Acutis.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 2, 5, 0, 0, 0, 0, DateTimeKind.Utc),
                             DescriptionKey = "screening.form.alcohol_screening_call.description",
                             RulesJson = "[\n  {\n    \"if\": { \"field\": \"drinkType\", \"equals\": \"other\" },\n    \"then\": { \"show\": [ \"drinkTypeOther\" ], \"enable\": [ \"drinkTypeOther\" ] },\n    \"else\": { \"hide\": [ \"drinkTypeOther\" ], \"disable\": [ \"drinkTypeOther\" ], \"clear\": [ \"drinkTypeOther\" ] }\n  }\n]",
-                            SchemaJson = "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"callerName\": { \"type\": \"string\", \"minLength\": 2, \"maxLength\": 120 },\n    \"phoneNumber\": { \"type\": \"string\", \"minLength\": 8, \"maxLength\": 20, \"pattern\": \"^\\\\+?[1-9][0-9()\\\\-\\\\s]{7,19}$\", \"format\": \"phone\" },\n    \"emailAddress\": { \"type\": \"string\", \"maxLength\": 120, \"pattern\": \"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,}$\", \"format\": \"email\" },\n    \"age\": { \"type\": \"integer\", \"minimum\": 16, \"maximum\": 120 },\n    \"drinkType\": { \"type\": \"enum\", \"optionSetKey\": \"drink_type\" },\n    \"drinkTypeOther\": { \"type\": \"string\", \"maxLength\": 80 },\n    \"drinksPerDay\": { \"type\": \"number\", \"minimum\": 0, \"maximum\": 100 },\n    \"drinksPerDayUnit\": { \"type\": \"enum\", \"optionSetKey\": \"drink_measure_unit\" },\n    \"daysDrinkingPerWeek\": { \"type\": \"integer\", \"minimum\": 0, \"maximum\": 7 },\n    \"lastDrinkDate\": { \"type\": \"date\" },\n    \"withdrawalHistory\": { \"type\": \"boolean\" },\n    \"historyOfSeizures\": { \"type\": \"boolean\" },\n    \"currentlyUnsafe\": { \"type\": \"boolean\" },\n    \"suicidalIdeation\": { \"type\": \"boolean\" },\n    \"referralSource\": { \"type\": \"enum\", \"optionSetKey\": \"referral_source\" },\n    \"housingStatus\": { \"type\": \"enum\", \"optionSetKey\": \"housing_status\" },\n    \"supportNetwork\": { \"type\": \"string\", \"maxLength\": 300 },\n    \"medicalNotes\": { \"type\": \"text\", \"maxLength\": 1000 },\n    \"assessorNotes\": { \"type\": \"text\", \"maxLength\": 2000 },\n    \"nextSteps\": { \"type\": \"text\", \"maxLength\": 1000 }\n  },\n  \"required\": [ \"callerName\", \"phoneNumber\", \"age\", \"drinkType\", \"drinksPerDay\", \"drinksPerDayUnit\", \"referralSource\", \"housingStatus\" ]\n}",
+                            SchemaJson = "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"callerName\": { \"type\": \"string\", \"minLength\": 2, \"maxLength\": 120 },\n    \"phoneNumber\": { \"type\": \"string\", \"minLength\": 8, \"maxLength\": 20, \"pattern\": \"^[+0-9()\\\\-\\\\s]+$\", \"format\": \"phone\" },\n    \"emailAddress\": { \"type\": \"string\", \"maxLength\": 120, \"format\": \"email\" },\n    \"age\": { \"type\": \"integer\", \"minimum\": 16, \"maximum\": 120 },\n    \"drinkType\": { \"type\": \"enum\", \"optionSetKey\": \"drink_type\" },\n    \"drinkTypeOther\": { \"type\": \"string\", \"maxLength\": 80 },\n    \"drinksPerDay\": { \"type\": \"number\", \"minimum\": 0, \"maximum\": 100 },\n    \"daysDrinkingPerWeek\": { \"type\": \"integer\", \"minimum\": 0, \"maximum\": 7 },\n    \"lastDrinkDate\": { \"type\": \"date\" },\n    \"withdrawalHistory\": { \"type\": \"boolean\" },\n    \"historyOfSeizures\": { \"type\": \"boolean\" },\n    \"currentlyUnsafe\": { \"type\": \"boolean\" },\n    \"suicidalIdeation\": { \"type\": \"boolean\" },\n    \"referralSource\": { \"type\": \"enum\", \"optionSetKey\": \"referral_source\" },\n    \"housingStatus\": { \"type\": \"string\", \"maxLength\": 120 },\n    \"supportNetwork\": { \"type\": \"string\", \"maxLength\": 300 },\n    \"medicalNotes\": { \"type\": \"text\", \"maxLength\": 1000 },\n    \"assessorNotes\": { \"type\": \"text\", \"maxLength\": 2000 },\n    \"nextSteps\": { \"type\": \"text\", \"maxLength\": 1000 }\n  },\n  \"required\": [ \"callerName\", \"phoneNumber\", \"age\", \"drinkType\", \"drinksPerDay\", \"referralSource\" ]\n}",
                             Status = "published",
                             TitleKey = "screening.form.alcohol_screening_call.title",
-                            UiJson = "{\n  \"sections\": [\n    { \"titleKey\": \"screening.section.caller_details\", \"items\": [ \"callerName\", \"phoneNumber\", \"emailAddress\", \"age\" ] },\n    { \"titleKey\": \"screening.section.alcohol_use\", \"items\": [ \"drinkType\", \"drinksPerDay\", \"drinksPerDayUnit\", \"drinkTypeOther\", \"daysDrinkingPerWeek\", \"lastDrinkDate\", \"withdrawalHistory\", \"historyOfSeizures\", \"referralSource\" ] },\n    { \"titleKey\": \"screening.section.stability\", \"items\": [ \"currentlyUnsafe\", \"suicidalIdeation\", \"housingStatus\", \"supportNetwork\" ] },\n    { \"titleKey\": \"screening.section.follow_up\", \"items\": [ \"medicalNotes\", \"assessorNotes\", \"nextSteps\" ] }\n  ],\n  \"widgets\": {\n    \"callerName\": \"input\",\n    \"phoneNumber\": \"input\",\n    \"emailAddress\": \"input\",\n    \"age\": \"number\",\n    \"drinkType\": \"select\",\n    \"drinkTypeOther\": \"input\",\n    \"drinksPerDay\": \"number\",\n    \"drinksPerDayUnit\": \"select\",\n    \"daysDrinkingPerWeek\": \"number\",\n    \"lastDrinkDate\": \"input\",\n    \"withdrawalHistory\": \"toggle\",\n    \"historyOfSeizures\": \"toggle\",\n    \"currentlyUnsafe\": \"toggle\",\n    \"suicidalIdeation\": \"toggle\",\n    \"referralSource\": \"select\",\n    \"housingStatus\": \"input\",\n    \"supportNetwork\": \"input\",\n    \"medicalNotes\": \"textarea\",\n    \"assessorNotes\": \"textarea\",\n    \"nextSteps\": \"textarea\"\n  },\n  \"labelKeys\": {\n    \"callerName\": \"screening.field.caller_name.label\",\n    \"phoneNumber\": \"screening.field.phone_number.label\",\n    \"emailAddress\": \"screening.field.email_address.label\",\n    \"age\": \"screening.field.age.label\",\n    \"drinkType\": \"screening.field.drink_type.label\",\n    \"drinkTypeOther\": \"screening.field.drink_type_other.label\",\n    \"drinksPerDay\": \"screening.field.drinks_per_day.label\",\n    \"drinksPerDayUnit\": \"screening.field.drinks_per_day_unit.label\",\n    \"daysDrinkingPerWeek\": \"screening.field.days_drinking_per_week.label\",\n    \"lastDrinkDate\": \"screening.field.last_drink_date.label\",\n    \"withdrawalHistory\": \"screening.field.withdrawal_history.label\",\n    \"historyOfSeizures\": \"screening.field.history_of_seizures.label\",\n    \"currentlyUnsafe\": \"screening.field.currently_unsafe.label\",\n    \"suicidalIdeation\": \"screening.field.suicidal_ideation.label\",\n    \"referralSource\": \"screening.field.referral_source.label\",\n    \"housingStatus\": \"screening.field.housing_status.label\",\n    \"supportNetwork\": \"screening.field.support_network.label\",\n    \"medicalNotes\": \"screening.field.medical_notes.label\",\n    \"assessorNotes\": \"screening.field.assessor_notes.label\",\n    \"nextSteps\": \"screening.field.next_steps.label\"\n  },\n  \"helpKeys\": {\n    \"drinksPerDay\": \"screening.field.drinks_per_day.help\",\n    \"drinksPerDayUnit\": \"screening.field.drinks_per_day_unit.help\",\n    \"assessorNotes\": \"screening.field.assessor_notes.help\",\n    \"nextSteps\": \"screening.field.next_steps.help\"\n  }\n}",
+                            UiJson = "{\n  \"sections\": [\n    { \"titleKey\": \"screening.section.caller_details\", \"items\": [ \"callerName\", \"phoneNumber\", \"emailAddress\", \"age\" ] },\n    { \"titleKey\": \"screening.section.alcohol_use\", \"items\": [ \"drinkType\", \"drinksPerDay\", \"drinkTypeOther\", \"daysDrinkingPerWeek\", \"lastDrinkDate\", \"withdrawalHistory\", \"historyOfSeizures\", \"referralSource\" ] },\n    { \"titleKey\": \"screening.section.stability\", \"items\": [ \"currentlyUnsafe\", \"suicidalIdeation\", \"housingStatus\", \"supportNetwork\" ] },\n    { \"titleKey\": \"screening.section.follow_up\", \"items\": [ \"medicalNotes\", \"assessorNotes\", \"nextSteps\" ] }\n  ],\n  \"widgets\": {\n    \"callerName\": \"input\",\n    \"phoneNumber\": \"input\",\n    \"emailAddress\": \"input\",\n    \"age\": \"number\",\n    \"drinkType\": \"select\",\n    \"drinkTypeOther\": \"input\",\n    \"drinksPerDay\": \"number\",\n    \"daysDrinkingPerWeek\": \"number\",\n    \"lastDrinkDate\": \"input\",\n    \"withdrawalHistory\": \"toggle\",\n    \"historyOfSeizures\": \"toggle\",\n    \"currentlyUnsafe\": \"toggle\",\n    \"suicidalIdeation\": \"toggle\",\n    \"referralSource\": \"select\",\n    \"housingStatus\": \"input\",\n    \"supportNetwork\": \"input\",\n    \"medicalNotes\": \"textarea\",\n    \"assessorNotes\": \"textarea\",\n    \"nextSteps\": \"textarea\"\n  },\n  \"labelKeys\": {\n    \"callerName\": \"screening.field.caller_name.label\",\n    \"phoneNumber\": \"screening.field.phone_number.label\",\n    \"emailAddress\": \"screening.field.email_address.label\",\n    \"age\": \"screening.field.age.label\",\n    \"drinkType\": \"screening.field.drink_type.label\",\n    \"drinkTypeOther\": \"screening.field.drink_type_other.label\",\n    \"drinksPerDay\": \"screening.field.drinks_per_day.label\",\n    \"daysDrinkingPerWeek\": \"screening.field.days_drinking_per_week.label\",\n    \"lastDrinkDate\": \"screening.field.last_drink_date.label\",\n    \"withdrawalHistory\": \"screening.field.withdrawal_history.label\",\n    \"historyOfSeizures\": \"screening.field.history_of_seizures.label\",\n    \"currentlyUnsafe\": \"screening.field.currently_unsafe.label\",\n    \"suicidalIdeation\": \"screening.field.suicidal_ideation.label\",\n    \"referralSource\": \"screening.field.referral_source.label\",\n    \"housingStatus\": \"screening.field.housing_status.label\",\n    \"supportNetwork\": \"screening.field.support_network.label\",\n    \"medicalNotes\": \"screening.field.medical_notes.label\",\n    \"assessorNotes\": \"screening.field.assessor_notes.label\",\n    \"nextSteps\": \"screening.field.next_steps.label\"\n  },\n  \"helpKeys\": {\n    \"drinksPerDay\": \"screening.field.drinks_per_day.help\",\n    \"assessorNotes\": \"screening.field.assessor_notes.help\",\n    \"nextSteps\": \"screening.field.next_steps.help\"\n  }\n}",
                             Version = 4
                         });
                 });
@@ -2250,78 +2253,6 @@ namespace Acutis.Infrastructure.Migrations
                             LabelKey = "screening.options.drink_type.other",
                             OptionSetId = new Guid("5215043d-b92f-47c8-9650-f39f4f9fd7ca"),
                             SortOrder = 5
-                        },
-                        new
-                        {
-                            Id = new Guid("0a2f5ceb-fe3b-420f-a4df-95f1bff9342c"),
-                            Code = "pints",
-                            IsActive = true,
-                            LabelKey = "screening.options.drink_measure_unit.pints",
-                            OptionSetId = new Guid("0d16b802-9dc1-4c8b-819a-52e0d41a6f59"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            Id = new Guid("31279df6-9f65-4ceb-9d32-f3b0f1bf066c"),
-                            Code = "litres",
-                            IsActive = true,
-                            LabelKey = "screening.options.drink_measure_unit.litres",
-                            OptionSetId = new Guid("0d16b802-9dc1-4c8b-819a-52e0d41a6f59"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            Id = new Guid("77e32289-2589-494a-9636-ad727ba907fe"),
-                            Code = "bottles",
-                            IsActive = true,
-                            LabelKey = "screening.options.drink_measure_unit.bottles",
-                            OptionSetId = new Guid("0d16b802-9dc1-4c8b-819a-52e0d41a6f59"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            Id = new Guid("17691e58-8ab8-482e-b9df-5f5f35ad4865"),
-                            Code = "stable",
-                            IsActive = true,
-                            LabelKey = "screening.options.housing_status.stable",
-                            OptionSetId = new Guid("7598f1ce-65c6-4245-af64-5aeb4be2c3b2"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            Id = new Guid("953f699e-640b-4583-a6ec-af800aa2cbf5"),
-                            Code = "temporary",
-                            IsActive = true,
-                            LabelKey = "screening.options.housing_status.temporary",
-                            OptionSetId = new Guid("7598f1ce-65c6-4245-af64-5aeb4be2c3b2"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            Id = new Guid("4cc93a6b-60bd-44d8-a2d4-e0a11c79b1f9"),
-                            Code = "homeless",
-                            IsActive = true,
-                            LabelKey = "screening.options.housing_status.homeless",
-                            OptionSetId = new Guid("7598f1ce-65c6-4245-af64-5aeb4be2c3b2"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            Id = new Guid("cc4ce33c-5bc9-45a4-b128-35cf2a4722ae"),
-                            Code = "supported",
-                            IsActive = true,
-                            LabelKey = "screening.options.housing_status.supported",
-                            OptionSetId = new Guid("7598f1ce-65c6-4245-af64-5aeb4be2c3b2"),
-                            SortOrder = 4
-                        },
-                        new
-                        {
-                            Id = new Guid("b223fa1f-3d8f-4c11-900f-e73c684ffdfa"),
-                            Code = "other",
-                            IsActive = true,
-                            LabelKey = "screening.options.housing_status.other",
-                            OptionSetId = new Guid("7598f1ce-65c6-4245-af64-5aeb4be2c3b2"),
-                            SortOrder = 5
                         });
                 });
 
@@ -2353,16 +2284,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("5215043d-b92f-47c8-9650-f39f4f9fd7ca"),
                             Key = "drink_type"
-                        },
-                        new
-                        {
-                            Id = new Guid("0d16b802-9dc1-4c8b-819a-52e0d41a6f59"),
-                            Key = "drink_measure_unit"
-                        },
-                        new
-                        {
-                            Id = new Guid("7598f1ce-65c6-4245-af64-5aeb4be2c3b2"),
-                            Key = "housing_status"
                         });
                 });
 
@@ -4717,10 +4638,6 @@ namespace Acutis.Infrastructure.Migrations
                     b.Property<bool>("ComprehensiveAssessmentCompleted")
                         .HasColumnType("bit");
 
-                    b.Property<string>("IntakeSource")
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
                     b.Property<DateTime?>("LastContactAtUtc")
                         .HasColumnType("datetime2");
 
@@ -4782,7 +4699,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2025, 12, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -4805,7 +4721,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -4828,7 +4743,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -4851,7 +4765,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 17, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -4874,7 +4787,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 24, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -4897,7 +4809,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 31, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -4920,7 +4831,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -4943,7 +4853,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -4966,7 +4875,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 21, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -4989,7 +4897,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 28, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5012,7 +4919,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5035,7 +4941,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5058,7 +4963,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2025, 12, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5081,7 +4985,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5104,7 +5007,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5127,7 +5029,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 17, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5150,7 +5051,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 24, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5173,7 +5073,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 31, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5196,7 +5095,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5219,7 +5117,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5242,7 +5139,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 21, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5265,7 +5161,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 28, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5288,7 +5183,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5311,7 +5205,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5334,7 +5227,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2025, 12, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5357,7 +5249,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5380,7 +5271,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5403,7 +5293,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 17, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5426,7 +5315,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 24, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5449,7 +5337,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 31, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5472,7 +5359,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5495,7 +5381,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5518,7 +5403,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 21, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5541,7 +5425,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 28, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5564,7 +5447,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5587,7 +5469,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5610,7 +5491,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2025, 12, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5633,7 +5513,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5656,7 +5535,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5679,7 +5557,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 17, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5702,7 +5579,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 24, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5725,7 +5601,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 31, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5748,7 +5623,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5771,7 +5645,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5794,7 +5667,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 21, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5817,7 +5689,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 28, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5840,7 +5711,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5863,7 +5733,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5886,7 +5755,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2025, 12, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5909,7 +5777,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5932,7 +5799,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5955,7 +5821,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 17, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -5978,7 +5843,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 24, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6001,7 +5865,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 31, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 19, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6024,7 +5887,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 1, 26, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6047,7 +5909,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6070,7 +5931,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 21, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 9, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6093,7 +5953,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 2, 28, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 16, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6116,7 +5975,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 2, 23, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6139,7 +5997,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 3, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2026, 3, 2, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6162,7 +6019,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2025, 12, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 15, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6185,7 +6041,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 22, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -6208,7 +6063,6 @@ namespace Acutis.Infrastructure.Migrations
                             CaseStatus = "admitted",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             ComprehensiveAssessmentCompleted = true,
-                            IntakeSource = "screening_call",
                             LastContactAtUtc = new DateTime(2026, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
                             OpenedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
                             ReferralReceivedAtUtc = new DateTime(2025, 12, 29, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -9379,22 +9233,12 @@ namespace Acutis.Infrastructure.Migrations
                         new
                         {
                             Key = "screening.field.drinks_per_day.label",
-                            DefaultText = "Drinks Per Day"
+                            DefaultText = "Drinks Per Day (for selected type)"
                         },
                         new
                         {
                             Key = "screening.field.drinks_per_day.help",
-                            DefaultText = "Approximate average on drinking days. Select the unit used for this quantity."
-                        },
-                        new
-                        {
-                            Key = "screening.field.drinks_per_day_unit.label",
-                            DefaultText = "Drink Unit"
-                        },
-                        new
-                        {
-                            Key = "screening.field.drinks_per_day_unit.help",
-                            DefaultText = "Record whether the quantity is in pints, litres or bottles."
+                            DefaultText = "Approximate average on drinking days."
                         },
                         new
                         {
@@ -9533,46 +9377,6 @@ namespace Acutis.Infrastructure.Migrations
                         },
                         new
                         {
-                            Key = "screening.options.drink_measure_unit.pints",
-                            DefaultText = "Pints"
-                        },
-                        new
-                        {
-                            Key = "screening.options.drink_measure_unit.litres",
-                            DefaultText = "Litres"
-                        },
-                        new
-                        {
-                            Key = "screening.options.drink_measure_unit.bottles",
-                            DefaultText = "Bottles"
-                        },
-                        new
-                        {
-                            Key = "screening.options.housing_status.stable",
-                            DefaultText = "Stable Accommodation"
-                        },
-                        new
-                        {
-                            Key = "screening.options.housing_status.temporary",
-                            DefaultText = "Temporary Accommodation"
-                        },
-                        new
-                        {
-                            Key = "screening.options.housing_status.homeless",
-                            DefaultText = "Homeless"
-                        },
-                        new
-                        {
-                            Key = "screening.options.housing_status.supported",
-                            DefaultText = "Supported Accommodation"
-                        },
-                        new
-                        {
-                            Key = "screening.options.housing_status.other",
-                            DefaultText = "Other"
-                        },
-                        new
-                        {
                             Key = "app.brand",
                             DefaultText = "Acutis"
                         },
@@ -9660,11 +9464,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Key = "evaluation.table.unit",
                             DefaultText = "Unit"
-                        },
-                        new
-                        {
-                            Key = "evaluation.table.source",
-                            DefaultText = "Source"
                         },
                         new
                         {
@@ -9856,7 +9655,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("16d7f20f-2ab8-4325-b24b-0ee04a1ce44c"),
                             Key = "screening.field.drinks_per_day.label",
                             Locale = "en-IE",
-                            Text = "Drinks Per Day"
+                            Text = "Drinks Per Day (for selected type)"
                         },
                         new
                         {
@@ -9864,48 +9663,6 @@ namespace Acutis.Infrastructure.Migrations
                             Key = "screening.field.drinks_per_day.label",
                             Locale = "ga-IE",
                             Text = "Deochanna sa Lá"
-                        },
-                        new
-                        {
-                            Id = new Guid("1035cb17-ebaa-4856-b3dd-1c9f91ba69d0"),
-                            Key = "screening.field.drinks_per_day.help",
-                            Locale = "en-IE",
-                            Text = "Approximate average on drinking days. Select the unit used for this quantity."
-                        },
-                        new
-                        {
-                            Id = new Guid("55f4cbcf-81ef-4f9b-836a-88ca2b85b33e"),
-                            Key = "screening.field.drinks_per_day.help",
-                            Locale = "ga-IE",
-                            Text = "Meán garbh ar laethanta óil. Roghnaigh an t-aonad a úsáideadh don chainníocht seo."
-                        },
-                        new
-                        {
-                            Id = new Guid("97b5d82c-8238-45cb-ab63-a2dc560d0aad"),
-                            Key = "screening.field.drinks_per_day_unit.label",
-                            Locale = "en-IE",
-                            Text = "Drink Unit"
-                        },
-                        new
-                        {
-                            Id = new Guid("0bec25c1-749d-4edf-9ba1-bc95176206c1"),
-                            Key = "screening.field.drinks_per_day_unit.label",
-                            Locale = "ga-IE",
-                            Text = "Aonad Dí"
-                        },
-                        new
-                        {
-                            Id = new Guid("2ee869f2-6efd-421a-b956-8836a99cb1d5"),
-                            Key = "screening.field.drinks_per_day_unit.help",
-                            Locale = "en-IE",
-                            Text = "Record whether the quantity is in pints, litres or bottles."
-                        },
-                        new
-                        {
-                            Id = new Guid("3bc4532a-c13a-4d14-a184-68fc3707eec4"),
-                            Key = "screening.field.drinks_per_day_unit.help",
-                            Locale = "ga-IE",
-                            Text = "Taifead an bhfuil an chainníocht i bpiontaí, i lítear nó i mbuidéil."
                         },
                         new
                         {
@@ -10133,20 +9890,6 @@ namespace Acutis.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = new Guid("4269e3d4-d0aa-4b0c-858a-044de3b2c5f1"),
-                            Key = "evaluation.table.source",
-                            Locale = "en-IE",
-                            Text = "Source"
-                        },
-                        new
-                        {
-                            Id = new Guid("8cc436ab-cc73-44aa-b3b6-b4cfb48bce1b"),
-                            Key = "evaluation.table.source",
-                            Locale = "ga-IE",
-                            Text = "Foinse"
-                        },
-                        new
-                        {
                             Id = new Guid("9e0ddd4f-3339-46e1-8ab8-d485be7fca8d"),
                             Key = "screening.field.currently_unsafe.label",
                             Locale = "en-IE",
@@ -10207,118 +9950,6 @@ namespace Acutis.Infrastructure.Migrations
                             Key = "screening.options.drink_type.other",
                             Locale = "en-IE",
                             Text = "Other"
-                        },
-                        new
-                        {
-                            Id = new Guid("901beca6-df0d-4e43-b7b4-d5b7e6eb9d7a"),
-                            Key = "screening.options.drink_measure_unit.pints",
-                            Locale = "en-IE",
-                            Text = "Pints"
-                        },
-                        new
-                        {
-                            Id = new Guid("90442b48-cf66-4736-b8ca-297ec7757627"),
-                            Key = "screening.options.drink_measure_unit.litres",
-                            Locale = "en-IE",
-                            Text = "Litres"
-                        },
-                        new
-                        {
-                            Id = new Guid("f47ee5fd-986d-4201-bd12-6337ec372cae"),
-                            Key = "screening.options.drink_measure_unit.bottles",
-                            Locale = "en-IE",
-                            Text = "Bottles"
-                        },
-                        new
-                        {
-                            Id = new Guid("558d984c-a398-45b4-8782-d8921a7ea3c7"),
-                            Key = "screening.options.drink_measure_unit.pints",
-                            Locale = "ga-IE",
-                            Text = "Piontaí"
-                        },
-                        new
-                        {
-                            Id = new Guid("72357518-4d77-49e6-802a-4c5dc11e9547"),
-                            Key = "screening.options.drink_measure_unit.litres",
-                            Locale = "ga-IE",
-                            Text = "Lítear"
-                        },
-                        new
-                        {
-                            Id = new Guid("0b63ed08-b49d-4381-a918-a5b7a208ed1a"),
-                            Key = "screening.options.drink_measure_unit.bottles",
-                            Locale = "ga-IE",
-                            Text = "Buidéil"
-                        },
-                        new
-                        {
-                            Id = new Guid("48eabf4d-5e05-48ef-a2b5-d0e6fe78fe0f"),
-                            Key = "screening.options.housing_status.stable",
-                            Locale = "en-IE",
-                            Text = "Stable Accommodation"
-                        },
-                        new
-                        {
-                            Id = new Guid("4e9dc7d2-99fe-4e1d-9ba3-5f3d8b00d121"),
-                            Key = "screening.options.housing_status.temporary",
-                            Locale = "en-IE",
-                            Text = "Temporary Accommodation"
-                        },
-                        new
-                        {
-                            Id = new Guid("3c750a0f-7db5-4d1b-b0d7-f53d4ce5d426"),
-                            Key = "screening.options.housing_status.homeless",
-                            Locale = "en-IE",
-                            Text = "Homeless"
-                        },
-                        new
-                        {
-                            Id = new Guid("2e639d62-1f38-48f8-abaf-28baf60c31fd"),
-                            Key = "screening.options.housing_status.supported",
-                            Locale = "en-IE",
-                            Text = "Supported Accommodation"
-                        },
-                        new
-                        {
-                            Id = new Guid("d72a6db0-2378-46ca-b7da-bcd08464f61a"),
-                            Key = "screening.options.housing_status.other",
-                            Locale = "en-IE",
-                            Text = "Other"
-                        },
-                        new
-                        {
-                            Id = new Guid("46d87e14-f05d-49d2-bf58-c1df236704b8"),
-                            Key = "screening.options.housing_status.stable",
-                            Locale = "ga-IE",
-                            Text = "Cóiríocht Chobhsaí"
-                        },
-                        new
-                        {
-                            Id = new Guid("e7d8d088-d5fd-4680-8dd4-b92f1423014a"),
-                            Key = "screening.options.housing_status.temporary",
-                            Locale = "ga-IE",
-                            Text = "Cóiríocht Shealadach"
-                        },
-                        new
-                        {
-                            Id = new Guid("632d6f38-31bb-4ad8-9cca-260f13fe4219"),
-                            Key = "screening.options.housing_status.homeless",
-                            Locale = "ga-IE",
-                            Text = "Gan Dídean"
-                        },
-                        new
-                        {
-                            Id = new Guid("45c3b5fd-66dd-45ee-acf1-5d1bc3bb1d8f"),
-                            Key = "screening.options.housing_status.supported",
-                            Locale = "ga-IE",
-                            Text = "Cóiríocht Thacaithe"
-                        },
-                        new
-                        {
-                            Id = new Guid("b170fe66-550e-4d77-9de9-c67bdde23357"),
-                            Key = "screening.options.housing_status.other",
-                            Locale = "ga-IE",
-                            Text = "Eile"
                         },
                         new
                         {
@@ -10444,28 +10075,7 @@ namespace Acutis.Infrastructure.Migrations
                             Id = new Guid("ba5e6e98-0488-4f2c-b73f-bcb2f2aa7574"),
                             Key = "screening.field.drinks_per_day.label",
                             Locale = "ar",
-                            Text = "عدد المشروبات يوميا"
-                        },
-                        new
-                        {
-                            Id = new Guid("0220c221-3807-4d17-9894-9f7404824de4"),
-                            Key = "screening.field.drinks_per_day.help",
-                            Locale = "ar",
-                            Text = "المتوسط التقريبي في أيام الشرب. اختر الوحدة المستخدمة لهذه الكمية."
-                        },
-                        new
-                        {
-                            Id = new Guid("7fcf3345-9d76-4f40-a13c-5590ae74d0ec"),
-                            Key = "screening.field.drinks_per_day_unit.label",
-                            Locale = "ar",
-                            Text = "وحدة المشروب"
-                        },
-                        new
-                        {
-                            Id = new Guid("9de7ce65-d77d-426f-ab43-519c6ec5f180"),
-                            Key = "screening.field.drinks_per_day_unit.help",
-                            Locale = "ar",
-                            Text = "سجل ما إذا كانت الكمية بالباينت أو اللترات أو الزجاجات."
+                            Text = "عدد المشروبات يوميا (حسب النوع)"
                         },
                         new
                         {
@@ -10487,62 +10097,6 @@ namespace Acutis.Infrastructure.Migrations
                             Key = "screening.field.currently_unsafe.label",
                             Locale = "ar",
                             Text = "هل توجد خطورة فورية؟"
-                        },
-                        new
-                        {
-                            Id = new Guid("28c66812-cc83-4456-bb50-2ef5ded6e48e"),
-                            Key = "screening.options.drink_measure_unit.pints",
-                            Locale = "ar",
-                            Text = "باينت"
-                        },
-                        new
-                        {
-                            Id = new Guid("a7dc7a55-80e6-4a14-8b06-1f1ea99e2f0f"),
-                            Key = "screening.options.drink_measure_unit.litres",
-                            Locale = "ar",
-                            Text = "لترات"
-                        },
-                        new
-                        {
-                            Id = new Guid("484d26d9-f2ea-42dc-85db-1f6762f67288"),
-                            Key = "screening.options.drink_measure_unit.bottles",
-                            Locale = "ar",
-                            Text = "زجاجات"
-                        },
-                        new
-                        {
-                            Id = new Guid("9472301b-33f4-40f0-8238-e597553fb2e9"),
-                            Key = "screening.options.housing_status.stable",
-                            Locale = "ar",
-                            Text = "سكن مستقر"
-                        },
-                        new
-                        {
-                            Id = new Guid("3c9bf986-b9e7-47bb-a907-991b89b09e20"),
-                            Key = "screening.options.housing_status.temporary",
-                            Locale = "ar",
-                            Text = "سكن مؤقت"
-                        },
-                        new
-                        {
-                            Id = new Guid("94cc584c-e4c3-4269-b477-5aa98768bb12"),
-                            Key = "screening.options.housing_status.homeless",
-                            Locale = "ar",
-                            Text = "بلا مأوى"
-                        },
-                        new
-                        {
-                            Id = new Guid("23fc56e2-c146-4bc9-b214-c9c30cf18f01"),
-                            Key = "screening.options.housing_status.supported",
-                            Locale = "ar",
-                            Text = "سكن مدعوم"
-                        },
-                        new
-                        {
-                            Id = new Guid("9a865c81-0bb6-4d54-9240-7376ea28a90a"),
-                            Key = "screening.options.housing_status.other",
-                            Locale = "ar",
-                            Text = "أخرى"
                         },
                         new
                         {
@@ -10599,13 +10153,6 @@ namespace Acutis.Infrastructure.Migrations
                             Key = "evaluation.table.unit",
                             Locale = "ar",
                             Text = "الوحدة"
-                        },
-                        new
-                        {
-                            Id = new Guid("c719b3eb-1df5-43fc-b65f-2a1c4fbf2df8"),
-                            Key = "evaluation.table.source",
-                            Locale = "ar",
-                            Text = "المصدر"
                         },
                         new
                         {

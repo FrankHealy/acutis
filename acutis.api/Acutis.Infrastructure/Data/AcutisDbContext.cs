@@ -18,6 +18,8 @@ public sealed class AcutisDbContext : DbContext
     private static readonly Guid ScreeningFormV4Id = Guid.Parse("e17d8a7c-9c8f-4ea9-b13a-b43dc6f8f028");
     private static readonly Guid ReferralSourceOptionSetId = Guid.Parse("20745f28-8b1d-4b28-bafb-4c8a89ca7bc5");
     private static readonly Guid DrinkTypeOptionSetId = Guid.Parse("5215043d-b92f-47c8-9650-f39f4f9fd7ca");
+    private static readonly Guid DrinkMeasureUnitOptionSetId = Guid.Parse("0d16b802-9dc1-4c8b-819a-52e0d41a6f59");
+    private static readonly Guid HousingStatusOptionSetId = Guid.Parse("7598f1ce-65c6-4245-af64-5aeb4be2c3b2");
     private static readonly Guid GpOptionItemId = Guid.Parse("4cdab4a6-537f-42dd-a88d-5cc04c4e9d03");
     private static readonly Guid FamilyOptionItemId = Guid.Parse("4167ea3e-95e1-4578-8dbf-1b04af0f87ce");
     private static readonly Guid SelfOptionItemId = Guid.Parse("6f2838eb-16ca-41c0-bb69-0bc6e7ba93f9");
@@ -27,6 +29,14 @@ public sealed class AcutisDbContext : DbContext
     private static readonly Guid DrinkTypeSpiritsOptionItemId = Guid.Parse("44f81460-88f7-4d58-9fd2-2f86f9f55f3d");
     private static readonly Guid DrinkTypeCiderOptionItemId = Guid.Parse("7a607ff4-0a82-4402-a85a-4b8ed64d09c0");
     private static readonly Guid DrinkTypeOtherOptionItemId = Guid.Parse("1f0fca56-5f9a-49a5-b4df-3f8c7f413d32");
+    private static readonly Guid DrinkMeasureUnitPintsOptionItemId = Guid.Parse("0a2f5ceb-fe3b-420f-a4df-95f1bff9342c");
+    private static readonly Guid DrinkMeasureUnitLitresOptionItemId = Guid.Parse("31279df6-9f65-4ceb-9d32-f3b0f1bf066c");
+    private static readonly Guid DrinkMeasureUnitBottlesOptionItemId = Guid.Parse("77e32289-2589-494a-9636-ad727ba907fe");
+    private static readonly Guid HousingStatusStableOptionItemId = Guid.Parse("17691e58-8ab8-482e-b9df-5f5f35ad4865");
+    private static readonly Guid HousingStatusTemporaryOptionItemId = Guid.Parse("953f699e-640b-4583-a6ec-af800aa2cbf5");
+    private static readonly Guid HousingStatusHomelessOptionItemId = Guid.Parse("4cc93a6b-60bd-44d8-a2d4-e0a11c79b1f9");
+    private static readonly Guid HousingStatusSupportedOptionItemId = Guid.Parse("cc4ce33c-5bc9-45a4-b128-35cf2a4722ae");
+    private static readonly Guid HousingStatusOtherOptionItemId = Guid.Parse("b223fa1f-3d8f-4c11-900f-e73c684ffdfa");
     private static readonly Guid TrScreeningFormTitleEn = Guid.Parse("7f428f69-c2f7-48f9-a7f8-c5d3221d8f33");
     private static readonly Guid TrScreeningFormTitleGa = Guid.Parse("e368b1f6-3bf5-40d6-bf5e-f2f8d16a3ca4");
     private static readonly Guid TrScreeningFormDescriptionEn = Guid.Parse("f3c1b6db-ffb8-41f3-84dd-c8738c75d977");
@@ -173,7 +183,7 @@ public sealed class AcutisDbContext : DbContext
             "withdrawalHistory": "toggle",
             "referralSource": "select",
             "currentlyUnsafe": "toggle",
-            "housingStatus": "input",
+            "housingStatus": "select",
             "assessorNotes": "textarea"
           },
           "labelKeys": {
@@ -240,7 +250,7 @@ public sealed class AcutisDbContext : DbContext
             "currentlyUnsafe": "toggle",
             "suicidalIdeation": "toggle",
             "referralSource": "select",
-            "housingStatus": "input",
+            "housingStatus": "select",
             "supportNetwork": "input",
             "medicalNotes": "textarea",
             "assessorNotes": "textarea",
@@ -278,12 +288,13 @@ public sealed class AcutisDbContext : DbContext
           "type": "object",
           "properties": {
             "callerName": { "type": "string", "minLength": 2, "maxLength": 120 },
-            "phoneNumber": { "type": "string", "minLength": 8, "maxLength": 20, "pattern": "^[+0-9()\\-\\s]+$", "format": "phone" },
-            "emailAddress": { "type": "string", "maxLength": 120, "format": "email" },
+            "phoneNumber": { "type": "string", "minLength": 8, "maxLength": 20, "pattern": "^\\+?[1-9][0-9()\\-\\s]{7,19}$", "format": "phone" },
+            "emailAddress": { "type": "string", "maxLength": 120, "pattern": "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", "format": "email" },
             "age": { "type": "integer", "minimum": 16, "maximum": 120 },
             "drinkType": { "type": "enum", "optionSetKey": "drink_type" },
             "drinkTypeOther": { "type": "string", "maxLength": 80 },
             "drinksPerDay": { "type": "number", "minimum": 0, "maximum": 100 },
+            "drinksPerDayUnit": { "type": "enum", "optionSetKey": "drink_measure_unit" },
             "daysDrinkingPerWeek": { "type": "integer", "minimum": 0, "maximum": 7 },
             "lastDrinkDate": { "type": "date" },
             "withdrawalHistory": { "type": "boolean" },
@@ -291,13 +302,13 @@ public sealed class AcutisDbContext : DbContext
             "currentlyUnsafe": { "type": "boolean" },
             "suicidalIdeation": { "type": "boolean" },
             "referralSource": { "type": "enum", "optionSetKey": "referral_source" },
-            "housingStatus": { "type": "string", "maxLength": 120 },
+            "housingStatus": { "type": "enum", "optionSetKey": "housing_status" },
             "supportNetwork": { "type": "string", "maxLength": 300 },
             "medicalNotes": { "type": "text", "maxLength": 1000 },
             "assessorNotes": { "type": "text", "maxLength": 2000 },
             "nextSteps": { "type": "text", "maxLength": 1000 }
           },
-          "required": [ "callerName", "phoneNumber", "age", "drinkType", "drinksPerDay", "referralSource" ]
+          "required": [ "callerName", "phoneNumber", "age", "drinkType", "drinksPerDay", "drinksPerDayUnit", "referralSource", "housingStatus" ]
         }
         """;
 
@@ -305,7 +316,7 @@ public sealed class AcutisDbContext : DbContext
         {
           "sections": [
             { "titleKey": "screening.section.caller_details", "items": [ "callerName", "phoneNumber", "emailAddress", "age" ] },
-            { "titleKey": "screening.section.alcohol_use", "items": [ "drinkType", "drinksPerDay", "drinkTypeOther", "daysDrinkingPerWeek", "lastDrinkDate", "withdrawalHistory", "historyOfSeizures", "referralSource" ] },
+            { "titleKey": "screening.section.alcohol_use", "items": [ "drinkType", "drinksPerDay", "drinksPerDayUnit", "drinkTypeOther", "daysDrinkingPerWeek", "lastDrinkDate", "withdrawalHistory", "historyOfSeizures", "referralSource" ] },
             { "titleKey": "screening.section.stability", "items": [ "currentlyUnsafe", "suicidalIdeation", "housingStatus", "supportNetwork" ] },
             { "titleKey": "screening.section.follow_up", "items": [ "medicalNotes", "assessorNotes", "nextSteps" ] }
           ],
@@ -317,6 +328,7 @@ public sealed class AcutisDbContext : DbContext
             "drinkType": "select",
             "drinkTypeOther": "input",
             "drinksPerDay": "number",
+            "drinksPerDayUnit": "select",
             "daysDrinkingPerWeek": "number",
             "lastDrinkDate": "input",
             "withdrawalHistory": "toggle",
@@ -338,6 +350,7 @@ public sealed class AcutisDbContext : DbContext
             "drinkType": "screening.field.drink_type.label",
             "drinkTypeOther": "screening.field.drink_type_other.label",
             "drinksPerDay": "screening.field.drinks_per_day.label",
+            "drinksPerDayUnit": "screening.field.drinks_per_day_unit.label",
             "daysDrinkingPerWeek": "screening.field.days_drinking_per_week.label",
             "lastDrinkDate": "screening.field.last_drink_date.label",
             "withdrawalHistory": "screening.field.withdrawal_history.label",
@@ -353,6 +366,7 @@ public sealed class AcutisDbContext : DbContext
           },
           "helpKeys": {
             "drinksPerDay": "screening.field.drinks_per_day.help",
+            "drinksPerDayUnit": "screening.field.drinks_per_day_unit.help",
             "assessorNotes": "screening.field.assessor_notes.help",
             "nextSteps": "screening.field.next_steps.help"
           }
@@ -711,6 +725,8 @@ public sealed class AcutisDbContext : DbContext
                 BrandName = "Acutis",
                 BrandSubtitle = "Bruree Centre",
                 BrandLogoUrl = "/acutis-icon.svg",
+                BrowserTitle = "Acutis",
+                FaviconUrl = "/acutis-icon.svg",
                 ThemeKey = "acutis",
                 DisplayOrder = 1,
                 IsActive = true,
@@ -730,7 +746,7 @@ public sealed class AcutisDbContext : DbContext
                 Name = "Alcohol",
                 Description = "Primary alcohol treatment unit.",
                 Capacity = 120,
-                CurrentOccupancy = 92,
+                CurrentOccupancy = 63,
                 CapacityWarningThreshold = 96,
                 DefaultResidentWeekNumber = 1,
                 DisplayOrder = 1,
@@ -916,7 +932,7 @@ public sealed class AcutisDbContext : DbContext
 
     private static void SeedResidents(ModelBuilder modelBuilder)
     {
-        var residentSeeds = new (string FirstName, string Surname, int WeekNumber, string RoomNumber, string Nationality)[]
+        var detoxResidentSeeds = new (string FirstName, string Surname, int WeekNumber, string RoomNumber, string Nationality)[]
         {
             ("Aidan", "Byrne", 1, "D01", "Irish"),
             ("Brian", "O'Neill", 2, "D02", "Irish"),
@@ -931,7 +947,7 @@ public sealed class AcutisDbContext : DbContext
             ("Kevin", "Power", 11, "D11", "Irish")
         };
 
-        var residents = residentSeeds.Select((resident, index) =>
+        var detoxResidents = detoxResidentSeeds.Select((resident, index) =>
         {
             var residentNumber = index + 1;
             return new Resident
@@ -965,7 +981,7 @@ public sealed class AcutisDbContext : DbContext
             };
         }).ToArray();
 
-        var episodes = residents.Select((resident, index) => new ResidentProgrammeEpisode
+        var detoxEpisodes = detoxResidents.Select((resident, index) => new ResidentProgrammeEpisode
         {
             Id = CreateDeterministicGuid($"episode:{resident.Id:D}"),
             ResidentId = resident.Id,
@@ -973,15 +989,15 @@ public sealed class AcutisDbContext : DbContext
             UnitId = DetoxUnitId,
             StartDate = new DateOnly(2026, 1, 5),
             EndDate = null,
-            CentreEpisodeCode = BuildCentreEpisodeCode("BRU", resident.AdmissionDate?.Year ?? 2026, residentSeeds[index].WeekNumber, 1),
+            CentreEpisodeCode = BuildCentreEpisodeCode("BRU", resident.AdmissionDate?.Year ?? 2026, detoxResidentSeeds[index].WeekNumber, 1),
             EntryYear = resident.AdmissionDate?.Year ?? 2026,
-            EntryWeek = residentSeeds[index].WeekNumber,
+            EntryWeek = detoxResidentSeeds[index].WeekNumber,
             EntrySequence = 1,
             RoomNumber = resident.RoomNumber,
             ExpectedCompletionDate = resident.ExpectedCompletionDate,
             PrimaryAddiction = resident.PrimaryAddiction,
             ProgrammeType = ProgrammeType.Alcohol,
-            CurrentWeekNumber = residentSeeds[index].WeekNumber,
+            CurrentWeekNumber = detoxResidentSeeds[index].WeekNumber,
             ParticipationMode = ParticipationMode.FullProgramme,
             CohortId = null
         }).ToArray();
@@ -1002,12 +1018,12 @@ public sealed class AcutisDbContext : DbContext
             "COPING_SKILLS"
         };
 
-        var assignments = residents.SelectMany((resident, residentIndex) =>
+        var detoxAssignments = detoxResidents.SelectMany((resident, residentIndex) =>
             Enumerable.Range(0, 12).Select(weekOffset => new ResidentWeeklyTherapyAssignment
             {
                 Id = CreateDeterministicGuid($"resident-weekly-assignment:{resident.Id:D}:{weekOffset + 1:00}"),
                 ResidentId = resident.Id,
-                EpisodeId = episodes[residentIndex].Id,
+                EpisodeId = detoxEpisodes[residentIndex].Id,
                 WeekStartDate = new DateOnly(2026, 1, 5).AddDays(weekOffset * 7),
                 TherapyTopicId = CreateDeterministicGuid($"therapy-topic:{topicCodes[weekOffset]}"),
                 AssignmentSource = AssignmentSource.Auto,
@@ -1017,9 +1033,125 @@ public sealed class AcutisDbContext : DbContext
                 CreatedByUserId = CreateDeterministicGuid("system:seed")
             }));
 
-        modelBuilder.Entity<Resident>().HasData(residents);
-        modelBuilder.Entity<ResidentProgrammeEpisode>().HasData(episodes);
-        modelBuilder.Entity<ResidentWeeklyTherapyAssignment>().HasData(assignments);
+        var alcoholFirstNames = new[]
+        {
+            "Alan", "Brendan", "Cathal", "Declan", "Emmet", "Finbar", "Gerard",
+            "Harry", "James", "Liam", "Martin", "Niall", "Oisin", "Padraig",
+            "Ronan", "Seamus", "Thomas", "Ultan", "Vincent", "William", "Zach"
+        };
+        var alcoholSurnameBlocks = new[]
+        {
+            new[] { "Allen", "Brennan", "Clarke", "Donovan", "Ennis", "Farrell", "Griffin", "Hickey", "Irwin", "Joyce", "Keane", "Larkin", "Mahon", "Nolan", "Owens", "Quinn", "Reilly", "Sullivan", "Tierney", "Usher", "Whelan" },
+            new[] { "Archer", "Burke", "Conway", "Dunne", "Egan", "Foley", "Gilmore", "Hogan", "Ivors", "Jordan", "Kennedy", "Lennon", "Mooney", "Nestor", "O'Brien", "Prendergast", "Roche", "Shanahan", "Tracey", "Vaughan", "White" },
+            new[] { "Aylward", "Boyle", "Coffey", "Delaney", "Evans", "Fitzpatrick", "Gannon", "Healy", "Ingram", "Keegan", "Lawlor", "Maguire", "Noonan", "O'Connor", "Phelan", "Reardon", "Scanlon", "Tobin", "Walsh", "Walton", "Young" }
+        };
+        var alcoholNationalities = new[] { "Irish", "Polish", "British", "Lithuanian", "Romanian", "Latvian" };
+
+        var alcoholResidents = Enumerable.Range(1, 63).Select(residentNumber =>
+        {
+            var firstNameIndex = (residentNumber - 1) % alcoholFirstNames.Length;
+            var surnameBlockIndex = (residentNumber - 1) / alcoholFirstNames.Length;
+            var weekNumber = ((residentNumber - 1) % 12) + 1;
+            var admissionDate = new DateTime(2026, 1, 5, 0, 0, 0, DateTimeKind.Utc).AddDays((weekNumber - 1) * 7);
+
+            return new Resident
+            {
+                Id = CreateDeterministicGuid($"resident:alcohol:{residentNumber:00}"),
+                Psn = BuildResidentSecondaryKey("BRU", "ALC", 26, weekNumber, residentNumber),
+                UnitId = AlcoholUnitId,
+                UnitCode = "alcohol",
+                FirstName = alcoholFirstNames[firstNameIndex],
+                Surname = alcoholSurnameBlocks[surnameBlockIndex][firstNameIndex],
+                Nationality = alcoholNationalities[(residentNumber - 1) % alcoholNationalities.Length],
+                DateOfBirth = new DateTime(1978 + (residentNumber % 18), ((residentNumber - 1) % 12) + 1, Math.Min(28, 5 + ((residentNumber - 1) % 20)), 0, 0, 0, DateTimeKind.Utc),
+                WeekNumber = weekNumber,
+                RoomNumber = $"A{residentNumber:00}",
+                PhotoUrl = BuildResidentPhotoUrl(detoxResidents.Length + residentNumber),
+                AdmissionDate = admissionDate,
+                ExpectedCompletionDate = admissionDate.AddDays(84),
+                PrimaryAddiction = "Alcohol",
+                IsDrug = false,
+                IsGambeler = residentNumber % 11 == 0,
+                IsPreviousResident = residentNumber % 7 == 0,
+                DietaryNeedsCode = residentNumber % 4,
+                IsSnorer = residentNumber % 3 == 0,
+                HasCriminalHistory = residentNumber % 5 == 0,
+                IsOnProbation = residentNumber % 8 == 0,
+                ArgumentativeScale = residentNumber % 5,
+                LearningDifficultyScale = residentNumber % 4,
+                LiteracyScale = residentNumber % 3,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            };
+        }).ToArray();
+
+        var alcoholCases = alcoholResidents.Select((resident, index) =>
+        {
+            var referralReceivedAtUtc = (resident.AdmissionDate ?? SeedCreatedAt).AddDays(-21);
+            var screeningStartedAtUtc = referralReceivedAtUtc.AddDays(2);
+            var screeningCompletedAtUtc = referralReceivedAtUtc.AddDays(9);
+            var admissionDecisionAtUtc = referralReceivedAtUtc.AddDays(12);
+
+            return new ResidentCase
+            {
+                Id = CreateDeterministicGuid($"resident-case:alcohol:{index + 1:00}"),
+                ResidentId = resident.Id,
+                CentreId = BrureeCentreId,
+                UnitId = AlcoholUnitId,
+                CaseStatus = "admitted",
+                CasePhase = "admission",
+                IntakeSource = "screening_call",
+                ReferralSource = index % 3 == 0 ? "gp" : index % 3 == 1 ? "family" : "self",
+                ReferralReference = $"ALC-REF-{index + 1:000}",
+                ReferralReceivedAtUtc = referralReceivedAtUtc,
+                ScreeningStartedAtUtc = screeningStartedAtUtc,
+                ScreeningCompletedAtUtc = screeningCompletedAtUtc,
+                AdmissionDecisionAtUtc = admissionDecisionAtUtc,
+                AdmissionDecisionStatus = "admitted",
+                AdmissionDecisionReason = "Suitable for residential alcohol programme admission.",
+                ClosedWithoutAdmissionAtUtc = null,
+                RequiresComprehensiveAssessment = index % 4 == 0,
+                ComprehensiveAssessmentCompleted = true,
+                OpenedAtUtc = referralReceivedAtUtc,
+                LastContactAtUtc = admissionDecisionAtUtc,
+                ClosedAtUtc = null,
+                SummaryNotes = "Admitted to the alcohol programme following screening and admission decision."
+            };
+        }).ToArray();
+
+        var alcoholEpisodes = alcoholResidents.Select((resident, index) =>
+        {
+            var entrySequence = 10 + alcoholResidents
+                .Take(index + 1)
+                .Count(x => x.WeekNumber == resident.WeekNumber);
+
+            return new ResidentProgrammeEpisode
+            {
+                Id = CreateDeterministicGuid($"episode:{resident.Id:D}"),
+                ResidentCaseId = alcoholCases[index].Id,
+                ResidentId = resident.Id,
+                CentreId = BrureeCentreId,
+                UnitId = AlcoholUnitId,
+                StartDate = DateOnly.FromDateTime(resident.AdmissionDate ?? SeedCreatedAt),
+                EndDate = null,
+                CentreEpisodeCode = BuildCentreEpisodeCode("BRU", resident.AdmissionDate?.Year ?? 2026, resident.WeekNumber, entrySequence),
+                EntryYear = resident.AdmissionDate?.Year ?? 2026,
+                EntryWeek = resident.WeekNumber,
+                EntrySequence = entrySequence,
+                RoomNumber = resident.RoomNumber,
+                ExpectedCompletionDate = resident.ExpectedCompletionDate,
+                PrimaryAddiction = resident.PrimaryAddiction,
+                ProgrammeType = ProgrammeType.Alcohol,
+                CurrentWeekNumber = resident.WeekNumber,
+                ParticipationMode = ParticipationMode.FullProgramme,
+                CohortId = null
+            };
+        }).ToArray();
+
+        modelBuilder.Entity<Resident>().HasData(detoxResidents.Concat(alcoholResidents));
+        modelBuilder.Entity<ResidentCase>().HasData(alcoholCases);
+        modelBuilder.Entity<ResidentProgrammeEpisode>().HasData(detoxEpisodes.Concat(alcoholEpisodes));
+        modelBuilder.Entity<ResidentWeeklyTherapyAssignment>().HasData(detoxAssignments);
     }
 
     private static void SeedFormDefinition(ModelBuilder modelBuilder)
@@ -1091,6 +1223,16 @@ public sealed class AcutisDbContext : DbContext
             {
                 Id = DrinkTypeOptionSetId,
                 Key = "drink_type"
+            },
+            new OptionSet
+            {
+                Id = DrinkMeasureUnitOptionSetId,
+                Key = "drink_measure_unit"
+            },
+            new OptionSet
+            {
+                Id = HousingStatusOptionSetId,
+                Key = "housing_status"
             });
 
         modelBuilder.Entity<OptionItem>().HasData(
@@ -1174,6 +1316,78 @@ public sealed class AcutisDbContext : DbContext
                 LabelKey = "screening.options.drink_type.other",
                 IsActive = true,
                 SortOrder = 5
+            },
+            new OptionItem
+            {
+                Id = DrinkMeasureUnitPintsOptionItemId,
+                OptionSetId = DrinkMeasureUnitOptionSetId,
+                Code = "pints",
+                LabelKey = "screening.options.drink_measure_unit.pints",
+                IsActive = true,
+                SortOrder = 1
+            },
+            new OptionItem
+            {
+                Id = DrinkMeasureUnitLitresOptionItemId,
+                OptionSetId = DrinkMeasureUnitOptionSetId,
+                Code = "litres",
+                LabelKey = "screening.options.drink_measure_unit.litres",
+                IsActive = true,
+                SortOrder = 2
+            },
+            new OptionItem
+            {
+                Id = DrinkMeasureUnitBottlesOptionItemId,
+                OptionSetId = DrinkMeasureUnitOptionSetId,
+                Code = "bottles",
+                LabelKey = "screening.options.drink_measure_unit.bottles",
+                IsActive = true,
+                SortOrder = 3
+            },
+            new OptionItem
+            {
+                Id = HousingStatusStableOptionItemId,
+                OptionSetId = HousingStatusOptionSetId,
+                Code = "stable",
+                LabelKey = "screening.options.housing_status.stable",
+                IsActive = true,
+                SortOrder = 1
+            },
+            new OptionItem
+            {
+                Id = HousingStatusTemporaryOptionItemId,
+                OptionSetId = HousingStatusOptionSetId,
+                Code = "temporary",
+                LabelKey = "screening.options.housing_status.temporary",
+                IsActive = true,
+                SortOrder = 2
+            },
+            new OptionItem
+            {
+                Id = HousingStatusHomelessOptionItemId,
+                OptionSetId = HousingStatusOptionSetId,
+                Code = "homeless",
+                LabelKey = "screening.options.housing_status.homeless",
+                IsActive = true,
+                SortOrder = 3
+            },
+            new OptionItem
+            {
+                Id = HousingStatusSupportedOptionItemId,
+                OptionSetId = HousingStatusOptionSetId,
+                Code = "supported",
+                LabelKey = "screening.options.housing_status.supported",
+                IsActive = true,
+                SortOrder = 4
+            },
+            new OptionItem
+            {
+                Id = HousingStatusOtherOptionItemId,
+                OptionSetId = HousingStatusOptionSetId,
+                Code = "other",
+                LabelKey = "screening.options.housing_status.other",
+                IsActive = true,
+                SortOrder = 5
             });
     }
 
@@ -1188,8 +1402,10 @@ public sealed class AcutisDbContext : DbContext
             new TextResource { Key = "screening.field.age.label", DefaultText = "Age" },
             new TextResource { Key = "screening.field.drink_type.label", DefaultText = "Drink Type" },
             new TextResource { Key = "screening.field.drink_type_other.label", DefaultText = "If other, specify drink type" },
-            new TextResource { Key = "screening.field.drinks_per_day.label", DefaultText = "Drinks Per Day (for selected type)" },
-            new TextResource { Key = "screening.field.drinks_per_day.help", DefaultText = "Approximate average on drinking days." },
+            new TextResource { Key = "screening.field.drinks_per_day.label", DefaultText = "Drinks Per Day" },
+            new TextResource { Key = "screening.field.drinks_per_day.help", DefaultText = "Approximate average on drinking days. Select the unit used for this quantity." },
+            new TextResource { Key = "screening.field.drinks_per_day_unit.label", DefaultText = "Drink Unit" },
+            new TextResource { Key = "screening.field.drinks_per_day_unit.help", DefaultText = "Record whether the quantity is in pints, litres or bottles." },
             new TextResource { Key = "screening.field.withdrawal_history.label", DefaultText = "Has withdrawal history?" },
             new TextResource { Key = "screening.field.referral_source.label", DefaultText = "Referral Source" },
             new TextResource { Key = "screening.field.currently_unsafe.label", DefaultText = "Is immediate concern?" },
@@ -1217,6 +1433,14 @@ public sealed class AcutisDbContext : DbContext
             new TextResource { Key = "screening.options.drink_type.spirits", DefaultText = "Spirits" },
             new TextResource { Key = "screening.options.drink_type.cider", DefaultText = "Cider" },
             new TextResource { Key = "screening.options.drink_type.other", DefaultText = "Other" },
+            new TextResource { Key = "screening.options.drink_measure_unit.pints", DefaultText = "Pints" },
+            new TextResource { Key = "screening.options.drink_measure_unit.litres", DefaultText = "Litres" },
+            new TextResource { Key = "screening.options.drink_measure_unit.bottles", DefaultText = "Bottles" },
+            new TextResource { Key = "screening.options.housing_status.stable", DefaultText = "Stable Accommodation" },
+            new TextResource { Key = "screening.options.housing_status.temporary", DefaultText = "Temporary Accommodation" },
+            new TextResource { Key = "screening.options.housing_status.homeless", DefaultText = "Homeless" },
+            new TextResource { Key = "screening.options.housing_status.supported", DefaultText = "Supported Accommodation" },
+            new TextResource { Key = "screening.options.housing_status.other", DefaultText = "Other" },
             new TextResource { Key = "app.brand", DefaultText = "Acutis" },
             new TextResource { Key = "app.centre.bruree", DefaultText = "Bruree Treatment Center" },
             new TextResource { Key = "header.capacity", DefaultText = "Capacity" },
@@ -1235,6 +1459,7 @@ public sealed class AcutisDbContext : DbContext
             new TextResource { Key = "evaluation.table.surname", DefaultText = "Surname" },
             new TextResource { Key = "evaluation.table.name", DefaultText = "Name" },
             new TextResource { Key = "evaluation.table.unit", DefaultText = "Unit" },
+            new TextResource { Key = "evaluation.table.source", DefaultText = "Source" },
             new TextResource { Key = "evaluation.table.last_call_date", DefaultText = "Last Call Date" },
             new TextResource { Key = "evaluation.table.num_calls", DefaultText = "Num Calls" },
             new TextResource { Key = "evaluation.table.status", DefaultText = "Status" },
@@ -1263,8 +1488,14 @@ public sealed class AcutisDbContext : DbContext
             new TextTranslation { Id = TrCallerNameLabelGa, Key = "screening.field.caller_name.label", Locale = "ga-IE", Text = "Ainm an Ghlaoiteora" },
             new TextTranslation { Id = TrAgeLabelEn, Key = "screening.field.age.label", Locale = "en-IE", Text = "Age" },
             new TextTranslation { Id = TrAgeLabelGa, Key = "screening.field.age.label", Locale = "ga-IE", Text = "Aois" },
-            new TextTranslation { Id = TrDrinksPerDayLabelEn, Key = "screening.field.drinks_per_day.label", Locale = "en-IE", Text = "Drinks Per Day (for selected type)" },
+            new TextTranslation { Id = TrDrinksPerDayLabelEn, Key = "screening.field.drinks_per_day.label", Locale = "en-IE", Text = "Drinks Per Day" },
             new TextTranslation { Id = TrDrinksPerDayLabelGa, Key = "screening.field.drinks_per_day.label", Locale = "ga-IE", Text = "Deochanna sa Lá" },
+            new TextTranslation { Id = Guid.Parse("1035cb17-ebaa-4856-b3dd-1c9f91ba69d0"), Key = "screening.field.drinks_per_day.help", Locale = "en-IE", Text = "Approximate average on drinking days. Select the unit used for this quantity." },
+            new TextTranslation { Id = Guid.Parse("55f4cbcf-81ef-4f9b-836a-88ca2b85b33e"), Key = "screening.field.drinks_per_day.help", Locale = "ga-IE", Text = "Meán garbh ar laethanta óil. Roghnaigh an t-aonad a úsáideadh don chainníocht seo." },
+            new TextTranslation { Id = Guid.Parse("97b5d82c-8238-45cb-ab63-a2dc560d0aad"), Key = "screening.field.drinks_per_day_unit.label", Locale = "en-IE", Text = "Drink Unit" },
+            new TextTranslation { Id = Guid.Parse("0bec25c1-749d-4edf-9ba1-bc95176206c1"), Key = "screening.field.drinks_per_day_unit.label", Locale = "ga-IE", Text = "Aonad Dí" },
+            new TextTranslation { Id = Guid.Parse("2ee869f2-6efd-421a-b956-8836a99cb1d5"), Key = "screening.field.drinks_per_day_unit.help", Locale = "en-IE", Text = "Record whether the quantity is in pints, litres or bottles." },
+            new TextTranslation { Id = Guid.Parse("3bc4532a-c13a-4d14-a184-68fc3707eec4"), Key = "screening.field.drinks_per_day_unit.help", Locale = "ga-IE", Text = "Taifead an bhfuil an chainníocht i bpiontaí, i lítear nó i mbuidéil." },
             new TextTranslation { Id = TrWithdrawalHistoryLabelEn, Key = "screening.field.withdrawal_history.label", Locale = "en-IE", Text = "Has withdrawal history?" },
             new TextTranslation { Id = TrWithdrawalHistoryLabelGa, Key = "screening.field.withdrawal_history.label", Locale = "ga-IE", Text = "Stair Aistarraingthe" },
             new TextTranslation { Id = TrReferralSourceLabelEn, Key = "screening.field.referral_source.label", Locale = "en-IE", Text = "Referral Source" },
@@ -1297,6 +1528,8 @@ public sealed class AcutisDbContext : DbContext
             new TextTranslation { Id = TrScreeningTabEvaluationGa, Key = "screening.tab.evaluation", Locale = "ga-IE", Text = "Meastóireacht" },
             new TextTranslation { Id = TrScreeningTabSchedulingEn, Key = "screening.tab.scheduling", Locale = "en-IE", Text = "Scheduling" },
             new TextTranslation { Id = TrScreeningTabSchedulingGa, Key = "screening.tab.scheduling", Locale = "ga-IE", Text = "Sceidealú" },
+            new TextTranslation { Id = Guid.Parse("4269e3d4-d0aa-4b0c-858a-044de3b2c5f1"), Key = "evaluation.table.source", Locale = "en-IE", Text = "Source" },
+            new TextTranslation { Id = Guid.Parse("8cc436ab-cc73-44aa-b3b6-b4cfb48bce1b"), Key = "evaluation.table.source", Locale = "ga-IE", Text = "Foinse" },
             new TextTranslation { Id = Guid.Parse("9e0ddd4f-3339-46e1-8ab8-d485be7fca8d"), Key = "screening.field.currently_unsafe.label", Locale = "en-IE", Text = "Is immediate concern?" },
             new TextTranslation { Id = Guid.Parse("66f4f9bf-1f15-4c9f-a59f-317b0b7c4f19"), Key = "screening.field.history_of_seizures.label", Locale = "en-IE", Text = "Has seizure history?" },
             new TextTranslation { Id = Guid.Parse("9f306145-c17e-4234-ae46-aaf8e22c6205"), Key = "screening.field.drink_type.label", Locale = "en-IE", Text = "Drink Type" },
@@ -1306,6 +1539,22 @@ public sealed class AcutisDbContext : DbContext
             new TextTranslation { Id = Guid.Parse("bf9ac4ba-c73e-45f4-af54-b0e56f5addfe"), Key = "screening.options.drink_type.spirits", Locale = "en-IE", Text = "Spirits" },
             new TextTranslation { Id = Guid.Parse("ea12f2ff-b9de-4f6d-a237-3f68f812283b"), Key = "screening.options.drink_type.cider", Locale = "en-IE", Text = "Cider" },
             new TextTranslation { Id = Guid.Parse("7694c676-287f-4509-969e-c8de65c89a0d"), Key = "screening.options.drink_type.other", Locale = "en-IE", Text = "Other" },
+            new TextTranslation { Id = Guid.Parse("901beca6-df0d-4e43-b7b4-d5b7e6eb9d7a"), Key = "screening.options.drink_measure_unit.pints", Locale = "en-IE", Text = "Pints" },
+            new TextTranslation { Id = Guid.Parse("90442b48-cf66-4736-b8ca-297ec7757627"), Key = "screening.options.drink_measure_unit.litres", Locale = "en-IE", Text = "Litres" },
+            new TextTranslation { Id = Guid.Parse("f47ee5fd-986d-4201-bd12-6337ec372cae"), Key = "screening.options.drink_measure_unit.bottles", Locale = "en-IE", Text = "Bottles" },
+            new TextTranslation { Id = Guid.Parse("558d984c-a398-45b4-8782-d8921a7ea3c7"), Key = "screening.options.drink_measure_unit.pints", Locale = "ga-IE", Text = "Piontaí" },
+            new TextTranslation { Id = Guid.Parse("72357518-4d77-49e6-802a-4c5dc11e9547"), Key = "screening.options.drink_measure_unit.litres", Locale = "ga-IE", Text = "Lítear" },
+            new TextTranslation { Id = Guid.Parse("0b63ed08-b49d-4381-a918-a5b7a208ed1a"), Key = "screening.options.drink_measure_unit.bottles", Locale = "ga-IE", Text = "Buidéil" },
+            new TextTranslation { Id = Guid.Parse("48eabf4d-5e05-48ef-a2b5-d0e6fe78fe0f"), Key = "screening.options.housing_status.stable", Locale = "en-IE", Text = "Stable Accommodation" },
+            new TextTranslation { Id = Guid.Parse("4e9dc7d2-99fe-4e1d-9ba3-5f3d8b00d121"), Key = "screening.options.housing_status.temporary", Locale = "en-IE", Text = "Temporary Accommodation" },
+            new TextTranslation { Id = Guid.Parse("3c750a0f-7db5-4d1b-b0d7-f53d4ce5d426"), Key = "screening.options.housing_status.homeless", Locale = "en-IE", Text = "Homeless" },
+            new TextTranslation { Id = Guid.Parse("2e639d62-1f38-48f8-abaf-28baf60c31fd"), Key = "screening.options.housing_status.supported", Locale = "en-IE", Text = "Supported Accommodation" },
+            new TextTranslation { Id = Guid.Parse("d72a6db0-2378-46ca-b7da-bcd08464f61a"), Key = "screening.options.housing_status.other", Locale = "en-IE", Text = "Other" },
+            new TextTranslation { Id = Guid.Parse("46d87e14-f05d-49d2-bf58-c1df236704b8"), Key = "screening.options.housing_status.stable", Locale = "ga-IE", Text = "Cóiríocht Chobhsaí" },
+            new TextTranslation { Id = Guid.Parse("e7d8d088-d5fd-4680-8dd4-b92f1423014a"), Key = "screening.options.housing_status.temporary", Locale = "ga-IE", Text = "Cóiríocht Shealadach" },
+            new TextTranslation { Id = Guid.Parse("632d6f38-31bb-4ad8-9cca-260f13fe4219"), Key = "screening.options.housing_status.homeless", Locale = "ga-IE", Text = "Gan Dídean" },
+            new TextTranslation { Id = Guid.Parse("45c3b5fd-66dd-45ee-acf1-5d1bc3bb1d8f"), Key = "screening.options.housing_status.supported", Locale = "ga-IE", Text = "Cóiríocht Thacaithe" },
+            new TextTranslation { Id = Guid.Parse("b170fe66-550e-4d77-9de9-c67bdde23357"), Key = "screening.options.housing_status.other", Locale = "ga-IE", Text = "Eile" },
             new TextTranslation { Id = Guid.Parse("fd0a7865-43f1-4cc3-b57f-4c4b5ca47c57"), Key = "app.brand", Locale = "ar", Text = "Acutis" },
             new TextTranslation { Id = Guid.Parse("b3f0a417-2cf8-4b91-806f-e6f42c9d9f19"), Key = "app.centre.bruree", Locale = "ar", Text = "Bruree Treatment Center" },
             new TextTranslation { Id = Guid.Parse("c2de6b57-2080-4b71-9f6b-50f2a23a66f7"), Key = "header.capacity", Locale = "ar", Text = "Capacity" },
@@ -1323,10 +1572,21 @@ public sealed class AcutisDbContext : DbContext
             new TextTranslation { Id = Guid.Parse("bc8fd9b5-b638-4564-b0df-b839ca9dcde5"), Key = "screening.section.follow_up", Locale = "ar", Text = "ملاحظات المتابعة" },
             new TextTranslation { Id = Guid.Parse("46648eca-e4fd-4f91-95c1-21f4419df2c6"), Key = "screening.field.drink_type.label", Locale = "ar", Text = "نوع المشروب" },
             new TextTranslation { Id = Guid.Parse("cb8f1cb3-f093-4f42-b867-48c26127fcdd"), Key = "screening.field.drink_type_other.label", Locale = "ar", Text = "إذا كان غير ذلك، حدده" },
-            new TextTranslation { Id = Guid.Parse("ba5e6e98-0488-4f2c-b73f-bcb2f2aa7574"), Key = "screening.field.drinks_per_day.label", Locale = "ar", Text = "عدد المشروبات يوميا (حسب النوع)" },
+            new TextTranslation { Id = Guid.Parse("ba5e6e98-0488-4f2c-b73f-bcb2f2aa7574"), Key = "screening.field.drinks_per_day.label", Locale = "ar", Text = "عدد المشروبات يوميا" },
+            new TextTranslation { Id = Guid.Parse("0220c221-3807-4d17-9894-9f7404824de4"), Key = "screening.field.drinks_per_day.help", Locale = "ar", Text = "المتوسط التقريبي في أيام الشرب. اختر الوحدة المستخدمة لهذه الكمية." },
+            new TextTranslation { Id = Guid.Parse("7fcf3345-9d76-4f40-a13c-5590ae74d0ec"), Key = "screening.field.drinks_per_day_unit.label", Locale = "ar", Text = "وحدة المشروب" },
+            new TextTranslation { Id = Guid.Parse("9de7ce65-d77d-426f-ab43-519c6ec5f180"), Key = "screening.field.drinks_per_day_unit.help", Locale = "ar", Text = "سجل ما إذا كانت الكمية بالباينت أو اللترات أو الزجاجات." },
             new TextTranslation { Id = Guid.Parse("1e7f1d6c-bdb5-4e89-90e2-970336aeb586"), Key = "screening.field.withdrawal_history.label", Locale = "ar", Text = "هل لديه تاريخ أعراض انسحاب؟" },
             new TextTranslation { Id = Guid.Parse("e9abb6e3-58b1-4171-85dc-0fec30ff6a2c"), Key = "screening.field.history_of_seizures.label", Locale = "ar", Text = "هل لديه تاريخ نوبات صرع؟" },
             new TextTranslation { Id = Guid.Parse("2f88fd06-b8bd-4d8c-b744-0c0591f45a99"), Key = "screening.field.currently_unsafe.label", Locale = "ar", Text = "هل توجد خطورة فورية؟" },
+            new TextTranslation { Id = Guid.Parse("28c66812-cc83-4456-bb50-2ef5ded6e48e"), Key = "screening.options.drink_measure_unit.pints", Locale = "ar", Text = "باينت" },
+            new TextTranslation { Id = Guid.Parse("a7dc7a55-80e6-4a14-8b06-1f1ea99e2f0f"), Key = "screening.options.drink_measure_unit.litres", Locale = "ar", Text = "لترات" },
+            new TextTranslation { Id = Guid.Parse("484d26d9-f2ea-42dc-85db-1f6762f67288"), Key = "screening.options.drink_measure_unit.bottles", Locale = "ar", Text = "زجاجات" },
+            new TextTranslation { Id = Guid.Parse("9472301b-33f4-40f0-8238-e597553fb2e9"), Key = "screening.options.housing_status.stable", Locale = "ar", Text = "سكن مستقر" },
+            new TextTranslation { Id = Guid.Parse("3c9bf986-b9e7-47bb-a907-991b89b09e20"), Key = "screening.options.housing_status.temporary", Locale = "ar", Text = "سكن مؤقت" },
+            new TextTranslation { Id = Guid.Parse("94cc584c-e4c3-4269-b477-5aa98768bb12"), Key = "screening.options.housing_status.homeless", Locale = "ar", Text = "بلا مأوى" },
+            new TextTranslation { Id = Guid.Parse("23fc56e2-c146-4bc9-b214-c9c30cf18f01"), Key = "screening.options.housing_status.supported", Locale = "ar", Text = "سكن مدعوم" },
+            new TextTranslation { Id = Guid.Parse("9a865c81-0bb6-4d54-9240-7376ea28a90a"), Key = "screening.options.housing_status.other", Locale = "ar", Text = "أخرى" },
             new TextTranslation { Id = Guid.Parse("3b977d28-f3d9-4766-8ffb-573df38cbeb4"), Key = "evaluation.queue.title", Locale = "ar", Text = "قائمة التقييم" },
             new TextTranslation { Id = Guid.Parse("1c25f5e8-cc6d-4ae2-8475-b4591bce426c"), Key = "evaluation.stats.pending", Locale = "ar", Text = "قيد الانتظار" },
             new TextTranslation { Id = Guid.Parse("887273d1-9f36-4af0-b8c8-20006830b54d"), Key = "evaluation.stats.in_progress", Locale = "ar", Text = "قيد التنفيذ" },
@@ -1335,6 +1595,7 @@ public sealed class AcutisDbContext : DbContext
             new TextTranslation { Id = Guid.Parse("61685d4e-6ef8-4477-95f5-77ff4ab690d4"), Key = "evaluation.table.surname", Locale = "ar", Text = "اللقب" },
             new TextTranslation { Id = Guid.Parse("f58fca32-e6d6-4ea1-a81e-c52ca3108e04"), Key = "evaluation.table.name", Locale = "ar", Text = "الاسم" },
             new TextTranslation { Id = Guid.Parse("86ef317b-1afd-4714-a620-6f81d174ec0a"), Key = "evaluation.table.unit", Locale = "ar", Text = "الوحدة" },
+            new TextTranslation { Id = Guid.Parse("c719b3eb-1df5-43fc-b65f-2a1c4fbf2df8"), Key = "evaluation.table.source", Locale = "ar", Text = "المصدر" },
             new TextTranslation { Id = Guid.Parse("5701e3ea-fec4-4f5c-ab4a-f75c1e23a334"), Key = "evaluation.table.last_call_date", Locale = "ar", Text = "تاريخ آخر مكالمة" },
             new TextTranslation { Id = Guid.Parse("6ad7f2dd-0c03-4bb8-a398-f00f80518f95"), Key = "evaluation.table.num_calls", Locale = "ar", Text = "عدد المكالمات" },
             new TextTranslation { Id = Guid.Parse("a2f1f7ee-f45c-4ca9-a233-ce6197f09d48"), Key = "evaluation.table.status", Locale = "ar", Text = "الحالة" },

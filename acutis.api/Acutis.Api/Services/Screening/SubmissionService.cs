@@ -90,6 +90,13 @@ public sealed class SubmissionService : ISubmissionService
             submission.CompletedAt = null;
         }
 
+        await ApplyAdmissionScreeningLifecycleAsync(
+            request.SubjectType,
+            request.SubjectId,
+            markCompleted: false,
+            now,
+            cancellationToken);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return submission;
     }
@@ -126,6 +133,13 @@ public sealed class SubmissionService : ISubmissionService
         submission.UpdatedAt = now;
         submission.CompletedAt = now;
 
+        await ApplyAdmissionScreeningLifecycleAsync(
+            request.SubjectType,
+            request.SubjectId,
+            markCompleted: true,
+            now,
+            cancellationToken);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return submission;
     }
@@ -157,5 +171,65 @@ public sealed class SubmissionService : ISubmissionService
                 submission.SubjectId == subjectId &&
                 submission.Status == "in_progress",
             cancellationToken);
+    }
+
+    private async Task ApplyAdmissionScreeningLifecycleAsync(
+        string subjectType,
+        string? subjectId,
+        bool markCompleted,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        if (!string.Equals(subjectType, "admission", StringComparison.OrdinalIgnoreCase) ||
+            !Guid.TryParse(subjectId, out var caseId))
+        {
+            return;
+        }
+
+        var residentCase = await _dbContext.ResidentCases.FirstOrDefaultAsync(
+            entity => entity.Id == caseId,
+            cancellationToken);
+
+        if (residentCase is null)
+        {
+            return;
+        }
+
+        residentCase.LastContactAtUtc = now;
+
+        if (!residentCase.ScreeningStartedAtUtc.HasValue)
+        {
+            residentCase.ScreeningStartedAtUtc = now;
+        }
+
+        if (string.Equals(residentCase.CasePhase, "intake", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(residentCase.CasePhase, "referral", StringComparison.OrdinalIgnoreCase))
+        {
+            residentCase.CasePhase = markCompleted ? "admission_decision" : "screening";
+        }
+        else if (markCompleted && string.Equals(residentCase.CasePhase, "screening", StringComparison.OrdinalIgnoreCase))
+        {
+            residentCase.CasePhase = "admission_decision";
+        }
+
+        if (!markCompleted)
+        {
+            if (string.Equals(residentCase.CaseStatus, "referred", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(residentCase.CaseStatus, "referral_received", StringComparison.OrdinalIgnoreCase))
+            {
+                residentCase.CaseStatus = "screening_in_progress";
+            }
+
+            return;
+        }
+
+        residentCase.ScreeningCompletedAtUtc = now;
+
+        if (string.Equals(residentCase.CaseStatus, "referred", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(residentCase.CaseStatus, "referral_received", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(residentCase.CaseStatus, "screening_in_progress", StringComparison.OrdinalIgnoreCase))
+        {
+            residentCase.CaseStatus = "screening_completed";
+        }
     }
 }

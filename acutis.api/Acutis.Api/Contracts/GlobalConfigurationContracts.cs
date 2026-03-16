@@ -9,6 +9,8 @@ public sealed class CentreConfigurationDto
     public string BrandName { get; set; } = string.Empty;
     public string BrandSubtitle { get; set; } = string.Empty;
     public string BrandLogoUrl { get; set; } = string.Empty;
+    public string BrowserTitle { get; set; } = string.Empty;
+    public string FaviconUrl { get; set; } = string.Empty;
     public string ThemeKey { get; set; } = string.Empty;
     public int DisplayOrder { get; set; }
     public int UnitCount { get; set; }
@@ -23,6 +25,8 @@ public sealed class UpsertCentreRequest
     public string BrandName { get; set; } = string.Empty;
     public string BrandSubtitle { get; set; } = string.Empty;
     public string BrandLogoUrl { get; set; } = string.Empty;
+    public string BrowserTitle { get; set; } = string.Empty;
+    public string FaviconUrl { get; set; } = string.Empty;
     public string ThemeKey { get; set; } = string.Empty;
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; } = true;

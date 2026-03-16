@@ -2,6 +2,7 @@ using Acutis.Api.Security;
 using Acutis.Api.Services.Configuration;
 using Acutis.Api.Services.Forms;
 using Acutis.Api.Services.GroupTherapy;
+using Acutis.Api.Services.Incidents;
 using Acutis.Api.Services.Lookups;
 using Acutis.Api.Services.MediaPlayer;
 using Acutis.Api.Services.Policy;
@@ -44,6 +45,7 @@ builder.Services.AddScoped<IGlobalConfigurationService, GlobalConfigurationServi
 builder.Services.AddScoped<IFormConfigurationService, FormConfigurationService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IGroupTherapyService, GroupTherapyService>();
+builder.Services.AddScoped<IIncidentService, IncidentService>();
 builder.Services.AddScoped<IResidentService, ResidentService>();
 builder.Services.AddScoped<IUnitOperationsService, UnitOperationsService>();
 builder.Services.AddScoped<IAuditService, AuditService>();

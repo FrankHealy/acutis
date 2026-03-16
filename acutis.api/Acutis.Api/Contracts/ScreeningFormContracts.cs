@@ -49,12 +49,27 @@ public sealed class UiLayoutDto
     public required Dictionary<string, string> Widgets { get; set; }
     public required Dictionary<string, string> LabelKeys { get; set; }
     public required Dictionary<string, string> HelpKeys { get; set; }
+    public Dictionary<string, List<UiSelectOptionDto>>? SelectOptions { get; set; }
 }
 
 public sealed class UiSectionDto
 {
     public required string TitleKey { get; set; }
     public required List<string> Items { get; set; }
+    public List<UiGroupDto>? Groups { get; set; }
+}
+
+public sealed class UiGroupDto
+{
+    public string? TitleKey { get; set; }
+    public string? Title { get; set; }
+    public required List<string> Items { get; set; }
+}
+
+public sealed class UiSelectOptionDto
+{
+    public required string Value { get; set; }
+    public required string Label { get; set; }
 }
 
 public sealed class RuleDto

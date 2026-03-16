@@ -8,6 +8,7 @@ public sealed class ResidentCase
     public Guid? UnitId { get; set; }
     public string CaseStatus { get; set; } = "referred";
     public string CasePhase { get; set; } = "intake";
+    public string? IntakeSource { get; set; }
     public string? ReferralSource { get; set; }
     public string? ReferralReference { get; set; }
     public DateTime? ReferralReceivedAtUtc { get; set; }

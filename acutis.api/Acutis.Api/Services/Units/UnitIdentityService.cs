@@ -83,6 +83,8 @@ public sealed class UnitIdentityService : IUnitIdentityService
         BrandName = unit.Centre.BrandName,
         BrandSubtitle = unit.Centre.BrandSubtitle,
         BrandLogoUrl = unit.Centre.BrandLogoUrl,
+        BrowserTitle = unit.Centre.BrowserTitle,
+        FaviconUrl = unit.Centre.FaviconUrl,
         ThemeKey = unit.Centre.ThemeKey,
         UnitCapacity = unit.Capacity,
         CurrentOccupancy = unit.CurrentOccupancy,

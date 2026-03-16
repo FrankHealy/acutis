@@ -16,6 +16,8 @@ public sealed class CentreConfiguration : IEntityTypeConfiguration<Centre>
         builder.Property(x => x.BrandName).HasMaxLength(200).IsRequired();
         builder.Property(x => x.BrandSubtitle).HasMaxLength(300).IsRequired();
         builder.Property(x => x.BrandLogoUrl).HasMaxLength(500).IsRequired();
+        builder.Property(x => x.BrowserTitle).HasMaxLength(200).IsRequired();
+        builder.Property(x => x.FaviconUrl).HasMaxLength(500).IsRequired();
         builder.Property(x => x.ThemeKey).HasMaxLength(50).IsRequired();
         builder.Property(x => x.DisplayOrder).IsRequired();
         builder.Property(x => x.IsActive).IsRequired();

@@ -10,6 +10,8 @@ public sealed class ResidentListItemDto
     public int? EntryYear { get; set; }
     public int? EntryWeek { get; set; }
     public int? EntrySequence { get; set; }
+    public string? ProgrammeType { get; set; }
+    public string? ParticipationMode { get; set; }
     public string? CaseStatus { get; set; }
     public string Psn { get; set; } = string.Empty;
     public Guid? UnitGuid { get; set; }

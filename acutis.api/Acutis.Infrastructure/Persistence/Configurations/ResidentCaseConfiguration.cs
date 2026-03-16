@@ -13,6 +13,7 @@ public sealed class ResidentCaseConfiguration : IEntityTypeConfiguration<Residen
 
         builder.Property(x => x.CaseStatus).HasMaxLength(40).IsRequired();
         builder.Property(x => x.CasePhase).HasMaxLength(40).IsRequired();
+        builder.Property(x => x.IntakeSource).HasMaxLength(40);
         builder.Property(x => x.ReferralSource).HasMaxLength(120);
         builder.Property(x => x.ReferralReference).HasMaxLength(120);
         builder.Property(x => x.ReferralReceivedAtUtc).HasColumnType("datetime2");

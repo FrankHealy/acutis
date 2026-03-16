@@ -79,6 +79,8 @@ public sealed class ResidentService : IResidentService
                     x.EntryYear,
                     x.EntryWeek,
                     x.EntrySequence,
+                    x.ProgrammeType,
+                    x.ParticipationMode,
                     x.RoomNumber,
                     x.ExpectedCompletionDate,
                     x.PrimaryAddiction
@@ -149,6 +151,8 @@ public sealed class ResidentService : IResidentService
                 EntryYear = episode?.EntryYear,
                 EntryWeek = episode?.EntryWeek,
                 EntrySequence = episode?.EntrySequence,
+                ProgrammeType = episode?.ProgrammeType.ToString(),
+                ParticipationMode = episode?.ParticipationMode.ToString(),
                 CaseStatus = episodeCaseStatus,
                 Psn = resident.Psn?.Trim() ?? string.Empty,
                 UnitGuid = currentUnitGuid,

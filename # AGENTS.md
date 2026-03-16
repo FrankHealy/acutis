@@ -161,27 +161,7 @@ Rules:
 - avoid arbitrary web-only layout semantics in schema
 - do not introduce schema constructs that Web can render but RN cannot reasonably render
 
-### Migration rules for this refactor
 
-Treat any supplied manual migration as a draft target, not guaranteed truth.
-
-Your job is to:
-
-1. align entities and DbContext with the intended lifecycle model
-2. generate or repair the EF migration properly
-3. ensure EF discovers the migration
-4. ensure database update succeeds
-5. only then report migration work as complete
-
-For this task, migration work is only complete when:
-
-- `dotnet build Acutis.slnx` passes
-- `dotnet ef migrations list --project Acutis.Infrastructure --startup-project Acutis.Api` shows the migration
-- `dotnet ef database update --project Acutis.Infrastructure --startup-project Acutis.Api` succeeds
-
-If assumptions are needed, document them.
-If ambiguity remains around destructive drops, stop and update `c:\Acutis\docs\acutis-refactor-questions.md`.
-Create that file if it does not already exist.
 ## Addendum
 Resident is identity only.
 Operational lifecycle data must come from ResidentProgrammeEpisode.
