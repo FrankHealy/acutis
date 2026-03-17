@@ -1,11 +1,5 @@
 "use client";
 
-/**
- * ElementsLibraryPanel.tsx
- * Floating sidebar panel with drag & drop elements
- * Integrates with FormDesigner
- */
-
 import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -49,12 +43,14 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
   const [loading, setLoading] = useState(!providedLibrary && isOpen);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [draggedElement, setDraggedElement] = useState<LibraryElement | null>(null);
 
   useEffect(() => {
     if (providedLibrary) {
       setLibrary(providedLibrary);
-      setSelectedCategory(providedLibrary[0]?.id ?? null);
+      setSelectedCategory((current) => current ?? providedLibrary[0]?.id ?? null);
       setLoading(false);
       return;
     }
@@ -122,24 +118,56 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
     setDraggedElement(null);
   };
 
+  const availableElementTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          library.flatMap((category) =>
+            category.elements.flatMap((element) => element.fields.map((field) => field.elementType))
+          )
+        )
+      ).sort((a, b) => a.localeCompare(b)),
+    [library]
+  );
+
   const filteredLibrary = library
     .map((category) => ({
       ...category,
-      elements: category.elements.filter(
-        (element) =>
+      elements: category.elements.filter((element) => {
+        const normalizedQuery = searchQuery.toLowerCase();
+        const matchesSearch =
           searchQuery === "" ||
-          element.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          element.description.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
+          element.name.toLowerCase().includes(normalizedQuery) ||
+          element.description.toLowerCase().includes(normalizedQuery) ||
+          element.categoryName.toLowerCase().includes(normalizedQuery) ||
+          element.fields.some((field) => {
+            return (
+              field.label.toLowerCase().includes(normalizedQuery) ||
+              field.fieldName.toLowerCase().includes(normalizedQuery) ||
+              field.elementType.toLowerCase().includes(normalizedQuery) ||
+              (field.canonicalFieldKey ?? "").toLowerCase().includes(normalizedQuery) ||
+              (field.optionSetKey ?? "").toLowerCase().includes(normalizedQuery) ||
+              (field.sourceDocumentReference ?? "").toLowerCase().includes(normalizedQuery)
+            );
+          });
+        const matchesType =
+          typeFilter === "all" || element.fields.some((field) => field.elementType === typeFilter);
+        const matchesSource = sourceFilter === "all" || element.sourceKind === sourceFilter;
+        return matchesSearch && matchesType && matchesSource;
+      }),
     }))
     .filter((category) => category.elements.length > 0);
+
+  useEffect(() => {
+    if (!filteredLibrary.some((category) => category.id === selectedCategory)) {
+      setSelectedCategory(filteredLibrary[0]?.id ?? null);
+    }
+  }, [filteredLibrary, selectedCategory]);
 
   const selectedCategoryData = filteredLibrary.find((cat) => cat.id === selectedCategory);
 
   return (
     <>
-      {/* Overlay removed to keep drop targets visible/interactive */}
-
       <div
         className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
@@ -155,23 +183,49 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
               <X className="h-5 w-5 text-white" />
             </button>
           </div>
-          <p className="text-sm text-blue-100">Drag elements into sections to add fields</p>
+          <p className="text-sm text-blue-100">Browse real library definitions and drag them into the form.</p>
         </div>
 
         <div className="p-4 border-b border-gray-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search elements..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-            />
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search elements..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full rounded-lg border-2 border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+                <option value="all">All types</option>
+                {availableElementTypes.map((elementType) => (
+                  <option key={elementType} value={elementType}>
+                    {elementType}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+                className="w-full rounded-lg border-2 border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+                <option value="all">All sources</option>
+                <option value="canonical">Canonical</option>
+                <option value="json">JSON</option>
+                <option value="unbound">Unbound</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="flex h-[calc(100%-140px)]">
+        <div className="flex h-[calc(100%-176px)]">
           <div className="w-24 bg-gray-50 border-r border-gray-200 overflow-y-auto">
             <div className="p-2 space-y-1">
               {filteredLibrary.map((category) => (
@@ -225,6 +279,9 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
                           <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
                             {element.sourceKind}
                           </span>
+                          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                            {element.categoryName}
+                          </span>
                           {element.canonicalFieldKey && (
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                               {element.canonicalFieldKey}
@@ -234,6 +291,16 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
                             <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
                               {element.optionSetKey}
                             </span>
+                          )}
+                        </div>
+                        <div className="space-y-1 text-[11px] text-gray-500">
+                          <p>
+                            Group: <span className="font-medium text-gray-700">{element.categoryName}</span>
+                          </p>
+                          {element.sourceDocumentReference && (
+                            <p>
+                              Source: <span className="font-medium text-gray-700">{element.sourceDocumentReference}</span>
+                            </p>
                           )}
                         </div>
                       </div>
@@ -248,10 +315,14 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
                           <span>{fieldTypeIcons[field.type] || <FileText size={14} />}</span>
                           <div className="min-w-0 flex-1">
                             <span className="text-gray-700 font-medium">{field.label}</span>
-                            <div className="text-[10px] text-gray-500 truncate">
-                              {field.fieldName} • {field.elementType}
-                              {field.canonicalFieldKey ? ` • ${field.canonicalFieldKey}` : ""}
-                              {field.optionSetKey ? ` • ${field.optionSetKey}` : ""}
+                            <div className="text-[10px] text-gray-500">
+                              <div className="truncate">
+                                {field.fieldName} | {field.elementType} | {field.sourceKind}
+                              </div>
+                              <div className="truncate">
+                                {field.canonicalFieldKey ? `Canonical: ${field.canonicalFieldKey}` : "Canonical: none"}
+                                {field.optionSetKey ? ` | Option set: ${field.optionSetKey}` : ""}
+                              </div>
                             </div>
                           </div>
                           {field.required && <span className="text-red-500">*</span>}

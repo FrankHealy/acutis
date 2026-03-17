@@ -15,7 +15,12 @@ import {
   getScreeningTemplateSectionsFromForm,
   type ScreeningTemplateSection,
 } from './screeningFormLibrary';
-import { elementLibraryService, type LibraryCategory } from '@/services/elementLibraryService';
+import {
+  elementLibraryService,
+  type LibraryCategory,
+  type LibraryElement,
+  type LibraryField,
+} from '@/services/elementLibraryService';
 import {
   getActiveForm,
   createAlcoholScreeningForm,
@@ -47,6 +52,16 @@ interface FormField {
   helpText?: string;
   defaultValue?: string;
   group?: string;
+  sourceKind?: 'canonical' | 'json' | 'unbound';
+  libraryElementType?: string;
+  libraryElementKind?: 'definition' | 'group';
+  libraryDefinitionId?: string;
+  libraryElementId?: string;
+  libraryElementName?: string;
+  libraryGroupName?: string;
+  canonicalFieldKey?: string | null;
+  optionSetKey?: string | null;
+  sourceDocumentReference?: string | null;
 }
 
 interface FormSection {
@@ -229,6 +244,19 @@ const getWidgetType = (field: FormField): string => {
   }
 };
 
+const getSourceKindBadgeClasses = (sourceKind?: FormField["sourceKind"]): string => {
+  switch (sourceKind) {
+    case "canonical":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "json":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+    case "unbound":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    default:
+      return "border-gray-200 bg-gray-50 text-gray-600";
+  }
+};
+
 const getSchemaProperty = (field: FormField): JsonSchemaPropertyDto => {
   const fieldDataType = field.dataType ?? 'string';
   const schemaType: JsonSchemaPropertyDto["type"] =
@@ -280,6 +308,46 @@ const getSchemaProperty = (field: FormField): JsonSchemaPropertyDto => {
 const cloneTemplateField = (field: Omit<FormField, 'id'> & { id?: string }): FormField => ({
   ...field,
   id: `field-${Date.now()}-${Math.random()}`,
+});
+
+const createLibraryInstanceField = (
+  field: LibraryField,
+  element: Pick<LibraryElement, "id" | "name" | "kind" | "categoryName">
+): FormField => ({
+  id: `field-${Date.now()}-${Math.random()}`,
+  fieldName: field.fieldName || field.id,
+  label: field.label,
+  type: field.type,
+  dataType:
+    field.type === "number"
+      ? "number"
+      : field.type === "checkbox"
+        ? "boolean"
+        : field.type === "date"
+          ? "date"
+          : field.type === "email"
+            ? "email"
+            : field.type === "phone" || field.type === "tel"
+              ? "phone"
+              : field.type === "textarea"
+                ? "text"
+                : "string",
+  required: field.required,
+  placeholder: field.placeholder,
+  options: field.options,
+  validation: field.validation,
+  helpText: field.helpText,
+  defaultValue: field.defaultValue,
+  sourceKind: field.sourceKind,
+  libraryElementType: field.elementType,
+  libraryElementKind: element.kind,
+  libraryDefinitionId: field.id,
+  libraryElementId: element.id,
+  libraryElementName: element.name,
+  libraryGroupName: element.categoryName,
+  canonicalFieldKey: field.canonicalFieldKey ?? null,
+  optionSetKey: field.optionSetKey ?? null,
+  sourceDocumentReference: field.sourceDocumentReference ?? null,
 });
 
 const buildSectionFromTemplate = (section: ScreeningTemplateSection): FormSection => ({
@@ -527,8 +595,8 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
     setSelectedField(newField.id);
   };
 
-  const addBoundElementField = (sectionId: string, field: FormField) => {
-    const newField: FormField = cloneTemplateField(field);
+  const addBoundElementField = (sectionId: string, field: LibraryField, element: LibraryElement) => {
+    const newField = createLibraryInstanceField(field, element);
 
     setSections(prev =>
       prev.map(section => {
@@ -609,27 +677,14 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
     );
   };
 
-  const addFieldsFromElement = (element: any, sectionId: string) => {
+  const addFieldsFromElement = (element: LibraryElement, sectionId: string) => {
     if (!element || !Array.isArray(element.fields)) {
       return;
     }
+    const newFields = element.fields.map((field) => createLibraryInstanceField(field, element));
     setSections(prev =>
       prev.map(section => {
         if (section.id === sectionId) {
-          const newFields = element.fields.map((field: any) => ({
-            id: `field-${Date.now()}-${Math.random()}`,
-            fieldName: field.fieldName || field.id,
-            label: field.label,
-            type: field.type,
-            dataType: field.dataType,
-            required: field.required,
-            placeholder: field.placeholder,
-            options: field.options,
-            validation: field.validation,
-            helpText: field.helpText,
-            defaultValue: field.defaultValue
-          }));
-
           return {
             ...section,
             fields: [...section.fields, ...newFields]
@@ -638,6 +693,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
         return section;
       })
     );
+    setSelectedField(newFields[0]?.id ?? null);
   };
 
   const handleDragOver = (e: React.DragEvent, sectionId: string) => {
@@ -1100,7 +1156,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                                   element.fields.map((field) => (
                                     <button
                                       key={`${element.id}-${field.fieldName}`}
-                                      onClick={() => addBoundElementField(selectedSection!, field)}
+                                      onClick={() => addBoundElementField(selectedSection!, field, element)}
                                       className="flex items-center justify-between px-3 py-2 rounded-lg border border-blue-200 bg-white hover:bg-blue-100 transition-colors text-left"
                                     >
                                       <div>
@@ -1164,6 +1220,23 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                                       <span className="text-red-500 font-bold">*</span>
                                     )}
                                   </div>
+                                  {field.sourceKind && (
+                                    <div className="mb-2 flex flex-wrap gap-1.5">
+                                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${getSourceKindBadgeClasses(field.sourceKind)}`}>
+                                        {field.sourceKind}
+                                      </span>
+                                      {field.libraryElementType && (
+                                        <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-semibold text-gray-700">
+                                          {field.libraryElementType}
+                                        </span>
+                                      )}
+                                      {field.libraryGroupName && (
+                                        <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                          {field.libraryGroupName}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                   <div className="text-sm text-gray-600 space-y-1">
                                     <p>Type: <span className="font-medium">{field.type}</span></p>
                                     {field.dataType && (
@@ -1183,6 +1256,15 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                                     )}
                                     {field.placeholder && (
                                       <p>Placeholder: <span className="italic">{field.placeholder}</span></p>
+                                    )}
+                                    {field.canonicalFieldKey && (
+                                      <p>Canonical Field: <span className="font-medium">{field.canonicalFieldKey}</span></p>
+                                    )}
+                                    {field.optionSetKey && (
+                                      <p>Option Set: <span className="font-medium">{field.optionSetKey}</span></p>
+                                    )}
+                                    {field.sourceDocumentReference && (
+                                      <p>Source Document: <span className="font-medium">{field.sourceDocumentReference}</span></p>
                                     )}
                                   </div>
                                 </div>
@@ -1253,6 +1335,39 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
               <h3 className="text-lg font-bold text-gray-900 mb-6">Field Properties</h3>
               
               <div className="space-y-6">
+                {selectedFieldData.sourceKind && (
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${getSourceKindBadgeClasses(selectedFieldData.sourceKind)}`}>
+                        {selectedFieldData.sourceKind}
+                      </span>
+                      {selectedFieldData.libraryElementType && (
+                        <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-gray-700">
+                          {selectedFieldData.libraryElementType}
+                        </span>
+                      )}
+                      {selectedFieldData.libraryGroupName && (
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                          {selectedFieldData.libraryGroupName}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1 text-xs text-gray-700">
+                      <p>Library element: <span className="font-semibold">{selectedFieldData.libraryElementName || "Library definition"}</span></p>
+                      <p>Form instance field: <span className="font-semibold">{selectedFieldData.fieldName}</span></p>
+                      {selectedFieldData.canonicalFieldKey && (
+                        <p>Canonical field key: <span className="font-semibold">{selectedFieldData.canonicalFieldKey}</span></p>
+                      )}
+                      {selectedFieldData.optionSetKey && (
+                        <p>Option set key: <span className="font-semibold">{selectedFieldData.optionSetKey}</span></p>
+                      )}
+                      {selectedFieldData.sourceDocumentReference && (
+                        <p>Source document: <span className="font-semibold">{selectedFieldData.sourceDocumentReference}</span></p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Basic Properties */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Label</label>

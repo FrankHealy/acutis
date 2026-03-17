@@ -32,6 +32,7 @@ export type LibraryElement = {
   name: string;
   description: string;
   category: string;
+  categoryName: string;
   kind: "definition" | "group";
   sourceKind: "canonical" | "json" | "unbound";
   canonicalFieldKey?: string | null;
@@ -174,6 +175,7 @@ const mapGroupToCategory = (group: ElementGroupDto): LibraryCategory => {
       name: definition.label,
       description: definition.description ?? "Reusable library element.",
       category: group.key,
+      categoryName: group.name,
       kind: "definition",
       sourceKind: definition.sourceKind,
       canonicalFieldKey: definition.canonicalFieldKey ?? null,
@@ -193,6 +195,7 @@ const mapGroupToCategory = (group: ElementGroupDto): LibraryCategory => {
     name: `${group.name} Pack`,
     description: group.description ?? `Reusable element group for ${group.name}.`,
     category: group.key,
+    categoryName: group.name,
     kind: "group",
     sourceKind: packFields.every((field) => field.sourceKind === "canonical")
       ? "canonical"
