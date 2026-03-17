@@ -17,13 +17,16 @@ public sealed class ConfigurationController : ControllerBase
     private const string SurveyFormPrefix = "survey_";
 
     private readonly IFormConfigurationService _formConfigurationService;
+    private readonly IElementLibraryService _elementLibraryService;
     private readonly IGlobalConfigurationService _globalConfigurationService;
 
     public ConfigurationController(
         IFormConfigurationService formConfigurationService,
+        IElementLibraryService elementLibraryService,
         IGlobalConfigurationService globalConfigurationService)
     {
         _formConfigurationService = formConfigurationService;
+        _elementLibraryService = elementLibraryService;
         _globalConfigurationService = globalConfigurationService;
     }
 
@@ -236,6 +239,12 @@ public sealed class ConfigurationController : ControllerBase
     {
         return await Execute(async () =>
             await _formConfigurationService.GetVersionsAsync(formCode, cancellationToken));
+    }
+
+    [HttpGet("elements-library")]
+    public async Task<ActionResult<ElementLibraryResponseDto>> GetElementsLibrary(CancellationToken cancellationToken = default)
+    {
+        return Ok(await _elementLibraryService.GetLibraryAsync(cancellationToken));
     }
 
     [HttpGet("units")]

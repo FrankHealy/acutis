@@ -11,13 +11,11 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import ElementsLibraryPanel from './ElementsLibraryPanel';
 import {
-  getFallbackScreeningElementsLibrary,
   getFallbackScreeningTemplateSections,
-  getScreeningElementsLibraryFromForm,
   getScreeningTemplateSectionsFromForm,
-  type LibraryCategory,
   type ScreeningTemplateSection,
 } from './screeningFormLibrary';
+import { elementLibraryService, type LibraryCategory } from '@/services/elementLibraryService';
 import {
   getActiveForm,
   createAlcoholScreeningForm,
@@ -405,8 +403,8 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
   const [sections, setSections] = useState<FormSection[]>(
     isScreeningForm ? createDefaultScreeningSections() : createDefaultAdmissionSections()
   );
-  const [screeningLibrary, setScreeningLibrary] = useState<LibraryCategory[]>(getFallbackScreeningElementsLibrary());
-  const [isLoadingScreeningLibrary, setIsLoadingScreeningLibrary] = useState(false);
+  const [library, setLibrary] = useState<LibraryCategory[]>([]);
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
 
   useEffect(() => {
     const nextSections = isScreeningForm ? createDefaultScreeningSections() : createDefaultAdmissionSections();
@@ -418,8 +416,6 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
   useEffect(() => {
     const loadScreeningConfiguration = async () => {
       if (!isScreeningForm) {
-        setScreeningLibrary(getFallbackScreeningElementsLibrary());
-        setIsLoadingScreeningLibrary(false);
         return;
       }
 
@@ -428,13 +424,10 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
         const fallbackSections = createDefaultScreeningSections();
         setSections(fallbackSections);
         setSelectedSection(fallbackSections[0]?.id ?? null);
-        setScreeningLibrary(getFallbackScreeningElementsLibrary());
-        setIsLoadingScreeningLibrary(false);
         return;
       }
 
       try {
-        setIsLoadingScreeningLibrary(true);
         const response = await getActiveForm(accessToken, 'en-IE', 'anonymous_call', null, 'alcohol_screening_call');
         const activeForm = localizeFormDefinition(response.form as FormDefinitionDto, response.translations ?? {});
         const loadedSections = getScreeningTemplateSectionsFromForm(activeForm).map((section) => buildSectionFromTemplate(section));
@@ -443,21 +436,40 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
         setSelectedField(null);
         setFormName(activeForm.titleKey || 'Alcohol Screening Form');
         setFormVersion(activeForm.version);
-        setScreeningLibrary(getScreeningElementsLibraryFromForm(activeForm));
       } catch (error) {
         console.error('Failed to load active screening form configuration:', error);
         const fallbackSections = createDefaultScreeningSections();
         setSections(fallbackSections);
         setSelectedSection(fallbackSections[0]?.id ?? null);
         setSelectedField(null);
-        setScreeningLibrary(getFallbackScreeningElementsLibrary());
-      } finally {
-        setIsLoadingScreeningLibrary(false);
       }
     };
 
     void loadScreeningConfiguration();
   }, [isScreeningForm, session?.accessToken]);
+
+  useEffect(() => {
+    const loadLibrary = async () => {
+      const accessToken = session?.accessToken;
+      if (!accessToken) {
+        setLibrary([]);
+        setIsLoadingLibrary(false);
+        return;
+      }
+
+      try {
+        setIsLoadingLibrary(true);
+        setLibrary(await elementLibraryService.getLibrary(accessToken));
+      } catch (error) {
+        console.error("Failed to load element library:", error);
+        setLibrary([]);
+      } finally {
+        setIsLoadingLibrary(false);
+      }
+    };
+
+    void loadLibrary();
+  }, [session?.accessToken]);
 
   const fieldTypes = [
     { value: 'text', label: 'Text Input', icon: Type },
@@ -1075,9 +1087,9 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                   <div className="p-6 space-y-4">
                     {isScreeningForm && (
                       <div className="border border-blue-100 bg-blue-50 rounded-xl p-4">
-                        <p className="text-sm font-semibold text-blue-900 mb-3">Bound Elements Catalog (HSE Screening)</p>
+                        <p className="text-sm font-semibold text-blue-900 mb-3">Library Elements Catalog</p>
                         <div className="space-y-4">
-                          {screeningLibrary.map((category) => (
+                          {library.map((category) => (
                             <div key={category.id}>
                               <div className="mb-2">
                                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-800">{category.name}</p>
@@ -1093,7 +1105,10 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                                     >
                                       <div>
                                         <p className="text-sm font-semibold text-gray-900">{field.label}</p>
-                                        <p className="text-xs text-gray-500">{field.group || category.name}</p>
+                                        <p className="text-xs text-gray-500">{category.name} • {field.sourceKind}</p>
+                                        <p className="text-[11px] text-blue-700">
+                                          {field.canonicalFieldKey || field.optionSetKey || field.sourceDocumentReference || "library"}
+                                        </p>
                                       </div>
                                       <Plus className="h-4 w-4 text-blue-700" />
                                     </button>
@@ -1603,8 +1618,8 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         onElementDrop={addFieldsFromElement}
-        library={isScreeningForm ? screeningLibrary : undefined}
-        isLoadingLibrary={isScreeningForm ? isLoadingScreeningLibrary : false}
+        library={library}
+        isLoadingLibrary={isLoadingLibrary}
       />
     </div>
   );

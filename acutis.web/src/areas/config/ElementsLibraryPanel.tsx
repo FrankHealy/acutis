@@ -27,28 +27,9 @@ import {
   X,
 } from "lucide-react";
 import {
-  getFallbackScreeningElementsLibrary,
   type LibraryCategory,
   type LibraryElement,
-} from "./screeningFormLibrary";
-
-interface FormField {
-  id: string;
-  fieldName: string;
-  label: string;
-  type: "text" | "number" | "date" | "select" | "checkbox" | "textarea" | "email" | "phone" | "file" | "tel";
-  required: boolean;
-  placeholder?: string;
-  options?: string[];
-  validation?: {
-    min?: number;
-    max?: number;
-    pattern?: string;
-    customMessage?: string;
-  };
-  helpText?: string;
-  defaultValue?: string;
-}
+} from "@/services/elementLibraryService";
 
 interface ElementsLibraryPanelProps {
   isOpen: boolean;
@@ -86,17 +67,10 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
 
   const fetchLibrary = async () => {
     try {
-      const response = await fetch("/api/elements-library");
-      const data = await response.json();
-      setLibrary(data.categories || []);
-      if (data.categories?.length > 0) {
-        setSelectedCategory(data.categories[0].id);
-      }
+      setLibrary([]);
+      setSelectedCategory(null);
     } catch (error) {
       console.error("Failed to fetch elements library:", error);
-      const fallbackLibrary = getFallbackScreeningElementsLibrary();
-      setLibrary(fallbackLibrary);
-      setSelectedCategory(fallbackLibrary[0]?.id ?? null);
     } finally {
       setLoading(false);
     }
@@ -244,6 +218,24 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-900 text-sm mb-1">{element.name}</h4>
                         <p className="text-xs text-gray-500 mb-2">{element.description}</p>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+                            {element.kind}
+                          </span>
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                            {element.sourceKind}
+                          </span>
+                          {element.canonicalFieldKey && (
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                              {element.canonicalFieldKey}
+                            </span>
+                          )}
+                          {element.optionSetKey && (
+                            <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                              {element.optionSetKey}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
                         {element.fields.length}
@@ -254,7 +246,14 @@ const ElementsLibraryPanel: React.FC<ElementsLibraryPanelProps> = ({
                       {element.fields.map((field, idx) => (
                         <div key={idx} className="flex items-center space-x-2 text-xs bg-gray-50 rounded p-2">
                           <span>{fieldTypeIcons[field.type] || <FileText size={14} />}</span>
-                          <span className="text-gray-700 font-medium">{field.label}</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-gray-700 font-medium">{field.label}</span>
+                            <div className="text-[10px] text-gray-500 truncate">
+                              {field.fieldName} • {field.elementType}
+                              {field.canonicalFieldKey ? ` • ${field.canonicalFieldKey}` : ""}
+                              {field.optionSetKey ? ` • ${field.optionSetKey}` : ""}
+                            </div>
+                          </div>
                           {field.required && <span className="text-red-500">*</span>}
                         </div>
                       ))}

@@ -413,6 +413,8 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<ScreeningControl> ScreeningControls => Set<ScreeningControl>();
     public DbSet<Resident> Residents => Set<Resident>();
     public DbSet<ResidentPreviousTreatment> ResidentPreviousTreatments => Set<ResidentPreviousTreatment>();
+    public DbSet<ElementGroup> ElementGroups => Set<ElementGroup>();
+    public DbSet<ElementDefinition> ElementDefinitions => Set<ElementDefinition>();
     public DbSet<GroupTherapySubjectTemplate> GroupTherapySubjectTemplates => Set<GroupTherapySubjectTemplate>();
     public DbSet<GroupTherapyDailyQuestion> GroupTherapyDailyQuestions => Set<GroupTherapyDailyQuestion>();
     public DbSet<GroupTherapyResidentRemark> GroupTherapyResidentRemarks => Set<GroupTherapyResidentRemark>();
@@ -677,6 +679,8 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new AppRolePermissionConfiguration());
         modelBuilder.ApplyConfiguration(new AppUserRoleAssignmentConfiguration());
         modelBuilder.ApplyConfiguration(new CentreConfiguration());
+        modelBuilder.ApplyConfiguration(new ElementGroupConfiguration());
+        modelBuilder.ApplyConfiguration(new ElementDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapySubjectTemplateConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyDailyQuestionConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyResidentRemarkConfiguration());
@@ -708,6 +712,7 @@ public sealed class AcutisDbContext : DbContext
         SeedResidents(modelBuilder);
         SeedAuthorizationModel(modelBuilder);
         SeedScreeningControls(modelBuilder);
+        SeedElementLibrary(modelBuilder);
         SeedGroupTherapyProgram(modelBuilder);
         SeedGroupTherapyRemarks(modelBuilder);
         SeedTherapyTopics(modelBuilder);
@@ -1958,6 +1963,341 @@ public sealed class AcutisDbContext : DbContext
         });
 
         modelBuilder.Entity<GroupTherapyResidentRemark>().HasData(seededRemarks);
+    }
+
+    private static void SeedElementLibrary(ModelBuilder modelBuilder)
+    {
+        var createdAt = SeedCreatedAt;
+        var groups = BuildRealHseElementGroups(createdAt);
+        var definitions = BuildRealHseElementDefinitions(groups, createdAt);
+
+        modelBuilder.Entity<ElementGroup>().HasData(groups);
+        modelBuilder.Entity<ElementDefinition>().HasData(definitions);
+    }
+
+    private static ElementGroup[] BuildRealHseElementGroups(DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementGroup("consent_confidentiality", "Consent and Confidentiality", "HSE consent, confidentiality, additional consent, and service-user signature elements derived from AF Printed Pages 1 to 5.", "AF Printed Page 1-5.html", 1, createdAtUtc),
+            CreateElementGroup("intake_admin_identity", "Intake / Admin Identity", "Admission and intake identity, referral, contact, and administration elements derived from AF Printed Pages 6 and 7.", "AF Printed Page 6-7.html", 2, createdAtUtc),
+            CreateElementGroup("substance_use_alcohol_treatment_history", "Substance Use / Alcohol / Treatment History", "Substance, gambling, family history, alcohol treatment, and harm-reduction elements derived from AF Printed Pages 9 to 11.", "AF Printed Page 9-11.html", 3, createdAtUtc),
+            CreateElementGroup("physical_health", "Physical Health", "Physical health and screening access elements derived from AF Printed Page 12.", "AF Printed Page 12.html", 4, createdAtUtc),
+            CreateElementGroup("sexual_wellbeing", "Sexual Wellbeing", "Sexual orientation and sexual wellbeing elements derived from AF Printed Pages 6 and 13.", "AF Printed Page 6,13.html", 5, createdAtUtc),
+            CreateElementGroup("mental_health", "Mental Health", "Mental health consent and assessment elements derived from AF Printed Pages 3 and 13.", "AF Printed Page 3,13.html", 6, createdAtUtc),
+            CreateElementGroup("domestic_violence_justice_health_safety", "Domestic Violence / Justice / Health and Safety", "Safeguarding, justice, and service safety elements derived from AF Printed Page 14.", "AF Printed Page 14.html", 7, createdAtUtc),
+            CreateElementGroup("happiness_scale", "Happiness Scale", "HSE happiness scale matrix derived from AF Printed Page 15.", "AF Printed Page 15.html", 8, createdAtUtc),
+            CreateElementGroup("assessor_actions_required", "Assessor Actions Required", "Post-assessment action checklist and follow-up elements derived from AF Printed Page 15.", "AF Printed Page 15.html", 9, createdAtUtc)
+        };
+    }
+
+    private static ElementDefinition[] BuildRealHseElementDefinitions(ElementGroup[] groups, DateTime createdAtUtc)
+    {
+        var groupByKey = groups.ToDictionary(group => group.Key, StringComparer.Ordinal);
+
+        return BuildConsentDefinitions(groupByKey["consent_confidentiality"], createdAtUtc)
+            .Concat(BuildIdentityDefinitions(groupByKey["intake_admin_identity"], createdAtUtc))
+            .Concat(BuildSubstanceDefinitions(groupByKey["substance_use_alcohol_treatment_history"], createdAtUtc))
+            .Concat(BuildPhysicalHealthDefinitions(groupByKey["physical_health"], createdAtUtc))
+            .Concat(BuildSexualWellbeingDefinitions(groupByKey["sexual_wellbeing"], createdAtUtc))
+            .Concat(BuildMentalHealthDefinitions(groupByKey["mental_health"], createdAtUtc))
+            .Concat(BuildSafetyDefinitions(groupByKey["domestic_violence_justice_health_safety"], createdAtUtc))
+            .Concat(BuildHappinessScaleDefinitions(groupByKey["happiness_scale"], createdAtUtc))
+            .Concat(BuildAssessorActionDefinitions(groupByKey["assessor_actions_required"], createdAtUtc))
+            .ToArray();
+    }
+
+    private static ElementGroup CreateElementGroup(
+        string key,
+        string name,
+        string description,
+        string sourceReference,
+        int displayOrder,
+        DateTime createdAtUtc) => new()
+    {
+        Id = CreateDeterministicGuid($"element-group:{key}"),
+        Key = key,
+        Name = name,
+        Description = description,
+        SourceDocumentReference = sourceReference,
+        Version = 1,
+        Status = "published",
+        DisplayOrder = displayOrder,
+        IsActive = true,
+        CreatedAtUtc = createdAtUtc,
+        UpdatedAtUtc = createdAtUtc
+    };
+
+    private static string BuildElementFieldConfig(
+        bool required = false,
+        string? placeholder = null,
+        string? defaultValue = null,
+        int? min = null,
+        int? max = null,
+        string? pattern = null,
+        string? customMessage = null,
+        IEnumerable<(string Value, string Label)>? options = null)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(new
+        {
+            required,
+            placeholder,
+            defaultValue,
+            validation = (min.HasValue || max.HasValue || !string.IsNullOrWhiteSpace(pattern) || !string.IsNullOrWhiteSpace(customMessage))
+                ? new { min, max, pattern, customMessage }
+                : null,
+            options = options?.Select(option => new { value = option.Value, label = option.Label }).ToArray() ?? Array.Empty<object>()
+        });
+    }
+
+    private static ElementDefinition CreateElementDefinition(
+        ElementGroup group,
+        string key,
+        string label,
+        string elementType,
+        string sourceKind,
+        string sourceReference,
+        int displayOrder,
+        DateTime createdAtUtc,
+        string? description = null,
+        string? helpText = null,
+        string? canonicalFieldKey = null,
+        string? optionSetKey = null,
+        string? fieldConfigJson = null) => new()
+    {
+        Id = CreateDeterministicGuid($"element-definition:{key}"),
+        GroupId = group.Id,
+        Key = key,
+        Label = label,
+        Description = description,
+        HelpText = helpText,
+        ElementType = elementType,
+        SourceKind = sourceKind,
+        CanonicalFieldKey = canonicalFieldKey,
+        OptionSetKey = optionSetKey,
+        SourceDocumentReference = sourceReference,
+        FieldConfigJson = fieldConfigJson ?? BuildElementFieldConfig(),
+        Version = 1,
+        Status = "published",
+        DisplayOrder = displayOrder,
+        IsActive = true,
+        CreatedAtUtc = createdAtUtc,
+        UpdatedAtUtc = createdAtUtc
+    };
+
+    private static IEnumerable<ElementDefinition> BuildConsentDefinitions(ElementGroup group, DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementDefinition(group, "assessment_completion_status", "Comprehensive Assessment Completed", "yes-no", "json", "AF Printed Page 1.html", 1, createdAtUtc, "Records whether the comprehensive assessment is completed.", fieldConfigJson: BuildElementFieldConfig(required: true)),
+            CreateElementDefinition(group, "assessment_completion_date", "Assessment Completion Date", "date", "json", "AF Printed Page 1.html", 2, createdAtUtc, "Date comprehensive assessment was completed."),
+            CreateElementDefinition(group, "consent_explainer", "Consent and Confidentiality Explainer", "instructional-text", "unbound", "AF Printed Page 1-3.html", 3, createdAtUtc, "Instructional content reminding the assessor to explain consent and confidentiality."),
+            CreateElementDefinition(group, "assessment_checklist", "Assessment Checklist", "checklist", "json", "AF Printed Page 1.html", 4, createdAtUtc, "Checklist used at the start of assessment.", fieldConfigJson: BuildElementFieldConfig(options: new[]
+            {
+                ("consent_signed_understood", "Consent signed and understood by Service User"),
+                ("initial_care_plan_agreed", "Initial care plan developed and agreed with Service User based on assessment"),
+                ("consent_explained", "Explain consent and confidentiality"),
+                ("new_treatment_episode", "Is this a new treatment episode?"),
+                ("circumstances_changed", "Have the Service User's circumstances changed? If so, update this assessment")
+            })),
+            CreateElementDefinition(group, "service_user_signature", "Service User Signature", "signature", "json", "AF Printed Page 3.html", 5, createdAtUtc, "Signature of service user confirming consent."),
+            CreateElementDefinition(group, "staff_signature", "Staff Signature", "signature", "json", "AF Printed Page 3.html", 6, createdAtUtc, "Signature of staff witnessing or confirming consent."),
+            CreateElementDefinition(group, "consent_mental_health_shared_record", "Consent to Shared Mental Health Record", "yes-no", "json", "AF Printed Page 3.html", 7, createdAtUtc, "Consent specific to shared mental health records.", fieldConfigJson: BuildElementFieldConfig(required: true)),
+            CreateElementDefinition(group, "additional_consent_contacts", "Additional Consent Contacts", "checklist", "json", "AF Printed Page 4.html", 8, createdAtUtc, "Named people or services with whom information can be shared."),
+            CreateElementDefinition(group, "pass_database_consent", "PASS Database Consent", "signature", "json", "AF Printed Page 4.html", 9, createdAtUtc, "Consent specific to homeless services PASS database."),
+            CreateElementDefinition(group, "national_waiting_list_consent", "National Waiting List Consent", "signature", "json", "AF Printed Page 5.html", 10, createdAtUtc, "Consent for placement on the HSE National Waiting List for Opiate Addiction Treatment.")
+        };
+    }
+
+    private static IEnumerable<ElementDefinition> BuildIdentityDefinitions(ElementGroup group, DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementDefinition(group, "service_user_full_name", "Service User Name", "text", "json", "AF Printed Page 6.html", 1, createdAtUtc, "Full service user name as captured on admission.", fieldConfigJson: BuildElementFieldConfig(required: true, placeholder: "Block capitals")),
+            CreateElementDefinition(group, "first_name", "First Name", "text", "canonical", "AF Printed Page 6.html", 2, createdAtUtc, "Resident first name.", canonicalFieldKey: "resident.firstName", fieldConfigJson: BuildElementFieldConfig(required: true)),
+            CreateElementDefinition(group, "surname", "Surname", "text", "canonical", "AF Printed Page 6.html", 3, createdAtUtc, "Resident surname.", canonicalFieldKey: "resident.surname", fieldConfigJson: BuildElementFieldConfig(required: true)),
+            CreateElementDefinition(group, "date_of_birth", "Date of Birth", "date", "canonical", "AF Printed Page 6.html", 4, createdAtUtc, "Resident date of birth.", canonicalFieldKey: "resident.dateOfBirth", fieldConfigJson: BuildElementFieldConfig(required: true)),
+            CreateElementDefinition(group, "nationality", "Nationality", "text", "canonical", "AF Printed Page 6.html", 5, createdAtUtc, "Resident nationality.", canonicalFieldKey: "resident.nationality"),
+            CreateElementDefinition(group, "source_of_referral", "Source of Referral", "single-choice", "json", "AF Printed Page 6.html", 6, createdAtUtc, "Referral source captured on intake.", optionSetKey: "referral_source", fieldConfigJson: BuildElementFieldConfig(options: new[] { ("gp", "GP"), ("family", "Family"), ("self", "Self"), ("other", "Other") })),
+            CreateElementDefinition(group, "referral_reference_number", "Referral Reference Number", "text", "json", "AF Printed Page 6.html", 7, createdAtUtc),
+            CreateElementDefinition(group, "referral_date", "Date of Referral", "date", "json", "AF Printed Page 6.html", 8, createdAtUtc),
+            CreateElementDefinition(group, "phone_number", "Phone Number", "text", "json", "AF Printed Page 6.html", 9, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(pattern: @"^\+?[0-9()\-\s]{7,20}$")),
+            CreateElementDefinition(group, "mobile_number", "Mobile Number", "text", "json", "AF Printed Page 6.html", 10, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(pattern: @"^\+?[0-9()\-\s]{7,20}$")),
+            CreateElementDefinition(group, "email_address", "Email Address", "text", "json", "AF Printed Page 6.html", 11, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(pattern: @"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")),
+            CreateElementDefinition(group, "contact_permissions", "Contact Permissions", "checklist", "json", "AF Printed Page 6.html", 12, createdAtUtc, "Consent to be contacted via different channels.", fieldConfigJson: BuildElementFieldConfig(options: new[]
+            {
+                ("contact_at_address", "Agree to be contacted at the above address"),
+                ("contact_via_phone_text", "Agree to be contacted via phone text"),
+                ("contact_by_email", "Agree to be contacted by email")
+            })),
+            CreateElementDefinition(group, "country_of_birth", "Country of Birth", "text", "json", "AF Printed Page 6.html", 13, createdAtUtc),
+            CreateElementDefinition(group, "preferred_language", "Preferred Language to Work With", "text", "json", "AF Printed Page 6.html", 14, createdAtUtc),
+            CreateElementDefinition(group, "employment_status", "Employment Status", "text", "json", "AF Printed Page 7.html", 15, createdAtUtc),
+            CreateElementDefinition(group, "source_of_income", "Source of Income", "text", "json", "AF Printed Page 7.html", 16, createdAtUtc),
+            CreateElementDefinition(group, "gp_name", "GP Name", "text", "json", "AF Printed Page 7.html", 17, createdAtUtc),
+            CreateElementDefinition(group, "medical_card_status", "Medical Card", "yes-no", "json", "AF Printed Page 7.html", 18, createdAtUtc),
+            CreateElementDefinition(group, "next_of_kin_details", "Next of Kin Details", "checklist", "json", "AF Printed Page 7.html", 19, createdAtUtc, "Captures next of kin and emergency contact context.")
+        };
+    }
+
+    private static IEnumerable<ElementDefinition> BuildSubstanceDefinitions(ElementGroup group, DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementDefinition(group, "substance_problem_overview", "Substance Use / Gambling / Eating Disorder Overview", "instructional-text", "unbound", "AF Printed Page 9.html", 1, createdAtUtc, "Section guidance text introducing current need and care-plan discussion."),
+            CreateElementDefinition(group, "gambling_history", "Gambling History", "yes-no", "json", "AF Printed Page 9.html", 2, createdAtUtc),
+            CreateElementDefinition(group, "eating_disorder_history", "Eating Disorder History", "yes-no", "json", "AF Printed Page 9.html", 3, createdAtUtc),
+            CreateElementDefinition(group, "main_problem_drug_assessability", "Difficulty Assessing Main Problem Drug", "yes-no", "json", "AF Printed Page 9.html", 4, createdAtUtc),
+            CreateElementDefinition(group, "ever_treated_for_substance_use", "Ever Treated for Substance Use", "yes-no", "json", "AF Printed Page 10.html", 5, createdAtUtc),
+            CreateElementDefinition(group, "ever_treated_for_alcohol", "Ever Treated for Alcohol", "yes-no", "json", "AF Printed Page 10.html", 6, createdAtUtc),
+            CreateElementDefinition(group, "total_previous_treatments", "Total Number of Previous Treatments", "number", "json", "AF Printed Page 10.html", 7, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(min: 0)),
+            CreateElementDefinition(group, "age_first_treated", "Age First Treated", "number", "json", "AF Printed Page 10.html", 8, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(min: 0, max: 120)),
+            CreateElementDefinition(group, "treatment_types", "Treatment Type(s)", "multi-checkbox", "json", "AF Printed Page 10.html", 9, createdAtUtc),
+            CreateElementDefinition(group, "treatment_providers", "Name of Treatment Provider(s)", "textarea", "json", "AF Printed Page 10.html", 10, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 1000)),
+            CreateElementDefinition(group, "reason_for_leaving_treatment", "Reason for Leaving", "textarea", "json", "AF Printed Page 10.html", 11, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 1000)),
+            CreateElementDefinition(group, "longest_time_abstinent", "Longest Time Abstinent", "text", "json", "AF Printed Page 10.html", 12, createdAtUtc),
+            CreateElementDefinition(group, "current_opiate_agonist_treatment", "Current Opiate Agonist Treatment", "yes-no", "json", "AF Printed Page 10.html", 13, createdAtUtc),
+            CreateElementDefinition(group, "other_current_treatment_medication", "Other Current Treatment / Prescribed Medications", "yes-no", "json", "AF Printed Page 10.html", 14, createdAtUtc),
+            CreateElementDefinition(group, "risk_behaviour_history", "Risk Behaviour History", "checklist", "json", "AF Printed Page 11.html", 15, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(options: new[]
+            {
+                ("ever_injected", "Ever injected"),
+                ("shared_needles", "Ever shared needles / syringes"),
+                ("shared_paraphernalia", "Ever shared other paraphernalia")
+            })),
+            CreateElementDefinition(group, "harm_reduction_advice_given", "Harm Reduction Advice Given", "checklist", "json", "AF Printed Page 11.html", 16, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(options: new[]
+            {
+                ("needle_exchange", "Needle Exchange time and places"),
+                ("drug_use", "Drug Use"),
+                ("drug_interactions", "Drug Interactions"),
+                ("alcohol_use", "Alcohol Use"),
+                ("overdose_prevention", "Overdose Prevention"),
+                ("access_to_naloxone", "Access to Naloxone"),
+                ("safe_injecting_practice", "Safe Injecting Practice"),
+                ("sexual_activity", "Sexual Activity")
+            })),
+            CreateElementDefinition(group, "family_substance_use_history", "Family Substance Use History", "yes-no", "json", "AF Printed Page 7.html", 17, createdAtUtc)
+        };
+    }
+
+    private static IEnumerable<ElementDefinition> BuildPhysicalHealthDefinitions(ElementGroup group, DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementDefinition(group, "physical_health_concerns", "Concerns About Physical Health", "yes-no", "json", "AF Printed Page 12.html", 1, createdAtUtc),
+            CreateElementDefinition(group, "known_allergies", "Known Allergies", "yes-no", "json", "AF Printed Page 12.html", 2, createdAtUtc),
+            CreateElementDefinition(group, "history_of_head_injury", "History of Head Injury", "yes-no", "json", "AF Printed Page 12.html", 3, createdAtUtc),
+            CreateElementDefinition(group, "last_gp_checkup", "Last GP Check-Up", "text", "json", "AF Printed Page 12.html", 4, createdAtUtc),
+            CreateElementDefinition(group, "relevant_medical_history", "Relevant Medical History", "textarea", "json", "AF Printed Page 12.html", 5, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 2000)),
+            CreateElementDefinition(group, "current_medications", "Current Medications", "textarea", "json", "AF Printed Page 12.html", 6, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 2000)),
+            CreateElementDefinition(group, "can_access_medication", "Can Access Medication", "yes-no", "json", "AF Printed Page 12.html", 7, createdAtUtc),
+            CreateElementDefinition(group, "adheres_to_medication", "Adheres to Medication", "yes-no", "json", "AF Printed Page 12.html", 8, createdAtUtc),
+            CreateElementDefinition(group, "history_of_seizures", "History of Seizures", "yes-no", "json", "AF Printed Page 12.html", 9, createdAtUtc),
+            CreateElementDefinition(group, "physical_health_details", "Physical Health Details", "textarea", "json", "AF Printed Page 12.html", 10, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 2000)),
+            CreateElementDefinition(group, "national_screening_interest", "Would Like Access to National Screening Service", "yes-no", "json", "AF Printed Page 12.html", 11, createdAtUtc)
+        };
+    }
+
+    private static IEnumerable<ElementDefinition> BuildSexualWellbeingDefinitions(ElementGroup group, DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementDefinition(group, "self_defined_sexual_orientation", "Self-Defined Sexual Orientation", "single-choice", "json", "AF Printed Page 6.html", 1, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(options: new[]
+            {
+                ("heterosexual", "Heterosexual or Straight"),
+                ("bisexual", "Bisexual"),
+                ("other", "Other sexual orientation not listed")
+            })),
+            CreateElementDefinition(group, "sexual_health_concerns", "Concerns About Sexual Health and Wellbeing", "yes-no", "json", "AF Printed Page 13.html", 2, createdAtUtc),
+            CreateElementDefinition(group, "uses_condoms_or_barriers", "Uses Condoms or Other Physical Barriers", "yes-no", "json", "AF Printed Page 13.html", 3, createdAtUtc),
+            CreateElementDefinition(group, "knows_barrier_access_points", "Knows Where Barriers Are Freely Available", "yes-no", "json", "AF Printed Page 13.html", 4, createdAtUtc),
+            CreateElementDefinition(group, "sti_screening_history", "History of STI Screening / Testing", "yes-no", "json", "AF Printed Page 13.html", 5, createdAtUtc),
+            CreateElementDefinition(group, "sexual_wellbeing_details", "Sexual Wellbeing Details", "textarea", "json", "AF Printed Page 13.html", 6, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 2000))
+        };
+    }
+
+    private static IEnumerable<ElementDefinition> BuildMentalHealthDefinitions(ElementGroup group, DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementDefinition(group, "mental_health_consent_shared_record", "Mental Health Shared Record Consent", "yes-no", "json", "AF Printed Page 3.html", 1, createdAtUtc),
+            CreateElementDefinition(group, "mental_health_concerns", "Concerns About Mental Health", "yes-no", "json", "AF Printed Page 13.html", 2, createdAtUtc),
+            CreateElementDefinition(group, "mental_health_professional_engagement", "Seen or Seeing a Mental Health Professional", "yes-no", "json", "AF Printed Page 13.html", 3, createdAtUtc),
+            CreateElementDefinition(group, "history_of_psychiatric_care", "History of Psychiatric Care", "yes-no", "json", "AF Printed Page 13.html", 4, createdAtUtc),
+            CreateElementDefinition(group, "history_of_self_harm_or_suicidal_thoughts", "History of Self Harm or Suicidal Thoughts", "yes-no", "json", "AF Printed Page 13.html", 5, createdAtUtc),
+            CreateElementDefinition(group, "mood_last_month", "Mood Over the Last Month", "single-choice", "json", "AF Printed Page 13.html", 6, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(options: new[]
+            {
+                ("very_low", "Very low"),
+                ("low", "Low"),
+                ("reasonable", "Reasonable"),
+                ("good", "Good")
+            })),
+            CreateElementDefinition(group, "mental_health_details", "Mental Health Details", "textarea", "json", "AF Printed Page 13.html", 7, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 2000))
+        };
+    }
+
+    private static IEnumerable<ElementDefinition> BuildSafetyDefinitions(ElementGroup group, DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementDefinition(group, "current_relationship_safety", "Feels Safe in Current Relationship", "yes-no", "json", "AF Printed Page 14.html", 1, createdAtUtc),
+            CreateElementDefinition(group, "history_of_abuse", "History of Physical / Mental / Sexual Abuse", "yes-no", "json", "AF Printed Page 14.html", 2, createdAtUtc),
+            CreateElementDefinition(group, "domestic_violence_details", "Domestic Violence Details", "textarea", "json", "AF Printed Page 14.html", 3, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 2000)),
+            CreateElementDefinition(group, "probation_service_engagement", "Engaged With Probation Services", "yes-no", "json", "AF Printed Page 14.html", 4, createdAtUtc),
+            CreateElementDefinition(group, "custodial_sentence_history", "History of Custodial Sentence", "yes-no", "json", "AF Printed Page 14.html", 5, createdAtUtc),
+            CreateElementDefinition(group, "pending_court_cases", "Pending Court Cases", "yes-no", "json", "AF Printed Page 14.html", 6, createdAtUtc),
+            CreateElementDefinition(group, "has_solicitor", "Has a Solicitor", "yes-no", "json", "AF Printed Page 14.html", 7, createdAtUtc),
+            CreateElementDefinition(group, "justice_details", "Justice Details", "textarea", "json", "AF Printed Page 14.html", 8, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 2000)),
+            CreateElementDefinition(group, "behaviour_impacting_treatment_plan", "Behaviour May Impact Treatment Plan", "yes-no", "json", "AF Printed Page 14.html", 9, createdAtUtc),
+            CreateElementDefinition(group, "health_and_safety_details", "Health and Safety Details", "textarea", "json", "AF Printed Page 14.html", 10, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 2000)),
+            CreateElementDefinition(group, "additional_comments_needed", "Additional Comments Required", "yes-no", "json", "AF Printed Page 14.html", 11, createdAtUtc),
+            CreateElementDefinition(group, "additional_comments_details", "Additional Comments Details", "textarea", "json", "AF Printed Page 14.html", 12, createdAtUtc, fieldConfigJson: BuildElementFieldConfig(max: 2000))
+        };
+    }
+
+    private static IEnumerable<ElementDefinition> BuildHappinessScaleDefinitions(ElementGroup group, DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementDefinition(group, "happiness_scale_matrix", "Happiness Scale Matrix", "matrix/rating", "json", "AF Printed Page 15.html", 1, createdAtUtc, "Current happiness over the last 30 days across HSE-defined domains.", "Low numbers indicate lower happiness; high numbers indicate greater happiness.", fieldConfigJson: BuildElementFieldConfig(options: new[]
+            {
+                ("confidence_in_self", "Confidence in self"),
+                ("mental_health_and_happiness", "Mental health and happiness"),
+                ("job_role", "Job/role"),
+                ("social_life", "Social life"),
+                ("physical_health", "Physical health"),
+                ("inner_peace", "Inner peace"),
+                ("relationships", "Relationships"),
+                ("family", "Family"),
+                ("legal_issues", "Legal issues"),
+                ("appearance_life", "Appearance / life"),
+                ("communication_skills", "Communication Skills"),
+                ("housing", "Housing"),
+                ("spirituality", "Spirituality"),
+                ("other", "Other (be specific)")
+            }))
+        };
+    }
+
+    private static IEnumerable<ElementDefinition> BuildAssessorActionDefinitions(ElementGroup group, DateTime createdAtUtc)
+    {
+        return new[]
+        {
+            CreateElementDefinition(group, "assessor_actions_required", "Assessor Actions Required", "checklist", "json", "AF Printed Page 15.html", 1, createdAtUtc, "Checklist of actions required after initial assessment.", fieldConfigJson: BuildElementFieldConfig(options: new[]
+            {
+                ("child_protection_referral", "Children First / Child Protection / social work referral"),
+                ("medical_assessment", "Medical assessment"),
+                ("psychiatric_assessment", "Psychiatric assessment"),
+                ("multi_agency_meeting", "Multi-agency meeting or review"),
+                ("opiate_substitution_protocols", "Progress to opiate substitution protocols"),
+                ("register_screening_service", "Register with National Screening Service"),
+                ("homeless_action_team", "Referral to a homeless Action Team"),
+                ("key_work_other_service", "Key work engagement from other service provider"),
+                ("other_action", "Other action (e.g. placement on waiting list)")
+            })),
+            CreateElementDefinition(group, "key_work_other_service_details", "Key Work Other Service Details", "text", "json", "AF Printed Page 15.html", 2, createdAtUtc),
+            CreateElementDefinition(group, "comprehensive_assessment_needed", "Comprehensive Assessment Needed", "yes-no", "json", "AF Printed Page 15.html", 3, createdAtUtc),
+            CreateElementDefinition(group, "comprehensive_assessment_arranged", "Comprehensive Assessment Arranged", "yes-no", "json", "AF Printed Page 15.html", 4, createdAtUtc)
+        };
     }
 
     private static void SeedTherapyTopics(ModelBuilder modelBuilder)

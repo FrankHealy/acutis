@@ -43,6 +43,7 @@ builder.Services.AddScoped<IFormValidationService, FormValidationService>();
 builder.Services.AddScoped<IScreeningControlService, ScreeningControlService>();
 builder.Services.AddScoped<IGlobalConfigurationService, GlobalConfigurationService>();
 builder.Services.AddScoped<IFormConfigurationService, FormConfigurationService>();
+builder.Services.AddScoped<IElementLibraryService, ElementLibraryService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IGroupTherapyService, GroupTherapyService>();
 builder.Services.AddScoped<IIncidentService, IncidentService>();
