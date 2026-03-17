@@ -2,19 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Building2, CalendarClock, ClipboardCheck, ClipboardList, FileEdit, Quote, Settings, UserCog } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Header from "@/areas/shared/layout/Header";
 
-const navItems = [
-  { href: "/units/config", label: "Overview", icon: Settings },
-  { href: "/units/config/centres", label: "Centres", icon: Building2 },
-  { href: "/units/config/units", label: "Units", icon: Building2 },
-  { href: "/units/config/forms", label: "Forms", icon: ClipboardList },
-  { href: "/units/config/forms/new", label: "Designer", icon: FileEdit },
-  { href: "/units/config/quotes", label: "Quote Library", icon: Quote },
-  { href: "/units/config/program-manager", label: "Program Manager", icon: ClipboardCheck },
-  { href: "/units/config/day-planner", label: "Day Planner", icon: CalendarClock },
-  { href: "/units/config/users-roles", label: "Users & Roles", icon: UserCog },
+const primaryNavItems = [
+  { href: "/units/config", label: "Overview" },
+  { href: "/units/config/centres", label: "Centres" },
+  { href: "/units/config/units", label: "Units" },
+  { href: "/units/config/forms", label: "Forms" },
+  { href: "/units/config/forms/new", label: "Designer" },
+  { href: "/units/config/quotes", label: "Quotes" },
+  { href: "/units/config/program-manager", label: "Program Manager" },
+  { href: "/units/config/day-planner", label: "Day Planner" },
+  { href: "/units/config/users-roles", label: "Users & Roles" },
 ];
 
 type ConfigWorkspaceShellProps = {
@@ -23,6 +23,7 @@ type ConfigWorkspaceShellProps = {
 
 export default function ConfigWorkspaceShell({ children }: ConfigWorkspaceShellProps) {
   const pathname = usePathname();
+  const isActivePath = (href: string) => pathname === href;
 
   return (
     <div className="app-page-shell min-h-screen">
@@ -50,30 +51,29 @@ export default function ConfigWorkspaceShell({ children }: ConfigWorkspaceShellP
                 </div>
               </div>
             </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {navItems.map((item) => {
-                const active = pathname === item.href;
-                const Icon = item.icon;
-
-                return (
+          </div>
+        </div>
+        <nav className="app-surface border-b border-[var(--app-border)]">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex min-h-14 items-center py-3">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                {primaryNavItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`inline-flex min-w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
-                      active
-                        ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary-strong)]"
-                        : "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-muted)] hover:border-[var(--app-primary-soft)] hover:text-[var(--app-text)]"
+                    className={`text-sm font-medium transition-colors ${
+                      isActivePath(item.href)
+                        ? "text-[var(--app-primary)]"
+                        : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
+                    {item.label}
                   </Link>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </nav>
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>

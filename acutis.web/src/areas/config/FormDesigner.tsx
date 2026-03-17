@@ -66,6 +66,83 @@ type SectionFieldGroup = {
   fields: FormField[];
 };
 
+const prettifyDesignerText = (value: string): string =>
+  value
+    .replace(/^designer\.generated\./i, "")
+    .replace(/^screening\.section\./i, "")
+    .replace(/^screening\.group\./i, "")
+    .replace(/^screening\.field\./i, "")
+    .replace(/^screening\.form\./i, "")
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+const resolveDesignerText = (
+  value: string | null | undefined,
+  translations: Record<string, string>
+): string => {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const translated = translations[trimmed]?.trim();
+  if (translated) {
+    return translated;
+  }
+
+  if (trimmed.includes(".")) {
+    return prettifyDesignerText(trimmed);
+  }
+
+  return trimmed;
+};
+
+const localizeFormDefinition = (
+  form: FormDefinitionDto,
+  translations: Record<string, string>
+): FormDefinitionDto => ({
+  ...form,
+  titleKey: resolveDesignerText(form.titleKey, translations),
+  descriptionKey: resolveDesignerText(form.descriptionKey, translations) || null,
+  ui: {
+    ...form.ui,
+    sections: form.ui.sections.map((section) => ({
+      ...section,
+      titleKey: resolveDesignerText(section.titleKey, translations),
+      groups: section.groups?.map((group) => ({
+        ...group,
+        titleKey: group.titleKey ? resolveDesignerText(group.titleKey, translations) : undefined,
+        title: group.title ? resolveDesignerText(group.title, translations) : undefined,
+      })),
+    })),
+    labelKeys: Object.fromEntries(
+      Object.entries(form.ui.labelKeys).map(([fieldKey, label]) => [
+        fieldKey,
+        resolveDesignerText(label, translations),
+      ])
+    ),
+    helpKeys: Object.fromEntries(
+      Object.entries(form.ui.helpKeys).map(([fieldKey, helpText]) => [
+        fieldKey,
+        resolveDesignerText(helpText, translations),
+      ])
+    ),
+    selectOptions: form.ui.selectOptions
+      ? Object.fromEntries(
+          Object.entries(form.ui.selectOptions).map(([fieldKey, options]) => [
+            fieldKey,
+            options.map((option) => ({
+              ...option,
+              label: resolveDesignerText(option.label, translations),
+            })),
+          ])
+        )
+      : undefined,
+  },
+});
+
 const normalizeGroupName = (group?: string): string | null => {
   const trimmed = group?.trim();
   return trimmed ? trimmed : null;
@@ -359,7 +436,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
       try {
         setIsLoadingScreeningLibrary(true);
         const response = await getActiveForm(accessToken, 'en-IE', 'anonymous_call', null, 'alcohol_screening_call');
-        const activeForm = response.form as FormDefinitionDto;
+        const activeForm = localizeFormDefinition(response.form as FormDefinitionDto, response.translations ?? {});
         const loadedSections = getScreeningTemplateSectionsFromForm(activeForm).map((section) => buildSectionFromTemplate(section));
         setSections(loadedSections);
         setSelectedSection(loadedSections[0]?.id ?? null);

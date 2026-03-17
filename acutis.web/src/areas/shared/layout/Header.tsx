@@ -254,10 +254,6 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4">
-            <div className="text-right">
-              <div className="text-sm font-semibold text-[var(--app-text-muted)]">{today || "\u00A0"}</div>
-              <div className="text-xl font-bold tracking-tight text-[var(--app-text)]">{now || "\u00A0"}</div>
-            </div>
             <label className="hidden md:flex items-center gap-2 text-xs text-[var(--app-text-muted)]">
               <span>Language</span>
               <select
