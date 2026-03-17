@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
-import { ArrowLeft, User, Calendar, MapPin, Heart, Brain, BookOpen, Shield, Clock, CheckCircle, XCircle, LogOut, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { ArrowLeft, User, Calendar, MapPin, Heart, Brain, BookOpen, Shield, Clock, CheckCircle, XCircle, LogOut, AlertTriangle, BriefcaseMedical, Plus, Pencil, Trash2, Layers3 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import type { Resident } from '../../services/mockDataService';
-import { residentService, type DischargeExitType } from '../../services/residentService';
+import {
+  residentService,
+  type DischargeExitType,
+  type ResidentPreviousTreatment,
+  type UpsertResidentPreviousTreatmentRequest,
+} from '../../services/residentService';
 import { isAuthorizedClient } from '@/lib/authMode';
 
 // lightweight mock history for demo
@@ -32,6 +38,19 @@ type DischargeModalState = {
   error: string | null;
 };
 
+type PreviousTreatmentFormState = {
+  treatmentId: string | null;
+  centreName: string;
+  treatmentType: string;
+  startYear: string;
+  durationValue: string;
+  durationUnit: string;
+  completedTreatment: string;
+  sobrietyAfterwardsValue: string;
+  sobrietyAfterwardsUnit: string;
+  notes: string;
+};
+
 const EXIT_TYPE_OPTIONS: { value: DischargeExitType; label: string; description: string }[] = [
   { value: "Completed", label: "Programme Completed", description: "Resident has completed their programme." },
   { value: "ExtendedStay", label: "Extended Stay", description: "Resident is staying on past their programme end date." },
@@ -40,9 +59,30 @@ const EXIT_TYPE_OPTIONS: { value: DischargeExitType; label: string; description:
   { value: "Ejected", label: "Ejected", description: "Resident has been removed from the programme." },
 ];
 
+const EMPTY_PREVIOUS_TREATMENT_FORM: PreviousTreatmentFormState = {
+  treatmentId: null,
+  centreName: "",
+  treatmentType: "",
+  startYear: "",
+  durationValue: "",
+  durationUnit: "",
+  completedTreatment: "",
+  sobrietyAfterwardsValue: "",
+  sobrietyAfterwardsUnit: "",
+  notes: "",
+};
+
 const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, onDischarged, onOpenIncidentCapture }) => {
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState('overview');
+  const [previousTreatments, setPreviousTreatments] = useState<ResidentPreviousTreatment[]>([]);
+  const [previousTreatmentsLoading, setPreviousTreatmentsLoading] = useState(false);
+  const [previousTreatmentsError, setPreviousTreatmentsError] = useState<string | null>(null);
+  const [treatmentEditorOpen, setTreatmentEditorOpen] = useState(false);
+  const [treatmentSaving, setTreatmentSaving] = useState(false);
+  const [treatmentForm, setTreatmentForm] = useState<PreviousTreatmentFormState>(EMPTY_PREVIOUS_TREATMENT_FORM);
+  const fallbackPhoto = resident.fallbackPhoto || `https://i.pravatar.cc/150?img=${((resident.id - 1) % 70) + 1}`;
+  const [heroImageSrc, setHeroImageSrc] = useState(resident.photo ?? fallbackPhoto);
   const [discharge, setDischarge] = useState<DischargeModalState>({
     open: false,
     exitType: "Completed",
@@ -66,6 +106,56 @@ const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, o
 
   const formatEnumLabel = (value: string | null | undefined) =>
     value ? value.replace(/([a-z])([A-Z])/g, "$1 $2") : "Not set";
+
+  const formatCaseStatus = (value: string | null | undefined) =>
+    value
+      ? value
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (char) => char.toUpperCase())
+      : "Not set";
+
+  const formatEntryValue = (value: number | null | undefined) =>
+    value == null ? "Not set" : String(value);
+
+  const resetTreatmentForm = () => {
+    setTreatmentForm(EMPTY_PREVIOUS_TREATMENT_FORM);
+    setTreatmentEditorOpen(false);
+  };
+
+  const mapTreatmentToFormState = (treatment: ResidentPreviousTreatment): PreviousTreatmentFormState => ({
+    treatmentId: treatment.id,
+    centreName: treatment.centreName,
+    treatmentType: treatment.treatmentType ?? "",
+    startYear: treatment.startYear != null ? String(treatment.startYear) : "",
+    durationValue: treatment.durationValue != null ? String(treatment.durationValue) : "",
+    durationUnit: treatment.durationUnit ?? "",
+    completedTreatment:
+      treatment.completedTreatment == null
+        ? ""
+        : treatment.completedTreatment
+          ? "true"
+          : "false",
+    sobrietyAfterwardsValue:
+      treatment.sobrietyAfterwardsValue != null ? String(treatment.sobrietyAfterwardsValue) : "",
+    sobrietyAfterwardsUnit: treatment.sobrietyAfterwardsUnit ?? "",
+    notes: treatment.notes ?? "",
+  });
+
+  const buildTreatmentPayload = (): UpsertResidentPreviousTreatmentRequest => ({
+    centreName: treatmentForm.centreName.trim(),
+    treatmentType: treatmentForm.treatmentType.trim() || null,
+    startYear: treatmentForm.startYear.trim() ? Number(treatmentForm.startYear) : null,
+    durationValue: treatmentForm.durationValue.trim() ? Number(treatmentForm.durationValue) : null,
+    durationUnit: treatmentForm.durationUnit.trim() || null,
+    completedTreatment:
+      treatmentForm.completedTreatment === ""
+        ? null
+        : treatmentForm.completedTreatment === "true",
+    sobrietyAfterwardsValue:
+      treatmentForm.sobrietyAfterwardsValue.trim() ? Number(treatmentForm.sobrietyAfterwardsValue) : null,
+    sobrietyAfterwardsUnit: treatmentForm.sobrietyAfterwardsUnit.trim() || null,
+    notes: treatmentForm.notes.trim() || null,
+  });
 
   const ScaleIndicator: React.FC<{ label: string; value: number; max?: number; color?: 'blue' | 'yellow' | 'red' | 'green' }> = ({ label, value, max = 5, color = "blue" }) => {
     const percentage = (value / max) * 100;
@@ -103,6 +193,48 @@ const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, o
     return Math.max(0, Math.min(100, Math.round((wk / totalWeeks) * 100)));
   };
 
+  useEffect(() => {
+    setHeroImageSrc(resident.photo ?? fallbackPhoto);
+  }, [resident.photo, fallbackPhoto]);
+
+  useEffect(() => {
+    const accessToken = session?.accessToken;
+    if (!resident.residentGuid || !isAuthorizedClient(status, accessToken)) {
+      setPreviousTreatments([]);
+      setPreviousTreatmentsLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    const loadPreviousTreatments = async () => {
+      setPreviousTreatmentsLoading(true);
+      setPreviousTreatmentsError(null);
+      try {
+        const rows = await residentService.getPreviousTreatments(resident.residentGuid!, accessToken!);
+        if (!active) {
+          return;
+        }
+        setPreviousTreatments(rows);
+      } catch (err) {
+        if (!active) {
+          return;
+        }
+        setPreviousTreatmentsError(err instanceof Error ? err.message : "Failed to load previous treatments.");
+      } finally {
+        if (active) {
+          setPreviousTreatmentsLoading(false);
+        }
+      }
+    };
+
+    void loadPreviousTreatments();
+
+    return () => {
+      active = false;
+    };
+  }, [resident.residentGuid, session?.accessToken, status]);
+
   const handleDischargeSubmit = async () => {
     if (!resident.residentGuid) {
       setDischarge((d) => ({ ...d, error: "Discharge is only available for residents loaded from the live system." }));
@@ -136,6 +268,75 @@ const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, o
     }
   };
 
+  const handlePreviousTreatmentSubmit = async () => {
+    if (!resident.residentGuid) {
+      setPreviousTreatmentsError("Previous treatments are only available for residents loaded from the live system.");
+      return;
+    }
+
+    const accessToken = session?.accessToken;
+    if (!isAuthorizedClient(status, accessToken)) {
+      setPreviousTreatmentsError("Session expired. Please sign in again.");
+      return;
+    }
+
+    if (!treatmentForm.centreName.trim()) {
+      setPreviousTreatmentsError("Centre name is required.");
+      return;
+    }
+
+    setTreatmentSaving(true);
+    setPreviousTreatmentsError(null);
+
+    try {
+      const payload = buildTreatmentPayload();
+      const saved = treatmentForm.treatmentId
+        ? await residentService.updatePreviousTreatment(resident.residentGuid, treatmentForm.treatmentId, payload, accessToken!)
+        : await residentService.createPreviousTreatment(resident.residentGuid, payload, accessToken!);
+
+      setPreviousTreatments((current) => {
+        const next = treatmentForm.treatmentId
+          ? current.map((item) => (item.id === saved.id ? saved : item))
+          : [saved, ...current];
+
+        return next.sort((a, b) => {
+          const yearA = a.startYear ?? 0;
+          const yearB = b.startYear ?? 0;
+          return yearB - yearA;
+        });
+      });
+      resetTreatmentForm();
+    } catch (err) {
+      setPreviousTreatmentsError(err instanceof Error ? err.message : "Failed to save previous treatment.");
+    } finally {
+      setTreatmentSaving(false);
+    }
+  };
+
+  const handlePreviousTreatmentDelete = async (treatmentId: string) => {
+    if (!resident.residentGuid) {
+      return;
+    }
+
+    const accessToken = session?.accessToken;
+    if (!isAuthorizedClient(status, accessToken)) {
+      setPreviousTreatmentsError("Session expired. Please sign in again.");
+      return;
+    }
+
+    setPreviousTreatmentsError(null);
+
+    try {
+      await residentService.deletePreviousTreatment(resident.residentGuid, treatmentId, accessToken!);
+      setPreviousTreatments((current) => current.filter((item) => item.id !== treatmentId));
+      if (treatmentForm.treatmentId === treatmentId) {
+        resetTreatmentForm();
+      }
+    } catch (err) {
+      setPreviousTreatmentsError(err instanceof Error ? err.message : "Failed to delete previous treatment.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto">
@@ -152,11 +353,13 @@ const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, o
           <div className="relative px-8 pb-8">
             <div className="absolute -top-24 left-8">
               <div className="relative">
-                <img
-                  src={resident.photo ?? resident.fallbackPhoto}
+                <Image
+                  src={heroImageSrc}
                   alt={`${resident.firstName} ${resident.surname}`}
                   className="w-48 h-48 rounded-2xl object-cover border-8 border-white shadow-2xl"
-                  onError={(e) => { if (e.currentTarget.src !== resident.fallbackPhoto) e.currentTarget.src = resident.fallbackPhoto; }}
+                  onError={() => setHeroImageSrc(fallbackPhoto)}
+                  width={192}
+                  height={192}
                 />
                 <div className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-bold shadow-lg">
                   Week {resident.weekNumber ?? '-'}
@@ -288,6 +491,40 @@ const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, o
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <Layers3 className="h-6 w-6 text-indigo-500 mr-2" />
+                Case & Episode Context
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-600">Centre Episode Code</p>
+                  <p className="font-bold text-indigo-900">{resident.centreEpisodeCode?.trim() || "Not set"}</p>
+                </div>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-600">Case Status</p>
+                  <p className="font-bold text-emerald-900">{formatCaseStatus(resident.caseStatus)}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-600">Entry Year</p>
+                  <p className="font-bold text-blue-900">{formatEntryValue(resident.entryYear)}</p>
+                </div>
+                <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-600">Entry Week</p>
+                  <p className="font-bold text-cyan-900">{formatEntryValue(resident.entryWeek)}</p>
+                </div>
+                <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-600">Entry Sequence</p>
+                  <p className="font-bold text-violet-900">{formatEntryValue(resident.entrySequence)}</p>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-600">Case / Episode IDs</p>
+                  <p className="font-semibold text-slate-900 break-all text-sm">{resident.residentCaseId ?? "Case not set"}</p>
+                  <p className="mt-1 text-xs text-slate-500 break-all">{resident.episodeId ?? "Episode not set"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
                 <Heart className="h-6 w-6 text-pink-500 mr-2" />
                 Medical & Lifestyle
               </h3>
@@ -331,26 +568,252 @@ const ResidentDetailPage: React.FC<ResidentDetailProps> = ({ resident, onBack, o
         )}
 
         {activeTab === 'history' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <Clock className="h-6 w-6 text-blue-500 mr-2" />
-              Meeting & Session History
-            </h3>
-            <div className="space-y-3">
-              {mockMeetingHistory.map((meeting, index) => (
-                <div key={index} className={`p-4 rounded-lg border-2 transition-all ${meeting.attended ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        {meeting.attended ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
-                        <span className="font-bold text-gray-900">{meeting.type}</span>
-                        <span className="text-sm text-gray-500">{new Date(meeting.date).toLocaleDateString()}</span>
-                      </div>
-                      <p className="text-sm text-gray-700 ml-8">{meeting.notes}</p>
-                    </div>
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                    <BriefcaseMedical className="h-6 w-6 text-teal-500 mr-2" />
+                    Previous Treatments
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">Existing treatment history attached to this resident record.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTreatmentForm(EMPTY_PREVIOUS_TREATMENT_FORM);
+                    setTreatmentEditorOpen(true);
+                    setPreviousTreatmentsError(null);
+                  }}
+                  className="inline-flex items-center justify-center space-x-2 rounded-lg border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-100"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Treatment</span>
+                </button>
+              </div>
+
+              {!resident.residentGuid && (
+                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  Previous treatments are only available when connected to the live system.
+                </div>
+              )}
+
+              {previousTreatmentsError && (
+                <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {previousTreatmentsError}
+                </div>
+              )}
+
+              {treatmentEditorOpen && (
+                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Centre Name
+                      <input
+                        type="text"
+                        value={treatmentForm.centreName}
+                        onChange={(e) => setTreatmentForm((current) => ({ ...current, centreName: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Treatment Type
+                      <input
+                        type="text"
+                        value={treatmentForm.treatmentType}
+                        onChange={(e) => setTreatmentForm((current) => ({ ...current, treatmentType: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Start Year
+                      <input
+                        type="number"
+                        value={treatmentForm.startYear}
+                        onChange={(e) => setTreatmentForm((current) => ({ ...current, startYear: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Duration Value
+                      <input
+                        type="number"
+                        value={treatmentForm.durationValue}
+                        onChange={(e) => setTreatmentForm((current) => ({ ...current, durationValue: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Duration Unit
+                      <input
+                        type="text"
+                        value={treatmentForm.durationUnit}
+                        onChange={(e) => setTreatmentForm((current) => ({ ...current, durationUnit: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Completed
+                      <select
+                        value={treatmentForm.completedTreatment}
+                        onChange={(e) => setTreatmentForm((current) => ({ ...current, completedTreatment: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      >
+                        <option value="">Not set</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                      </select>
+                    </label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Sobriety Afterward Value
+                      <input
+                        type="number"
+                        value={treatmentForm.sobrietyAfterwardsValue}
+                        onChange={(e) => setTreatmentForm((current) => ({ ...current, sobrietyAfterwardsValue: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Sobriety Afterward Unit
+                      <input
+                        type="text"
+                        value={treatmentForm.sobrietyAfterwardsUnit}
+                        onChange={(e) => setTreatmentForm((current) => ({ ...current, sobrietyAfterwardsUnit: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-sm font-medium text-gray-700 md:col-span-2">
+                      Notes
+                      <textarea
+                        rows={3}
+                        value={treatmentForm.notes}
+                        onChange={(e) => setTreatmentForm((current) => ({ ...current, notes: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                  </div>
+                  <div className="mt-4 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={resetTreatmentForm}
+                      className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handlePreviousTreatmentSubmit()}
+                      disabled={treatmentSaving}
+                      className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+                    >
+                      {treatmentSaving ? "Saving..." : treatmentForm.treatmentId ? "Update Treatment" : "Save Treatment"}
+                    </button>
                   </div>
                 </div>
-              ))}
+              )}
+
+              <div className="mt-4 space-y-3">
+                {previousTreatmentsLoading ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                    Loading previous treatments...
+                  </div>
+                ) : previousTreatments.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-5 text-sm text-gray-500">
+                    No previous treatments recorded yet.
+                  </div>
+                ) : (
+                  previousTreatments.map((treatment) => (
+                    <div key={treatment.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <h4 className="text-base font-bold text-gray-900">{treatment.centreName}</h4>
+                          <p className="mt-1 text-sm text-gray-500">
+                            {treatment.treatmentType?.trim() || "Treatment type not set"}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTreatmentForm(mapTreatmentToFormState(treatment));
+                              setTreatmentEditorOpen(true);
+                              setPreviousTreatmentsError(null);
+                            }}
+                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handlePreviousTreatmentDelete(treatment.id)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                        <div className="rounded-lg bg-slate-50 px-3 py-2">
+                          <p className="text-xs uppercase tracking-wide text-slate-500">Start Year</p>
+                          <p className="font-semibold text-slate-900">{treatment.startYear ?? "Not set"}</p>
+                        </div>
+                        <div className="rounded-lg bg-slate-50 px-3 py-2">
+                          <p className="text-xs uppercase tracking-wide text-slate-500">Duration</p>
+                          <p className="font-semibold text-slate-900">
+                            {treatment.durationValue != null
+                              ? `${treatment.durationValue} ${treatment.durationUnit ?? ""}`.trim()
+                              : "Not set"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-slate-50 px-3 py-2">
+                          <p className="text-xs uppercase tracking-wide text-slate-500">Completed</p>
+                          <p className="font-semibold text-slate-900">
+                            {treatment.completedTreatment == null ? "Not set" : treatment.completedTreatment ? "Yes" : "No"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-slate-50 px-3 py-2">
+                          <p className="text-xs uppercase tracking-wide text-slate-500">Sobriety Afterward</p>
+                          <p className="font-semibold text-slate-900">
+                            {treatment.sobrietyAfterwardsValue != null
+                              ? `${treatment.sobrietyAfterwardsValue} ${treatment.sobrietyAfterwardsUnit ?? ""}`.trim()
+                              : "Not set"}
+                          </p>
+                        </div>
+                      </div>
+                      {treatment.notes && (
+                        <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                          {treatment.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                <Clock className="h-6 w-6 text-blue-500 mr-2" />
+                Meeting & Session History
+              </h3>
+              <div className="space-y-3">
+                {mockMeetingHistory.map((meeting, index) => (
+                  <div key={index} className={`p-4 rounded-lg border-2 transition-all ${meeting.attended ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          {meeting.attended ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
+                          <span className="font-bold text-gray-900">{meeting.type}</span>
+                          <span className="text-sm text-gray-500">{new Date(meeting.date).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 ml-8">{meeting.notes}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

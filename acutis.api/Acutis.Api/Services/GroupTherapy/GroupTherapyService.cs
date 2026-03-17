@@ -22,6 +22,18 @@ public interface IGroupTherapyService
     Task<GroupTherapyResidentRemarkDto> UpsertRemarkAsync(
         UpsertGroupTherapyResidentRemarkRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GroupTherapyResidentObservationDto>> GetObservationsAsync(
+        string unitCode,
+        string programCode,
+        string moduleKey,
+        int sessionNumber,
+        CancellationToken cancellationToken = default);
+
+    Task<GroupTherapyResidentObservationDto> UpsertObservationAsync(
+        UpsertGroupTherapyResidentObservationRequest request,
+        Guid actorUserId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class GroupTherapyService : IGroupTherapyService
@@ -150,6 +162,89 @@ public sealed class GroupTherapyService : IGroupTherapyService
         return MapRemark(existing);
     }
 
+    public async Task<IReadOnlyList<GroupTherapyResidentObservationDto>> GetObservationsAsync(
+        string unitCode,
+        string programCode,
+        string moduleKey,
+        int sessionNumber,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedUnitCode = unitCode.Trim().ToLowerInvariant();
+        var normalizedProgramCode = programCode.Trim().ToLowerInvariant();
+        var normalizedModuleKey = moduleKey.Trim().ToLowerInvariant();
+
+        var observations = await _dbContext.GroupTherapyResidentObservations
+            .AsNoTracking()
+            .Where(observation =>
+                observation.UnitCode.ToLower() == normalizedUnitCode &&
+                observation.ProgramCode.ToLower() == normalizedProgramCode &&
+                observation.ModuleKey.ToLower() == normalizedModuleKey &&
+                observation.SessionNumber == sessionNumber)
+            .OrderBy(observation => observation.ObservedAtUtc)
+            .ThenBy(observation => observation.ResidentId)
+            .ToListAsync(cancellationToken);
+
+        return observations.Select(MapObservation).ToList();
+    }
+
+    public async Task<GroupTherapyResidentObservationDto> UpsertObservationAsync(
+        UpsertGroupTherapyResidentObservationRequest request,
+        Guid actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedUnitCode = request.UnitCode.Trim().ToLowerInvariant();
+        var normalizedProgramCode = request.ProgramCode.Trim().ToLowerInvariant();
+        var normalizedModuleKey = request.ModuleKey.Trim().ToLowerInvariant();
+        var selectedTerms = request.SelectedTerms
+            .Select(term => term.Trim())
+            .Where(term => !string.IsNullOrWhiteSpace(term))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var nowUtc = DateTime.UtcNow;
+        var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+
+        await ValidateObservationRequestAsync(request, cancellationToken);
+        var observerUserId = await ResolveObserverUserIdAsync(actorUserId, cancellationToken);
+
+        var existing = await _dbContext.GroupTherapyResidentObservations
+            .SingleOrDefaultAsync(
+                observation =>
+                    observation.UnitCode == normalizedUnitCode &&
+                    observation.ProgramCode == normalizedProgramCode &&
+                    observation.ModuleKey == normalizedModuleKey &&
+                    observation.SessionNumber == request.SessionNumber &&
+                    observation.ResidentId == request.ResidentId,
+                cancellationToken);
+
+        if (existing is null)
+        {
+            existing = new GroupTherapyResidentObservation
+            {
+                Id = Guid.NewGuid(),
+                UnitCode = normalizedUnitCode,
+                ProgramCode = normalizedProgramCode,
+                ModuleKey = normalizedModuleKey,
+                SessionNumber = request.SessionNumber,
+                ResidentId = request.ResidentId,
+                CreatedAtUtc = nowUtc
+            };
+            _dbContext.GroupTherapyResidentObservations.Add(existing);
+        }
+
+        existing.ResidentCaseId = request.ResidentCaseId;
+        existing.EpisodeId = request.EpisodeId;
+        existing.EpisodeEventId = request.EpisodeEventId;
+        existing.ObserverUserId = observerUserId;
+        existing.ObservedAtUtc = request.ObservedAtUtc;
+        existing.SelectedTermsJson = JsonSerializer.Serialize(selectedTerms);
+        existing.Notes = notes;
+        existing.UpdatedAtUtc = nowUtc;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapObservation(existing);
+    }
+
     private static GroupTherapyResidentRemarkDto MapRemark(GroupTherapyResidentRemark remark)
     {
         List<string>? noteLines = null;
@@ -176,5 +271,133 @@ public sealed class GroupTherapyService : IGroupTherapyService
             CreatedAtUtc = remark.CreatedAtUtc,
             UpdatedAtUtc = remark.UpdatedAtUtc
         };
+    }
+
+    private static GroupTherapyResidentObservationDto MapObservation(GroupTherapyResidentObservation observation)
+    {
+        List<string>? selectedTerms = null;
+
+        if (!string.IsNullOrWhiteSpace(observation.SelectedTermsJson))
+        {
+            try
+            {
+                selectedTerms = JsonSerializer.Deserialize<List<string>>(observation.SelectedTermsJson);
+            }
+            catch (JsonException)
+            {
+                selectedTerms = null;
+            }
+        }
+
+        return new GroupTherapyResidentObservationDto
+        {
+            Id = observation.Id,
+            ResidentId = observation.ResidentId,
+            ResidentCaseId = observation.ResidentCaseId,
+            EpisodeId = observation.EpisodeId,
+            EpisodeEventId = observation.EpisodeEventId,
+            ObserverUserId = observation.ObserverUserId,
+            ModuleKey = observation.ModuleKey,
+            SessionNumber = observation.SessionNumber,
+            ObservedAtUtc = observation.ObservedAtUtc,
+            SelectedTerms = selectedTerms ?? new List<string>(),
+            Notes = observation.Notes,
+            CreatedAtUtc = observation.CreatedAtUtc,
+            UpdatedAtUtc = observation.UpdatedAtUtc
+        };
+    }
+
+    private async Task ValidateObservationRequestAsync(
+        UpsertGroupTherapyResidentObservationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var residentExists = await _dbContext.Residents
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == request.ResidentId, cancellationToken);
+        if (!residentExists)
+        {
+            throw new InvalidOperationException($"Resident '{request.ResidentId}' was not found.");
+        }
+
+        if (request.ResidentCaseId.HasValue)
+        {
+            var caseExists = await _dbContext.ResidentCases
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == request.ResidentCaseId.Value, cancellationToken);
+            if (!caseExists)
+            {
+                throw new InvalidOperationException($"ResidentCase '{request.ResidentCaseId}' was not found.");
+            }
+        }
+
+        if (request.EpisodeId.HasValue)
+        {
+            var episodeExists = await _dbContext.ResidentProgrammeEpisodes
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == request.EpisodeId.Value && x.ResidentId == request.ResidentId, cancellationToken);
+            if (!episodeExists)
+            {
+                throw new InvalidOperationException($"Episode '{request.EpisodeId}' was not found for resident '{request.ResidentId}'.");
+            }
+        }
+
+        if (request.EpisodeEventId.HasValue)
+        {
+            var eventExists = await _dbContext.EpisodeEvents
+                .AsNoTracking()
+                .AnyAsync(
+                    x => x.Id == request.EpisodeEventId.Value &&
+                         (!request.EpisodeId.HasValue || x.EpisodeId == request.EpisodeId.Value),
+                    cancellationToken);
+            if (!eventExists)
+            {
+                throw new InvalidOperationException($"EpisodeEvent '{request.EpisodeEventId}' was not found.");
+            }
+        }
+    }
+
+    private async Task<Guid> ResolveObserverUserIdAsync(Guid actorUserId, CancellationToken cancellationToken)
+    {
+        if (actorUserId != Guid.Empty)
+        {
+            var actorExists = await _dbContext.AppUsers
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == actorUserId, cancellationToken);
+
+            if (actorExists)
+            {
+                return actorUserId;
+            }
+        }
+
+        var existingUserId = await _dbContext.AppUsers
+            .AsNoTracking()
+            .OrderByDescending(x => x.IsActive)
+            .ThenBy(x => x.CreatedAtUtc)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (existingUserId.HasValue)
+        {
+            return existingUserId.Value;
+        }
+
+        var systemUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var now = DateTime.UtcNow;
+
+        _dbContext.AppUsers.Add(new AppUser
+        {
+            Id = systemUserId,
+            ExternalSubject = "system",
+            UserName = "system",
+            DisplayName = "System",
+            Email = "system@local.invalid",
+            IsActive = true,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return systemUserId;
     }
 }

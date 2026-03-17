@@ -30,6 +30,34 @@ export type RecordDischargeResult = {
   wasAlreadyRecorded: boolean;
 };
 
+export type ResidentPreviousTreatment = {
+  id: string;
+  residentId: string;
+  centreName: string;
+  treatmentType?: string | null;
+  startYear?: number | null;
+  durationValue?: number | null;
+  durationUnit?: string | null;
+  completedTreatment?: boolean | null;
+  sobrietyAfterwardsValue?: number | null;
+  sobrietyAfterwardsUnit?: string | null;
+  notes?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+};
+
+export type UpsertResidentPreviousTreatmentRequest = {
+  centreName: string;
+  treatmentType?: string | null;
+  startYear?: number | null;
+  durationValue?: number | null;
+  durationUnit?: string | null;
+  completedTreatment?: boolean | null;
+  sobrietyAfterwardsValue?: number | null;
+  sobrietyAfterwardsUnit?: string | null;
+  notes?: string | null;
+};
+
 const store: {
   attendance: AttendanceRecord[];
 } = {
@@ -190,5 +218,91 @@ export const residentService = {
     }
 
     return response.json() as Promise<RecordDischargeResult>;
+  },
+
+  async getPreviousTreatments(
+    residentGuid: string,
+    accessToken: string,
+  ): Promise<ResidentPreviousTreatment[]> {
+    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Previous treatments load failed (${response.status})${text ? `: ${text}` : ""}`);
+    }
+
+    return response.json() as Promise<ResidentPreviousTreatment[]>;
+  },
+
+  async createPreviousTreatment(
+    residentGuid: string,
+    payload: UpsertResidentPreviousTreatmentRequest,
+    accessToken: string,
+  ): Promise<ResidentPreviousTreatment> {
+    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Previous treatment create failed (${response.status})${text ? `: ${text}` : ""}`);
+    }
+
+    return response.json() as Promise<ResidentPreviousTreatment>;
+  },
+
+  async updatePreviousTreatment(
+    residentGuid: string,
+    treatmentId: string,
+    payload: UpsertResidentPreviousTreatmentRequest,
+    accessToken: string,
+  ): Promise<ResidentPreviousTreatment> {
+    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments/${encodeURIComponent(treatmentId)}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Previous treatment update failed (${response.status})${text ? `: ${text}` : ""}`);
+    }
+
+    return response.json() as Promise<ResidentPreviousTreatment>;
+  },
+
+  async deletePreviousTreatment(
+    residentGuid: string,
+    treatmentId: string,
+    accessToken: string,
+  ): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments/${encodeURIComponent(treatmentId)}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Previous treatment delete failed (${response.status})${text ? `: ${text}` : ""}`);
+    }
   },
 };

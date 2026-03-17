@@ -23,6 +23,34 @@ interface ResidentsTableProps {
   onSelect?: (residentId: number) => void;
 }
 
+interface SortableHeaderProps {
+  column: SortBy;
+  children: React.ReactNode;
+  sortBy: SortBy;
+  sortOrder: SortOrder;
+  onSort: (column: SortBy) => void;
+}
+
+const SortableHeader: React.FC<SortableHeaderProps> = ({
+  column,
+  children,
+  sortBy,
+  sortOrder,
+  onSort,
+}) => (
+  <th
+    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+    onClick={() => onSort(column)}
+  >
+    <div className="flex items-center space-x-1">
+      <span>{children}</span>
+      {sortBy === column && (
+        <ChevronDown className={`h-4 w-4 transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} />
+      )}
+    </div>
+  </th>
+);
+
 const ResidentsTable: React.FC<ResidentsTableProps> = ({
   residents,
   rollCallView,
@@ -33,23 +61,6 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
   onAttendanceChange,
   onSelect,
 }) => {
-  const SortableHeader: React.FC<{ column: SortBy; children: React.ReactNode }> = ({
-    column,
-    children,
-  }) => (
-    <th
-      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-      onClick={() => onSort(column)}
-    >
-      <div className="flex items-center space-x-1">
-        <span>{children}</span>
-        {sortBy === column && (
-          <ChevronDown className={`h-4 w-4 transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} />
-        )}
-      </div>
-    </th>
-  );
-
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -59,19 +70,25 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Photo
               </th>
-              <SortableHeader column="firstName">First Name</SortableHeader>
-              <SortableHeader column="surname">Surname</SortableHeader>
+              <SortableHeader column="firstName" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>First Name</SortableHeader>
+              <SortableHeader column="surname" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>Surname</SortableHeader>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Nationality
               </th>
-              <SortableHeader column="age">Age</SortableHeader>
-              <SortableHeader column="weekNumber">Week</SortableHeader>
-              <SortableHeader column="roomNumber">Room</SortableHeader>
+              <SortableHeader column="age" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>Age</SortableHeader>
+              <SortableHeader column="weekNumber" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>Week</SortableHeader>
+              <SortableHeader column="roomNumber" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>Room</SortableHeader>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Programme
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Participation
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Episode
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Case Status
               </th>
               {rollCallView && (
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -100,7 +117,7 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
               })
             ) : (
               <tr>
-                <td colSpan={rollCallView ? 10 : 9} className="text-center py-4 text-gray-500">
+                <td colSpan={rollCallView ? 12 : 11} className="text-center py-4 text-gray-500">
                   No residents found
                 </td>
               </tr>

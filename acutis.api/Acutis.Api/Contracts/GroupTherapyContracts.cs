@@ -32,6 +32,23 @@ public sealed class GroupTherapyResidentRemarkDto
     public DateTime UpdatedAtUtc { get; set; }
 }
 
+public sealed class GroupTherapyResidentObservationDto
+{
+    public Guid Id { get; set; }
+    public Guid ResidentId { get; set; }
+    public Guid? ResidentCaseId { get; set; }
+    public Guid? EpisodeId { get; set; }
+    public Guid? EpisodeEventId { get; set; }
+    public Guid ObserverUserId { get; set; }
+    public string ModuleKey { get; set; } = string.Empty;
+    public int SessionNumber { get; set; }
+    public DateTime ObservedAtUtc { get; set; }
+    public List<string> SelectedTerms { get; set; } = new();
+    public string? Notes { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public DateTime UpdatedAtUtc { get; set; }
+}
+
 public sealed class UpsertGroupTherapyResidentRemarkRequest
 {
     public string UnitCode { get; set; } = string.Empty;
@@ -40,4 +57,19 @@ public sealed class UpsertGroupTherapyResidentRemarkRequest
     public string ModuleKey { get; set; } = string.Empty;
     public List<string> NoteLines { get; set; } = new();
     public string FreeText { get; set; } = string.Empty;
+}
+
+public sealed class UpsertGroupTherapyResidentObservationRequest
+{
+    public string UnitCode { get; set; } = string.Empty;
+    public string ProgramCode { get; set; } = string.Empty;
+    public string ModuleKey { get; set; } = string.Empty;
+    public int SessionNumber { get; set; }
+    public Guid ResidentId { get; set; }
+    public Guid? ResidentCaseId { get; set; }
+    public Guid? EpisodeId { get; set; }
+    public Guid? EpisodeEventId { get; set; }
+    public DateTime ObservedAtUtc { get; set; }
+    public List<string> SelectedTerms { get; set; } = new();
+    public string? Notes { get; set; }
 }

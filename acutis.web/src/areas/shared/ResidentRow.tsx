@@ -1,6 +1,7 @@
 // src/components/residents/ResidentRow.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
+import Image from 'next/image';
 import type { Resident } from '../../services/mockDataService';
 
 interface ResidentRowProps {
@@ -10,6 +11,27 @@ interface ResidentRowProps {
   onAttendanceChange: (residentId: number, isPresent: boolean) => void;
   onSelect?: (residentId: number) => void;
 }
+
+type ResidentAvatarProps = {
+  src: string;
+  fallbackSrc: string;
+  alt: string;
+};
+
+const ResidentAvatar: React.FC<ResidentAvatarProps> = ({ src, fallbackSrc, alt }) => {
+  const [imageSrc, setImageSrc] = useState(src);
+
+  return (
+    <Image
+      src={imageSrc}
+      alt={alt}
+      onError={() => setImageSrc(fallbackSrc)}
+      className="h-10 w-10 rounded-full object-cover"
+      width={40}
+      height={40}
+    />
+  );
+};
 
 const ResidentRow: React.FC<ResidentRowProps> = ({
   resident,
@@ -22,21 +44,27 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
     value ? value.replace(/([a-z])([A-Z])/g, "$1 $2") : "Not set";
 
   const fallbackAvatar = resident.fallbackPhoto || `https://i.pravatar.cc/150?img=${((resident.id - 1) % 70) + 1}`;
-
-  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    if (event.currentTarget.src === fallbackAvatar) {
-      return;
-    }
-
-    event.currentTarget.onerror = null;
-    event.currentTarget.src = fallbackAvatar;
-  };
+  const primaryAvatar = resident.photo ?? fallbackAvatar;
 
   const handleRowClick = () => {
     if (onSelect) {
       onSelect(resident.id);
     }
   };
+
+  const episodeSummary = resident.centreEpisodeCode?.trim()
+    ? resident.centreEpisodeCode
+    : resident.entryYear || resident.entryWeek || resident.entrySequence
+      ? `Y${resident.entryYear ?? "-"} / W${resident.entryWeek ?? "-"} / #${resident.entrySequence ?? "-"}`
+      : "Not set";
+
+  const entrySummary = resident.entryYear || resident.entryWeek || resident.entrySequence
+    ? `Y${resident.entryYear ?? "-"} / W${resident.entryWeek ?? "-"} / #${resident.entrySequence ?? "-"}`
+    : null;
+
+  const caseStatus = resident.caseStatus
+    ? resident.caseStatus.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+    : "Not set";
 
   return (
     <tr
@@ -45,11 +73,11 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
     >
       {/* Photo */}
       <td className="px-6 py-4 whitespace-nowrap">
-        <img
-          src={resident.photo ?? fallbackAvatar}
+        <ResidentAvatar
+          key={`${resident.id}-${primaryAvatar}`}
+          src={primaryAvatar}
+          fallbackSrc={fallbackAvatar}
           alt={`${resident.firstName} ${resident.surname}`}
-          onError={handleImageError}
-          className="h-10 w-10 rounded-full object-cover"
         />
       </td>
 
@@ -89,6 +117,17 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
 
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {formatEnumLabel(resident.participationMode)}
+      </td>
+
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <div className="font-medium text-gray-900">{episodeSummary}</div>
+        {entrySummary && (
+          <div className="text-xs text-gray-500">{entrySummary}</div>
+        )}
+      </td>
+
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <div className="font-medium text-gray-900">{caseStatus}</div>
       </td>
 
       {/* Roll call column */}

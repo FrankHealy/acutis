@@ -1,5 +1,6 @@
 import { UNIT_GUIDS } from "./unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
+import { createAuthHeaders } from "@/lib/authMode";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
 
 export type GroupTherapyDay = {
@@ -30,6 +31,22 @@ export type GroupTherapyResidentRemark = {
   updatedAtUtc: string;
 };
 
+export type GroupTherapyResidentObservation = {
+  id: string;
+  residentId: string;
+  residentCaseId?: string | null;
+  episodeId?: string | null;
+  episodeEventId?: string | null;
+  observerUserId: string;
+  moduleKey: string;
+  sessionNumber: number;
+  observedAtUtc: string;
+  selectedTerms: string[];
+  notes?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+};
+
 export type UpsertGroupTherapyResidentRemarkRequest = {
   unitId: UnitId;
   programCode: string;
@@ -39,17 +56,34 @@ export type UpsertGroupTherapyResidentRemarkRequest = {
   freeText: string;
 };
 
+export type UpsertGroupTherapyResidentObservationRequest = {
+  unitId: UnitId;
+  programCode: string;
+  moduleKey: string;
+  sessionNumber: number;
+  residentId: string;
+  residentCaseId?: string | null;
+  episodeId?: string | null;
+  episodeEventId?: string | null;
+  observedAtUtc: string;
+  selectedTerms: string[];
+  notes?: string | null;
+};
+
 const noStoreFetchInit: RequestInit = {
   headers: { Accept: "application/json" },
   cache: "no-store",
 };
 
 export const groupTherapyService = {
-  async getProgram(unitId: UnitId, programCode: string): Promise<GroupTherapyProgram | null> {
+  async getProgram(unitId: UnitId, programCode: string, accessToken?: string | null): Promise<GroupTherapyProgram | null> {
     const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
       `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/program?programCode=${encodeURIComponent(programCode)}`,
-      noStoreFetchInit
+      {
+        ...noStoreFetchInit,
+        headers: createAuthHeaders(accessToken),
+      }
     );
 
     if (response.status === 404) {
@@ -66,12 +100,16 @@ export const groupTherapyService = {
   async getRemarks(
     unitId: UnitId,
     programCode: string,
-    moduleKey: string
+    moduleKey: string,
+    accessToken?: string | null
   ): Promise<GroupTherapyResidentRemark[]> {
     const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
       `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/remarks?programCode=${encodeURIComponent(programCode)}&moduleKey=${encodeURIComponent(moduleKey)}`,
-      noStoreFetchInit
+      {
+        ...noStoreFetchInit,
+        headers: createAuthHeaders(accessToken),
+      }
     );
 
     if (!response.ok) {
@@ -82,14 +120,15 @@ export const groupTherapyService = {
   },
 
   async upsertRemark(
-    payload: UpsertGroupTherapyResidentRemarkRequest
+    payload: UpsertGroupTherapyResidentRemarkRequest,
+    accessToken?: string | null
   ): Promise<GroupTherapyResidentRemark> {
     const unitGuid = UNIT_GUIDS[payload.unitId];
     const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/remarks`, {
       method: "POST",
       headers: {
+        ...createAuthHeaders(accessToken),
         "Content-Type": "application/json",
-        Accept: "application/json",
       },
       body: JSON.stringify({
         programCode: payload.programCode,
@@ -105,5 +144,60 @@ export const groupTherapyService = {
     }
 
     return (await response.json()) as GroupTherapyResidentRemark;
+  },
+
+  async getObservations(
+    unitId: UnitId,
+    programCode: string,
+    moduleKey: string,
+    sessionNumber: number,
+    accessToken?: string | null
+  ): Promise<GroupTherapyResidentObservation[]> {
+    const unitGuid = UNIT_GUIDS[unitId];
+    const response = await fetch(
+      `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/observations?programCode=${encodeURIComponent(programCode)}&moduleKey=${encodeURIComponent(moduleKey)}&sessionNumber=${encodeURIComponent(String(sessionNumber))}`,
+      {
+        ...noStoreFetchInit,
+        headers: createAuthHeaders(accessToken),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Group therapy observations API failed (${response.status})`);
+    }
+
+    return (await response.json()) as GroupTherapyResidentObservation[];
+  },
+
+  async upsertObservation(
+    payload: UpsertGroupTherapyResidentObservationRequest,
+    accessToken?: string | null
+  ): Promise<GroupTherapyResidentObservation> {
+    const unitGuid = UNIT_GUIDS[payload.unitId];
+    const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/observations`, {
+      method: "POST",
+      headers: {
+        ...createAuthHeaders(accessToken),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        programCode: payload.programCode,
+        moduleKey: payload.moduleKey,
+        sessionNumber: payload.sessionNumber,
+        residentId: payload.residentId,
+        residentCaseId: payload.residentCaseId ?? null,
+        episodeId: payload.episodeId ?? null,
+        episodeEventId: payload.episodeEventId ?? null,
+        observedAtUtc: payload.observedAtUtc,
+        selectedTerms: payload.selectedTerms,
+        notes: payload.notes ?? null,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save group therapy observation (${response.status})`);
+    }
+
+    return (await response.json()) as GroupTherapyResidentObservation;
   },
 };

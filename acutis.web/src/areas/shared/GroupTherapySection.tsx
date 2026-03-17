@@ -3,13 +3,22 @@ import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import termRatingsData from "@/data/groupTherapyTermsRatings.json";
 import termsData from "@/data/groupTherapyTerms.json";
 import { CheckCircle } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { residentService } from "@/services/residentService";
 import { type Resident } from "@/services/mockDataService";
-import { groupTherapyService, type GroupTherapyProgram } from "@/services/groupTherapyService";
+import {
+  groupTherapyService,
+  type GroupTherapyProgram,
+  type GroupTherapyResidentObservation,
+} from "@/services/groupTherapyService";
+import { isAuthorizedClient } from "@/lib/authMode";
 import QuoteOfTheDay from "./QuoteOfTheDay";
 
 type Participant = {
   id: number;
+  residentGuid: string | null;
+  residentCaseId?: string | null;
+  episodeId?: string | null;
   firstName: string;
   surname: string;
   age: number;
@@ -47,6 +56,13 @@ type GroupTherapySessionProps = {
 type ResidentRemarkState = {
   noteLines: string[];
   freeText: string;
+};
+
+type ResidentObservationState = {
+  id?: string;
+  selectedTerms: string[];
+  notes: string;
+  observedAtUtc: string;
 };
 
 const therapyTermRatings = termRatingsData as TherapyTermRating[];
@@ -109,6 +125,9 @@ const toModuleKey = (value: string): string =>
 
 const mapResidentToParticipant = (resident: Resident): Participant => ({
   id: resident.id,
+  residentGuid: resident.residentGuid,
+  residentCaseId: resident.residentCaseId ?? null,
+  episodeId: resident.episodeId ?? null,
   firstName: resident.firstName,
   surname: resident.surname,
   age: resident.age,
@@ -116,6 +135,22 @@ const mapResidentToParticipant = (resident: Resident): Participant => ({
   fallbackPhoto: resident.fallbackPhoto,
   hasSpoken: false,
 });
+
+const toDateTimeLocalValue = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const offsetMinutes = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - (offsetMinutes * 60000));
+  return localDate.toISOString().slice(0, 16);
+};
+
+const toObservedAtUtc = (value: string): string => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+};
 
 const mapProgramToModules = (program: GroupTherapyProgram): Record<string, GroupModule> =>
   program.weeks.reduce<Record<string, GroupModule>>((acc, week) => {
@@ -130,6 +165,13 @@ const mapProgramToModules = (program: GroupTherapyProgram): Record<string, Group
     };
     return acc;
   }, {});
+
+const mapObservationToState = (observation: GroupTherapyResidentObservation): ResidentObservationState => ({
+  id: observation.id,
+  selectedTerms: observation.selectedTerms ?? [],
+  notes: observation.notes ?? "",
+  observedAtUtc: observation.observedAtUtc,
+});
 
 const getIsoWeekKey = (date: Date): string => {
   const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -181,11 +223,16 @@ const pickQuestionsForSession = (questions: string[], sessionNumber: number): st
 };
 
 const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionProps) => {
+  const { data: session, status } = useSession();
   const { loadKeys, t } = useLocalization();
   const [sessionRemarks, setSessionRemarks] = useState<Record<number, ResidentRemarkState>>({});
+  const [sessionObservations, setSessionObservations] = useState<Record<string, ResidentObservationState>>({});
   const [selectedResident, setSelectedResident] = useState<Participant | null>(null);
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
   const [currentNoteLines, setCurrentNoteLines] = useState<string[]>([]);
+  const [currentObservationTerms, setCurrentObservationTerms] = useState<string[]>([]);
+  const [currentObservationNotes, setCurrentObservationNotes] = useState("");
+  const [currentObservedAt, setCurrentObservedAt] = useState(() => toDateTimeLocalValue(new Date().toISOString()));
   const [currentFreeText, setCurrentFreeText] = useState("");
   const [usedComments, setUsedComments] = useState<Set<string>>(() => new Set());
   const [termSearch, setTermSearch] = useState("");
@@ -194,6 +241,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
   const [participantsLoading, setParticipantsLoading] = useState(true);
   const [modules, setModules] = useState<Record<string, GroupModule>>(GROUP_MODULES);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [currentSessionNumber, setCurrentSessionNumber] = useState(1);
 
   useEffect(() => {
@@ -212,6 +260,9 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
       "group_therapy.active_question",
     ]);
   }, [loadKeys]);
+
+  const accessToken = session?.accessToken;
+  const canUseLiveApi = isAuthorizedClient(status, accessToken);
 
   const text = (key: string, fallback: string) => {
     const resolved = t(key);
@@ -301,7 +352,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
     const loadParticipants = async () => {
       setParticipantsLoading(true);
       try {
-        const residents = await residentService.getResidents(unitId);
+        const residents = await residentService.getResidents(unitId, accessToken);
         if (isCancelled) {
           return;
         }
@@ -321,14 +372,14 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
     return () => {
       isCancelled = true;
     };
-  }, [unitId]);
+  }, [accessToken, unitId]);
 
   useEffect(() => {
     let isCancelled = false;
 
     const loadProgram = async () => {
       try {
-        const program = await groupTherapyService.getProgram(unitId, PROGRAM_CODE);
+        const program = await groupTherapyService.getProgram(unitId, PROGRAM_CODE, accessToken);
         if (!program || isCancelled) {
           return;
         }
@@ -346,7 +397,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
     return () => {
       isCancelled = true;
     };
-  }, [unitId]);
+  }, [accessToken, unitId]);
 
   useEffect(() => {
     if (!currentModule) {
@@ -357,7 +408,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
 
     const loadRemarks = async () => {
       try {
-        const remarks = await groupTherapyService.getRemarks(unitId, PROGRAM_CODE, currentModule.id);
+        const remarks = await groupTherapyService.getRemarks(unitId, PROGRAM_CODE, currentModule.id, accessToken);
         if (isCancelled) {
           return;
         }
@@ -386,7 +437,50 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
     return () => {
       isCancelled = true;
     };
-  }, [currentModule, unitId]);
+  }, [accessToken, currentModule, unitId]);
+
+  useEffect(() => {
+    if (!currentModule) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadObservations = async () => {
+      try {
+        const observations = await groupTherapyService.getObservations(
+          unitId,
+          PROGRAM_CODE,
+          currentModule.id,
+          currentSessionNumber,
+          accessToken
+        );
+        if (isCancelled) {
+          return;
+        }
+
+        const observationsByResident = observations.reduce<Record<string, ResidentObservationState>>((acc, observation) => {
+          acc[observation.residentId] = mapObservationToState(observation);
+          return acc;
+        }, {});
+
+        setSessionObservations(observationsByResident);
+      } catch {
+        if (!isCancelled) {
+          setSessionObservations({});
+        }
+      }
+    };
+
+    if (canUseLiveApi) {
+      void loadObservations();
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    setSessionObservations({});
+  }, [accessToken, canUseLiveApi, currentModule, currentSessionNumber, unitId]);
 
   useEffect(() => {
     setActiveQuestion(null);
@@ -427,25 +521,39 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
     const ratingLabel = ratingLookup.get(term.ratingId)?.label;
     const line = ratingLabel ? `${term.term} [${ratingLabel}]: ${term.description}` : `${term.term}: ${term.description}`;
     appendNoteLine(line, key);
+    setCurrentObservationTerms((prev) => (prev.includes(term.term) ? prev : [...prev, term.term]));
+  };
+
+  const handleObservationTermRemove = (termValue: string) => {
+    setCurrentObservationTerms((prev) => prev.filter((term) => term !== termValue));
   };
 
   const openResidentModal = (resident: Participant) => {
     setSelectedResident(resident);
     const saved = sessionRemarks[resident.id];
+    const savedObservation = resident.residentGuid ? sessionObservations[resident.residentGuid] : undefined;
     setCurrentNoteLines(saved?.noteLines ?? []);
     setCurrentFreeText(saved?.freeText ?? "");
+    setCurrentObservationTerms(savedObservation?.selectedTerms ?? []);
+    setCurrentObservationNotes(savedObservation?.notes ?? "");
+    setCurrentObservedAt(toDateTimeLocalValue(savedObservation?.observedAtUtc ?? new Date().toISOString()));
     setUsedComments(new Set());
     setTermSearch("");
     setSelectedRatingId("all");
+    setSaveError(null);
   };
 
   const closeModal = () => {
     setSelectedResident(null);
     setCurrentNoteLines([]);
     setCurrentFreeText("");
+    setCurrentObservationTerms([]);
+    setCurrentObservationNotes("");
+    setCurrentObservedAt(toDateTimeLocalValue(new Date().toISOString()));
     setUsedComments(new Set());
     setTermSearch("");
     setSelectedRatingId("all");
+    setSaveError(null);
   };
 
   const markAsSpoken = (participantId: number) => {
@@ -461,30 +569,54 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
       return;
     }
 
+    if (!selectedResident.residentGuid) {
+      setSaveError("Session observation capture requires a live resident record.");
+      return;
+    }
+
     setIsSaving(true);
+    setSaveError(null);
     try {
-      const saved = await groupTherapyService.upsertRemark({
+      const savedRemark = await groupTherapyService.upsertRemark({
         unitId,
         programCode: PROGRAM_CODE,
         residentId: selectedResident.id,
         moduleKey: currentModule.id,
         noteLines: currentNoteLines,
         freeText: currentFreeText,
-      });
+      }, accessToken);
+
+      const savedObservation = await groupTherapyService.upsertObservation({
+        unitId,
+        programCode: PROGRAM_CODE,
+        moduleKey: currentModule.id,
+        sessionNumber: currentSessionNumber,
+        residentId: selectedResident.residentGuid,
+        residentCaseId: selectedResident.residentCaseId ?? null,
+        episodeId: selectedResident.episodeId ?? null,
+        observedAtUtc: toObservedAtUtc(currentObservedAt),
+        selectedTerms: currentObservationTerms,
+        notes: currentObservationNotes.trim() || null,
+      }, accessToken);
 
       setSessionRemarks((prev) => ({
         ...prev,
         [selectedResident.id]: {
-          noteLines: saved.noteLines ?? [],
-          freeText: saved.freeText ?? "",
+          noteLines: savedRemark.noteLines ?? [],
+          freeText: savedRemark.freeText ?? "",
         },
+      }));
+
+      setSessionObservations((prev) => ({
+        ...prev,
+        [selectedResident.residentGuid!]: mapObservationToState(savedObservation),
       }));
 
       markAsSpoken(selectedResident.id);
       closeModal();
       alert(text("group_therapy.save_notes", "Save Notes"));
     } catch {
-      alert("Failed to save notes. Please try again.");
+      setSaveError("Failed to save notes. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -777,6 +909,46 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                   </p>
                 </div>
                 <div>
+                  <h4 className="font-semibold mb-2 text-gray-800">Recorded Observation</h4>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Selected observation terms are stored as the session observation capture for this resident.
+                  </p>
+                  <div className="flex flex-wrap gap-2 min-h-10 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                    {currentObservationTerms.length === 0 ? (
+                      <span className="text-sm text-gray-400">No observation terms selected yet.</span>
+                    ) : (
+                      currentObservationTerms.map((term) => (
+                        <button
+                          key={term}
+                          type="button"
+                          onClick={() => handleObservationTermRemove(term)}
+                          className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700"
+                        >
+                          {term} &times;
+                        </button>
+                      ))
+                    )}
+                  </div>
+                  <label className="mt-3 block">
+                    <span className="mb-1 block text-sm font-medium text-gray-700">Observed time</span>
+                    <input
+                      type="datetime-local"
+                      value={currentObservedAt}
+                      onChange={(event) => setCurrentObservedAt(event.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </label>
+                  <label className="mt-3 block">
+                    <span className="mb-1 block text-sm font-medium text-gray-700">Observation notes</span>
+                    <textarea
+                      value={currentObservationNotes}
+                      onChange={(event) => setCurrentObservationNotes(event.target.value)}
+                      className="w-full h-28 p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 resize-none"
+                      placeholder="Optional observation notes for this session capture..."
+                    />
+                  </label>
+                </div>
+                <div>
                   <h4 className="font-semibold mb-2 text-gray-800">Free Text Note</h4>
                   <textarea
                     value={currentFreeText}
@@ -787,6 +959,12 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                 </div>
               </div>
             </div>
+
+            {saveError && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {saveError}
+              </div>
+            )}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
