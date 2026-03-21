@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import DetoxFloorPlan from "@/areas/detox/components/DetoxFloorPlan";
+import MainFloorPlanWithLabels from "@/areas/detox/components/MainFloorPlanWithLabels";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { operationsService } from "@/services/operationsService";
 import { residentService } from "@/services/residentService";
@@ -517,6 +518,10 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
 const RoomAssignments: React.FC<RoomAssignmentsProps> = ({ unitId }) => {
   if (unitId === "detox") {
     return <DetoxFloorPlan />;
+  }
+
+  if (unitId === "drugs") {
+    return <MainFloorPlanWithLabels />;
   }
 
   return <StandardRoomAssignments unitId={unitId ?? "alcohol"} />;

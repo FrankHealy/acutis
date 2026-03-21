@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Label Overlay Layer</title>
+<style>
+  .label-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  .map-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font: 600 14px Arial, sans-serif;
+    color: #111;
+    background: rgba(255,255,255,0.78);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .label-layer.hidden {
+    display: none;
+  }
+
+  .label-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 1000;
+    font: 600 12px Arial, sans-serif;
+    padding: 6px 10px;
+    border: 1px solid #999;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 6px;
+  }
+
+  /* IMPORTANT:
+     Place this overlay inside the same container as your map
+     (which should be position: relative)
+  */
+  .map-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+  }
+</style>
+</head>
+
+<body>
+
+<button class="label-toggle" onclick="toggleLabels()">Labels On / Off</button>
+
+<div class="map-container">
+
+  <!-- Your existing flat map HTML/SVG should be placed here -->
+
+  <div id="labelLayer" class="label-layer">
+    <div class="map-label" style="left: 625px; top: 1025px;">Dining Hall</div>
+    <div class="map-label" style="left: 785px; top: 1025px;">Coffee Dock</div>
+    <div class="map-label" style="left: 790px; top: 975px;">Ladies WC</div>
+    <div class="map-label" style="left: 790px; top: 1035px;">Men’s WC</div>
+    <div class="map-label" style="left: 705px; top: 1025px;">Small Meeting Room</div>
+    <div class="map-label" style="left: 120px; top: 1085px;">Oratory</div>
+  </div>
+
+</div>
+
+<script>
+  function toggleLabels() {
+    document.getElementById('labelLayer').classList.toggle('hidden');
+  }
+</script>
+
+</body>
+</html>

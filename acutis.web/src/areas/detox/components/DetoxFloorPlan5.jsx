@@ -728,13 +728,13 @@ export default function DetoxFloorPlan() {
         ─────────────────────────────────────────────────────── */}
 
         {[
-          { x: 0.5,   lbl: LABELS.rm1 },
+          { x: 0.5,   lbl: LABELS.rm1, style: { background: '#3b82f6' } },
           { x: 78.5,  lbl: LABELS.rm2 },
           { x: 156.5, lbl: LABELS.rm3 },
           { x: 234.5, lbl: LABELS.rm4 },
           { x: 305.5, lbl: LABELS.rm5 },
-        ].map(({ x, lbl }) => (
-          <Room key={lbl} x={x} y={688.5} w={77} h={72} label={lbl} />
+        ].map(({ x, lbl, style }) => (
+          <Room key={lbl} x={x} y={688.5} w={77} h={72} label={lbl} style={style} />
         ))}
 
         {/* Doors — centred in top border of RM 1-5, facing main corridor */}

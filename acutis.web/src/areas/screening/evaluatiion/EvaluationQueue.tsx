@@ -485,7 +485,7 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-2xl font-semibold text-gray-900">{selectedCandidate.name}</h3>
-                  <p className="text-sm text-gray-500">Screening Form</p>
+                  <p className="text-sm text-gray-500">Resident Case Assessment Form</p>
                 </div>
                 <button
                   onClick={() => setSelectedCandidate(null)}
@@ -508,9 +508,15 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
                   locale={locale}
                   initialSubmissionId={formData.submissionId}
                   initialAnswers={{
-                    callerName:
-                      (formData.draftAnswers?.callerName as JsonValue | undefined) ??
+                    service_user_full_name:
+                      (formData.draftAnswers?.service_user_full_name as JsonValue | undefined) ??
                       `${selectedCandidate.firstName ?? ''} ${selectedCandidate.surname ?? ''}`.trim(),
+                    first_name:
+                      (formData.draftAnswers?.first_name as JsonValue | undefined) ??
+                      (selectedCandidate.firstName ?? ''),
+                    surname:
+                      (formData.draftAnswers?.surname as JsonValue | undefined) ??
+                      (selectedCandidate.surname ?? ''),
                     ...formData.draftAnswers,
                   } as Record<string, JsonValue>}
                   subjectType="admission"
