@@ -22,6 +22,7 @@ public sealed class ResidentCaseConfiguration : IEntityTypeConfiguration<Residen
         builder.Property(x => x.AdmissionDecisionAtUtc).HasColumnType("datetime2");
         builder.Property(x => x.AdmissionDecisionStatus).HasMaxLength(40);
         builder.Property(x => x.AdmissionDecisionReason).HasMaxLength(1000);
+        builder.Property(x => x.IntakePriority);
         builder.Property(x => x.ClosedWithoutAdmissionAtUtc).HasColumnType("datetime2");
         builder.Property(x => x.OpenedAtUtc).HasColumnType("datetime2").IsRequired();
         builder.Property(x => x.LastContactAtUtc).HasColumnType("datetime2");

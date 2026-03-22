@@ -54,6 +54,77 @@ public sealed class TherapySchedulingController : ControllerBase
         }
     }
 
+    [HttpGet("therapy-scheduling/intakes")]
+    public async Task<ActionResult<ApiEnvelope<DetoxIntakeBoardDto>>> GetDetoxIntakeBoard(
+        Guid centreId,
+        [FromQuery] Guid unitId,
+        CancellationToken cancellationToken = default)
+    {
+        var board = await _therapySchedulingService.GetDetoxIntakeBoardAsync(centreId, unitId, cancellationToken);
+        return OkEnvelope(board);
+    }
+
+    [HttpPost("therapy-scheduling/intakes")]
+    public async Task<ActionResult<ApiEnvelope<ScheduledIntakeItemDto>>> AssignScheduledIntake(
+        Guid centreId,
+        [FromBody] AssignScheduledIntakeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var scheduledIntake = await _therapySchedulingService.AssignScheduledIntakeAsync(centreId, request, cancellationToken);
+            return OkEnvelope(scheduledIntake);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestEnvelope("INVALID_INTAKE_ASSIGNMENT", ex.Message);
+        }
+    }
+
+    [HttpPatch("therapy-scheduling/intakes/{scheduledIntakeId:guid}")]
+    public async Task<ActionResult<ApiEnvelope<ScheduledIntakeItemDto>>> UpdateScheduledIntakeStatus(
+        Guid centreId,
+        Guid scheduledIntakeId,
+        [FromBody] UpdateScheduledIntakeStatusRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var scheduledIntake = await _therapySchedulingService.UpdateScheduledIntakeStatusAsync(
+                centreId,
+                scheduledIntakeId,
+                request,
+                cancellationToken);
+            if (scheduledIntake is null)
+            {
+                return NotFoundEnvelope("SCHEDULED_INTAKE_NOT_FOUND", "Scheduled intake was not found.");
+            }
+
+            return OkEnvelope(scheduledIntake);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestEnvelope("INVALID_SCHEDULED_INTAKE_STATUS", ex.Message);
+        }
+    }
+
+    [HttpPatch("therapy-scheduling/intakes/backlog/priority")]
+    public async Task<ActionResult<ApiEnvelope<DetoxIntakeBacklogItemDto>>> UpdateBacklogPriority(
+        Guid centreId,
+        [FromBody] UpdateIntakeBacklogPriorityRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var backlogItem = await _therapySchedulingService.UpdateIntakeBacklogPriorityAsync(centreId, request, cancellationToken);
+            return OkEnvelope(backlogItem);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestEnvelope("INVALID_INTAKE_PRIORITY", ex.Message);
+        }
+    }
+
     [HttpPost("therapy-scheduling/runs")]
     public async Task<ActionResult<ApiEnvelope<WeeklyTherapyRunDto>>> CreateWeeklyRun(
         Guid centreId,

@@ -17,6 +17,7 @@ public sealed class ResidentCase
     public DateTime? AdmissionDecisionAtUtc { get; set; }
     public string? AdmissionDecisionStatus { get; set; }
     public string? AdmissionDecisionReason { get; set; }
+    public int? IntakePriority { get; set; }
     public DateTime? ClosedWithoutAdmissionAtUtc { get; set; }
     public bool RequiresComprehensiveAssessment { get; set; }
     public bool ComprehensiveAssessmentCompleted { get; set; }

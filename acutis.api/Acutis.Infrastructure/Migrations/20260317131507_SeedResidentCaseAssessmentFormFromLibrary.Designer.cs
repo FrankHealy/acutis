@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260317131507_SeedResidentCaseAssessmentFormFromLibrary")]
+    partial class SeedResidentCaseAssessmentFormFromLibrary
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -6576,9 +6579,6 @@ namespace Acutis.Infrastructure.Migrations
                     b.Property<bool>("ComprehensiveAssessmentCompleted")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("IntakePriority")
-                        .HasColumnType("int");
-
                     b.Property<string>("IntakeSource")
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
@@ -11118,49 +11118,6 @@ namespace Acutis.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Acutis.Domain.Entities.ScheduledIntake", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("AssignedStaffId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<Guid>("ResidentCaseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateOnly>("ScheduledDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<Guid>("UnitId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResidentCaseId")
-                        .IsUnique();
-
-                    b.HasIndex("UnitId", "ScheduledDate", "Status");
-
-                    b.ToTable("ScheduledIntake", (string)null);
-                });
-
             modelBuilder.Entity("Acutis.Domain.Entities.ScreeningControl", b =>
                 {
                     b.Property<Guid>("Id")
@@ -13468,25 +13425,6 @@ namespace Acutis.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("SupersedesAssignmentId")
                         .OnDelete(DeleteBehavior.Restrict);
-                });
-
-            modelBuilder.Entity("Acutis.Domain.Entities.ScheduledIntake", b =>
-                {
-                    b.HasOne("Acutis.Domain.Entities.ResidentCase", "ResidentCase")
-                        .WithMany()
-                        .HasForeignKey("ResidentCaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Acutis.Domain.Entities.Unit", "Unit")
-                        .WithMany()
-                        .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ResidentCase");
-
-                    b.Navigation("Unit");
                 });
 
             modelBuilder.Entity("Acutis.Domain.Entities.TextTranslation", b =>

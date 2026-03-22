@@ -2,6 +2,7 @@ using System.Text.Json;
 using Acutis.Api.Contracts;
 using Acutis.Domain.Entities;
 using Acutis.Infrastructure.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Acutis.Api.Services.Forms;
@@ -37,31 +38,46 @@ public sealed class FormConfigurationService : IFormConfigurationService
         ValidateUpsertRequest(request);
 
         var normalizedCode = NormalizeCode(formCode);
-        var nextVersion = await GetNextVersionAsync(normalizedCode, cancellationToken);
         var status = request.MakeActive ? StatusActive : StatusDraft;
+        const int maxAttempts = 3;
 
-        if (request.MakeActive)
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            await DemoteActiveVersionsAsync(normalizedCode, cancellationToken);
+            var nextVersion = await GetNextVersionAsync(normalizedCode, cancellationToken);
+
+            if (request.MakeActive)
+            {
+                await DemoteActiveVersionsAsync(normalizedCode, cancellationToken);
+            }
+
+            var definition = new FormDefinition
+            {
+                Id = Guid.NewGuid(),
+                Code = normalizedCode,
+                Version = nextVersion,
+                Status = status,
+                TitleKey = request.TitleKey.Trim(),
+                DescriptionKey = string.IsNullOrWhiteSpace(request.DescriptionKey) ? null : request.DescriptionKey.Trim(),
+                SchemaJson = request.SchemaJson,
+                UiJson = request.UiJson,
+                RulesJson = request.RulesJson,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.FormDefinitions.Add(definition);
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                return Map(definition);
+            }
+            catch (DbUpdateException exception) when (attempt < maxAttempts - 1 && IsDuplicateFormVersion(exception))
+            {
+                _dbContext.ChangeTracker.Clear();
+            }
         }
 
-        var definition = new FormDefinition
-        {
-            Id = Guid.NewGuid(),
-            Code = normalizedCode,
-            Version = nextVersion,
-            Status = status,
-            TitleKey = request.TitleKey.Trim(),
-            DescriptionKey = string.IsNullOrWhiteSpace(request.DescriptionKey) ? null : request.DescriptionKey.Trim(),
-            SchemaJson = request.SchemaJson,
-            UiJson = request.UiJson,
-            RulesJson = request.RulesJson,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _dbContext.FormDefinitions.Add(definition);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return Map(definition);
+        throw new InvalidOperationException($"Unable to create a unique version for form '{normalizedCode}'.");
     }
 
     public async Task<FormConfigurationVersionDto> EditVersionAsync(
@@ -171,6 +187,12 @@ public sealed class FormConfigurationService : IFormConfigurationService
             .MaxAsync(cancellationToken);
 
         return (currentMax ?? 0) + 1;
+    }
+
+    private static bool IsDuplicateFormVersion(DbUpdateException exception)
+    {
+        return exception.InnerException is SqlException sqlException &&
+               (sqlException.Number == 2601 || sqlException.Number == 2627);
     }
 
     private async Task DemoteActiveVersionsAsync(string formCode, CancellationToken cancellationToken)

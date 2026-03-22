@@ -12,6 +12,10 @@ public interface ITherapySchedulingService
     Task<IReadOnlyList<TherapyTopicDto>> GetTherapyTopicsAsync(CancellationToken cancellationToken = default);
     Task<TherapySchedulingConfigDto> GetConfigAsync(Guid centreId, Guid? unitId, CancellationToken cancellationToken = default);
     Task<TherapySchedulingConfigDto> UpsertConfigAsync(Guid centreId, UpsertTherapySchedulingConfigRequest request, CancellationToken cancellationToken = default);
+    Task<DetoxIntakeBoardDto> GetDetoxIntakeBoardAsync(Guid centreId, Guid unitId, CancellationToken cancellationToken = default);
+    Task<ScheduledIntakeItemDto> AssignScheduledIntakeAsync(Guid centreId, AssignScheduledIntakeRequest request, CancellationToken cancellationToken = default);
+    Task<ScheduledIntakeItemDto?> UpdateScheduledIntakeStatusAsync(Guid centreId, Guid scheduledIntakeId, UpdateScheduledIntakeStatusRequest request, CancellationToken cancellationToken = default);
+    Task<DetoxIntakeBacklogItemDto> UpdateIntakeBacklogPriorityAsync(Guid centreId, UpdateIntakeBacklogPriorityRequest request, CancellationToken cancellationToken = default);
     Task<WeeklyTherapyRunDto> CreateWeeklyRunAsync(Guid centreId, CreateWeeklyTherapyRunRequest request, CancellationToken cancellationToken = default);
     Task<WeeklyTherapyRunWithAssignmentsDto?> GetRunWithAssignmentsAsync(Guid centreId, Guid runId, CancellationToken cancellationToken = default);
     Task<PublishWeeklyTherapyRunResponse?> PublishRunAsync(Guid centreId, Guid runId, PublishWeeklyTherapyRunRequest request, CancellationToken cancellationToken = default);
@@ -24,6 +28,17 @@ public interface ITherapySchedulingService
 public sealed class TherapySchedulingService : ITherapySchedulingService
 {
     private static readonly Guid SystemActorUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+    private static readonly Guid AlcoholUnitId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid DetoxUnitId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+
+    private sealed record ScheduledIntakeProjection(
+        Guid Id,
+        Guid ResidentCaseId,
+        Guid UnitId,
+        DateOnly ScheduledDate,
+        string Status,
+        string? Notes,
+        ResidentCase Case);
 
     private readonly AcutisDbContext _dbContext;
     private readonly IAuditService _auditService;
@@ -164,6 +179,223 @@ public sealed class TherapySchedulingService : ITherapySchedulingService
             cancellationToken);
 
         return MapConfig(existing, centreId, request.UnitId, true, request.UnitId.HasValue ? "Unit" : "Centre");
+    }
+
+    public async Task<DetoxIntakeBoardDto> GetDetoxIntakeBoardAsync(
+        Guid centreId,
+        Guid unitId,
+        CancellationToken cancellationToken = default)
+    {
+        var unit = await _dbContext.Units
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == unitId && x.CentreId == centreId, cancellationToken);
+
+        var preferences = await GetFullPreferencesAsync(centreId, unitId, cancellationToken);
+        var bucketDates = BuildUpcomingIntakeDates(preferences, DateOnly.FromDateTime(DateTime.UtcNow));
+        var bucketDateSet = bucketDates.ToHashSet();
+        var expectedCapacity = Math.Max(unit.Capacity - unit.CurrentOccupancy, 0);
+
+        var scheduledIntakeEntities = await _dbContext.ScheduledIntakes
+            .AsNoTracking()
+            .Where(x =>
+                x.UnitId == unitId &&
+                x.Status == "scheduled" &&
+                bucketDateSet.Contains(x.ScheduledDate))
+            .Include(x => x.ResidentCase)
+            .ThenInclude(x => x.Resident)
+            .Include(x => x.ResidentCase)
+            .ThenInclude(x => x.Unit)
+            .ToListAsync(cancellationToken);
+
+        var scheduledIntakes = scheduledIntakeEntities
+            .Select(x => new ScheduledIntakeProjection(
+                x.Id,
+                x.ResidentCaseId,
+                x.UnitId,
+                x.ScheduledDate,
+                x.Status,
+                x.Notes,
+                x.ResidentCase))
+            .ToList();
+
+        var scheduledCaseIds = scheduledIntakes.Select(x => x.ResidentCaseId).ToHashSet();
+        var backlogCandidates = await BuildBacklogCandidateQuery(centreId).ToListAsync(cancellationToken);
+        var backlogCases = backlogCandidates
+            .Where(x => !scheduledCaseIds.Contains(x.Id) && IsRelevantForIntakeScheduling(x, unitId))
+            .ToList();
+
+        var backlog = backlogCases
+            .Select(MapBacklogItem)
+            .OrderBy(x => x.Priority <= 0 ? int.MaxValue : x.Priority)
+            .ThenBy(x => x.ReferralReceivedAtUtc ?? x.OpenedAtUtc)
+            .ThenBy(x => x.ResidentName)
+            .ToList();
+        for (var index = 0; index < backlog.Count; index++)
+        {
+            if (backlog[index].Priority <= 0)
+            {
+                backlog[index].Priority = index + 1;
+            }
+        }
+
+        var scheduledItems = scheduledIntakes
+            .Select(MapScheduledIntakeItem)
+            .OrderBy(x => x.Priority <= 0 ? int.MaxValue : x.Priority)
+            .ThenBy(x => x.ResidentName)
+            .ToList();
+
+        var buckets = bucketDates
+            .Select(date =>
+            {
+                var assignments = scheduledItems
+                    .Where(item => scheduledIntakes.Any(x => x.Id == item.ScheduledIntakeId && x.ScheduledDate == date))
+                    .ToList();
+
+                return new DetoxIntakeBucketDto
+                {
+                    ScheduledDate = date,
+                    DisplayLabel = $"{date:ddd dd MMM}",
+                    ExpectedCapacity = expectedCapacity,
+                    ScheduledCount = assignments.Count,
+                    RemainingCapacity = Math.Max(expectedCapacity - assignments.Count, 0),
+                    Assignments = assignments
+                };
+            })
+            .ToList();
+
+        return new DetoxIntakeBoardDto
+        {
+            CentreId = centreId,
+            UnitId = unitId,
+            UnitName = unit.Name,
+            Backlog = backlog,
+            Buckets = buckets
+        };
+    }
+
+    public async Task<ScheduledIntakeItemDto> AssignScheduledIntakeAsync(
+        Guid centreId,
+        AssignScheduledIntakeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await _dbContext.Units
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == request.UnitId && x.CentreId == centreId, cancellationToken);
+
+        var preferences = await GetFullPreferencesAsync(centreId, request.UnitId, cancellationToken);
+        var validDates = BuildUpcomingIntakeDates(preferences, DateOnly.FromDateTime(DateTime.UtcNow));
+        if (!validDates.Contains(request.ScheduledDate))
+        {
+            throw new InvalidOperationException("scheduledDate must be one of the upcoming intake dates.");
+        }
+
+        var residentCase = (await BuildBacklogCandidateQuery(centreId).ToListAsync(cancellationToken))
+            .Where(x => IsRelevantForIntakeScheduling(x, request.UnitId))
+            .SingleOrDefault(x => x.Id == request.ResidentCaseId);
+        if (residentCase is null)
+        {
+            throw new InvalidOperationException("ResidentCase is not eligible for detox intake scheduling.");
+        }
+
+        var actorUserId = ResolveActorUserId(_httpContextAccessor.HttpContext?.User);
+        var existing = await _dbContext.ScheduledIntakes
+            .Include(x => x.ResidentCase)
+            .ThenInclude(x => x!.Resident)
+            .Include(x => x.ResidentCase)
+            .ThenInclude(x => x!.Unit)
+            .SingleOrDefaultAsync(x => x.ResidentCaseId == request.ResidentCaseId, cancellationToken);
+
+        if (existing is null)
+        {
+            existing = new ScheduledIntake
+            {
+                Id = Guid.NewGuid(),
+                ResidentCaseId = request.ResidentCaseId,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+            _dbContext.ScheduledIntakes.Add(existing);
+        }
+
+        existing.UnitId = request.UnitId;
+        existing.ScheduledDate = request.ScheduledDate;
+        existing.Status = "scheduled";
+        existing.AssignedStaffId = actorUserId == SystemActorUserId ? null : actorUserId;
+        existing.Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        existing.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapScheduledIntakeItem(new ScheduledIntakeProjection(
+            existing.Id,
+            existing.ResidentCaseId,
+            existing.UnitId,
+            existing.ScheduledDate,
+            existing.Status,
+            existing.Notes,
+            existing.ResidentCase));
+    }
+
+    public async Task<ScheduledIntakeItemDto?> UpdateScheduledIntakeStatusAsync(
+        Guid centreId,
+        Guid scheduledIntakeId,
+        UpdateScheduledIntakeStatusRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedStatus = NormalizeScheduledIntakeStatus(request.Status);
+        var scheduledIntake = await _dbContext.ScheduledIntakes
+            .Include(x => x.ResidentCase)
+            .ThenInclude(x => x!.Resident)
+            .Include(x => x.ResidentCase)
+            .ThenInclude(x => x!.Unit)
+            .SingleOrDefaultAsync(
+                x => x.Id == scheduledIntakeId && x.ResidentCase.CentreId == centreId,
+                cancellationToken);
+
+        if (scheduledIntake is null)
+        {
+            return null;
+        }
+
+        scheduledIntake.Status = normalizedStatus;
+        scheduledIntake.Notes = string.IsNullOrWhiteSpace(request.Notes) ? scheduledIntake.Notes : request.Notes.Trim();
+        scheduledIntake.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapScheduledIntakeItem(new ScheduledIntakeProjection(
+            scheduledIntake.Id,
+            scheduledIntake.ResidentCaseId,
+            scheduledIntake.UnitId,
+            scheduledIntake.ScheduledDate,
+            scheduledIntake.Status,
+            scheduledIntake.Notes,
+            scheduledIntake.ResidentCase));
+    }
+
+    public async Task<DetoxIntakeBacklogItemDto> UpdateIntakeBacklogPriorityAsync(
+        Guid centreId,
+        UpdateIntakeBacklogPriorityRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.Priority <= 0)
+        {
+            throw new InvalidOperationException("priority must be greater than zero.");
+        }
+
+        var residentCase = await _dbContext.ResidentCases
+            .Include(x => x.Resident)
+            .Include(x => x.Unit)
+            .SingleOrDefaultAsync(
+                x => x.Id == request.ResidentCaseId && x.CentreId == centreId && x.ClosedAtUtc == null,
+                cancellationToken);
+
+        if (residentCase is null)
+        {
+            throw new InvalidOperationException("ResidentCase was not found.");
+        }
+
+        residentCase.IntakePriority = request.Priority;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapBacklogItem(residentCase);
     }
 
     public async Task<WeeklyTherapyRunDto> CreateWeeklyRunAsync(
@@ -701,6 +933,14 @@ public sealed class TherapySchedulingService : ITherapySchedulingService
         };
     }
 
+    private async Task<TherapySchedulingConfigDto> GetFullPreferencesAsync(
+        Guid centreId,
+        Guid? unitId,
+        CancellationToken cancellationToken)
+    {
+        return await GetConfigAsync(centreId, unitId, cancellationToken);
+    }
+
     private static TherapySchedulingConfigDto MapConfig(
         TherapySchedulingConfig config,
         Guid centreId,
@@ -929,5 +1169,219 @@ public sealed class TherapySchedulingService : ITherapySchedulingService
             CreatedAtUtc = assignment.CreatedAt,
             CreatedByUserId = assignment.CreatedByUserId
         };
+    }
+
+    private IQueryable<ResidentCase> BuildBacklogCandidateQuery(Guid centreId)
+    {
+        return _dbContext.ResidentCases
+            .Include(x => x.Resident)
+            .Include(x => x.Unit)
+            .Where(x =>
+                x.CentreId == centreId &&
+                x.ResidentId != null &&
+                x.ClosedAtUtc == null &&
+                x.CasePhase != "admitted" &&
+                x.CaseStatus != "declined" &&
+                x.CaseStatus != "closed_without_admission" &&
+                (x.CaseStatus == "screening_completed" ||
+                 x.CaseStatus == "waitlisted" ||
+                 x.CaseStatus == "deferred" ||
+                 x.AdmissionDecisionStatus == "waitlisted" ||
+                 x.AdmissionDecisionStatus == "deferred" ||
+                 x.AdmissionDecisionStatus == "approved"));
+    }
+
+    private static bool IsRelevantForIntakeScheduling(ResidentCase residentCase, Guid unitId)
+    {
+        var resident = residentCase.Resident;
+        var age = resident?.DateOfBirth is DateTime dob
+            ? Math.Max(0, (int)((DateTime.UtcNow.Date - dob.Date).TotalDays / 365.2425))
+            : 0;
+
+        if (unitId == DetoxUnitId)
+        {
+            return residentCase.UnitId == DetoxUnitId ||
+                   residentCase.UnitId == AlcoholUnitId ||
+                   resident?.IsGambeler == true ||
+                   resident?.PrimaryAddiction?.Contains("alcohol", StringComparison.OrdinalIgnoreCase) == true ||
+                   resident?.PrimaryAddiction?.Contains("gambl", StringComparison.OrdinalIgnoreCase) == true ||
+                   (resident?.IsDrug == true && age >= 35);
+        }
+
+        return residentCase.UnitId == unitId;
+    }
+
+    private static DetoxIntakeBacklogItemDto MapBacklogItem(ResidentCase residentCase)
+    {
+        var residentName = string.Join(
+            " ",
+            new[] { residentCase.Resident?.FirstName, residentCase.Resident?.Surname }
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+        return new DetoxIntakeBacklogItemDto
+        {
+            ResidentCaseId = residentCase.Id,
+            ResidentId = residentCase.ResidentId,
+            ResidentName = string.IsNullOrWhiteSpace(residentName) ? "Unknown resident" : residentName,
+            CaseIdentifier = !string.IsNullOrWhiteSpace(residentCase.ReferralReference)
+                ? residentCase.ReferralReference!
+                : residentCase.Id.ToString()[..8].ToUpperInvariant(),
+            UnitName = residentCase.Unit?.Name ?? "Unassigned",
+            CaseStatus = residentCase.CaseStatus,
+            Priority = residentCase.IntakePriority ?? 0,
+            IntakeSource = residentCase.IntakeSource ?? "screening_call",
+            ReferralReceivedAtUtc = residentCase.ReferralReceivedAtUtc,
+            OpenedAtUtc = residentCase.OpenedAtUtc
+        };
+    }
+
+    private static ScheduledIntakeItemDto MapScheduledIntakeItem(ScheduledIntakeProjection scheduledIntake)
+    {
+        var caseItem = scheduledIntake.Case;
+        var residentName = string.Join(
+            " ",
+            new[] { caseItem.Resident?.FirstName, caseItem.Resident?.Surname }
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+        return new ScheduledIntakeItemDto
+        {
+            ScheduledIntakeId = scheduledIntake.Id,
+            ResidentCaseId = scheduledIntake.ResidentCaseId,
+            ResidentId = caseItem.ResidentId,
+            ResidentName = string.IsNullOrWhiteSpace(residentName) ? "Unknown resident" : residentName,
+            CaseIdentifier = !string.IsNullOrWhiteSpace(caseItem.ReferralReference)
+                ? caseItem.ReferralReference!
+                : caseItem.Id.ToString()[..8].ToUpperInvariant(),
+            UnitName = caseItem.Unit?.Name ?? "Unassigned",
+            CaseStatus = caseItem.CaseStatus,
+            Priority = caseItem.IntakePriority ?? 0,
+            Status = scheduledIntake.Status,
+            IntakeSource = caseItem.IntakeSource ?? "screening_call",
+            Notes = scheduledIntake.Notes
+        };
+    }
+
+    private static string NormalizeScheduledIntakeStatus(string status)
+    {
+        var normalized = status.Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "scheduled" => "scheduled",
+            "completed" => "completed",
+            "cancelled" => "cancelled",
+            "noshow" => "noshow",
+            _ => throw new InvalidOperationException("status must be scheduled, completed, cancelled, or noshow.")
+        };
+    }
+
+    private static List<DateOnly> BuildUpcomingIntakeDates(TherapySchedulingConfigDto preferences, DateOnly fromDate)
+    {
+        var intakeDay = Enum.TryParse<DayOfWeek>(preferences.IntakeDayPreference, true, out var parsed)
+            ? parsed
+            : DayOfWeek.Monday;
+        var horizon = fromDate.AddDays(31);
+        var dates = new List<DateOnly>();
+        var cursor = fromDate;
+
+        while (cursor <= horizon)
+        {
+            if (cursor.DayOfWeek != intakeDay)
+            {
+                cursor = cursor.AddDays(1);
+                continue;
+            }
+
+            var scheduled = cursor;
+            if (preferences.ShiftIntakeIfPublicHoliday && string.Equals(preferences.HolidayCalendar, "Ireland", StringComparison.OrdinalIgnoreCase))
+            {
+                while (IsIrishBankHoliday(scheduled))
+                {
+                    scheduled = scheduled.AddDays(1);
+                }
+            }
+
+            if (!dates.Contains(scheduled) && scheduled <= horizon)
+            {
+                dates.Add(scheduled);
+            }
+
+            cursor = cursor.AddDays(7);
+        }
+
+        return dates.OrderBy(x => x).ToList();
+    }
+
+    private static bool IsIrishBankHoliday(DateOnly date)
+    {
+        return GetIrishBankHolidays(date.Year).Contains(date);
+    }
+
+    private static HashSet<DateOnly> GetIrishBankHolidays(int year)
+    {
+        var holidays = new HashSet<DateOnly>();
+
+        AddObservedHoliday(holidays, new DateOnly(year, 1, 1));
+        holidays.Add(GetFirstMondayOfMonth(year, 2));
+        holidays.Add(new DateOnly(year, 3, 17));
+        holidays.Add(GetEasterMonday(year));
+        holidays.Add(GetFirstMondayOfMonth(year, 5));
+        holidays.Add(GetFirstMondayOfMonth(year, 6));
+        holidays.Add(GetFirstMondayOfMonth(year, 8));
+        holidays.Add(GetLastMondayOfMonth(year, 10));
+        AddObservedHoliday(holidays, new DateOnly(year, 12, 25));
+        AddObservedHoliday(holidays, new DateOnly(year, 12, 26));
+
+        return holidays;
+    }
+
+    private static void AddObservedHoliday(HashSet<DateOnly> holidays, DateOnly date)
+    {
+        holidays.Add(date.DayOfWeek switch
+        {
+            DayOfWeek.Saturday => date.AddDays(2),
+            DayOfWeek.Sunday => date.AddDays(1),
+            _ => date
+        });
+    }
+
+    private static DateOnly GetFirstMondayOfMonth(int year, int month)
+    {
+        var date = new DateOnly(year, month, 1);
+        while (date.DayOfWeek != DayOfWeek.Monday)
+        {
+            date = date.AddDays(1);
+        }
+
+        return date;
+    }
+
+    private static DateOnly GetLastMondayOfMonth(int year, int month)
+    {
+        var date = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
+        while (date.DayOfWeek != DayOfWeek.Monday)
+        {
+            date = date.AddDays(-1);
+        }
+
+        return date;
+    }
+
+    private static DateOnly GetEasterMonday(int year)
+    {
+        var a = year % 19;
+        var b = year / 100;
+        var c = year % 100;
+        var d = b / 4;
+        var e = b % 4;
+        var f = (b + 8) / 25;
+        var g = (b - f + 1) / 3;
+        var h = (19 * a + b - d - g + 15) % 30;
+        var i = c / 4;
+        var k = c % 4;
+        var l = (32 + 2 * e + 2 * i - h - k) % 7;
+        var m = (a + 11 * h + 22 * l) / 451;
+        var month = (h + l - 7 * m + 114) / 31;
+        var day = ((h + l - 7 * m + 114) % 31) + 1;
+        return new DateOnly(year, month, day).AddDays(1);
     }
 }

@@ -207,6 +207,74 @@ public sealed class UpsertTherapySchedulingConfigRequest
     public string? Reason { get; set; }
 }
 
+public sealed class DetoxIntakeBoardDto
+{
+    public Guid CentreId { get; set; }
+    public Guid UnitId { get; set; }
+    public string UnitName { get; set; } = string.Empty;
+    public List<DetoxIntakeBacklogItemDto> Backlog { get; set; } = new();
+    public List<DetoxIntakeBucketDto> Buckets { get; set; } = new();
+}
+
+public sealed class DetoxIntakeBacklogItemDto
+{
+    public Guid ResidentCaseId { get; set; }
+    public Guid? ResidentId { get; set; }
+    public string ResidentName { get; set; } = string.Empty;
+    public string CaseIdentifier { get; set; } = string.Empty;
+    public string UnitName { get; set; } = string.Empty;
+    public string CaseStatus { get; set; } = string.Empty;
+    public int Priority { get; set; }
+    public string IntakeSource { get; set; } = string.Empty;
+    public DateTime? ReferralReceivedAtUtc { get; set; }
+    public DateTime OpenedAtUtc { get; set; }
+}
+
+public sealed class DetoxIntakeBucketDto
+{
+    public DateOnly ScheduledDate { get; set; }
+    public string DisplayLabel { get; set; } = string.Empty;
+    public int ExpectedCapacity { get; set; }
+    public int ScheduledCount { get; set; }
+    public int RemainingCapacity { get; set; }
+    public List<ScheduledIntakeItemDto> Assignments { get; set; } = new();
+}
+
+public sealed class ScheduledIntakeItemDto
+{
+    public Guid ScheduledIntakeId { get; set; }
+    public Guid ResidentCaseId { get; set; }
+    public Guid? ResidentId { get; set; }
+    public string ResidentName { get; set; } = string.Empty;
+    public string CaseIdentifier { get; set; } = string.Empty;
+    public string UnitName { get; set; } = string.Empty;
+    public string CaseStatus { get; set; } = string.Empty;
+    public int Priority { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string IntakeSource { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+}
+
+public sealed class AssignScheduledIntakeRequest
+{
+    public Guid ResidentCaseId { get; set; }
+    public Guid UnitId { get; set; }
+    public DateOnly ScheduledDate { get; set; }
+    public string? Notes { get; set; }
+}
+
+public sealed class UpdateScheduledIntakeStatusRequest
+{
+    public string Status { get; set; } = "scheduled";
+    public string? Notes { get; set; }
+}
+
+public sealed class UpdateIntakeBacklogPriorityRequest
+{
+    public Guid ResidentCaseId { get; set; }
+    public int Priority { get; set; }
+}
+
 public sealed class DuplicateCompletionException : InvalidOperationException
 {
     public DuplicateCompletionException(Guid episodeId, Guid therapyTopicId)
