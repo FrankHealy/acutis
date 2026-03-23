@@ -1535,7 +1535,7 @@ const buttonStyle = {
   cursor: 'pointer',
 };
 
-export default function MainFloorPlanWithLabels() {
+export default function MainhouseFloorPlanForMerge() {
   const wrapperRef = useRef(null);
   const canvasWidth = s(SOURCE_WIDTH);
   const canvasHeight = s(SOURCE_HEIGHT);
