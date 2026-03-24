@@ -96,13 +96,13 @@ const Wall = ({ x, y, w = WALL_THIN, h = WALL_THIN, color = '#111', zIndex = 2 }
 );
 
 // ─── Roundel — circle representing a bed/occupant position ──────────────────
-const Roundel = ({ cx, cy, r = 10, name = '' }) => (
+const Roundel = ({ cx, cy, r = 10, name = '', bg = '#fff' }) => (
   <div style={{
     position: 'absolute',
     left: s(cx - r), top: s(cy - r),
     width: s(r * 2), height: s(r * 2),
     borderRadius: '50%',
-    background: '#fff',
+    background: bg,
     border: '1.5px solid #555',
     boxSizing: 'border-box',
     zIndex: 4,
@@ -114,12 +114,12 @@ const Roundel = ({ cx, cy, r = 10, name = '' }) => (
 );
 
 // Place two roundels diagonally — top-left and bottom-right — max size
-const TwoRoundels = ({ x, y, w, h, name1 = '', name2 = '' }) => {
+const TwoRoundels = ({ x, y, w, h, name1 = '', name2 = '', bg = '#fff' }) => {
   const r = Math.floor(Math.min(w * 0.26, h * 0.26));
   return (
     <React.Fragment>
-      <Roundel cx={x + w * 0.28} cy={y + h * 0.32} r={r} name={name1} />
-      <Roundel cx={x + w * 0.72} cy={y + h * 0.72} r={r} name={name2} />
+      <Roundel cx={x + w * 0.28} cy={y + h * 0.32} r={r} name={name1} bg={bg} />
+      <Roundel cx={x + w * 0.72} cy={y + h * 0.72} r={r} name={name2} bg={bg} />
     </React.Fragment>
   );
 };
@@ -558,9 +558,9 @@ export default function DetoxFloorPlan() {
         {/* Far-left wall section: x=0 → x=78 (stops at passage opening) */}
         <div style={{
           position: 'absolute',
-          left: s(0), top: s(610),
-          width: s(78), height: s(8),
-          background: '#111',
+          left: s(-21), top: s(610),
+          width: s(99), height: s(8),
+          background: '#EF4444',
           zIndex: 1,
         }} />
 
@@ -993,7 +993,7 @@ export default function DetoxFloorPlan() {
 
         {/* Bottom left row — RM 1–5 */}
         <TwoRoundels x={0.5}   y={688.5} w={77} h={72} name1="RM 1 Bed A"  name2="RM 1 Bed B"  />
-        <TwoRoundels x={78.5}  y={688.5} w={77} h={72} name1="RM 2 Bed A"  name2="RM 2 Bed B"  />
+        <TwoRoundels x={78.5}  y={688.5} w={77} h={72} name1="RM 2 Bed A"  name2="RM 2 Bed B" bg="#F9A8D4" />
         <TwoRoundels x={156.5} y={688.5} w={77} h={72} name1="RM 3 Bed A"  name2="RM 3 Bed B"  />
         <TwoRoundels x={234.5} y={688.5} w={77} h={72} name1="RM 4 Bed A"  name2="RM 4 Bed B"  />
         <TwoRoundels x={305.5} y={688.5} w={77} h={72} name1="RM 5 Bed A"  name2="RM 5 Bed B"  />
