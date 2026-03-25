@@ -34,6 +34,34 @@ const TEMP_BOTTOM_DOOR_OFFSET = 18;
 const TEMP_BOTTOM_DOOR_WIDTH = 18;
 const TEMP_UPPER_RECT_WIDTH = 38;
 const TEMP_UPPER_RECT_HEIGHT = 44;
+const TEMP_LOWER_VERTICAL = { x: 23, yStart: 20, yEnd: 23, dx: 17 };
+const TEMP_LOWER_LEFT_VERTICAL = { x: 14, yStart: 19, yEnd: 23, dx: 16, dy: 11 };
+const TEMP_MID_RECT = { x: 19, y: 17, dx: 7, dy: 18, width: 40, height: 120 };
+const TEMP_RESIDENCE_DOOR_OFFSET = 8;
+const TEMP_RESIDENCE_DOOR_SIZE = 22;
+const TEMP_RESIDENTS_ENTRANCE_OFFSET = 10;
+const TEMP_RESIDENTS_ENTRANCE_WIDTH = 20;
+const TEMP_STACKED_ROOM_WIDTH = 34;
+const TEMP_STACKED_ROOM_HEIGHT = 26;
+const TEMP_STACKED_ROOM_OFFSET_X = -6;
+const TEMP_STACKED_DOOR_OFFSET_Y = 7;
+const TEMP_STACKED_DOOR_SIZE = 12;
+const TEMP_NARROW_ROOM_OFFSET_X = 60;
+const TEMP_NARROW_ROOM_WIDTH = 30;
+const TEMP_NARROW_ROOM_DOOR_WIDTH = 14;
+const TEMP_RESIDENCE_RECT_OFFSET_X = 10;
+const TEMP_RESIDENCE_RECT_WIDTH = 60;
+const TEMP_RESIDENCE_RECT_HEIGHT = 100;
+const TEMP_LEFT_RECT_WIDTH = 80;
+const TEMP_LEFT_RECT_HEIGHT = 120;
+const TEMP_LEFT_RECT_DOOR_OFFSET_Y = 24;
+const TEMP_LEFT_RECT_DOOR_HEIGHT = 18;
+const TEMP_KITCHEN_LEFT_DOOR_OFFSET_Y = 92;
+const TEMP_KITCHEN_LEFT_DOOR_HEIGHT = 16;
+const TEMP_MICRO_RECT_WIDTH = 73;
+const TEMP_MICRO_RECT_HEIGHT = 40;
+const TEMP_DINING_EXTENSION = 40;
+const TEMP_MICRO_BASE_GAP_WIDTH = 26;
 
 export default function MergedDloorplan() {
   const [zoom, setZoom] = useState(1);
@@ -69,7 +97,75 @@ export default function MergedDloorplan() {
   const tempUpperLeftVerticalLeft = tempUpperLeftHorizontalLeft;
   const tempUpperLeftVerticalTop = tempUpperLeftHorizontalTop;
   const tempUpperLeftVerticalHeight = gridTop(19) - tempUpperLeftVerticalTop;
-
+  const tempLowerVerticalLeft = gridLeft(TEMP_LOWER_VERTICAL.x, TEMP_LOWER_VERTICAL.dx);
+  const tempLowerVerticalTop = gridTop(TEMP_LOWER_VERTICAL.yStart);
+  const tempLowerVerticalHeight =
+    gridTop(TEMP_LOWER_VERTICAL.yEnd) - tempLowerVerticalTop + TEMP_WALL_THICKNESS + 12;
+  const tempLowerHorizontalLeft = tempLowerVerticalLeft - 364 + TEMP_WALL_THICKNESS;
+  const tempLowerHorizontalTop = tempLowerVerticalTop + tempLowerVerticalHeight - TEMP_WALL_THICKNESS;
+  const tempLowerHorizontalWidth = 364;
+  const tempLowerLeftVerticalLeft = gridLeft(TEMP_LOWER_LEFT_VERTICAL.x, TEMP_LOWER_LEFT_VERTICAL.dx);
+  const tempLowerLeftVerticalBaseTop = gridTop(TEMP_LOWER_LEFT_VERTICAL.yStart, TEMP_LOWER_LEFT_VERTICAL.dy);
+  const tempLowerLeftVerticalBottom =
+    gridTop(TEMP_LOWER_LEFT_VERTICAL.yEnd, TEMP_LOWER_LEFT_VERTICAL.dy) + TEMP_WALL_THICKNESS;
+  const tempMidRectLeft = gridLeft(TEMP_MID_RECT.x, TEMP_MID_RECT.dx);
+  const tempMidRectTop = gridTop(TEMP_MID_RECT.y, TEMP_MID_RECT.dy);
+  const tempMidRectBottomRight = tempMidRectLeft + TEMP_MID_RECT.width - 8;
+  const tempMidRectBottomLeft = gridLeft(14) + 8;
+  const tempMidRectBottomWidth = tempMidRectBottomRight - tempMidRectBottomLeft;
+  const tempNewRectLeft = tempLowerLeftVerticalLeft;
+  const tempNewRectBottom = tempLowerLeftVerticalBaseTop + 15;
+  const tempNewRectTop = tempNewRectBottom - 40;
+  const tempNewRectWidth = tempMidRectBottomWidth - 1;
+  const tempResidenceDoorLeft = tempNewRectLeft + tempNewRectWidth - TEMP_WALL_THICKNESS;
+  const tempResidenceDoorTop = tempNewRectTop + TEMP_RESIDENCE_DOOR_OFFSET;
+  const tempCoffeeDockDoorLabelLeft = tempResidenceDoorLeft - 24;
+  const tempCoffeeDockDoorLabelTop = tempResidenceDoorTop + TEMP_RESIDENCE_DOOR_SIZE + 8;
+  const tempResidentsEntranceLeft = gridLeft(18, 55);
+  const tempResidentsEntranceTop = gridTop(17, 17);
+  const tempResidentsEntranceLabelLeft = tempResidentsEntranceLeft - 6;
+  const tempResidentsEntranceLabelTop = gridTop(17, 17) - 28;
+  const tempSingleCellFillLeft = gridLeft(21);
+  const tempSingleCellFillTop = gridTop(19);
+  const tempResidenceRectLeft = tempMidRectLeft + TEMP_RESIDENCE_RECT_OFFSET_X - 90;
+  const tempResidenceRectTop = tempMidRectTop - 50;
+  const tempLeftRectLeft = tempResidenceRectLeft - TEMP_LEFT_RECT_WIDTH;
+  const tempLeftRectTop = tempResidenceRectTop + TEMP_RESIDENCE_RECT_HEIGHT - TEMP_LEFT_RECT_HEIGHT;
+  const tempLeftRectDoorTop = tempLeftRectTop + TEMP_LEFT_RECT_DOOR_OFFSET_Y;
+  const tempKitchenLeftDoorTop = tempLeftRectTop + TEMP_KITCHEN_LEFT_DOOR_OFFSET_Y;
+  const tempKitchenLabelLeft = tempLeftRectLeft + 10;
+  const tempKitchenLabelTop = tempLeftRectTop + 10;
+  const tempSculleryLabelLeft = tempResidenceRectLeft + 10;
+  const tempSculleryLabelTop = tempResidenceRectTop + 10;
+  const tempMicroRectLeft = tempLeftRectLeft - TEMP_MICRO_RECT_WIDTH;
+  const tempMicroRectTop = tempLeftRectTop + TEMP_LEFT_RECT_HEIGHT - TEMP_MICRO_RECT_HEIGHT;
+  const tempCorridorDoorGapFillLeft = tempResidenceDoorLeft + TEMP_WALL_THICKNESS;
+  const tempCorridorDoorGapFillWidth = tempSingleCellFillLeft - 35 - tempCorridorDoorGapFillLeft;
+  const tempLowerLeftVerticalTop = tempNewRectTop;
+  const tempLowerLeftVerticalHeight = tempLowerLeftVerticalBottom - tempLowerLeftVerticalTop;
+  const tempStackedRoomsLeft =
+    tempNewRectLeft + tempNewRectWidth - TEMP_STACKED_ROOM_WIDTH + TEMP_STACKED_ROOM_OFFSET_X;
+  const tempStackedRoomsTop = tempNewRectBottom + TEMP_INTERNAL_WALL_THICKNESS;
+  const tempTopStackedDoorTop = tempStackedRoomsTop + TEMP_STACKED_DOOR_OFFSET_Y;
+  const tempBottomStackedDoorTop = tempStackedRoomsTop + TEMP_STACKED_ROOM_HEIGHT + TEMP_STACKED_DOOR_OFFSET_Y;
+  const tempNewInternalLineTop =
+    tempStackedRoomsTop + TEMP_STACKED_ROOM_HEIGHT * 2 - TEMP_INTERNAL_WALL_THICKNESS;
+  const tempMensWcDropLeft = tempStackedRoomsLeft - 5;
+  const tempMensWcDropTop = tempStackedRoomsTop + TEMP_STACKED_ROOM_HEIGHT * 2 - TEMP_INTERNAL_WALL_THICKNESS;
+  const tempMensWcDropHeight = tempLowerHorizontalTop - tempMensWcDropTop + TEMP_WALL_THICKNESS;
+  const tempDiningRoomFillLeft = tempNewRectLeft;
+  const tempDiningRoomFillTop = tempNewRectBottom;
+  const tempDiningRoomFillWidth = tempMensWcDropLeft - tempNewRectLeft;
+  const tempDiningRoomFillHeight = tempLowerHorizontalTop - tempDiningRoomFillTop + 40;
+  const tempCoffeeDockFillLeft = tempMensWcDropLeft;
+  const tempCoffeeDockFillTop = tempNewRectBottom;
+  const tempCoffeeDockFillWidth = tempLowerHorizontalLeft + tempLowerHorizontalWidth - tempCoffeeDockFillLeft;
+  const tempCoffeeDockFillHeight = tempLowerHorizontalTop - tempCoffeeDockFillTop + TEMP_DINING_EXTENSION;
+  const tempNarrowRoomLeft = tempNewRectLeft + TEMP_NARROW_ROOM_OFFSET_X;
+  const tempNarrowRoomTop = tempNewRectBottom;
+  const tempNarrowRoomHeight = tempNewInternalLineTop - tempNarrowRoomTop;
+  const tempNarrowRoomDoorLeft =
+    tempNarrowRoomLeft + Math.round((TEMP_NARROW_ROOM_WIDTH - TEMP_NARROW_ROOM_DOOR_WIDTH) / 2);
   return (
     <div
       style={{
@@ -368,6 +464,26 @@ export default function MergedDloorplan() {
             <div
               style={{
                 position: "absolute",
+                left: tempTopHorizontalLeft + 12,
+                top: tempVerticalTop + 140,
+                padding: "4px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Admin and mdeical wing
+            </div>
+            <div
+              style={{
+                position: "absolute",
                 left: tempUpperRectLeft,
                 top: tempUpperRectLeftTop,
                 width: TEMP_WALL_THICKNESS,
@@ -449,6 +565,902 @@ export default function MergedDloorplan() {
                 pointerEvents: "none",
               }}
             />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLowerVerticalLeft,
+                top: tempLowerVerticalTop,
+                width: TEMP_WALL_THICKNESS,
+                height: tempLowerVerticalHeight + TEMP_DINING_EXTENSION,
+                background: "#EF4444",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLowerHorizontalLeft,
+                top: tempLowerHorizontalTop + TEMP_DINING_EXTENSION,
+                width: tempLowerHorizontalWidth,
+                height: TEMP_WALL_THICKNESS,
+                background: "#EF4444",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLowerLeftVerticalLeft,
+                top: tempLowerLeftVerticalTop,
+                width: TEMP_WALL_THICKNESS,
+                height: tempLowerLeftVerticalHeight + TEMP_DINING_EXTENSION,
+                background: "#EF4444",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMidRectLeft,
+                top: tempMidRectTop,
+                width: TEMP_MID_RECT.width,
+                height: TEMP_WALL_THICKNESS,
+                background: "#EF4444",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNewRectLeft,
+                top: tempNewRectTop,
+                width: tempNewRectWidth,
+                height: tempNewRectBottom - tempNewRectTop,
+                background: "#FDE68A",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNewRectLeft,
+                top: tempNewRectTop,
+                width: tempMidRectLeft - tempNewRectLeft,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#111",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidentsEntranceLeft,
+                top: tempResidentsEntranceTop,
+                width: TEMP_RESIDENTS_ENTRANCE_WIDTH,
+                height: TEMP_WALL_THICKNESS,
+                background: "#D9D9D9",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidentsEntranceLeft - 2,
+                top: tempResidentsEntranceTop - 2,
+                width: 3,
+                height: TEMP_WALL_THICKNESS + 4,
+                background: "#111",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidentsEntranceLeft + TEMP_RESIDENTS_ENTRANCE_WIDTH - 1,
+                top: tempResidentsEntranceTop - 2,
+                width: 3,
+                height: TEMP_WALL_THICKNESS + 4,
+                background: "#111",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMidRectLeft + TEMP_MID_RECT.width - TEMP_WALL_THICKNESS,
+                top: tempMidRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_MID_RECT.height - 30,
+                background: "#111",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMidRectLeft,
+                top: tempMidRectTop,
+                width: TEMP_MID_RECT.width,
+                height: TEMP_MID_RECT.height - 30,
+                background: "#FDE68A",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidenceRectLeft,
+                top: tempResidenceRectTop,
+                width: TEMP_RESIDENCE_RECT_WIDTH,
+                height: TEMP_RESIDENCE_RECT_HEIGHT,
+                background: "#D9D9D9",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidenceRectLeft + TEMP_RESIDENCE_RECT_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempResidenceRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_RESIDENCE_RECT_HEIGHT,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidenceRectLeft,
+                top: tempResidenceRectTop,
+                width: TEMP_RESIDENCE_RECT_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidenceRectLeft,
+                top: tempResidenceRectTop + TEMP_RESIDENCE_RECT_HEIGHT - TEMP_INTERNAL_WALL_THICKNESS,
+                width: TEMP_RESIDENCE_RECT_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft,
+                top: tempLeftRectTop,
+                width: TEMP_LEFT_RECT_WIDTH,
+                height: TEMP_LEFT_RECT_HEIGHT,
+                background: "#D9D9D9",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft,
+                top: tempLeftRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_LEFT_RECT_HEIGHT,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft + TEMP_LEFT_RECT_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempLeftRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_LEFT_RECT_HEIGHT,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft + TEMP_LEFT_RECT_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempLeftRectDoorTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_LEFT_RECT_DOOR_HEIGHT,
+                background: "#FDE68A",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft + TEMP_LEFT_RECT_WIDTH - 3,
+                top: tempLeftRectDoorTop - 2,
+                width: 6,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft + TEMP_LEFT_RECT_WIDTH - 3,
+                top: tempLeftRectDoorTop + TEMP_LEFT_RECT_DOOR_HEIGHT,
+                width: 6,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft,
+                top: tempLeftRectTop,
+                width: TEMP_LEFT_RECT_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft,
+                top: tempLeftRectTop + TEMP_LEFT_RECT_HEIGHT - TEMP_INTERNAL_WALL_THICKNESS,
+                width: TEMP_LEFT_RECT_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft,
+                top: tempKitchenLeftDoorTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_KITCHEN_LEFT_DOOR_HEIGHT,
+                background: "#D9D9D9",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft - 2,
+                top: tempKitchenLeftDoorTop - 2,
+                width: TEMP_INTERNAL_WALL_THICKNESS + 4,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempLeftRectLeft - 2,
+                top: tempKitchenLeftDoorTop + TEMP_KITCHEN_LEFT_DOOR_HEIGHT,
+                width: TEMP_INTERNAL_WALL_THICKNESS + 4,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMicroRectLeft,
+                top: tempMicroRectTop,
+                width: TEMP_MICRO_RECT_WIDTH,
+                height: TEMP_MICRO_RECT_HEIGHT,
+                background: "#D9D9D9",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMicroRectLeft,
+                top: tempMicroRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_MICRO_RECT_HEIGHT,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMicroRectLeft,
+                top: tempMicroRectTop,
+                width: TEMP_MICRO_RECT_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMicroRectLeft,
+                top: tempMicroRectTop + TEMP_MICRO_RECT_HEIGHT - TEMP_WALL_THICKNESS,
+                width: TEMP_MICRO_RECT_WIDTH,
+                height: TEMP_WALL_THICKNESS,
+                background: "#EF4444",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMicroRectLeft + TEMP_MICRO_RECT_WIDTH - TEMP_MICRO_BASE_GAP_WIDTH,
+                top: tempMicroRectTop + TEMP_MICRO_RECT_HEIGHT - TEMP_WALL_THICKNESS,
+                width: TEMP_MICRO_BASE_GAP_WIDTH,
+                height: TEMP_WALL_THICKNESS,
+                background: "#D9D9D9",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempCorridorDoorGapFillLeft,
+                top: tempSingleCellFillTop - 20,
+                width: tempCorridorDoorGapFillWidth,
+                height: GRID_SIZE + 20,
+                background: "#D9D9D9",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempSingleCellFillLeft - 35,
+                top: tempSingleCellFillTop - 20,
+                width: GRID_SIZE + 58,
+                height: GRID_SIZE + 20,
+                background: "#D9D9D9",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMidRectLeft,
+                top: tempMidRectTop,
+                width: TEMP_WALL_THICKNESS,
+                height: TEMP_MID_RECT.height - 30 - 40,
+                background: "#EF4444",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNewRectLeft,
+                top: tempNewRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: 40 + TEMP_WALL_THICKNESS,
+                background: "#111",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNewRectLeft + tempNewRectWidth - TEMP_WALL_THICKNESS,
+                top: tempNewRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: 40 + TEMP_WALL_THICKNESS,
+                background: "#111",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidenceDoorLeft,
+                top: tempResidenceDoorTop,
+                width: TEMP_WALL_THICKNESS,
+                height: TEMP_RESIDENCE_DOOR_SIZE,
+                background: "#D9D9D9",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidenceDoorLeft - 3,
+                top: tempResidenceDoorTop - 3,
+                width: TEMP_WALL_THICKNESS + 6,
+                height: 3,
+                background: "#111",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidenceDoorLeft - 3,
+                top: tempResidenceDoorTop + TEMP_RESIDENCE_DOOR_SIZE,
+                width: TEMP_WALL_THICKNESS + 6,
+                height: 3,
+                background: "#111",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNewRectLeft,
+                top: tempNewRectBottom,
+                width: tempNewRectWidth,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#111",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempDiningRoomFillLeft,
+                top: tempDiningRoomFillTop,
+                width: tempDiningRoomFillWidth,
+                height: tempDiningRoomFillHeight,
+                background: "#D9D9D9",
+                zIndex: 53,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempCoffeeDockFillLeft,
+                top: tempCoffeeDockFillTop,
+                width: tempCoffeeDockFillWidth,
+                height: tempCoffeeDockFillHeight,
+                background: "#D9D9D9",
+                zIndex: 53,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft,
+                top: tempStackedRoomsTop,
+                width: TEMP_STACKED_ROOM_WIDTH,
+                height: TEMP_STACKED_ROOM_HEIGHT * 2,
+                background: "#D9D9D9",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft,
+                top: tempStackedRoomsTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_STACKED_ROOM_HEIGHT * 2,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft + TEMP_STACKED_ROOM_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempStackedRoomsTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_STACKED_ROOM_HEIGHT * 2,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft + TEMP_STACKED_ROOM_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempTopStackedDoorTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_STACKED_DOOR_SIZE,
+                background: "#FDE68A",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft + TEMP_STACKED_ROOM_WIDTH - 3,
+                top: tempTopStackedDoorTop - 2,
+                width: 6,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft + TEMP_STACKED_ROOM_WIDTH - 3,
+                top: tempTopStackedDoorTop + TEMP_STACKED_DOOR_SIZE,
+                width: 6,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft + TEMP_STACKED_ROOM_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempBottomStackedDoorTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_STACKED_DOOR_SIZE,
+                background: "#FDE68A",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft + TEMP_STACKED_ROOM_WIDTH - 3,
+                top: tempBottomStackedDoorTop - 2,
+                width: 6,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft + TEMP_STACKED_ROOM_WIDTH - 3,
+                top: tempBottomStackedDoorTop + TEMP_STACKED_DOOR_SIZE,
+                width: 6,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft,
+                top: tempStackedRoomsTop + TEMP_STACKED_ROOM_HEIGHT - TEMP_INTERNAL_WALL_THICKNESS,
+                width: TEMP_STACKED_ROOM_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStackedRoomsLeft,
+                top: tempStackedRoomsTop + TEMP_STACKED_ROOM_HEIGHT * 2 - TEMP_INTERNAL_WALL_THICKNESS,
+                width: TEMP_STACKED_ROOM_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNewRectLeft,
+                top: tempStackedRoomsTop + TEMP_STACKED_ROOM_HEIGHT * 2 - TEMP_INTERNAL_WALL_THICKNESS,
+                width: tempStackedRoomsLeft - tempNewRectLeft,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempMensWcDropLeft,
+                top: tempMensWcDropTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: tempMensWcDropHeight + 40,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomLeft,
+                top: tempNarrowRoomTop,
+                width: TEMP_NARROW_ROOM_WIDTH,
+                height: tempNarrowRoomHeight,
+                background: "#FDE68A",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomLeft,
+                top: tempNarrowRoomTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: tempNarrowRoomHeight,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomLeft + TEMP_NARROW_ROOM_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempNarrowRoomTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: tempNarrowRoomHeight,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomDoorLeft,
+                top: tempNarrowRoomTop,
+                width: TEMP_NARROW_ROOM_DOOR_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#FDE68A",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomDoorLeft - 2,
+                top: tempNarrowRoomTop - 2,
+                width: 2,
+                height: TEMP_INTERNAL_WALL_THICKNESS + 4,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomDoorLeft + TEMP_NARROW_ROOM_DOOR_WIDTH,
+                top: tempNarrowRoomTop - 2,
+                width: 2,
+                height: TEMP_INTERNAL_WALL_THICKNESS + 4,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomLeft,
+                top: tempNewInternalLineTop - TEMP_INTERNAL_WALL_THICKNESS,
+                width: tempNarrowRoomDoorLeft - tempNarrowRoomLeft,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomDoorLeft - 1,
+                top: tempNewInternalLineTop - TEMP_INTERNAL_WALL_THICKNESS - 1,
+                width: TEMP_NARROW_ROOM_DOOR_WIDTH + 2,
+                height: TEMP_INTERNAL_WALL_THICKNESS + 2,
+                background: "#FDE68A",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomDoorLeft + TEMP_NARROW_ROOM_DOOR_WIDTH,
+                top: tempNewInternalLineTop - TEMP_INTERNAL_WALL_THICKNESS,
+                width:
+                  tempNarrowRoomLeft + TEMP_NARROW_ROOM_WIDTH -
+                  (tempNarrowRoomDoorLeft + TEMP_NARROW_ROOM_DOOR_WIDTH),
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempCoffeeDockDoorLabelLeft,
+                top: tempCoffeeDockDoorLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 0,
+              }}
+            >
+              Coffee Dock Door
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempKitchenLabelLeft,
+                top: tempKitchenLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 0,
+              }}
+            >
+              Kitchen
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempSculleryLabelLeft,
+                top: tempSculleryLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 0,
+              }}
+            >
+              Scullery
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempResidentsEntranceLabelLeft,
+                top: tempResidentsEntranceLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 0,
+              }}
+            >
+              Residents entrance
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempNewRectLeft + 10,
+                top: tempNewRectTop + 12,
+                padding: "4px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 0,
+              }}
+            >
+              dining room corridor
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempMidRectLeft + 8,
+                top: tempMidRectTop + 8,
+                padding: "4px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 0,
+              }}
+            >
+              residence entrance corridor
+            </div>
           </div>
         </div>
       </div>
