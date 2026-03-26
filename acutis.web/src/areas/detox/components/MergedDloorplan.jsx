@@ -62,8 +62,9 @@ const TEMP_FAR_LEFT_RECT_WIDTH = 100;
 const TEMP_FAR_LEFT_RECT_HEIGHT = 80;
 const TEMP_FAR_LEFT_RECT_DOOR_WIDTH = 16;
 const TEMP_STAFF_ADJACENT_ROOM_HEIGHT_INCREASE = 30;
-const TEMP_MYSTERY_SIDE_RECT_WIDTH = 40;
+const TEMP_MYSTERY_SIDE_RECT_WIDTH = 68;
 const TEMP_MYSTERY_SIDE_RECT_HEIGHT = 80;
+const TEMP_CONVENT_CORRIDOR_TOP_DOOR_WIDTH = 18;
 const TEMP_MICRO_RECT_WIDTH = 143;
 const TEMP_MICRO_RECT_HEIGHT = 40;
 const TEMP_MICRO_RECT_FILL_LEFT_EXTENSION = 20;
@@ -75,8 +76,15 @@ const TEMP_CONVENT_RECT_WIDTH = 90;
 const TEMP_CONVENT_RECT_HEIGHT = 100;
 const TEMP_CONVENT_ADJACENT_RECT_WIDTH = TEMP_CONVENT_RECT_WIDTH / 2;
 const TEMP_CONVENT_ADJACENT_RECT_HEIGHT = TEMP_CONVENT_RECT_HEIGHT - 20;
+const TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_WIDTH = 90;
+const TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_HEIGHT = 100;
+const TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_DOOR_HEIGHT = 18;
+const TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_DOOR_OFFSET_FROM_BOTTOM = 10;
 const TEMP_DOWN_STAITS_OFFICE_WIDTH = 110;
 const TEMP_DOWN_STAITS_OFFICE_HEIGHT = TEMP_CONVENT_ADJACENT_RECT_HEIGHT + 25;
+const TEMP_ORATORY_RIGHT_ROOM_WIDTH = 85;
+const TEMP_ORATORY_RIGHT_ROOM_HEIGHT = 60;
+const TEMP_GUEST_TOILET_TOP_RECT_HEIGHT = 122;
 const TEMP_DINING_EXTENSION = 40;
 const TEMP_LOWER_LEFT_EXTENSION_WIDTH = 80;
 const TEMP_LOWER_LEFT_EXTENSION_HEIGHT = 60;
@@ -159,13 +167,13 @@ export default function MergedDloorplan() {
     tempFarLeftRectLeft + TEMP_FAR_LEFT_RECT_WIDTH - TEMP_FAR_LEFT_RECT_DOOR_WIDTH - 10;
   const tempStaffAdjacentRoomWidth = TEMP_FAR_LEFT_RECT_WIDTH - 10;
   const tempStaffAdjacentRoomHeight =
-    TEMP_FAR_LEFT_RECT_HEIGHT + TEMP_STAFF_ADJACENT_ROOM_HEIGHT_INCREASE;
+    TEMP_FAR_LEFT_RECT_HEIGHT + TEMP_STAFF_ADJACENT_ROOM_HEIGHT_INCREASE - 1;
   const tempStaffAdjacentRoomLeft = tempFarLeftRectLeft - tempStaffAdjacentRoomWidth;
   const tempStaffAdjacentRoomTop =
     tempFarLeftRectTop + TEMP_FAR_LEFT_RECT_HEIGHT - tempStaffAdjacentRoomHeight;
-  const tempMysterySideRectLeft = tempStaffAdjacentRoomLeft - TEMP_MYSTERY_SIDE_RECT_WIDTH;
-  const tempMysterySideRectTop =
-    tempStaffAdjacentRoomTop + tempStaffAdjacentRoomHeight - TEMP_MYSTERY_SIDE_RECT_HEIGHT;
+  const tempMysterySideRectLeft = tempStaffAdjacentRoomLeft - TEMP_MYSTERY_SIDE_RECT_WIDTH + 5;
+  const tempMysterySideRectBottom =
+    tempStaffAdjacentRoomTop + tempStaffAdjacentRoomHeight;
   const tempMysteryRoomLabelLeft = tempStaffAdjacentRoomLeft + 8;
   const tempMysteryRoomLabelTop = tempStaffAdjacentRoomTop + 8;
   const tempKitchenLabelLeft = tempLeftRectLeft + 10;
@@ -198,6 +206,22 @@ export default function MergedDloorplan() {
     tempOutsideDairySideRectTop + TEMP_OUTSIDE_DAIRY_SIDE_RECT_HEIGHT - TEMP_INTERNAL_WALL_THICKNESS;
   const tempConventAdjacentRectLeft = tempConventRectLeft - TEMP_CONVENT_ADJACENT_RECT_WIDTH;
   const tempConventAdjacentRectTop = tempConventRectTop;
+  const tempDownStairsOfficeTopRectLeft = tempConventAdjacentRectLeft;
+  const tempDownStairsOfficeTopRectTop =
+    tempConventAdjacentRectTop - TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_HEIGHT;
+  const tempStaircaseHallCenterMarkerLeft =
+    tempDownStairsOfficeTopRectLeft + Math.round(TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_WIDTH / 2) - 1;
+  const tempStaircaseHallCenterMarkerTop =
+    tempDownStairsOfficeTopRectTop + Math.round((TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_HEIGHT - 20) / 2);
+  const tempMainStaircaseLabelLeft = tempStaircaseHallCenterMarkerLeft - 6;
+  const tempMainStaircaseLabelTop = tempStaircaseHallCenterMarkerTop - 24;
+  const tempStaircaseHallLabelLeft = tempDownStairsOfficeTopRectLeft + 8;
+  const tempStaircaseHallLabelTop = tempDownStairsOfficeTopRectTop + 8;
+  const tempDownStairsOfficeTopRectDoorTop =
+    tempDownStairsOfficeTopRectTop +
+    TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_HEIGHT -
+    TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_DOOR_OFFSET_FROM_BOTTOM -
+    TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_DOOR_HEIGHT;
   const tempDownStaitsOfficeLeft = tempConventAdjacentRectLeft - TEMP_DOWN_STAITS_OFFICE_WIDTH;
   const tempDownStaitsOfficeTop =
     tempConventAdjacentRectTop + TEMP_CONVENT_ADJACENT_RECT_HEIGHT - TEMP_DOWN_STAITS_OFFICE_HEIGHT;
@@ -209,6 +233,21 @@ export default function MergedDloorplan() {
   const tempDownStaitsOfficeLabelTop = tempDownStaitsOfficeTop + 8;
   const tempOratoryLabelLeft = tempDownStaitsOfficeLeft + 8;
   const tempOratoryLabelTop = tempDownStaitsOfficeTop + 28;
+  const tempOratoryRightRoomLeft = tempDownStaitsOfficeLeft + TEMP_DOWN_STAITS_OFFICE_WIDTH - 85;
+  const tempOratoryRightRoomTop = tempDownStaitsOfficeTop - 58;
+  const tempGuestToiletTopRectLeft = tempOratoryRightRoomLeft;
+  const tempGuestToiletTopRectTop = tempOratoryRightRoomTop - TEMP_GUEST_TOILET_TOP_RECT_HEIGHT;
+  const tempMysterySideRectTop = tempGuestToiletTopRectTop;
+  const tempMysterySideRectHeight = tempMysterySideRectBottom - tempMysterySideRectTop;
+  const tempConventCorridorTopDoorLeft =
+    tempMysterySideRectLeft +
+    Math.round((TEMP_MYSTERY_SIDE_RECT_WIDTH - TEMP_CONVENT_CORRIDOR_TOP_DOOR_WIDTH) / 2);
+  const tempConventCorridorLabelLeft = tempMysterySideRectLeft + 8;
+  const tempConventCorridorLabelTop = tempMysterySideRectTop + 8;
+  const tempGuestToiletLabelLeft = tempOratoryRightRoomLeft + 8;
+  const tempGuestToiletLabelTop = tempOratoryRightRoomTop + 8;
+  const tempLibraryLabelLeft = tempGuestToiletTopRectLeft + 8;
+  const tempLibraryLabelTop = tempGuestToiletTopRectTop + 8;
   const tempCorridorDoorGapFillLeft = tempResidenceDoorLeft + TEMP_WALL_THICKNESS;
   const tempCorridorDoorGapFillWidth = tempSingleCellFillLeft - 35 - tempCorridorDoorGapFillLeft;
   const tempLowerLeftVerticalTop = tempNewRectTop;
@@ -234,8 +273,26 @@ export default function MergedDloorplan() {
   const tempNarrowRoomLeft = tempNewRectLeft + TEMP_NARROW_ROOM_OFFSET_X;
   const tempNarrowRoomTop = tempNewRectBottom;
   const tempNarrowRoomHeight = tempNewInternalLineTop - tempNarrowRoomTop;
+  const tempKitchenCorridorLeftRoomLeft = tempNewRectLeft;
+  const tempKitchenCorridorLeftRoomTop = tempNarrowRoomTop;
+  const tempKitchenCorridorLeftRoomWidth = tempNarrowRoomLeft - tempNewRectLeft;
+  const tempKitchenCorridorLeftRoomHeight = tempNarrowRoomHeight;
+  const tempWayUpRoomInnerLineTop =
+    tempKitchenCorridorLeftRoomTop + tempKitchenCorridorLeftRoomHeight - 25;
   const tempNarrowRoomDoorLeft =
     tempNarrowRoomLeft + Math.round((TEMP_NARROW_ROOM_WIDTH - TEMP_NARROW_ROOM_DOOR_WIDTH) / 2);
+  const tempKitchenCorridorLabelLeft = tempNarrowRoomLeft + 4;
+  const tempKitchenCorridorLabelTop = tempNarrowRoomTop + 8;
+  const tempWayUpRoomLabelLeft = tempKitchenCorridorLeftRoomLeft + 8;
+  const tempWayUpRoomLabelTop = tempKitchenCorridorLeftRoomTop + 8;
+  const tempFoodStoreRoomLeft = tempNarrowRoomLeft + TEMP_NARROW_ROOM_WIDTH;
+  const tempFoodStoreRoomWidth = tempStackedRoomsLeft - tempFoodStoreRoomLeft;
+  const tempDryFoodStoreLabelLeft = tempFoodStoreRoomLeft + 8;
+  const tempDryFoodStoreLabelTop = tempNarrowRoomTop + 8;
+  const tempServingAreaLabelLeft = tempFoodStoreRoomLeft + 8;
+  const tempServingAreaLabelTop = tempWayUpRoomInnerLineTop + 8;
+  const tempDiningRoomLabelLeft = tempDiningRoomFillLeft + 10;
+  const tempDiningRoomLabelTop = tempWayUpRoomInnerLineTop + 10;
   return (
     <div
       style={{
@@ -1297,6 +1354,222 @@ export default function MergedDloorplan() {
             <div
               style={{
                 position: "absolute",
+                left: tempOratoryRightRoomLeft,
+                top: tempOratoryRightRoomTop,
+                width: TEMP_ORATORY_RIGHT_ROOM_WIDTH,
+                height: TEMP_ORATORY_RIGHT_ROOM_HEIGHT,
+                background: "#D9D9D9",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempOratoryRightRoomLeft,
+                top: tempOratoryRightRoomTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_ORATORY_RIGHT_ROOM_HEIGHT,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempOratoryRightRoomLeft,
+                top: tempOratoryRightRoomTop,
+                width: TEMP_ORATORY_RIGHT_ROOM_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempOratoryRightRoomLeft + TEMP_ORATORY_RIGHT_ROOM_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempOratoryRightRoomTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_ORATORY_RIGHT_ROOM_HEIGHT,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempOratoryRightRoomLeft,
+                top: tempOratoryRightRoomTop + TEMP_ORATORY_RIGHT_ROOM_HEIGHT - TEMP_INTERNAL_WALL_THICKNESS,
+                width: TEMP_ORATORY_RIGHT_ROOM_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempGuestToiletTopRectLeft,
+                top: tempGuestToiletTopRectTop,
+                width: TEMP_ORATORY_RIGHT_ROOM_WIDTH,
+                height: TEMP_GUEST_TOILET_TOP_RECT_HEIGHT,
+                background: "#D9D9D9",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempGuestToiletTopRectLeft,
+                top: tempGuestToiletTopRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_GUEST_TOILET_TOP_RECT_HEIGHT,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempGuestToiletTopRectLeft,
+                top: tempGuestToiletTopRectTop,
+                width: TEMP_ORATORY_RIGHT_ROOM_WIDTH,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempGuestToiletTopRectLeft + TEMP_ORATORY_RIGHT_ROOM_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempGuestToiletTopRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_GUEST_TOILET_TOP_RECT_HEIGHT,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempDownStairsOfficeTopRectLeft,
+                top: tempDownStairsOfficeTopRectTop,
+                width: TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_WIDTH,
+                height: TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_HEIGHT,
+                background: "#FDE68A",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left:
+                  tempDownStairsOfficeTopRectLeft +
+                  TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_WIDTH -
+                  TEMP_INTERNAL_WALL_THICKNESS,
+                top: tempDownStairsOfficeTopRectTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS,
+                height: TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_HEIGHT,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left:
+                  tempDownStairsOfficeTopRectLeft +
+                  TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_WIDTH -
+                  TEMP_INTERNAL_WALL_THICKNESS -
+                  1,
+                top: tempDownStairsOfficeTopRectDoorTop,
+                width: TEMP_INTERNAL_WALL_THICKNESS + 2,
+                height: TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_DOOR_HEIGHT,
+                background: "#FFFFFF",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left:
+                  tempDownStairsOfficeTopRectLeft +
+                  TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_WIDTH -
+                  4,
+                top: tempDownStairsOfficeTopRectDoorTop - 2,
+                width: 4,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left:
+                  tempDownStairsOfficeTopRectLeft +
+                  TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_WIDTH -
+                  2,
+                top: tempDownStairsOfficeTopRectDoorTop - 2,
+                width: 2,
+                height: TEMP_INTERNAL_WALL_THICKNESS + 4,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left:
+                  tempDownStairsOfficeTopRectLeft +
+                  TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_WIDTH -
+                  4,
+                top:
+                  tempDownStairsOfficeTopRectDoorTop +
+                  TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_DOOR_HEIGHT,
+                width: 4,
+                height: 2,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left:
+                  tempDownStairsOfficeTopRectLeft +
+                  TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_WIDTH -
+                  2,
+                top:
+                  tempDownStairsOfficeTopRectDoorTop +
+                  TEMP_DOWN_STAIRS_OFFICE_TOP_RECT_DOOR_HEIGHT -
+                  2,
+                width: 2,
+                height: TEMP_INTERNAL_WALL_THICKNESS + 4,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
                 left: tempLowerLeftExtensionLeft,
                 top: tempLowerLeftExtensionTop,
                 width: TEMP_LOWER_LEFT_EXTENSION_WIDTH,
@@ -1336,8 +1609,8 @@ export default function MergedDloorplan() {
                 left: tempMysterySideRectLeft,
                 top: tempMysterySideRectTop,
                 width: TEMP_MYSTERY_SIDE_RECT_WIDTH,
-                height: TEMP_MYSTERY_SIDE_RECT_HEIGHT,
-                background: "#D9D9D9",
+                height: tempMysterySideRectHeight,
+                background: "#FDE68A",
                 zIndex: 54,
                 pointerEvents: "none",
               }}
@@ -1347,8 +1620,8 @@ export default function MergedDloorplan() {
                 position: "absolute",
                 left: tempMysterySideRectLeft,
                 top: tempMysterySideRectTop,
-                width: TEMP_INTERNAL_WALL_THICKNESS,
-                height: TEMP_MYSTERY_SIDE_RECT_HEIGHT,
+                width: tempConventCorridorTopDoorLeft - tempMysterySideRectLeft,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
                 background: "#333",
                 zIndex: 55,
                 pointerEvents: "none",
@@ -1357,9 +1630,48 @@ export default function MergedDloorplan() {
             <div
               style={{
                 position: "absolute",
-                left: tempMysterySideRectLeft,
+                left: tempConventCorridorTopDoorLeft - 1,
+                top: tempMysterySideRectTop - 2,
+                width: TEMP_CONVENT_CORRIDOR_TOP_DOOR_WIDTH + 2,
+                height: TEMP_INTERNAL_WALL_THICKNESS + 4,
+                background: "#FFFFFF",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempConventCorridorTopDoorLeft - 2,
+                top: tempMysterySideRectTop - 3,
+                width: 2,
+                height: TEMP_INTERNAL_WALL_THICKNESS + 6,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempConventCorridorTopDoorLeft + TEMP_CONVENT_CORRIDOR_TOP_DOOR_WIDTH,
+                top: tempMysterySideRectTop - 3,
+                width: 2,
+                height: TEMP_INTERNAL_WALL_THICKNESS + 6,
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempConventCorridorTopDoorLeft + TEMP_CONVENT_CORRIDOR_TOP_DOOR_WIDTH,
                 top: tempMysterySideRectTop,
-                width: TEMP_MYSTERY_SIDE_RECT_WIDTH,
+                width:
+                  tempMysterySideRectLeft +
+                  TEMP_MYSTERY_SIDE_RECT_WIDTH -
+                  (tempConventCorridorTopDoorLeft + TEMP_CONVENT_CORRIDOR_TOP_DOOR_WIDTH),
                 height: TEMP_INTERNAL_WALL_THICKNESS,
                 background: "#333",
                 zIndex: 55,
@@ -1372,19 +1684,7 @@ export default function MergedDloorplan() {
                 left: tempMysterySideRectLeft + TEMP_MYSTERY_SIDE_RECT_WIDTH - TEMP_INTERNAL_WALL_THICKNESS,
                 top: tempMysterySideRectTop,
                 width: TEMP_INTERNAL_WALL_THICKNESS,
-                height: TEMP_MYSTERY_SIDE_RECT_HEIGHT,
-                background: "#333",
-                zIndex: 55,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempMysterySideRectLeft,
-                top: tempMysterySideRectTop + TEMP_MYSTERY_SIDE_RECT_HEIGHT - TEMP_INTERNAL_WALL_THICKNESS,
-                width: TEMP_MYSTERY_SIDE_RECT_WIDTH,
-                height: TEMP_INTERNAL_WALL_THICKNESS,
+                height: tempMysterySideRectHeight,
                 background: "#333",
                 zIndex: 55,
                 pointerEvents: "none",
@@ -1399,18 +1699,6 @@ export default function MergedDloorplan() {
                 height: tempStaffAdjacentRoomHeight,
                 background: "#D9D9D9",
                 zIndex: 54,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStaffAdjacentRoomLeft,
-                top: tempStaffAdjacentRoomTop,
-                width: TEMP_INTERNAL_WALL_THICKNESS,
-                height: tempStaffAdjacentRoomHeight,
-                background: "#333",
-                zIndex: 55,
                 pointerEvents: "none",
               }}
             />
@@ -1861,10 +2149,75 @@ export default function MergedDloorplan() {
             <div
               style={{
                 position: "absolute",
+                left: tempFoodStoreRoomLeft,
+                top: tempNewInternalLineTop - TEMP_INTERNAL_WALL_THICKNESS,
+                width: tempFoodStoreRoomWidth,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background:
+                  "repeating-linear-gradient(to right, #333 0 6px, transparent 6px 10px)",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
                 left: tempMensWcDropLeft,
                 top: tempMensWcDropTop,
                 width: TEMP_INTERNAL_WALL_THICKNESS,
                 height: tempMensWcDropHeight + 40,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempKitchenCorridorLeftRoomLeft,
+                top: tempKitchenCorridorLeftRoomTop,
+                width: tempKitchenCorridorLeftRoomWidth,
+                height: tempKitchenCorridorLeftRoomHeight,
+                background: "#F9A8D4",
+                zIndex: 54,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempKitchenCorridorLeftRoomLeft + TEMP_WALL_THICKNESS,
+                top:
+                  tempKitchenCorridorLeftRoomTop +
+                  tempKitchenCorridorLeftRoomHeight -
+                  TEMP_INTERNAL_WALL_THICKNESS,
+                width: tempKitchenCorridorLeftRoomWidth - TEMP_WALL_THICKNESS,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background:
+                  "repeating-linear-gradient(to right, #333 0 6px, transparent 6px 10px)",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempKitchenCorridorLeftRoomLeft + TEMP_WALL_THICKNESS,
+                top: tempWayUpRoomInnerLineTop,
+                width: tempKitchenCorridorLeftRoomWidth - TEMP_WALL_THICKNESS,
+                height: TEMP_INTERNAL_WALL_THICKNESS,
+                background: "#333",
+                zIndex: 55,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempNarrowRoomLeft + TEMP_NARROW_ROOM_WIDTH,
+                top: tempWayUpRoomInnerLineTop,
+                width: tempStackedRoomsLeft - (tempNarrowRoomLeft + TEMP_NARROW_ROOM_WIDTH),
+                height: TEMP_INTERNAL_WALL_THICKNESS,
                 background: "#333",
                 zIndex: 55,
                 pointerEvents: "none",
@@ -1983,6 +2336,111 @@ export default function MergedDloorplan() {
             <div
               style={{
                 position: "absolute",
+                left: tempWayUpRoomLabelLeft,
+                top: tempWayUpRoomLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              the way up room
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempDryFoodStoreLabelLeft,
+                top: tempDryFoodStoreLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              Dry Food Store
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempDiningRoomLabelLeft,
+                top: tempDiningRoomLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              Dinning Room
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempServingAreaLabelLeft,
+                top: tempServingAreaLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              Serving Area
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempKitchenCorridorLabelLeft,
+                top: tempKitchenCorridorLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              Kitchen Corridor
+            </div>
+            <div
+              style={{
+                position: "absolute",
                 left: tempCoffeeDockDoorLabelLeft,
                 top: tempCoffeeDockDoorLabelTop,
                 padding: "3px 8px",
@@ -1996,10 +2454,73 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Coffee Dock Door
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempMainStaircaseLabelLeft,
+                top: tempMainStaircaseLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              Main Staircase
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempStaircaseHallLabelLeft,
+                top: tempStaircaseHallLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              Staircase Hall
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempConventCorridorLabelLeft,
+                top: tempConventCorridorLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              Convent Corridor
             </div>
             <div
               style={{
@@ -2017,7 +2538,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Mystery room
@@ -2038,7 +2559,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Kitchen
@@ -2059,10 +2580,52 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Staff Kitchen
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempLibraryLabelLeft,
+                top: tempLibraryLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              The Library
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempGuestToiletLabelLeft,
+                top: tempGuestToiletLabelTop,
+                padding: "3px 8px",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(239,68,68,0.45)",
+                borderRadius: 6,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#7F1D1D",
+                zIndex: 56,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                opacity: 1,
+              }}
+            >
+              Guest Toilet
             </div>
             <div
               style={{
@@ -2080,7 +2643,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Down Staits Office
@@ -2101,7 +2664,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               The Oratory
@@ -2122,7 +2685,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Convent Access Corridoor
@@ -2143,7 +2706,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Outside Dairy
@@ -2164,7 +2727,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Staff Kitchen Corridor
@@ -2185,7 +2748,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Scullery
@@ -2206,7 +2769,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               Residents entrance
@@ -2227,7 +2790,7 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               dining room corridor
@@ -2248,11 +2811,50 @@ export default function MergedDloorplan() {
                 zIndex: 56,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
-                opacity: 0,
+                opacity: 1,
               }}
             >
               residence entrance corridor
             </div>
+            <div
+              style={{
+                position: "absolute",
+                left: tempStaircaseHallCenterMarkerLeft,
+                top: tempStaircaseHallCenterMarkerTop,
+                width: 45,
+                height: 20,
+                background:
+                  "repeating-linear-gradient(to right, #4B5563 0 1px, #9CA3AF 1px 3px)",
+                zIndex: 56,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStaircaseHallCenterMarkerLeft - 4,
+                top: tempStaircaseHallCenterMarkerTop - 3,
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: tempStaircaseHallCenterMarkerLeft - 4,
+                top: tempStaircaseHallCenterMarkerTop + 16,
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                background: "#333",
+                zIndex: 57,
+                pointerEvents: "none",
+              }}
+            />
           </div>
         </div>
       </div>
