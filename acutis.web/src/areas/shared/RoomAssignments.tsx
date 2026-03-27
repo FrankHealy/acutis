@@ -1,6 +1,7 @@
 // src/units/shared/operations/RoomAssignments.tsx
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import DetoxFloorPlan from "@/areas/detox/components/DetoxFloorPlan";
 import MainFloorPlanWithLabels from "@/areas/detox/components/MainFloorPlanWithLabels";
 import MergedDloorplan from "@/areas/detox/components/MergedDloorplan";
@@ -516,6 +517,25 @@ const StandardRoomAssignments: React.FC<{ unitId: UnitId }> = ({ unitId }) => {
   );
 };
 
+const LadiesRoomAssignments: React.FC = () => {
+  const router = useRouter();
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => router.push("/units/ladies/main-house-ground-floor-plan")}
+          className="app-primary-button rounded px-3 py-2 text-sm font-semibold"
+        >
+          View Main House Ground Floor
+        </button>
+      </div>
+      <MergedDloorplan />
+    </div>
+  );
+};
+
 const RoomAssignments: React.FC<RoomAssignmentsProps> = ({ unitId }) => {
   if (unitId === "detox") {
     return <DetoxFloorPlan />;
@@ -526,7 +546,7 @@ const RoomAssignments: React.FC<RoomAssignmentsProps> = ({ unitId }) => {
   }
 
   if (unitId === "ladies") {
-    return <MergedDloorplan />;
+    return <LadiesRoomAssignments />;
   }
 
   return <StandardRoomAssignments unitId={unitId ?? "alcohol"} />;

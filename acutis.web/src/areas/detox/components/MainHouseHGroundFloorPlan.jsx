@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import DetoxFloorPlanForMerge from "@/areas/detox/components/DetoxFloorPlanForMerge";
 
 const buttonStyle = {
   border: "1px solid #d1d5db",
@@ -106,8 +105,9 @@ const TEMP_LOWER_LEFT_EXTENSION_WIDTH = 80;
 const TEMP_LOWER_LEFT_EXTENSION_HEIGHT = 60;
 const TEMP_SMALL_KITCHEN_DOOR_WIDTH = 16;
 const TEMP_MICRO_BASE_GAP_WIDTH = 26;
+const SHOW_DRUG_UNIT = false;
 
-export default function MergedDloorplan() {
+export default function MainHouseHGroundFloorPlan() {
   const [zoom, setZoom] = useState(1);
   const [hoveredGrid, setHoveredGrid] = useState(null);
   const zoomPercent = Math.round(zoom * 100);
@@ -179,58 +179,6 @@ export default function MergedDloorplan() {
     tempDrugUnitRoomLeft + Math.round(TEMP_DRUG_UNIT_ROOM_WIDTH * 0.25);
   const tempDrugUnitRoomMidLineWidth =
     TEMP_DRUG_UNIT_ROOM_WIDTH - Math.round(TEMP_DRUG_UNIT_ROOM_WIDTH * 0.25);
-  const tempRm15RightWallLeft = DETOX_OFFSET_X + (1044.5 - DETOX_CROP_LEFT) * DETOX_COMPONENT_SCALE;
-  const tempRm15RightWallTop = DETOX_OFFSET_Y + (0 - DETOX_CROP_TOP) * DETOX_COMPONENT_SCALE;
-  const tempRm15RightWallHeight = 57 * DETOX_COMPONENT_SCALE;
-  const tempNewDetoxRectBaseHeight = Math.round(tempRm15RightWallHeight * 0.75);
-  const tempNewDetoxRectLeft = tempRm15RightWallLeft + TEMP_WALL_THICKNESS + 35;
-  const tempNewDetoxRectTop = tempRm15RightWallTop + 138;
-  const tempNewDetoxRectHeight = tempNewDetoxRectBaseHeight + 300;
-  const tempNewDetoxRectWidth = tempNewDetoxRectBaseHeight * 6 + 10;
-  const tempNewDetoxRectInnerWallTop = tempNewDetoxRectTop + 60;
-  const TEMP_ST_JOESPHS_INNER_DOOR_WIDTH = 18;
-  const tempStJoesphsInnerDoorLeft = tempNewDetoxRectLeft + 10;
-  const TEMP_NEW_DETOX_LEFT_DOOR_HEIGHT = 28;
-  const tempNewDetoxLeftDoorTop = tempNewDetoxRectTop + 8;
-  const tempStJoesphsLabelLeft = tempNewDetoxRectLeft + 8;
-  const tempStJoesphsLabelTop = tempNewDetoxRectTop + 8;
-  const TEMP_ST_JOESPHS_STAIR_WIDTH = TEMP_CLOCK_TOWER_STAIR_WIDTH + 80;
-  const TEMP_ST_JOESPHS_STAIR_HEIGHT = TEMP_CLOCK_TOWER_STAIR_HEIGHT + 20;
-  const tempStJoesphsStairLeft =
-    tempNewDetoxRectLeft + tempNewDetoxRectWidth - TEMP_ST_JOESPHS_STAIR_WIDTH - 8;
-  const tempStJoesphsStairTop = tempNewDetoxRectTop + 6;
-  const tempStJoesphsLowerHorizontalTop =
-    tempNewDetoxRectTop + tempNewDetoxRectHeight - 40 - TEMP_INTERNAL_WALL_THICKNESS;
-  const tempStJoesphsLowerStairLeft = tempStJoesphsStairLeft + 30;
-  const TEMP_ST_JOESPHS_LOWER_STAIR_WIDTH = TEMP_CLOCK_TOWER_STAIR_WIDTH + 40;
-  const TEMP_ST_JOESPHS_LOWER_STAIR_HEIGHT = TEMP_CLOCK_TOWER_STAIR_HEIGHT + 10;
-  const tempStJoesphsLowerStairTop =
-    tempNewDetoxRectTop + tempNewDetoxRectHeight - TEMP_CLOCK_TOWER_STAIR_HEIGHT - 16;
-  const tempStJoesphsBottomStaircaseLabelLeft = tempStJoesphsLowerStairLeft - 8;
-  const tempStJoesphsBottomStaircaseLabelTop = tempStJoesphsLowerStairTop - 24;
-  const TEMP_ST_JOESPHS_BOTTOM_DOOR_HEIGHT = 18;
-  const tempStJoesphsBottomDoorTop =
-    tempNewDetoxRectTop +
-    tempNewDetoxRectHeight -
-    TEMP_WALL_THICKNESS -
-    TEMP_ST_JOESPHS_BOTTOM_DOOR_HEIGHT -
-    4;
-  const tempStJoesphsBottomEntranceLabelLeft = tempNewDetoxRectLeft + 12;
-  const tempStJoesphsBottomEntranceLabelTop = tempStJoesphsBottomDoorTop - 24;
-  const tempStJoesphsDashedHorizontalLeft = tempNewDetoxRectLeft + TEMP_WALL_THICKNESS;
-  const tempStJoesphsDashedHorizontalTop = tempStJoesphsLowerHorizontalTop - 60;
-  const tempStJoesphsDashedHorizontalWidth =
-    tempNewDetoxRectWidth - TEMP_WALL_THICKNESS * 2;
-  const tempMainHallExtensionLabelLeft = tempNewDetoxRectLeft + 24;
-  const tempMainHallExtensionLabelTop =
-    tempStJoesphsDashedHorizontalTop +
-    Math.round((tempStJoesphsLowerHorizontalTop - tempStJoesphsDashedHorizontalTop) / 2) -
-    10;
-  const tempMainHallLabelLeft = tempNewDetoxRectLeft + 24;
-  const tempMainHallLabelTop =
-    tempNewDetoxRectTop +
-    Math.round((tempStJoesphsDashedHorizontalTop - tempNewDetoxRectTop) / 2) -
-    10;
   const tempDrugUnitWingStairLeft =
     tempAdminSideRectLeft + TEMP_ADMIN_SIDE_RECT_WIDTH - TEMP_CLOCK_TOWER_STAIR_WIDTH - 4;
   const tempDrugUnitWingStairTop =
@@ -751,32 +699,8 @@ export default function MergedDloorplan() {
               ) : null}
             </div>
 
-            <div
-              className="merged-floorplan__detox"
-              style={{
-                position: "absolute",
-                left: DETOX_OFFSET_X,
-                top: DETOX_OFFSET_Y,
-                width: DETOX_VIEW_WIDTH * DETOX_COMPONENT_SCALE,
-                height: DETOX_VIEW_HEIGHT * DETOX_COMPONENT_SCALE,
-                overflow: "hidden",
-                zIndex: 2,
-              }}
-            >
-              <div
-                style={{
-                  width: DETOX_STAGE_WIDTH,
-                  height: DETOX_STAGE_HEIGHT,
-                  marginLeft: -DETOX_CROP_LEFT,
-                  marginTop: -DETOX_CROP_TOP,
-                  transform: `scale(${DETOX_COMPONENT_SCALE})`,
-                  transformOrigin: "top left",
-                }}
-              >
-                <DetoxFloorPlanForMerge />
-              </div>
-            </div>
-
+            {SHOW_DRUG_UNIT ? (
+              <>
             <div
               style={{
                 position: "absolute",
@@ -873,7 +797,7 @@ export default function MergedDloorplan() {
               <div
                 style={{
                   position: "absolute",
-                left: tempDrugUnitWingStairLeft,
+                  left: tempDrugUnitWingStairLeft,
                 top: tempDrugUnitWingStairTop,
                 width: TEMP_CLOCK_TOWER_STAIR_WIDTH,
                 height: TEMP_CLOCK_TOWER_STAIR_HEIGHT,
@@ -1419,6 +1343,8 @@ export default function MergedDloorplan() {
                 pointerEvents: "none",
               }}
             />
+              </>
+            ) : null}
             <div
               style={{
                 position: "absolute",
@@ -1813,366 +1739,6 @@ export default function MergedDloorplan() {
                 height: TEMP_WALL_THICKNESS,
                 background: "#EF4444",
                 zIndex: 55,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft,
-                top: tempNewDetoxRectTop,
-                width: tempNewDetoxRectWidth,
-                height: TEMP_WALL_THICKNESS,
-                background: "#EF4444",
-                zIndex: 55,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft + TEMP_WALL_THICKNESS,
-                top: tempNewDetoxRectTop + TEMP_WALL_THICKNESS,
-                width: tempNewDetoxRectWidth - TEMP_WALL_THICKNESS * 2,
-                height: tempNewDetoxRectHeight - TEMP_WALL_THICKNESS * 2,
-                background: "#D9D9D9",
-                zIndex: 54,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft,
-                top: tempNewDetoxLeftDoorTop,
-                width: TEMP_WALL_THICKNESS,
-                height: TEMP_NEW_DETOX_LEFT_DOOR_HEIGHT,
-                background: "#FFFFFF",
-                zIndex: 56,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft - 2,
-                top: tempNewDetoxLeftDoorTop,
-                width: TEMP_WALL_THICKNESS + 4,
-                height: 2,
-                background: "#333",
-                zIndex: 57,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft - 2,
-                top: tempNewDetoxLeftDoorTop + TEMP_NEW_DETOX_LEFT_DOOR_HEIGHT - 2,
-                width: TEMP_WALL_THICKNESS + 4,
-                height: 2,
-                background: "#333",
-                zIndex: 57,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsLabelLeft,
-                top: tempStJoesphsLabelTop,
-                padding: "3px 8px",
-                background: "rgba(255,255,255,0.96)",
-                border: "1px solid rgba(239,68,68,0.45)",
-                borderRadius: 6,
-                fontFamily: "Arial, sans-serif",
-                fontSize: 12,
-                fontWeight: 700,
-                color: "#7F1D1D",
-                zIndex: 56,
-                pointerEvents: "none",
-                whiteSpace: "nowrap",
-                opacity: 1,
-              }}
-            >
-              St Joesphs Stair Case
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft,
-                top: tempNewDetoxRectTop,
-                width: TEMP_WALL_THICKNESS,
-                height: tempNewDetoxRectHeight,
-                background: "#EF4444",
-                zIndex: 55,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft + tempNewDetoxRectWidth - TEMP_WALL_THICKNESS,
-                top: tempNewDetoxRectTop,
-                width: TEMP_WALL_THICKNESS,
-                height: tempNewDetoxRectHeight,
-                background: "#EF4444",
-                zIndex: 55,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft,
-                top: tempNewDetoxRectTop + tempNewDetoxRectHeight - TEMP_WALL_THICKNESS,
-                width: tempNewDetoxRectWidth,
-                height: TEMP_WALL_THICKNESS,
-                background: "#EF4444",
-                zIndex: 55,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft + TEMP_WALL_THICKNESS,
-                top: tempNewDetoxRectInnerWallTop,
-                width: tempNewDetoxRectWidth - TEMP_WALL_THICKNESS * 2,
-                height: TEMP_INTERNAL_WALL_THICKNESS,
-                background: "#111",
-                zIndex: 55,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsInnerDoorLeft,
-                top: tempNewDetoxRectInnerWallTop,
-                width: TEMP_ST_JOESPHS_INNER_DOOR_WIDTH,
-                height: TEMP_INTERNAL_WALL_THICKNESS,
-                background: "#FFFFFF",
-                zIndex: 56,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsInnerDoorLeft,
-                top: tempNewDetoxRectInnerWallTop - 2,
-                width: 2,
-                height: TEMP_INTERNAL_WALL_THICKNESS + 4,
-                background: "#333",
-                zIndex: 57,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsInnerDoorLeft + TEMP_ST_JOESPHS_INNER_DOOR_WIDTH - 2,
-                top: tempNewDetoxRectInnerWallTop - 2,
-                width: 2,
-                height: TEMP_INTERNAL_WALL_THICKNESS + 4,
-                background: "#333",
-                zIndex: 57,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsStairLeft,
-                top: tempStJoesphsStairTop,
-                width: TEMP_ST_JOESPHS_STAIR_WIDTH,
-                height: TEMP_ST_JOESPHS_STAIR_HEIGHT,
-                background:
-                  "repeating-linear-gradient(to right, #4B5563 0 1px, #9CA3AF 1px 3px)",
-                zIndex: 56,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsStairLeft,
-                top: tempStJoesphsStairTop + TEMP_ST_JOESPHS_STAIR_HEIGHT - TEMP_INTERNAL_WALL_THICKNESS,
-                width: TEMP_ST_JOESPHS_STAIR_WIDTH,
-                height: TEMP_INTERNAL_WALL_THICKNESS,
-                background: "#111",
-                zIndex: 57,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsBottomStaircaseLabelLeft,
-                top: tempStJoesphsBottomStaircaseLabelTop,
-                padding: "3px 8px",
-                background: "rgba(255,255,255,0.96)",
-                border: "1px solid rgba(239,68,68,0.45)",
-                borderRadius: 6,
-                fontFamily: "Arial, sans-serif",
-                fontSize: 12,
-                fontWeight: 700,
-                color: "#7F1D1D",
-                zIndex: 56,
-                pointerEvents: "none",
-                whiteSpace: "nowrap",
-                opacity: 1,
-              }}
-            >
-              St Joesphs Bottom Staircase
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                left: tempMainHallExtensionLabelLeft,
-                top: tempMainHallExtensionLabelTop,
-                padding: "3px 8px",
-                background: "rgba(255,255,255,0.96)",
-                border: "1px solid rgba(17,17,17,0.2)",
-                borderRadius: 6,
-                fontFamily: "Arial, sans-serif",
-                fontSize: 12,
-                fontWeight: 700,
-                color: "#111",
-                zIndex: 56,
-                pointerEvents: "none",
-                whiteSpace: "nowrap",
-                opacity: 1,
-              }}
-            >
-              Main Hall Extension
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                left: tempMainHallLabelLeft,
-                top: tempMainHallLabelTop,
-                padding: "3px 8px",
-                background: "rgba(255,255,255,0.96)",
-                border: "1px solid rgba(17,17,17,0.2)",
-                borderRadius: 6,
-                fontFamily: "Arial, sans-serif",
-                fontSize: 12,
-                fontWeight: 700,
-                color: "#111",
-                zIndex: 56,
-                pointerEvents: "none",
-                whiteSpace: "nowrap",
-                opacity: 1,
-              }}
-            >
-              Main Hall
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft + TEMP_WALL_THICKNESS,
-                top: tempStJoesphsLowerHorizontalTop,
-                width: tempNewDetoxRectWidth - TEMP_WALL_THICKNESS * 2,
-                height: TEMP_INTERNAL_WALL_THICKNESS,
-                background: "#111",
-                zIndex: 55,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsDashedHorizontalLeft,
-                top: tempStJoesphsDashedHorizontalTop,
-                width: tempStJoesphsDashedHorizontalWidth,
-                height: 2,
-                background:
-                  "repeating-linear-gradient(to right, #111 0 8px, transparent 8px 14px)",
-                zIndex: 56,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft,
-                top: tempStJoesphsBottomDoorTop,
-                width: TEMP_WALL_THICKNESS,
-                height: TEMP_ST_JOESPHS_BOTTOM_DOOR_HEIGHT,
-                background: "#fff",
-                zIndex: 58,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft - 2,
-                top: tempStJoesphsBottomDoorTop,
-                width: 2,
-                height: 6,
-                background: "#111",
-                zIndex: 59,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempNewDetoxRectLeft - 2,
-                top: tempStJoesphsBottomDoorTop + TEMP_ST_JOESPHS_BOTTOM_DOOR_HEIGHT - 6,
-                width: 2,
-                height: 6,
-                background: "#111",
-                zIndex: 59,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsBottomEntranceLabelLeft,
-                top: tempStJoesphsBottomEntranceLabelTop,
-                padding: "3px 8px",
-                background: "rgba(255,255,255,0.96)",
-                border: "1px solid rgba(239,68,68,0.45)",
-                borderRadius: 6,
-                fontFamily: "Arial, sans-serif",
-                fontSize: 12,
-                fontWeight: 700,
-                color: "#7F1D1D",
-                zIndex: 56,
-                pointerEvents: "none",
-                whiteSpace: "nowrap",
-                opacity: 1,
-              }}
-            >
-              St joesphs bottom Entrance
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsLowerStairLeft,
-                top: tempStJoesphsLowerStairTop,
-                width: TEMP_ST_JOESPHS_LOWER_STAIR_WIDTH,
-                height: TEMP_ST_JOESPHS_LOWER_STAIR_HEIGHT,
-                background:
-                  "repeating-linear-gradient(to right, #4B5563 0 1px, #9CA3AF 1px 3px)",
-                zIndex: 56,
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tempStJoesphsLowerStairLeft,
-                top: tempStJoesphsLowerStairTop,
-                width: TEMP_ST_JOESPHS_LOWER_STAIR_WIDTH,
-                height: TEMP_INTERNAL_WALL_THICKNESS,
-                background: "#111",
-                zIndex: 57,
                 pointerEvents: "none",
               }}
             />
