@@ -3,7 +3,7 @@ export interface CallLog {
   firstName: string;
   surname: string;
   callerType: 'self' | 'family' | 'professional' | 'other';
-  concernType: 'alcohol' | 'drugs' | 'gambling' | 'general';
+  concernType: 'alcohol' | 'drugs' | 'gambling' | 'ladies' | 'general_query';
   location: string;
   phoneNumber: string;
   timestamp: string;
@@ -101,7 +101,7 @@ function buildMockCallLogs(): CallLog[] {
       firstName: 'Ciara',
       surname: 'Doyle',
       callerType: 'self',
-      concernType: 'general',
+      concernType: 'general_query',
       location: 'Kilkenny',
       phoneNumber: '087 333 5511',
       timestamp: new Date(now - 48 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString(),

@@ -8,6 +8,7 @@ export type GetActiveFormResponse = {
   optionSets: OptionSetDto[];
   translations: Record<string, string>;
   submissionId: string | null;
+  submissionStatus: "in_progress" | "submitted" | null;
   draftAnswers: Record<string, JsonValue>;
 };
 
@@ -104,6 +105,9 @@ export type SaveProgressRequest = {
 };
 
 export type SaveRequest = SaveProgressRequest;
+export type RejectRequest = SaveProgressRequest & {
+  rejectionReason: string;
+};
 
 export type SaveProgressResponse = {
   submissionId: string;
@@ -111,6 +115,7 @@ export type SaveProgressResponse = {
 };
 
 export type SaveResponse = SaveProgressResponse;
+export type RejectResponse = SaveProgressResponse;
 
 export type ValidationProblem = {
   errors: Array<{ fieldKey: string; message: string }>;
@@ -244,6 +249,16 @@ export const save = async (
   payload: SaveRequest
 ): Promise<SaveResponse> => {
   return request<SaveResponse>("/api/screening/Save", accessToken, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
+export const reject = async (
+  accessToken: string | undefined,
+  payload: RejectRequest
+): Promise<RejectResponse> => {
+  return request<RejectResponse>("/api/screening/Reject", accessToken, {
     method: "POST",
     body: JSON.stringify(payload),
   });

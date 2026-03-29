@@ -10,7 +10,7 @@ import type { UnitDefinition } from '@/areas/shared/unit/unitTypes';
 import { UnitDefinitions } from '@/areas/shared/unit/unitTypes';
 import { unitIdentityService } from '@/services/unitIdentityService';
 import { availableThemes, useTheme } from '@/areas/shared/theme/ThemeProvider';
-import type { ThemeKey } from '@/areas/shared/theme/themeSystem';
+import { DEFAULT_THEME_KEY, type ThemeKey } from '@/areas/shared/theme/themeSystem';
 import { useAppAccess } from '@/areas/shared/hooks/useAppAccess';
 
 const THEME_MANAGE_PERMISSION = 'theme.manage';
@@ -101,7 +101,7 @@ const Header: React.FC<HeaderProps> = ({
         setBrandSubtitle(unit.brandSubtitle?.trim() || "");
         setBrandLogoUrl(unit.brandLogoUrl?.trim() || "");
         setResolvedUnitId(unit.unitId);
-        setCentreThemeKey((unit.themeKey?.trim().toLowerCase() || "acutis") as ThemeKey);
+        setCentreThemeKey((unit.themeKey?.trim().toLowerCase() || DEFAULT_THEME_KEY) as ThemeKey);
       } catch {
         if (!active) {
           return;
@@ -111,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({
         setBrandSubtitle("");
         setBrandLogoUrl("");
         setResolvedUnitId("");
-        setCentreThemeKey("acutis");
+        setCentreThemeKey(DEFAULT_THEME_KEY);
       }
     };
 

@@ -90,6 +90,7 @@ export default function ScreeningFormPage() {
 
       try {
         setIsLoading(true);
+        setFormData(null);
         const accessToken = session?.accessToken;
         if (!accessToken && !isAuthorizationDisabled) {
           setErrorMessage("Session expired.");
@@ -103,11 +104,12 @@ export default function ScreeningFormPage() {
           selectedFormCode
         );
         if (!active) return;
-        setFormData(response);
         mergeTranslations(response.translations);
+        setFormData(response);
         setErrorMessage(null);
       } catch (error) {
         if (!active) return;
+        setFormData(null);
         setErrorMessage(error instanceof Error ? error.message : "Unable to load screening form.");
       } finally {
         if (active) {

@@ -13,6 +13,7 @@ import {
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import { availableThemes } from "@/areas/shared/theme/ThemeProvider";
+import { DEFAULT_THEME_KEY } from "@/areas/shared/theme/themeSystem";
 
 const emptyForm: UpsertCentreRequest = {
   centreCode: "",
@@ -23,7 +24,7 @@ const emptyForm: UpsertCentreRequest = {
   brandLogoUrl: "/acutis-icon.svg",
   browserTitle: "Acutis",
   faviconUrl: "/acutis-icon.svg",
-  themeKey: "acutis",
+  themeKey: DEFAULT_THEME_KEY,
   displayOrder: 0,
   isActive: true,
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { APP_THEMES, applyThemeToDocument, DEFAULT_THEME_KEY, type ThemeKey } from "./themeSystem";
 
 type ThemeContextValue = {
@@ -14,20 +14,39 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 const USER_THEME_STORAGE_KEY = "acutis.user-theme";
 
+const subscribeToTheme = (callback: () => void) => {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === USER_THEME_STORAGE_KEY) {
+      callback();
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+  return () => window.removeEventListener("storage", handleStorage);
+};
+
+const getThemeSnapshot = (): ThemeKey | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const storedThemeKey = window.sessionStorage.getItem(USER_THEME_STORAGE_KEY);
+  if (storedThemeKey && storedThemeKey in APP_THEMES) {
+    return storedThemeKey as ThemeKey;
+  }
+
+  return null;
+};
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [centreThemeKey, setCentreThemeKey] = useState<ThemeKey>(DEFAULT_THEME_KEY);
-  const [userThemeKey, setUserThemeKeyState] = useState<ThemeKey | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const storedThemeKey = window.sessionStorage.getItem(USER_THEME_STORAGE_KEY);
-    if (storedThemeKey && storedThemeKey in APP_THEMES) {
-      setUserThemeKeyState(storedThemeKey as ThemeKey);
-    }
-  }, []);
+  const storedThemeKey = useSyncExternalStore(subscribeToTheme, getThemeSnapshot, () => null);
+  const [userThemeOverride, setUserThemeOverride] = useState<ThemeKey | null | undefined>(undefined);
+  const userThemeKey = userThemeOverride === undefined ? storedThemeKey : userThemeOverride;
 
   const themeKey = userThemeKey ?? centreThemeKey;
 
@@ -36,7 +55,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [themeKey]);
 
   const setUserThemeKey = (theme: ThemeKey | null) => {
-    setUserThemeKeyState(theme);
+    setUserThemeOverride(theme);
 
     if (typeof window === "undefined") {
       return;

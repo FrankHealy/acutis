@@ -7,6 +7,7 @@ import EvaluationQueue from './evaluatiion/EvaluationQueue';
 import CapacityManagement from './capacityManagment/CapacityManagement';
 import Header from '@/areas/shared/layout/Header';
 import { UnitDefinitions, type UnitId } from '@/areas/shared/unit/unitTypes';
+import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
 
 interface ScreeningLandingProps {
   showOnlyCalls?: boolean;
@@ -16,13 +17,32 @@ interface ScreeningLandingProps {
 const ScreeningLanding: React.FC<ScreeningLandingProps> = ({ showOnlyCalls = false, unitId = 'alcohol' }) => {
   const [activeSection, setActiveSection] = useState<'calls' | 'evaluation' | 'scheduling'>('calls');
   const unit = UnitDefinitions[unitId];
+  const { locale, loadKeys, t } = useLocalization();
+
+  React.useEffect(() => {
+    void loadKeys([
+      'screening.page.title',
+      'screening.tab.calls',
+      'screening.tab.evaluation',
+      'screening.tab.scheduling',
+    ]);
+  }, [loadKeys]);
+
+  const text = (key: string, fallback: string, fallbackArabic?: string) => {
+    const resolved = t(key);
+    if (resolved !== key) {
+      return resolved;
+    }
+
+    return locale.startsWith('ar') && fallbackArabic ? fallbackArabic : fallback;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header
         showCapacity={false}
         unitCode={unit.id}
-        unitName={`${unit.name} Screening`}
+        unitName={text('screening.page.title', 'Screening & Evaluation', 'الفحص والتقييم')}
         unitAccentClass={unit.accentClass}
         unitIconKey={unit.iconKey}
       />
@@ -41,7 +61,7 @@ const ScreeningLanding: React.FC<ScreeningLandingProps> = ({ showOnlyCalls = fal
                 }`}
               >
                 <Phone className="h-5 w-5" />
-                <span>Screen Calls</span>
+                <span>{text('screening.tab.calls', 'Call Logging', 'تسجيل المكالمات')}</span>
               </button>
               <button
                 onClick={() => setActiveSection('evaluation')}
@@ -52,7 +72,7 @@ const ScreeningLanding: React.FC<ScreeningLandingProps> = ({ showOnlyCalls = fal
                 }`}
               >
                 <ClipboardCheck className="h-5 w-5" />
-                <span>Screening Queue</span>
+                <span>{text('screening.tab.evaluation', 'Screening Queue', 'قائمة الفحص')}</span>
               </button>
               <button
                 onClick={() => setActiveSection('scheduling')}
@@ -63,7 +83,7 @@ const ScreeningLanding: React.FC<ScreeningLandingProps> = ({ showOnlyCalls = fal
                 }`}
               >
                 <CalendarClock className="h-5 w-5" />
-                <span>Capacity</span>
+                <span>{text('screening.tab.scheduling', 'Scheduling', 'الجدولة')}</span>
               </button>
             </div>
           </div>
@@ -73,7 +93,7 @@ const ScreeningLanding: React.FC<ScreeningLandingProps> = ({ showOnlyCalls = fal
         <div className="space-y-6">
           {(showOnlyCalls || activeSection === 'calls') && <CallLogging unitId={unitId} />}
           {!showOnlyCalls && activeSection === 'evaluation' && <EvaluationQueue unitId={unitId} />}
-          {!showOnlyCalls && activeSection === 'scheduling' && <CapacityManagement />}
+          {!showOnlyCalls && activeSection === 'scheduling' && <CapacityManagement unitId={unitId} />}
         </div>
       </main>
     </div>

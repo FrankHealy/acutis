@@ -33,6 +33,7 @@ import {
   type UpsertFormDefinitionRequest,
   type UiLayoutDto,
 } from '@/areas/screening/forms/ApiClient';
+import Toast from '@/units/shared/ui/Toast';
 
 interface FormField {
   id: string;
@@ -360,6 +361,45 @@ const buildSectionFromTemplate = (section: ScreeningTemplateSection): FormSectio
   fields: section.fields.map((field) => cloneTemplateField(field)),
 });
 
+const serializeSectionsForComparison = (sections: FormSection[]) =>
+  JSON.stringify(
+    sections.map((section) => ({
+      title: section.title,
+      icon: section.icon,
+      subtitle: section.subtitle ?? "",
+      required: section.required,
+      collapsed: section.collapsed,
+      fields: section.fields.map((field) => ({
+        fieldName: field.fieldName,
+        label: field.label,
+        type: field.type,
+        dataType: field.dataType ?? "string",
+        required: field.required,
+        placeholder: field.placeholder ?? "",
+        options: field.options ?? [],
+        validation: {
+          min: field.validation?.min ?? null,
+          max: field.validation?.max ?? null,
+          pattern: field.validation?.pattern ?? "",
+          customMessage: field.validation?.customMessage ?? "",
+        },
+        helpText: field.helpText ?? "",
+        defaultValue: field.defaultValue ?? "",
+        group: field.group ?? "",
+        sourceKind: field.sourceKind ?? "",
+        libraryElementType: field.libraryElementType ?? "",
+        libraryElementKind: field.libraryElementKind ?? "",
+        libraryDefinitionId: field.libraryDefinitionId ?? "",
+        libraryElementId: field.libraryElementId ?? "",
+        libraryElementName: field.libraryElementName ?? "",
+        libraryGroupName: field.libraryGroupName ?? "",
+        canonicalFieldKey: field.canonicalFieldKey ?? "",
+        optionSetKey: field.optionSetKey ?? "",
+        sourceDocumentReference: field.sourceDocumentReference ?? "",
+      })),
+    }))
+  );
+
 const createDefaultAdmissionSections = (): FormSection[] => [
   {
     id: 'personal-identity',
@@ -465,6 +505,11 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'warning' | 'error' | 'info' }>({
+    open: false,
+    message: '',
+    type: 'info',
+  });
 
   const isScreeningForm = formType === 'screening';
 
@@ -539,6 +584,20 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
     void loadLibrary();
   }, [session?.accessToken]);
 
+  useEffect(() => {
+    if (!toast.open) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setToast((current) => ({ ...current, open: false }));
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [toast.open]);
+
   const fieldTypes = [
     { value: 'text', label: 'Text Input', icon: Type },
     { value: 'number', label: 'Number', icon: Hash },
@@ -612,9 +671,18 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
 
   const applyScreeningTemplate = () => {
     const nextSections = createDefaultScreeningSections();
+    const alreadyApplied =
+      serializeSectionsForComparison(sections) === serializeSectionsForComparison(nextSections);
+
+    if (alreadyApplied) {
+      setToast({ open: true, message: 'The HSE screening template is already applied.', type: 'info' });
+      return;
+    }
+
     setSections(nextSections);
     setSelectedSection(nextSections[0]?.id ?? null);
     setSelectedField(null);
+    setToast({ open: true, message: 'HSE screening template applied.', type: 'success' });
   };
 
   const deleteField = (sectionId: string, fieldId: string) => {
@@ -807,13 +875,13 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
 
   const saveForm = async (status: 'draft' | 'active') => {
     if (selectedUnit === 'all') {
-      alert('Select a unit before saving.');
+      setToast({ open: true, message: 'Select a unit before saving.', type: 'warning' });
       return;
     }
 
     const accessToken = session?.accessToken;
     if (!accessToken) {
-      alert('You must be signed in to save form configuration.');
+      setToast({ open: true, message: 'You must be signed in to save form configuration.', type: 'warning' });
       return;
     }
 
@@ -836,13 +904,13 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
       }
 
       if (status === 'active') {
-        alert('Form published and set as active.');
+        setToast({ open: true, message: 'Form published and set as active.', type: 'success' });
       } else {
-        alert('Draft saved.');
+        setToast({ open: true, message: 'Draft saved.', type: 'success' });
       }
     } catch (error) {
       console.error('Save form error:', error);
-      alert('Failed to save form configuration.');
+      setToast({ open: true, message: 'Failed to save form configuration.', type: 'error' });
     }
   };
 
@@ -1735,6 +1803,12 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
         onElementDrop={addFieldsFromElement}
         library={library}
         isLoadingLibrary={isLoadingLibrary}
+      />
+      <Toast
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast((current) => ({ ...current, open: false }))}
       />
     </div>
   );

@@ -1,0 +1,172 @@
+        {
+          "sections": [
+            {
+              "titleKey": "Intake and Administrative Identity",
+              "items": [
+                "service_user_full_name",
+                "first_name",
+                "surname",
+                "date_of_birth",
+                "phone_number",
+                "email_address",
+                "gp_name",
+                "medical_card_status",
+                "source_of_referral"
+              ]
+            },
+            {
+              "titleKey": "Consent and Confidentiality",
+              "items": [
+                "assessment_completion_status",
+                "assessment_completion_date",
+                "consent_mental_health_shared_record"
+              ]
+            },
+            {
+              "titleKey": "Substance and Treatment History",
+              "items": [
+                "ever_treated_for_substance_use",
+                "ever_treated_for_alcohol",
+                "total_previous_treatments",
+                "age_first_treated",
+                "treatment_providers",
+                "reason_for_leaving_treatment",
+                "longest_time_abstinent",
+                "current_opiate_agonist_treatment",
+                "other_current_treatment_medication"
+              ]
+            },
+            {
+              "titleKey": "Physical Health",
+              "items": [
+                "physical_health_concerns",
+                "known_allergies",
+                "history_of_head_injury",
+                "last_gp_checkup",
+                "relevant_medical_history",
+                "current_medications",
+                "history_of_seizures"
+              ]
+            },
+            {
+              "titleKey": "Mental Health",
+              "items": [
+                "mental_health_concerns",
+                "mental_health_professional_engagement",
+                "history_of_psychiatric_care",
+                "history_of_self_harm_or_suicidal_thoughts",
+                "mood_last_month",
+                "mental_health_details"
+              ]
+            },
+            {
+              "titleKey": "Assessor Actions Required",
+              "items": [
+                "comprehensive_assessment_needed",
+                "comprehensive_assessment_arranged",
+                "additional_comments_details"
+              ]
+            }
+          ],
+          "widgets": {
+            "service_user_full_name": "input",
+            "first_name": "input",
+            "surname": "input",
+            "date_of_birth": "input",
+            "phone_number": "input",
+            "email_address": "input",
+            "gp_name": "input",
+            "medical_card_status": "toggle",
+            "assessment_completion_status": "toggle",
+            "assessment_completion_date": "input",
+            "consent_mental_health_shared_record": "toggle",
+            "source_of_referral": "select",
+            "ever_treated_for_substance_use": "toggle",
+            "ever_treated_for_alcohol": "toggle",
+            "total_previous_treatments": "number",
+            "age_first_treated": "number",
+            "treatment_providers": "textarea",
+            "reason_for_leaving_treatment": "textarea",
+            "longest_time_abstinent": "input",
+            "current_opiate_agonist_treatment": "toggle",
+            "other_current_treatment_medication": "toggle",
+            "physical_health_concerns": "toggle",
+            "known_allergies": "toggle",
+            "history_of_head_injury": "toggle",
+            "last_gp_checkup": "input",
+            "relevant_medical_history": "textarea",
+            "current_medications": "textarea",
+            "history_of_seizures": "toggle",
+            "mental_health_concerns": "toggle",
+            "mental_health_professional_engagement": "toggle",
+            "history_of_psychiatric_care": "toggle",
+            "history_of_self_harm_or_suicidal_thoughts": "toggle",
+            "mood_last_month": "select",
+            "mental_health_details": "textarea",
+            "comprehensive_assessment_needed": "toggle",
+            "comprehensive_assessment_arranged": "toggle",
+            "additional_comments_details": "textarea"
+          },
+          "labelKeys": {
+            "service_user_full_name": "Service User Name",
+            "first_name": "First Name",
+            "surname": "Surname",
+            "date_of_birth": "Date of Birth",
+            "phone_number": "Phone Number",
+            "email_address": "Email Address",
+            "gp_name": "GP Name",
+            "medical_card_status": "Medical Card",
+            "assessment_completion_status": "Comprehensive Assessment Completed",
+            "assessment_completion_date": "Assessment Completion Date",
+            "consent_mental_health_shared_record": "Consent to Shared Mental Health Record",
+            "source_of_referral": "Source of Referral",
+            "ever_treated_for_substance_use": "Ever Treated for Substance Use",
+            "ever_treated_for_alcohol": "Ever Treated for Alcohol",
+            "total_previous_treatments": "Total Number of Previous Treatments",
+            "age_first_treated": "Age First Treated",
+            "treatment_providers": "Name of Treatment Provider(s)",
+            "reason_for_leaving_treatment": "Reason for Leaving",
+            "longest_time_abstinent": "Longest Time Abstinent",
+            "current_opiate_agonist_treatment": "Current Opiate Agonist Treatment",
+            "other_current_treatment_medication": "Other Current Treatment / Prescribed Medications",
+            "physical_health_concerns": "Concerns About Physical Health",
+            "known_allergies": "Known Allergies",
+            "history_of_head_injury": "History of Head Injury",
+            "last_gp_checkup": "Last GP Check-Up",
+            "relevant_medical_history": "Relevant Medical History",
+            "current_medications": "Current Medications",
+            "history_of_seizures": "History of Seizures",
+            "mental_health_concerns": "Concerns About Mental Health",
+            "mental_health_professional_engagement": "Seen or Seeing a Mental Health Professional",
+            "history_of_psychiatric_care": "History of Psychiatric Care",
+            "history_of_self_harm_or_suicidal_thoughts": "History of Self Harm or Suicidal Thoughts",
+            "mood_last_month": "Mood Over the Last Month",
+            "mental_health_details": "Mental Health Details",
+            "comprehensive_assessment_needed": "Comprehensive Assessment Needed",
+            "comprehensive_assessment_arranged": "Comprehensive Assessment Arranged",
+            "additional_comments_details": "Additional Comments Details"
+          },
+          "helpKeys": {
+            "assessment_completion_status": "HSE library source: Consent and confidentiality / AF Printed Page 1.html / json",
+            "consent_mental_health_shared_record": "HSE library source: Consent and confidentiality / AF Printed Page 3.html / json",
+            "source_of_referral": "HSE library source: Intake and admin identity / AF Printed Page 6.html / json",
+            "ever_treated_for_substance_use": "HSE library source: Substance use and treatment history / AF Printed Page 10.html / json",
+            "physical_health_concerns": "HSE library source: Physical health / AF Printed Page 12.html / json",
+            "mental_health_concerns": "HSE library source: Mental health / AF Printed Page 13.html / json",
+            "comprehensive_assessment_needed": "HSE library source: Assessor actions required / AF Printed Page 15.html / json"
+          },
+          "selectOptions": {
+            "source_of_referral": [
+              { "value": "gp", "label": "GP" },
+              { "value": "family", "label": "Family" },
+              { "value": "self", "label": "Self" },
+              { "value": "other", "label": "Other" }
+            ],
+            "mood_last_month": [
+              { "value": "very_low", "label": "Very low" },
+              { "value": "low", "label": "Low" },
+              { "value": "reasonable", "label": "Reasonable" },
+              { "value": "good", "label": "Good" }
+            ]
+          }
+        }

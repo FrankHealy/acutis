@@ -2,6 +2,7 @@ using Acutis.Domain.Entities;
 using Acutis.Infrastructure.Data;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Acutis.Api.Services.TherapyScheduling;
 
@@ -22,7 +23,10 @@ public interface IAuditService
 public sealed class AuditService : IAuditService
 {
     private static readonly Guid SystemActorUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
+    };
 
     private readonly AcutisDbContext _dbContext;
     private readonly IHttpContextAccessor _httpContextAccessor;

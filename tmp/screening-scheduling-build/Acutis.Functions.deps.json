@@ -1,0 +1,56 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Acutis.Functions/1.0.0": {
+        "dependencies": {
+          "Acutis.Application": "1.0.0",
+          "Acutis.Domain": "1.0.0"
+        },
+        "runtime": {
+          "Acutis.Functions.dll": {}
+        }
+      },
+      "Acutis.Application/1.0.0": {
+        "dependencies": {
+          "Acutis.Domain": "1.0.0"
+        },
+        "runtime": {
+          "Acutis.Application.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Acutis.Domain/1.0.0": {
+        "runtime": {
+          "Acutis.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Acutis.Functions/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Acutis.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Acutis.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

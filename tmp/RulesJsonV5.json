@@ -1,0 +1,7 @@
+        [
+          {
+            "if": { "field": "assessment_completion_status", "equals": false },
+            "then": { "hide": [ "assessment_completion_date" ], "clear": [ "assessment_completion_date" ] },
+            "else": { "show": [ "assessment_completion_date" ] }
+          }
+        ]

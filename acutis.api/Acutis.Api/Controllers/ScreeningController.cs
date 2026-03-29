@@ -120,21 +120,22 @@ public sealed class ScreeningController : ControllerBase
         var translationKeys = CollectTranslationKeys(form, optionSets);
         var translations = await _translationService.ResolveAsync(locale, translationKeys, cancellationToken);
 
-        var draftSubmission = await _submissionService.FindInProgressAsync(
+        var latestSubmission = await _submissionService.FindLatestAsync(
             form.Code,
             form.Version,
             subjectType,
             subjectId,
             cancellationToken);
 
-        var draftAnswers = ParseAnswers(draftSubmission?.AnswersJson);
+        var draftAnswers = ParseAnswers(latestSubmission?.AnswersJson);
 
         return Ok(new GetActiveFormResponse
         {
             Form = form,
             OptionSets = optionSets,
             Translations = translations,
-            SubmissionId = draftSubmission?.Id,
+            SubmissionId = latestSubmission?.Id,
+            SubmissionStatus = latestSubmission?.Status,
             DraftAnswers = draftAnswers
         });
     }
@@ -193,6 +194,49 @@ public sealed class ScreeningController : ControllerBase
         });
     }
 
+    [HttpPost("Reject")]
+    public async Task<ActionResult<RejectResponse>> Reject(
+        [FromBody] RejectRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.RejectionReason))
+        {
+            return BadRequest(new SaveValidationProblem
+            {
+                Errors =
+                [
+                    new ValidationErrorDto
+                    {
+                        FieldKey = "rejection_reason",
+                        Message = "Rejection reason is required."
+                    }
+                ]
+            });
+        }
+
+        var definition = await _formService.GetPublishedAsync(request.FormCode, request.FormVersion, cancellationToken);
+        if (definition is null)
+        {
+            return NotFound($"Published form '{request.FormCode}' version '{request.FormVersion}' was not found.");
+        }
+
+        var form = FormService.Map(definition);
+        var validationErrors = _validationService.ValidateStrict(form.Schema, request.Answers);
+        validationErrors.AddRange(await ValidateOptionSetValuesAsync(form, request.Answers, cancellationToken));
+
+        if (validationErrors.Count > 0)
+        {
+            return BadRequest(new SaveValidationProblem { Errors = validationErrors });
+        }
+
+        var submission = await _submissionService.SaveRejectedAsync(request, cancellationToken);
+        return Ok(new RejectResponse
+        {
+            SubmissionId = submission.Id,
+            Status = submission.Status
+        });
+    }
+
     private static List<string> CollectTranslationKeys(FormDefinitionDto form, IEnumerable<OptionSetDto> optionSets)
     {
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -208,6 +252,19 @@ public sealed class ScreeningController : ControllerBase
         foreach (var section in form.Ui.Sections)
         {
             keys.Add(section.TitleKey);
+
+            foreach (var group in section.Groups ?? [])
+            {
+                if (!string.IsNullOrWhiteSpace(group.TitleKey))
+                {
+                    keys.Add(group.TitleKey);
+                }
+
+                if (!string.IsNullOrWhiteSpace(group.Title))
+                {
+                    keys.Add(group.Title);
+                }
+            }
         }
 
         foreach (var labelKey in form.Ui.LabelKeys.Values)
@@ -218,6 +275,13 @@ public sealed class ScreeningController : ControllerBase
         foreach (var helpKey in form.Ui.HelpKeys.Values)
         {
             keys.Add(helpKey);
+        }
+
+        foreach (var optionLabel in form.Ui.SelectOptions?
+                     .SelectMany(entry => entry.Value)
+                     .Select(option => option.Label) ?? Enumerable.Empty<string>())
+        {
+            keys.Add(optionLabel);
         }
 
         foreach (var labelKey in optionSets.SelectMany(set => set.Items).Select(item => item.LabelKey))

@@ -30,8 +30,14 @@ const normalizeConcernType = (source?: string | null): CallLog['concernType'] =>
       return 'drugs';
     case 'gambling':
       return 'gambling';
+    case 'ladies':
+      return 'ladies';
+    case 'general':
+    case 'general query':
+    case 'general_query':
+      return 'general_query';
     default:
-      return 'general';
+      return 'general_query';
   }
 };
 
@@ -69,7 +75,7 @@ const mapUiToApiCall = (payload: Omit<CallLog, 'id'>): ApiCall => {
     caller: caller || null,
     phoneNumber: payload.phoneNumber || null,
     notes: payload.notes || null,
-    source: payload.concernType || 'general',
+    source: payload.concernType || 'general_query',
   };
 };
 
@@ -132,6 +138,47 @@ export const fetchCallLogs = async (
   return mapped;
 };
 
+export const fetchAllCallLogs = async (
+  accessToken?: string,
+  options?: { forceRefresh?: boolean; unitId?: UnitId },
+): Promise<CallLog[]> => {
+  const unitId = options?.unitId ?? 'alcohol';
+  const cacheKey = `${CALL_LOG_CACHE_KEY_PREFIX}.${unitId}.all`;
+  const control = await getScreeningControl(accessToken, {
+    forceRefresh: options?.forceRefresh,
+    unitId,
+  });
+  const canUseCache = !options?.forceRefresh && control.callLogsCacheSeconds > 0;
+
+  if (canUseCache) {
+    const cached = readLocalCache<CallLog[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}/api/screenings/calls`, {
+    method: 'GET',
+    headers: getAuthHeaders(accessToken),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`Failed to load call logs: ${response.status} ${body}`);
+  }
+
+  const data = (await response.json()) as ApiCall[];
+  if (!Array.isArray(data)) return [];
+  const mapped = data.map(mapApiCallToUi);
+
+  if (canUseCache) {
+    writeLocalCache(cacheKey, mapped, control.callLogsCacheSeconds);
+  }
+
+  return mapped;
+};
+
 export const createCallLog = async (
   payload: Omit<CallLog, 'id'>,
   accessToken?: string,
@@ -155,6 +202,7 @@ export const createCallLog = async (
   for (const rangeDays of CALL_LOG_CACHE_RANGES) {
     clearLocalCache(`${CALL_LOG_CACHE_KEY_PREFIX}.${unitId}.${rangeDays}d`);
   }
+  clearLocalCache(`${CALL_LOG_CACHE_KEY_PREFIX}.${unitId}.all`);
   clearLocalCache('screening.evaluees');
   return mapApiCallToUi(data);
 };

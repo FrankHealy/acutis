@@ -9,6 +9,7 @@ public sealed class GetActiveFormResponse
     public required List<OptionSetDto> OptionSets { get; set; }
     public required Dictionary<string, string> Translations { get; set; }
     public Guid? SubmissionId { get; set; }
+    public string? SubmissionStatus { get; set; }
     public required Dictionary<string, JsonElement> DraftAnswers { get; set; }
 }
 
@@ -137,6 +138,18 @@ public sealed class SaveRequest
     public required Dictionary<string, JsonElement> Answers { get; set; }
 }
 
+public sealed class RejectRequest
+{
+    public required string FormCode { get; set; }
+    public required int FormVersion { get; set; }
+    public required string Locale { get; set; }
+    public required string SubjectType { get; set; }
+    public string? SubjectId { get; set; }
+    public Guid? SubmissionId { get; set; }
+    public required Dictionary<string, JsonElement> Answers { get; set; }
+    public required string RejectionReason { get; set; }
+}
+
 public sealed class SaveProgressResponse
 {
     public required Guid SubmissionId { get; set; }
@@ -144,6 +157,12 @@ public sealed class SaveProgressResponse
 }
 
 public sealed class SaveResponse
+{
+    public required Guid SubmissionId { get; set; }
+    public required string Status { get; set; }
+}
+
+public sealed class RejectResponse
 {
     public required Guid SubmissionId { get; set; }
     public required string Status { get; set; }

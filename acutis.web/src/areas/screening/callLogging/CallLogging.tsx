@@ -63,6 +63,7 @@ const CallLogging: React.FC<CallLoggingProps> = ({ unitId = 'alcohol' }) => {
       "call_logging.modal.concern_type.alcohol",
       "call_logging.modal.concern_type.drugs",
       "call_logging.modal.concern_type.gambling",
+      "call_logging.modal.concern_type.ladies",
       "call_logging.modal.concern_type.general",
       "call_logging.table.note",
       "call_logging.loading",
@@ -87,8 +88,10 @@ const CallLogging: React.FC<CallLoggingProps> = ({ unitId = 'alcohol' }) => {
         return text("call_logging.modal.concern_type.drugs", "Drugs");
       case 'gambling':
         return text("call_logging.modal.concern_type.gambling", "Gambling");
+      case 'ladies':
+        return text("call_logging.modal.concern_type.ladies", "Ladies");
       default:
-        return text("call_logging.modal.concern_type.general", "General Inquiry");
+        return text("call_logging.modal.concern_type.general", "General Query");
     }
   };
 
@@ -178,7 +181,7 @@ const CallLogging: React.FC<CallLoggingProps> = ({ unitId = 'alcohol' }) => {
   };
 
   const handleSaveCallLog = async () => {
-    if (!formState.firstName || !formState.surname || !formState.concernType) {
+    if (!formState.firstName.trim() || !formState.surname.trim() || !formState.concernType || !formState.phoneNumber.trim()) {
       setErrorMessage(text("call_logging.required_fields", "Please complete the required fields."));
       return;
     }
@@ -217,8 +220,8 @@ const CallLogging: React.FC<CallLoggingProps> = ({ unitId = 'alcohol' }) => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{text("call_logging.title", "Screen Calls")}</h2>
-          <p className="text-sm text-gray-500">{text("call_logging.description", "Capture incoming screening and referral calls.")}</p>
+          <h2 className="text-2xl font-bold text-gray-900">{text("call_logging.title", "Call Logging")}</h2>
+          <p className="text-sm text-gray-500">{text("call_logging.description", "Log incoming screening and referral calls. Once logged, the person appears in the Screening Queue.")}</p>
         </div>
         <button
           onClick={() => {
@@ -228,7 +231,7 @@ const CallLogging: React.FC<CallLoggingProps> = ({ unitId = 'alcohol' }) => {
           className="flex items-center space-x-2 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
         >
           <Plus className="h-5 w-5" />
-          <span>{text("call_logging.log_new", "Log Screen Call")}</span>
+          <span>{text("call_logging.log_new", "Log Call")}</span>
         </button>
       </div>
 

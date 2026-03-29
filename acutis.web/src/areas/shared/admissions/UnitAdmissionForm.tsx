@@ -14,6 +14,10 @@ import {
   type SaveProgressResponse,
   type SaveResponse,
 } from "@/areas/screening/forms/ApiClient";
+import {
+  screeningSchedulingService,
+  type ScreeningSchedulingAssignment,
+} from "@/areas/screening/services/screeningSchedulingService";
 import type { UnitId, UnitDefinition } from "@/areas/shared/unit/unitTypes";
 import { isAuthorizedClient } from "@/lib/authMode";
 
@@ -35,6 +39,7 @@ const iconByUnit: Record<UnitDefinition["iconKey"], React.ComponentType<{ classN
 const PHOTO_ANSWER_KEY = "residentPhotoDataUrl";
 
 const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
+  unitId,
   unitName,
   unitIconKey,
   admissionFormCode,
@@ -48,6 +53,9 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [todaysAdmissions, setTodaysAdmissions] = useState<ScreeningSchedulingAssignment[]>([]);
+  const [loadingTodaysAdmissions, setLoadingTodaysAdmissions] = useState(false);
+  const [todaysAdmissionsError, setTodaysAdmissionsError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const Icon = iconByUnit[unitIconKey];
@@ -66,6 +74,14 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       "admission.capture",
       "admission.cancel_camera",
       "admission.upload_photo",
+      "admission.due_today.title",
+      "admission.due_today.description",
+      "admission.due_today.none",
+      "admission.due_today.loading",
+      "admission.due_today.name",
+      "admission.due_today.phone",
+      "admission.due_today.queue",
+      "admission.due_today.status",
     ]);
   }, [loadKeys]);
 
@@ -121,12 +137,90 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   }, [admissionFormCode, locale, mergeTranslations, session?.accessToken, status]);
 
   useEffect(() => {
+    let active = true;
+
+    const loadTodaysAdmissions = async () => {
+      if (unitId !== "detox") {
+        if (active) {
+          setTodaysAdmissions([]);
+          setTodaysAdmissionsError(null);
+          setLoadingTodaysAdmissions(false);
+        }
+        return;
+      }
+
+      if (!isAuthorizedClient(status, session?.accessToken)) {
+        if (active) {
+          setTodaysAdmissions([]);
+          setTodaysAdmissionsError(null);
+          setLoadingTodaysAdmissions(false);
+        }
+        return;
+      }
+
+      try {
+        setLoadingTodaysAdmissions(true);
+        const board = await screeningSchedulingService.getBoard(unitId, session?.accessToken);
+        if (!active) {
+          return;
+        }
+
+        const now = new Date();
+        const todayLocal = [
+          now.getFullYear(),
+          String(now.getMonth() + 1).padStart(2, "0"),
+          String(now.getDate()).padStart(2, "0"),
+        ].join("-");
+
+        const todaysSlot = board.slots.find((slot) => slot.scheduledDate.startsWith(todayLocal));
+        setTodaysAdmissions(todaysSlot?.assignments ?? []);
+        setTodaysAdmissionsError(null);
+      } catch (nextError) {
+        if (!active) {
+          return;
+        }
+
+        setTodaysAdmissions([]);
+        setTodaysAdmissionsError(nextError instanceof Error ? nextError.message : "Unable to load today's admissions.");
+      } finally {
+        if (active) {
+          setLoadingTodaysAdmissions(false);
+        }
+      }
+    };
+
+    void loadTodaysAdmissions();
+
+    return () => {
+      active = false;
+    };
+  }, [session?.accessToken, status, unitId]);
+
+  useEffect(() => {
+    const savedPhoto = formData?.draftAnswers?.[PHOTO_ANSWER_KEY];
+    setPhotoDataUrl(typeof savedPhoto === "string" && savedPhoto.trim().length > 0 ? savedPhoto : null);
+  }, [formData]);
+
+  useEffect(() => {
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
   }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!cameraOpen || !video || !stream) {
+      return;
+    }
+
+    video.srcObject = stream;
+    void video.play().catch((playError) => {
+      setCameraError(playError instanceof Error ? playError.message : "Unable to start camera preview.");
+    });
+  }, [cameraOpen]);
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -145,10 +239,6 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
       streamRef.current = stream;
       setCameraOpen(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
     } catch (openError) {
       setCameraError(openError instanceof Error ? openError.message : "Unable to access camera.");
     }
@@ -298,6 +388,50 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         </div>
       </div>
 
+      {unitId === "detox" && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3">
+            <h3 className="text-base font-semibold text-slate-900">
+              {text("admission.due_today.title", "Due For Admission Today")}
+            </h3>
+            <p className="mt-1 text-sm text-slate-600">
+              {text("admission.due_today.description", "Screened people scheduled for admission on today's date.")}
+            </p>
+          </div>
+
+          {loadingTodaysAdmissions ? (
+            <p className="text-sm text-slate-600">{text("admission.due_today.loading", "Loading today's admissions...")}</p>
+          ) : todaysAdmissionsError ? (
+            <p className="text-sm text-amber-700">{todaysAdmissionsError}</p>
+          ) : todaysAdmissions.length === 0 ? (
+            <p className="text-sm text-slate-600">{text("admission.due_today.none", "Nobody is due for admission today.")}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.name", "Name")}</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.phone", "Phone")}</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.queue", "Queue")}</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.status", "Status")}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {todaysAdmissions.map((assignment) => (
+                    <tr key={assignment.scheduledIntakeId} className="bg-white">
+                      <td className="px-4 py-3 text-slate-900">{[assignment.name, assignment.surname].filter(Boolean).join(" ")}</td>
+                      <td className="px-4 py-3 text-slate-700">{assignment.phoneNumber || "-"}</td>
+                      <td className="px-4 py-3 text-slate-700">{assignment.queueType || "-"}</td>
+                      <td className="px-4 py-3 text-slate-700">{assignment.status || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-900">
           <Camera className="h-4 w-4 text-blue-600" />
@@ -324,7 +458,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
               </button>
             ) : (
               <div className="space-y-2">
-                <video ref={videoRef} className="h-52 w-full rounded-lg border border-gray-200 bg-black object-cover" muted playsInline />
+                <video ref={videoRef} className="h-52 w-full rounded-lg border border-gray-200 bg-black object-cover" muted playsInline autoPlay />
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -361,6 +495,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         initialAnswers={mergedInitialAnswers}
         subjectType="admission"
         subjectId={null}
+        renderMode="wizard"
         onSaveProgress={onSaveProgress}
         onSave={onSave}
       />

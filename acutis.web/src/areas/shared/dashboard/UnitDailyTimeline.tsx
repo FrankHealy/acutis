@@ -17,13 +17,14 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
+  type LucideIcon,
 } from "lucide-react";
 
 interface ScheduleEvent {
   time: string;
   timeMinutes: number;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   color: string;
   description?: string;
   days?: string;
@@ -40,26 +41,12 @@ type UnitDailyTimelineProps = {
 const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenGroupTherapy, onOpenRollCall }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
-  const [viewMode, setViewMode] = useState<"morning" | "evening">("morning");
+  const [manualViewMode, setManualViewMode] = useState<"morning" | "evening" | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    const nowMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-
-    // Auto-switch timeline mode by time-of-day so staff don't need to toggle it manually.
-    if (nowMinutes >= 750 && nowMinutes <= 1320 && viewMode !== "evening") {
-      setViewMode("evening");
-      return;
-    }
-
-    if ((nowMinutes < 750 || nowMinutes > 1320) && viewMode !== "morning") {
-      setViewMode("morning");
-    }
-  }, [currentTime, viewMode]);
 
   const timeToMinutes = (time: string): number => {
     const [hours, minutes] = time.split(":").map(Number);
@@ -125,6 +112,13 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
   };
 
   const getCurrentMinutes = () => currentTime.getHours() * 60 + currentTime.getMinutes();
+
+  const autoViewMode = (() => {
+    const nowMinutes = getCurrentMinutes();
+    return nowMinutes >= 750 && nowMinutes <= 1320 ? "evening" : "morning";
+  })();
+
+  const viewMode = manualViewMode ?? autoViewMode;
 
   const isCurrentEvent = (event: ScheduleEvent) => {
     const now = getCurrentMinutes();
@@ -198,7 +192,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
 
       <div className="mb-6 flex items-center justify-between">
         <button
-          onClick={() => setViewMode("morning")}
+          onClick={() => setManualViewMode("morning")}
           disabled={viewMode === "morning"}
           className="flex items-center space-x-2 rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50"
         >
@@ -212,7 +206,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
         </div>
 
         <button
-          onClick={() => setViewMode("evening")}
+          onClick={() => setManualViewMode("evening")}
           disabled={viewMode === "evening"}
           className="flex items-center space-x-2 rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50"
         >

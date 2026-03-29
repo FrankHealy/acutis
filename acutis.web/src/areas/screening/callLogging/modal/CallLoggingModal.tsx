@@ -54,6 +54,7 @@ const CallLoggingModal: React.FC<CallLoggingModalProps> = ({
       "call_logging.modal.concern_type.alcohol",
       "call_logging.modal.concern_type.drugs",
       "call_logging.modal.concern_type.gambling",
+      "call_logging.modal.concern_type.ladies",
       "call_logging.modal.concern_type.general",
       "call_logging.modal.phone",
       "call_logging.modal.phone_placeholder",
@@ -82,8 +83,8 @@ const CallLoggingModal: React.FC<CallLoggingModalProps> = ({
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">{text("call_logging.modal.title", "Log Screen Call")}</h3>
-              <p className="text-sm text-gray-500">{text("call_logging.modal.description", "Record an incoming screening or referral call")}</p>
+              <h3 className="text-xl font-semibold text-gray-900">{text("call_logging.modal.title", "Log Call")}</h3>
+              <p className="text-sm text-gray-500">{text("call_logging.modal.description", "Record an incoming screening or referral call. Once saved, it appears in the Screening Queue.")}</p>
             </div>
             <button
               onClick={onClose}
@@ -156,16 +157,18 @@ const CallLoggingModal: React.FC<CallLoggingModalProps> = ({
                 <option value="alcohol">{text("call_logging.modal.concern_type.alcohol", "Alcohol")}</option>
                 <option value="drugs">{text("call_logging.modal.concern_type.drugs", "Drugs")}</option>
                 <option value="gambling">{text("call_logging.modal.concern_type.gambling", "Gambling")}</option>
-                <option value="general">{text("call_logging.modal.concern_type.general", "General Inquiry")}</option>
+                <option value="ladies">{text("call_logging.modal.concern_type.ladies", "Ladies")}</option>
+                <option value="general_query">{text("call_logging.modal.concern_type.general", "General Query")}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {text("call_logging.modal.phone", "Phone Number")}
+                {text("call_logging.modal.phone", "Phone Number")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
+                required
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-base"
                 placeholder={text("call_logging.modal.phone_placeholder", "087 123 4567")}
                 value={formState.phoneNumber}
@@ -216,7 +219,7 @@ const CallLoggingModal: React.FC<CallLoggingModalProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <Save className="h-5 w-5" />
-                <span>{isSaving ? text("call_logging.modal.saving", "Saving...") : text("call_logging.modal.save", "Save Screen Call")}</span>
+                <span>{isSaving ? text("call_logging.modal.saving", "Saving...") : text("call_logging.modal.save", "Save Call")}</span>
               </div>
             </button>
           </div>

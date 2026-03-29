@@ -1,101 +1,177 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { 
-  Calendar,
-  CheckCircle,
-  FileText,
-  AlertCircle,
-  X,
-} from 'lucide-react';
-import evaluationTemplate from '@/data/evaluationTemplate.json';
-import { useSession } from 'next-auth/react';
-import {
-  fetchEvaluationQueue,
-  type EvaluationQueueItem,
-} from './evaluationQueueService';
-import { getScreeningControl } from '@/areas/screening/services/screeningControlService';
-import DynamicFormRenderer from '@/areas/screening/forms/DynamicFormRenderer';
+import React, { useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
+import evaluationTemplate from "@/data/evaluationTemplate.json";
+import type { CallLog } from "@/data/mock/callLogs";
+import { useSession } from "next-auth/react";
+import DynamicFormRenderer from "@/areas/screening/forms/DynamicFormRenderer";
 import {
   type GetActiveFormResponse,
   type JsonValue,
-} from '@/areas/screening/forms/ApiClient';
+} from "@/areas/screening/forms/ApiClient";
 import {
+  beginEvaluationFromCall,
+  fetchEvaluationQueue,
   loadEvaluationForm,
+  rejectEvaluationForm,
   saveEvaluationDraft,
   submitEvaluationForm,
-} from '@/areas/screening/services/evaluationFormService';
-import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
-import { isAuthorizationDisabled, isAuthorizedClient } from '@/lib/authMode';
-import type { UnitId } from '@/areas/shared/unit/unitTypes';
+  type EvaluationQueueItem,
+} from "@/areas/screening/services/evaluationFormService";
+import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { isAuthorizationDisabled, isAuthorizedClient } from "@/lib/authMode";
+import { UnitDefinitions, type UnitId } from "@/areas/shared/unit/unitTypes";
 
 interface EvaluationCandidate {
-  caseId: string;
-  residentId: string | null;
+  callId: string;
+  caseId: string | null;
   name: string;
   firstName?: string;
   surname?: string;
-  unit: string;
+  phoneNumber: string;
+  queueType: CallLog["concernType"];
   intakeSource: string;
   numCalls: number;
   lastCallDate: string;
-  status: 'pending' | 'in-progress' | 'completed' | 'scheduled';
-  hasScreeningStarted: boolean;
+  hasEvaluationStarted: boolean;
+  status: "awaiting" | "in_progress" | "entity_missing";
   evaluationData?: Record<string, unknown>;
+  canOpenEvaluation: boolean;
 }
 
 type EvaluationQueueProps = {
   unitId?: UnitId;
+  renderMode?: EvaluationRenderMode;
 };
 
-const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' }) => {
+type QueueFilter = "all" | CallLog["concernType"];
+type EvaluationRenderMode = "accordion" | "wizard";
+
+const getEvaluationFormCode = (
+  queueType: CallLog["concernType"],
+  unitId: UnitId,
+): string => {
+  switch (queueType) {
+    case "drugs":
+      return UnitDefinitions.drugs.admissionFormCode;
+    case "ladies":
+      return UnitDefinitions.ladies.admissionFormCode;
+    case "alcohol":
+      return UnitDefinitions.alcohol.admissionFormCode;
+    default:
+      return UnitDefinitions[unitId]?.admissionFormCode ?? UnitDefinitions.alcohol.admissionFormCode;
+  }
+};
+
+const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
+  unitId = "alcohol",
+  renderMode = "wizard",
+}) => {
   const { data: session, status } = useSession();
   const { locale, mergeTranslations, t, loadKeys } = useLocalization();
   const [selectedCandidate, setSelectedCandidate] = useState<EvaluationCandidate | null>(null);
   const [candidates, setCandidates] = useState<EvaluationCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activeQueue, setActiveQueue] = useState<QueueFilter>("all");
   const [formData, setFormData] = useState<GetActiveFormResponse | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [startingCandidateId, setStartingCandidateId] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<{
-    key: 'surname' | 'unit' | 'lastCallDate';
-    direction: 'asc' | 'desc';
-  }>({ key: 'surname', direction: 'asc' });
+    key: "surname" | "queueType" | "lastCallDate";
+    direction: "asc" | "desc";
+  }>({ key: "surname", direction: "asc" });
   const defaultEvaluationData = useMemo(
     () => evaluationTemplate as Record<string, unknown>,
     []
   );
 
+  const text = React.useCallback(
+    (key: string, fallback: string, fallbackArabic?: string) => {
+      const resolved = t(key);
+      if (resolved !== key) {
+        return resolved;
+      }
+
+      return locale.startsWith("ar") && fallbackArabic ? fallbackArabic : fallback;
+    },
+    [locale, t]
+  );
+
   useEffect(() => {
     void loadKeys([
-      'evaluation.queue.title',
-      'evaluation.stats.pending',
-      'evaluation.stats.in_progress',
-      'evaluation.stats.scheduled',
-      'evaluation.stats.completed',
-      'evaluation.table.surname',
-      'evaluation.table.name',
-      'evaluation.table.unit',
-      'evaluation.table.source',
-      'evaluation.table.last_call_date',
-      'evaluation.table.num_calls',
-      'evaluation.table.status',
-      'evaluation.table.action',
-      'evaluation.action.view',
-      'evaluation.modal.subtitle',
-      'evaluation.loading.queue',
-      'evaluation.empty.queue',
-      'evaluation.loading.form',
-      'evaluation.empty.form',
-      'evaluation.status.pending',
-      'evaluation.status.in_progress',
-      'evaluation.status.scheduled',
-      'evaluation.status.completed',
+      "evaluation.queue.title",
+      "evaluation.queue.all",
+      "evaluation.queue.alcohol",
+      "evaluation.queue.drugs",
+      "evaluation.queue.gambling",
+      "evaluation.queue.ladies",
+      "evaluation.queue.general_query",
+      "evaluation.table.surname",
+      "evaluation.table.name",
+      "evaluation.table.phone",
+      "evaluation.table.queue",
+      "evaluation.table.source",
+      "evaluation.table.last_call_date",
+      "evaluation.table.num_calls",
+      "evaluation.table.action",
+      "evaluation.action.awaiting",
+      "evaluation.action.open",
+      "evaluation.status.awaiting",
+      "evaluation.status.in_progress",
+      "evaluation.status.entity_missing",
+      "evaluation.modal.subtitle",
+      "evaluation.loading.queue",
+      "evaluation.empty.queue",
+      "evaluation.loading.form",
+      "evaluation.empty.form",
     ]);
   }, [loadKeys]);
 
-  const loadQueue = React.useCallback(async (forceRefresh = false, withLoader = false) => {
+  const getQueueLabel = React.useCallback((queueType: CallLog["concernType"]) => {
+    switch (queueType) {
+      case "alcohol":
+        return text("evaluation.queue.alcohol", "Alcohol", "الكحول");
+      case "drugs":
+        return text("evaluation.queue.drugs", "Drugs", "المخدرات");
+      case "gambling":
+        return text("evaluation.queue.gambling", "Gambling", "القمار");
+      case "ladies":
+        return text("evaluation.queue.ladies", "Ladies", "السيدات");
+      default:
+        return text("evaluation.queue.general_query", "General Query", "الاستفسارات العامة");
+    }
+  }, [text]);
+
+  const queueFilters: Array<{ key: QueueFilter; label: string }> = [
+    { key: "all", label: text("evaluation.queue.all", "All Queues", "كل القوائم") },
+    { key: "alcohol", label: text("evaluation.queue.alcohol", "Alcohol", "الكحول") },
+    { key: "drugs", label: text("evaluation.queue.drugs", "Drugs", "المخدرات") },
+    { key: "gambling", label: text("evaluation.queue.gambling", "Gambling", "القمار") },
+    { key: "ladies", label: text("evaluation.queue.ladies", "Ladies", "السيدات") },
+    { key: "general_query", label: text("evaluation.queue.general_query", "General Query", "الاستفسارات العامة") },
+  ];
+
+  const mapQueueItem = React.useCallback((item: EvaluationQueueItem): EvaluationCandidate => ({
+    callId: item.callId,
+    caseId: item.caseId,
+    name: `${item.name} ${item.surname}`.trim(),
+    firstName: item.name,
+    surname: item.surname,
+    phoneNumber: item.phoneNumber,
+    queueType: item.queueType as CallLog["concernType"],
+    intakeSource: item.intakeSource,
+    numCalls: item.numCalls,
+    lastCallDate: item.lastCallDate,
+    hasEvaluationStarted: item.hasEvaluationStarted,
+    status: (item.status as EvaluationCandidate["status"]) ?? "awaiting",
+    evaluationData: defaultEvaluationData,
+    canOpenEvaluation: Boolean(item.caseId),
+  }), [defaultEvaluationData]);
+
+  const loadQueue = React.useCallback(async (withLoader = false) => {
     try {
       if (withLoader) {
         setIsLoading(true);
@@ -104,75 +180,31 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
         setIsLoading(false);
         return;
       }
-      const queue = await fetchEvaluationQueue(session?.accessToken, { forceRefresh, unitId });
-      const mapped = queue.map((item: EvaluationQueueItem) => ({
-        caseId: item.caseId,
-        residentId: item.residentId,
-        name: `${item.name} ${item.surname}`.trim(),
-        firstName: item.name,
-        surname: item.surname,
-        unit: item.unit,
-        intakeSource: item.intakeSource,
-        numCalls: item.numCalls,
-        lastCallDate: item.lastCallDate,
-        status: (item.status as EvaluationCandidate['status']) ?? 'pending',
-        hasScreeningStarted: item.hasScreeningStarted,
-        evaluationData: defaultEvaluationData,
-      }));
+
+      const queue = await fetchEvaluationQueue(session?.accessToken);
+      const mapped = queue
+        .map(mapQueueItem)
+        .filter((item) => unitId === "alcohol" || item.queueType === unitId || item.queueType === "general_query");
       setCandidates(mapped);
       setErrorMessage(null);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to load evaluation queue.');
+      setErrorMessage(error instanceof Error ? error.message : "Failed to load evaluation queue.");
     } finally {
       if (withLoader) {
         setIsLoading(false);
       }
     }
-  }, [defaultEvaluationData, session?.accessToken, status, unitId]);
+  }, [mapQueueItem, session?.accessToken, status, unitId]);
 
   useEffect(() => {
-    void loadQueue(false, true);
+    void loadQueue(true);
   }, [loadQueue]);
-
-  useEffect(() => {
-    if (!isAuthorizedClient(status, session?.accessToken)) {
-      return;
-    }
-
-    let intervalId: number | null = null;
-    let disposed = false;
-
-    const start = async () => {
-      try {
-        const control = await getScreeningControl(session?.accessToken, { unitId });
-        if (disposed) return;
-        const seconds = Math.max(5, control.evaluationQueueCacheSeconds || 30);
-        intervalId = window.setInterval(() => {
-          void loadQueue(true, false);
-        }, seconds * 1000);
-      } catch {
-        if (disposed) return;
-        intervalId = window.setInterval(() => {
-          void loadQueue(true, false);
-        }, 30_000);
-      }
-    };
-
-    void start();
-
-    return () => {
-      disposed = true;
-      if (intervalId !== null) {
-        window.clearInterval(intervalId);
-      }
-    };
-  }, [loadQueue, session?.accessToken, status, unitId]);
 
   useEffect(() => {
     let active = true;
 
     const loadForm = async () => {
-      if (!isAuthorizedClient(status, session?.accessToken) || !selectedCandidate) {
+      if (!isAuthorizedClient(status, session?.accessToken) || !selectedCandidate?.caseId) {
         setFormData(null);
         setFormError(null);
         return;
@@ -180,24 +212,28 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
 
       try {
         setFormLoading(true);
+        setFormData(null);
+        setFormError(null);
         const accessToken = session?.accessToken;
         if (!accessToken && !isAuthorizationDisabled) {
           setFormData(null);
           setFormError("Session expired.");
           return;
         }
-          const response = await loadEvaluationForm({
+        const response = await loadEvaluationForm({
           accessToken,
           locale,
           residentCaseId: selectedCandidate.caseId,
+          formCode: getEvaluationFormCode(selectedCandidate.queueType, unitId),
         });
         if (!active) return;
-        setFormData(response);
         mergeTranslations(response.translations);
+        setFormData(response);
         setFormError(null);
       } catch (error) {
         if (!active) return;
-        setFormError(error instanceof Error ? error.message : 'Failed to load evaluation form.');
+        setFormData(null);
+        setFormError(error instanceof Error ? error.message : "Failed to load evaluation form.");
       } finally {
         if (active) {
           setFormLoading(false);
@@ -210,60 +246,74 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
     return () => {
       active = false;
     };
-  }, [locale, mergeTranslations, selectedCandidate, session?.accessToken, status]);
+  }, [locale, mergeTranslations, selectedCandidate, session?.accessToken, status, unitId]);
+
+  const initialAnswers = useMemo(() => {
+    if (!formData || !selectedCandidate?.caseId) {
+      return {} as Record<string, JsonValue>;
+    }
+
+    const draftAnswers = formData.draftAnswers ?? {};
+    const fullName = `${selectedCandidate.firstName ?? ""} ${selectedCandidate.surname ?? ""}`.trim();
+    const phoneNumber = selectedCandidate.phoneNumber ?? "";
+
+    return {
+      service_user_full_name:
+        (draftAnswers.service_user_full_name as JsonValue | undefined) ?? fullName,
+      callerName:
+        (draftAnswers.callerName as JsonValue | undefined) ?? fullName,
+      caller_name:
+        (draftAnswers.caller_name as JsonValue | undefined) ?? fullName,
+      first_name:
+        (draftAnswers.first_name as JsonValue | undefined) ?? (selectedCandidate.firstName ?? ""),
+      firstName:
+        (draftAnswers.firstName as JsonValue | undefined) ?? (selectedCandidate.firstName ?? ""),
+      surname:
+        (draftAnswers.surname as JsonValue | undefined) ?? (selectedCandidate.surname ?? ""),
+      phone_number:
+        (draftAnswers.phone_number as JsonValue | undefined) ?? phoneNumber,
+      phoneNumber:
+        (draftAnswers.phoneNumber as JsonValue | undefined) ?? phoneNumber,
+      ...draftAnswers,
+    } as Record<string, JsonValue>;
+  }, [
+    formData,
+    selectedCandidate?.caseId,
+    selectedCandidate?.firstName,
+    selectedCandidate?.phoneNumber,
+    selectedCandidate?.surname,
+  ]);
 
   const getCandidateNameParts = (candidate: EvaluationCandidate) => {
     if (candidate.firstName || candidate.surname) {
       return {
-        firstName: candidate.firstName ?? '',
-        surname: candidate.surname ?? '',
+        firstName: candidate.firstName ?? "",
+        surname: candidate.surname ?? "",
       };
     }
     const parts = candidate.name.trim().split(/\s+/);
     if (parts.length === 1) {
-      return { firstName: parts[0], surname: '' };
+      return { firstName: parts[0], surname: "" };
     }
-    return { firstName: parts[0], surname: parts.slice(1).join(' ') };
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
-      case 'in-progress': return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200';
-      case 'scheduled': return 'bg-sky-50 text-sky-700 ring-1 ring-sky-200';
-      default: return 'bg-slate-100 text-slate-700 ring-1 ring-slate-200';
-    }
-  };
-
-  const getStatusLabel = (status: EvaluationCandidate['status']) => {
-    switch (status) {
-      case 'completed':
-        return t('evaluation.status.completed');
-      case 'in-progress':
-        return t('evaluation.status.in_progress');
-      case 'scheduled':
-        return t('evaluation.status.scheduled');
-      default:
-        return t('evaluation.status.pending');
-    }
+    return { firstName: parts[0], surname: parts.slice(1).join(" ") };
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-IE', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(dateString).toLocaleString("en-IE", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getSortableValue = (candidate: EvaluationCandidate, key: typeof sortConfig.key) => {
-    if (key === 'lastCallDate') {
+    if (key === "lastCallDate") {
       return new Date(candidate.lastCallDate).getTime();
     }
-    if (key === 'unit') {
-      return candidate.unit.toLowerCase();
+    if (key === "queueType") {
+      return getQueueLabel(candidate.queueType).toLowerCase();
     }
     const { surname } = getCandidateNameParts(candidate);
     return surname.toLowerCase();
@@ -272,153 +322,179 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
   const sortedCandidates = [...candidates].sort((a, b) => {
     const aValue = getSortableValue(a, sortConfig.key);
     const bValue = getSortableValue(b, sortConfig.key);
-    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
     return 0;
   });
+
+  const visibleCandidates = sortedCandidates.filter((candidate) =>
+    activeQueue === "all" ? true : candidate.queueType === activeQueue
+  );
 
   const toggleSort = (key: typeof sortConfig.key) => {
     setSortConfig((prev) => {
       if (prev.key === key) {
-        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
       }
-      return { key, direction: 'asc' };
+      return { key, direction: "asc" };
     });
   };
 
   const getActionLabel = (candidate: EvaluationCandidate) => {
-    return candidate.hasScreeningStarted || candidate.status === 'completed'
-      ? 'Review Screening'
-      : 'Start Screening';
+    if (!candidate.canOpenEvaluation) {
+      return text("evaluation.action.awaiting", "Awaiting", "بانتظار");
+    }
+    return text("evaluation.action.open", "Open Evaluation", "فتح التقييم");
   };
 
   const getSourceLabel = (intakeSource: string) => {
     switch (intakeSource) {
-      case 'face_to_face':
-        return 'Face to Face';
-      case 'self_screening':
-        return 'Self Screening';
+      case "face_to_face":
+        return text("evaluation.source.face_to_face", "Face to Face", "وجهاً لوجه");
+      case "self_screening":
+        return text("evaluation.source.self_screening", "Self Screening", "فحص ذاتي");
       default:
-        return 'Screening Call';
+        return text("evaluation.source.screening_call", "Screening Call", "مكالمة فحص");
+    }
+  };
+
+  const getQueueCount = (queueType: QueueFilter) => {
+    if (queueType === "all") {
+      return candidates.length;
+    }
+    return candidates.filter((candidate) => candidate.queueType === queueType).length;
+  };
+
+  const handleOpenEvaluation = async (candidate: EvaluationCandidate) => {
+    if (candidate.canOpenEvaluation) {
+      setSelectedCandidate(candidate);
+      return;
+    }
+
+    if (!isAuthorizedClient(status, session?.accessToken)) {
+      return;
+    }
+
+    try {
+      setStartingCandidateId(candidate.callId);
+      const response = await beginEvaluationFromCall(candidate.callId, session?.accessToken);
+      const updatedCandidate: EvaluationCandidate = {
+        ...candidate,
+        caseId: response.caseId,
+        hasEvaluationStarted: true,
+        canOpenEvaluation: true,
+      };
+
+      setCandidates((current) =>
+        current.map((item) => (item.callId === candidate.callId ? updatedCandidate : item))
+      );
+      setSelectedCandidate(updatedCandidate);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to start evaluation.");
+    } finally {
+      setStartingCandidateId(null);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="rounded-lg border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-3 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('evaluation.stats.pending')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {candidates.filter(c => c.status === 'pending').length}
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-              <FileText className="h-5 w-5 text-slate-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-3 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('evaluation.stats.in_progress')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {candidates.filter(c => c.status === 'in-progress').length}
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-              <AlertCircle className="h-5 w-5 text-slate-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-3 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('evaluation.stats.scheduled')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {candidates.filter(c => c.status === 'scheduled').length}
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-slate-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-3 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('evaluation.stats.completed')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {candidates.filter(c => c.status === 'completed').length}
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-              <CheckCircle className="h-5 w-5 text-slate-600" />
-            </div>
-          </div>
+      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="flex flex-wrap gap-2">
+          {queueFilters.map((queue) => (
+            <button
+              key={queue.key}
+              type="button"
+              onClick={() => setActiveQueue(queue.key)}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                activeQueue === queue.key
+                  ? "bg-slate-800 text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              <span>{queue.label}</span>
+              <span className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-xs ${
+                activeQueue === queue.key ? "bg-white/20 text-white" : "bg-white text-slate-700"
+              }`}>
+                {getQueueCount(queue.key)}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Candidates List */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/90">
-          <h2 className="text-lg font-semibold text-gray-900">{t('evaluation.queue.title')}</h2>
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-slate-50/90 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900">{t("evaluation.queue.title")}</h2>
+            <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-200 px-2.5 py-1 text-sm font-semibold text-slate-700">
+              {visibleCandidates.length}
+            </span>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-50/80 border-b border-slate-200">
+            <thead className="border-b border-slate-200 bg-slate-50/80">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                   <button
-                    onClick={() => toggleSort('surname')}
+                    type="button"
+                    onClick={() => toggleSort("surname")}
                     className="flex items-center gap-2 hover:text-gray-700"
                   >
-                    {t('evaluation.table.surname')}
+                    {t("evaluation.table.surname")}
                     <span className="text-[10px] text-gray-400">
-                      {sortConfig.key === 'surname' && sortConfig.direction === 'asc' ? '▲' : '▼'}
+                      {sortConfig.key === "surname" && sortConfig.direction === "asc" ? "▲" : "▼"}
                     </span>
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('evaluation.table.name')}</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {t("evaluation.table.name")}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {text("evaluation.table.phone", "Phone Number", "رقم الهاتف")}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                   <button
-                    onClick={() => toggleSort('unit')}
+                    type="button"
+                    onClick={() => toggleSort("queueType")}
                     className="flex items-center gap-2 hover:text-gray-700"
                   >
-                    {t('evaluation.table.unit')}
+                    {text("evaluation.table.queue", "Queue", "القائمة")}
                     <span className="text-[10px] text-gray-400">
-                      {sortConfig.key === 'unit' && sortConfig.direction === 'asc' ? '▲' : '▼'}
+                      {sortConfig.key === "queueType" && sortConfig.direction === "asc" ? "▲" : "▼"}
                     </span>
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('evaluation.table.source')}</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {t("evaluation.table.source")}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                   <button
-                    onClick={() => toggleSort('lastCallDate')}
+                    type="button"
+                    onClick={() => toggleSort("lastCallDate")}
                     className="flex items-center gap-2 hover:text-gray-700"
                   >
-                    {t('evaluation.table.last_call_date')}
+                    {t("evaluation.table.last_call_date")}
                     <span className="text-[10px] text-gray-400">
-                      {sortConfig.key === 'lastCallDate' && sortConfig.direction === 'asc' ? '▲' : '▼'}
+                      {sortConfig.key === "lastCallDate" && sortConfig.direction === "asc" ? "▲" : "▼"}
                     </span>
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('evaluation.table.num_calls')}</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('evaluation.table.status')}</th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('evaluation.table.action')}</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {t("evaluation.table.num_calls")}
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {t("evaluation.table.action")}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {isLoading ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
-                    {t('evaluation.loading.queue')}
+                    {t("evaluation.loading.queue")}
                   </td>
                 </tr>
               ) : errorMessage ? (
@@ -427,14 +503,14 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
                     {errorMessage}
                   </td>
                 </tr>
-              ) : sortedCandidates.length === 0 ? (
+              ) : visibleCandidates.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
-                    {t('evaluation.empty.queue')}
+                    {t("evaluation.empty.queue")}
                   </td>
                 </tr>
-              ) : sortedCandidates.map((candidate) => (
-                <tr key={candidate.caseId} className="hover:bg-slate-50 transition-colors">
+              ) : visibleCandidates.map((candidate) => (
+                <tr key={candidate.callId} className="transition-colors hover:bg-slate-50">
                   {(() => {
                     const { firstName, surname } = getCandidateNameParts(candidate);
                     return (
@@ -444,29 +520,27 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
                       </>
                     );
                   })()}
-                  <td className="px-6 py-4">
-                    <p className="text-gray-700">{candidate.unit}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-gray-700">{getSourceLabel(candidate.intakeSource)}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-gray-700">{formatDate(candidate.lastCallDate)}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-gray-700 font-semibold">{candidate.numCalls}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(candidate.status)}`}>
-                      {getStatusLabel(candidate.status)}
-                    </span>
-                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{candidate.phoneNumber || "-"}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{getQueueLabel(candidate.queueType)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{getSourceLabel(candidate.intakeSource)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{formatDate(candidate.lastCallDate)}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-700">{candidate.numCalls}</td>
                   <td className="px-6 py-4 text-right">
                     <button
-                      onClick={() => setSelectedCandidate(candidate)}
-                      className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                      type="button"
+                      onClick={() => void handleOpenEvaluation(candidate)}
+                      disabled={startingCandidateId === candidate.callId}
+                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors shadow-sm ${
+                        startingCandidateId === candidate.callId
+                          ? "cursor-wait bg-slate-200 text-slate-500 shadow-none"
+                          : candidate.canOpenEvaluation
+                            ? "bg-slate-700 text-white hover:bg-slate-800"
+                            : "bg-slate-200 text-slate-700 hover:bg-slate-300 shadow-none"
+                      }`}
                     >
-                      {getActionLabel(candidate)}
+                      {startingCandidateId === candidate.callId
+                        ? text("evaluation.loading.form", "Loading form...", "جاري تحميل النموذج...")
+                        : getActionLabel(candidate)}
                     </button>
                   </td>
                 </tr>
@@ -476,20 +550,21 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
         </div>
       </div>
 
-      {/* Evaluation Form Modal */}
       {selectedCandidate && (
-        <div className="fixed inset-0 bg-slate-900/55 backdrop-blur-sm flex items-center justify-center z-50 p-8">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="border-b border-slate-200 p-6 bg-slate-50/80">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-8 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="border-b border-slate-200 bg-slate-50/80 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-2xl font-semibold text-gray-900">{selectedCandidate.name}</h3>
-                  <p className="text-sm text-gray-500">Resident Case Assessment Form</p>
+                  <p className="text-sm text-gray-500">
+                    {text("evaluation.modal.subtitle", "Resident Case Assessment Form", "نموذج تقييم الحالة")}
+                  </p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setSelectedCandidate(null)}
-                  className="p-2 rounded-lg hover:bg-slate-200 transition-colors"
+                  className="rounded-lg p-2 transition-colors hover:bg-slate-200"
                 >
                   <X className="h-5 w-5 text-gray-600" />
                 </button>
@@ -498,54 +573,68 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({ unitId = 'alcohol' })
 
             <div className="flex-1 overflow-y-auto p-6">
               {formLoading ? (
-                <div className="text-sm text-gray-500">{t('evaluation.loading.form')}</div>
+                <div className="text-sm text-gray-500">{t("evaluation.loading.form")}</div>
               ) : formError ? (
                 <div className="text-sm text-red-600">{formError}</div>
-              ) : formData ? (
+              ) : formData && selectedCandidate.caseId ? (
                 <DynamicFormRenderer
                   form={formData.form}
                   optionSets={formData.optionSets}
                   locale={locale}
                   initialSubmissionId={formData.submissionId}
-                  initialAnswers={{
-                    service_user_full_name:
-                      (formData.draftAnswers?.service_user_full_name as JsonValue | undefined) ??
-                      `${selectedCandidate.firstName ?? ''} ${selectedCandidate.surname ?? ''}`.trim(),
-                    first_name:
-                      (formData.draftAnswers?.first_name as JsonValue | undefined) ??
-                      (selectedCandidate.firstName ?? ''),
-                    surname:
-                      (formData.draftAnswers?.surname as JsonValue | undefined) ??
-                      (selectedCandidate.surname ?? ''),
-                    ...formData.draftAnswers,
-                  } as Record<string, JsonValue>}
+                  initialSubmissionStatus={formData.submissionStatus}
+                  initialAnswers={initialAnswers}
                   subjectType="admission"
                   subjectId={selectedCandidate.caseId}
+                  renderMode={renderMode}
                   onSaveProgress={async ({ submissionId, answers }) =>
                     saveEvaluationDraft({
-                      accessToken: session?.accessToken ?? '',
+                      accessToken: session?.accessToken ?? "",
                       locale,
-                      residentCaseId: selectedCandidate.caseId,
+                      residentCaseId: selectedCandidate.caseId ?? "",
                       formCode: formData.form.code,
                       formVersion: formData.form.version,
                       submissionId,
                       answers,
                     })
                   }
-                  onSave={async ({ submissionId, answers }) =>
-                    submitEvaluationForm({
-                      accessToken: session?.accessToken ?? '',
+                  onSave={async ({ submissionId, answers }) => {
+                    const result = await submitEvaluationForm({
+                      accessToken: session?.accessToken ?? "",
                       locale,
-                      residentCaseId: selectedCandidate.caseId,
+                      residentCaseId: selectedCandidate.caseId ?? "",
                       formCode: formData.form.code,
                       formVersion: formData.form.version,
                       submissionId,
                       answers,
-                    })
-                  }
+                    });
+                    setSelectedCandidate(null);
+                    setFormData(null);
+                    await loadQueue();
+                    return result;
+                  }}
+                  onReject={async ({ submissionId, answers, rejectionReason }) => {
+                    const result = await rejectEvaluationForm({
+                      accessToken: session?.accessToken ?? "",
+                      locale,
+                      residentCaseId: selectedCandidate.caseId ?? "",
+                      formCode: formData.form.code,
+                      formVersion: formData.form.version,
+                      submissionId,
+                      answers,
+                      rejectionReason,
+                    });
+                    setSelectedCandidate(null);
+                    setFormData(null);
+                    await loadQueue();
+                    return result;
+                  }}
+                  submitLabel={text("form.action.accept", "Accept", "قبول")}
+                  submittingLabel={text("form.action.accepting", "Accepting...", "جار القبول...")}
+                  submittedLabel={text("form.status.accepted", "Accepted.", "تم القبول.")}
                 />
               ) : (
-                <div className="text-sm text-gray-500">{t('evaluation.empty.form')}</div>
+                <div className="text-sm text-gray-500">{t("evaluation.empty.form")}</div>
               )}
             </div>
           </div>

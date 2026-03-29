@@ -1,8 +1,12 @@
 import React from 'react';
 import { CheckCircle, XCircle, Clock, Save } from 'lucide-react';
 
+type AttendanceRecord = {
+  present?: boolean;
+};
+
 interface RollCallControlsProps {
-  attendanceData: Record<number, any>;
+  attendanceData: Record<number, AttendanceRecord>;
   totalResidents: number;
   onSaveAttendance: () => void;
   onMarkAllPresent?: () => void;

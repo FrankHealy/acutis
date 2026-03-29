@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 type TranslationsMap = Record<string, string>;
@@ -14,6 +14,30 @@ type LocalizationContextValue = {
 };
 
 const LocalizationContext = createContext<LocalizationContextValue | null>(null);
+const LOCALE_STORAGE_KEY = "acutis.locale";
+
+const subscribeToLocale = (callback: () => void) => {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === LOCALE_STORAGE_KEY) {
+      callback();
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+  return () => window.removeEventListener("storage", handleStorage);
+};
+
+const getLocaleSnapshot = () => {
+  if (typeof window === "undefined") {
+    return "en-IE";
+  }
+
+  return window.localStorage.getItem(LOCALE_STORAGE_KEY) || "en-IE";
+};
 
 const fetchTranslations = async (locale: string, keys: string[]): Promise<TranslationsMap> => {
   if (keys.length === 0) {
@@ -41,15 +65,10 @@ const fetchTranslations = async (locale: string, keys: string[]): Promise<Transl
 };
 
 export function LocalizationProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState("en-IE");
+  const storedLocale = useSyncExternalStore(subscribeToLocale, getLocaleSnapshot, () => "en-IE");
+  const [localeOverride, setLocaleOverride] = useState<string | null>(null);
+  const locale = localeOverride ?? storedLocale;
   const [translations, setTranslations] = useState<TranslationsMap>({});
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem("acutis.locale");
-    if (stored) {
-      setLocaleState(stored);
-    }
-  }, []);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -58,9 +77,9 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((nextLocale: string) => {
     const localeToUse = nextLocale || "en-IE";
-    setLocaleState(localeToUse);
+    setLocaleOverride(localeToUse);
     setTranslations({});
-    window.localStorage.setItem("acutis.locale", localeToUse);
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, localeToUse);
   }, []);
 
   const mergeTranslations = useCallback((next: TranslationsMap) => {

@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "node .\\node_modules\\eslint\\bin\\eslint.js"
+    "lint": "node .\\node_modules\\eslint\\bin\\eslint.js --cache --cache-location .eslintcache src"
   },
   "dependencies": {
     "lucide-react": "^0.563.0",

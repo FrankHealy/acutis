@@ -3,6 +3,7 @@ type ToastProps = {
   message: string;
   type?: "success" | "warning" | "error" | "info";
   onClose: () => void;
+  closeLabel?: string;
 };
 
 const typeToClasses: Record<NonNullable<ToastProps["type"]>, string> = {
@@ -12,7 +13,7 @@ const typeToClasses: Record<NonNullable<ToastProps["type"]>, string> = {
   info: "border-blue-300 bg-blue-50 text-blue-800",
 };
 
-export default function Toast({ open, message, type = "info", onClose }: ToastProps) {
+export default function Toast({ open, message, type = "info", onClose, closeLabel = "Close" }: ToastProps) {
   if (!open) return null;
 
   return (
@@ -25,11 +26,10 @@ export default function Toast({ open, message, type = "info", onClose }: ToastPr
             onClick={onClose}
             className="text-xs font-semibold opacity-70 hover:opacity-100"
           >
-            Close
+            {closeLabel}
           </button>
         </div>
       </div>
     </div>
   );
 }
-

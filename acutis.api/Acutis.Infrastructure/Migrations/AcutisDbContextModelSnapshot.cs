@@ -2626,7 +2626,7 @@ namespace Acutis.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 2, 6, 0, 0, 0, 0, DateTimeKind.Utc),
                             DescriptionKey = "First real HSE-derived case assessment assembled from Element Library items.",
                             RulesJson = "[\n  {\n    \"if\": { \"field\": \"assessment_completion_status\", \"equals\": false },\n    \"then\": { \"hide\": [ \"assessment_completion_date\" ], \"clear\": [ \"assessment_completion_date\" ] },\n    \"else\": { \"show\": [ \"assessment_completion_date\" ] }\n  }\n]",
-                            SchemaJson = "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"service_user_full_name\": { \"type\": \"string\", \"minLength\": 2, \"maxLength\": 160 },\n    \"first_name\": { \"type\": \"string\", \"minLength\": 1, \"maxLength\": 80 },\n    \"surname\": { \"type\": \"string\", \"minLength\": 1, \"maxLength\": 80 },\n    \"date_of_birth\": { \"type\": \"date\" },\n    \"phone_number\": { \"type\": \"string\", \"maxLength\": 20, \"pattern\": \"^\\\\+?[0-9()\\\\-\\\\s]{7,20}$\", \"format\": \"phone\" },\n    \"email_address\": { \"type\": \"string\", \"maxLength\": 120, \"pattern\": \"^[A-Za-z0-9._%+\\\\-]+@[A-Za-z0-9.\\\\-]+\\\\.[A-Za-z]{2,}$\", \"format\": \"email\" },\n    \"gp_name\": { \"type\": \"string\", \"maxLength\": 160 },\n    \"medical_card_status\": { \"type\": \"boolean\" },\n    \"assessment_completion_status\": { \"type\": \"boolean\" },\n    \"assessment_completion_date\": { \"type\": \"date\" },\n    \"consent_mental_health_shared_record\": { \"type\": \"boolean\" },\n    \"source_of_referral\": { \"type\": \"enum\" },\n    \"ever_treated_for_substance_use\": { \"type\": \"boolean\" },\n    \"ever_treated_for_alcohol\": { \"type\": \"boolean\" },\n    \"total_previous_treatments\": { \"type\": \"integer\", \"minimum\": 0, \"maximum\": 250 },\n    \"age_first_treated\": { \"type\": \"integer\", \"minimum\": 0, \"maximum\": 120 },\n    \"treatment_providers\": { \"type\": \"text\", \"maxLength\": 1000 },\n    \"reason_for_leaving_treatment\": { \"type\": \"text\", \"maxLength\": 1000 },\n    \"longest_time_abstinent\": { \"type\": \"string\", \"maxLength\": 120 },\n    \"current_opiate_agonist_treatment\": { \"type\": \"boolean\" },\n    \"other_current_treatment_medication\": { \"type\": \"boolean\" },\n    \"physical_health_concerns\": { \"type\": \"boolean\" },\n    \"known_allergies\": { \"type\": \"boolean\" },\n    \"history_of_head_injury\": { \"type\": \"boolean\" },\n    \"last_gp_checkup\": { \"type\": \"string\", \"maxLength\": 160 },\n    \"relevant_medical_history\": { \"type\": \"text\", \"maxLength\": 2000 },\n    \"current_medications\": { \"type\": \"text\", \"maxLength\": 2000 },\n    \"history_of_seizures\": { \"type\": \"boolean\" },\n    \"mental_health_concerns\": { \"type\": \"boolean\" },\n    \"mental_health_professional_engagement\": { \"type\": \"boolean\" },\n    \"history_of_psychiatric_care\": { \"type\": \"boolean\" },\n    \"history_of_self_harm_or_suicidal_thoughts\": { \"type\": \"boolean\" },\n    \"mood_last_month\": { \"type\": \"enum\" },\n    \"mental_health_details\": { \"type\": \"text\", \"maxLength\": 2000 },\n    \"comprehensive_assessment_needed\": { \"type\": \"boolean\" },\n    \"comprehensive_assessment_arranged\": { \"type\": \"boolean\" },\n    \"additional_comments_details\": { \"type\": \"text\", \"maxLength\": 2000 }\n  },\n  \"required\": [\n    \"service_user_full_name\",\n    \"first_name\",\n    \"surname\",\n    \"date_of_birth\",\n    \"assessment_completion_status\",\n    \"consent_mental_health_shared_record\"\n  ]\n}",
+                            SchemaJson = "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"service_user_full_name\": { \"type\": \"string\", \"minLength\": 2, \"maxLength\": 160 },\n    \"first_name\": { \"type\": \"string\", \"minLength\": 1, \"maxLength\": 80 },\n    \"surname\": { \"type\": \"string\", \"minLength\": 1, \"maxLength\": 80 },\n    \"date_of_birth\": { \"type\": \"date\" },\n    \"phone_number\": { \"type\": \"string\", \"maxLength\": 20, \"pattern\": \"^\\\\+?[0-9()\\\\-\\\\s]{7,20}$\", \"format\": \"phone\" },\n    \"email_address\": { \"type\": \"string\", \"maxLength\": 120, \"pattern\": \"^[A-Za-z0-9._%+\\\\-]+@[A-Za-z0-9.\\\\-]+\\\\.[A-Za-z]{2,}$\", \"format\": \"email\" },\n    \"gp_name\": { \"type\": \"string\", \"maxLength\": 160 },\n    \"medical_card_status\": { \"type\": \"boolean\" },\n    \"assessment_completion_status\": { \"type\": \"boolean\" },\n    \"assessment_completion_date\": { \"type\": \"date\" },\n    \"consent_mental_health_shared_record\": { \"type\": \"boolean\" },\n    \"source_of_referral\": { \"type\": \"enum\" },\n    \"ever_treated_for_substance_use\": { \"type\": \"boolean\" },\n    \"ever_treated_for_alcohol\": { \"type\": \"boolean\" },\n    \"total_previous_treatments\": { \"type\": \"integer\", \"minimum\": 0, \"maximum\": 250 },\n    \"age_first_treated\": { \"type\": \"integer\", \"minimum\": 0, \"maximum\": 120 },\n    \"treatment_providers\": { \"type\": \"text\", \"maxLength\": 1000 },\n    \"reason_for_leaving_treatment\": { \"type\": \"text\", \"maxLength\": 1000 },\n    \"longest_time_abstinent\": { \"type\": \"string\", \"maxLength\": 120 },\n    \"current_opiate_agonist_treatment\": { \"type\": \"boolean\" },\n    \"other_current_treatment_medication\": { \"type\": \"boolean\" },\n    \"physical_health_concerns\": { \"type\": \"boolean\" },\n    \"known_allergies\": { \"type\": \"boolean\" },\n    \"history_of_head_injury\": { \"type\": \"boolean\" },\n    \"last_gp_checkup\": { \"type\": \"date\" },\n    \"relevant_medical_history\": { \"type\": \"text\", \"maxLength\": 2000 },\n    \"current_medications\": { \"type\": \"text\", \"maxLength\": 2000 },\n    \"history_of_seizures\": { \"type\": \"boolean\" },\n    \"mental_health_concerns\": { \"type\": \"boolean\" },\n    \"mental_health_professional_engagement\": { \"type\": \"boolean\" },\n    \"history_of_psychiatric_care\": { \"type\": \"boolean\" },\n    \"history_of_self_harm_or_suicidal_thoughts\": { \"type\": \"boolean\" },\n    \"mood_last_month\": { \"type\": \"enum\" },\n    \"mental_health_details\": { \"type\": \"text\", \"maxLength\": 2000 },\n    \"comprehensive_assessment_needed\": { \"type\": \"boolean\" },\n    \"comprehensive_assessment_arranged\": { \"type\": \"boolean\" },\n    \"additional_comments_details\": { \"type\": \"text\", \"maxLength\": 2000 }\n  },\n  \"required\": [\n    \"service_user_full_name\",\n    \"first_name\",\n    \"surname\",\n    \"date_of_birth\",\n    \"assessment_completion_status\",\n    \"consent_mental_health_shared_record\"\n  ]\n}",
                             Status = "published",
                             TitleKey = "Resident Case Screening and Admission Assessment",
                             UiJson = "{\n  \"sections\": [\n    {\n      \"titleKey\": \"Intake and Administrative Identity\",\n      \"items\": [\n        \"service_user_full_name\",\n        \"first_name\",\n        \"surname\",\n        \"date_of_birth\",\n        \"phone_number\",\n        \"email_address\",\n        \"gp_name\",\n        \"medical_card_status\",\n        \"source_of_referral\"\n      ]\n    },\n    {\n      \"titleKey\": \"Consent and Confidentiality\",\n      \"items\": [\n        \"assessment_completion_status\",\n        \"assessment_completion_date\",\n        \"consent_mental_health_shared_record\"\n      ]\n    },\n    {\n      \"titleKey\": \"Substance and Treatment History\",\n      \"items\": [\n        \"ever_treated_for_substance_use\",\n        \"ever_treated_for_alcohol\",\n        \"total_previous_treatments\",\n        \"age_first_treated\",\n        \"treatment_providers\",\n        \"reason_for_leaving_treatment\",\n        \"longest_time_abstinent\",\n        \"current_opiate_agonist_treatment\",\n        \"other_current_treatment_medication\"\n      ]\n    },\n    {\n      \"titleKey\": \"Physical Health\",\n      \"items\": [\n        \"physical_health_concerns\",\n        \"known_allergies\",\n        \"history_of_head_injury\",\n        \"last_gp_checkup\",\n        \"relevant_medical_history\",\n        \"current_medications\",\n        \"history_of_seizures\"\n      ]\n    },\n    {\n      \"titleKey\": \"Mental Health\",\n      \"items\": [\n        \"mental_health_concerns\",\n        \"mental_health_professional_engagement\",\n        \"history_of_psychiatric_care\",\n        \"history_of_self_harm_or_suicidal_thoughts\",\n        \"mood_last_month\",\n        \"mental_health_details\"\n      ]\n    },\n    {\n      \"titleKey\": \"Assessor Actions Required\",\n      \"items\": [\n        \"comprehensive_assessment_needed\",\n        \"comprehensive_assessment_arranged\",\n        \"additional_comments_details\"\n      ]\n    }\n  ],\n  \"widgets\": {\n    \"service_user_full_name\": \"input\",\n    \"first_name\": \"input\",\n    \"surname\": \"input\",\n    \"date_of_birth\": \"input\",\n    \"phone_number\": \"input\",\n    \"email_address\": \"input\",\n    \"gp_name\": \"input\",\n    \"medical_card_status\": \"toggle\",\n    \"assessment_completion_status\": \"toggle\",\n    \"assessment_completion_date\": \"input\",\n    \"consent_mental_health_shared_record\": \"toggle\",\n    \"source_of_referral\": \"select\",\n    \"ever_treated_for_substance_use\": \"toggle\",\n    \"ever_treated_for_alcohol\": \"toggle\",\n    \"total_previous_treatments\": \"number\",\n    \"age_first_treated\": \"number\",\n    \"treatment_providers\": \"textarea\",\n    \"reason_for_leaving_treatment\": \"textarea\",\n    \"longest_time_abstinent\": \"input\",\n    \"current_opiate_agonist_treatment\": \"toggle\",\n    \"other_current_treatment_medication\": \"toggle\",\n    \"physical_health_concerns\": \"toggle\",\n    \"known_allergies\": \"toggle\",\n    \"history_of_head_injury\": \"toggle\",\n    \"last_gp_checkup\": \"input\",\n    \"relevant_medical_history\": \"textarea\",\n    \"current_medications\": \"textarea\",\n    \"history_of_seizures\": \"toggle\",\n    \"mental_health_concerns\": \"toggle\",\n    \"mental_health_professional_engagement\": \"toggle\",\n    \"history_of_psychiatric_care\": \"toggle\",\n    \"history_of_self_harm_or_suicidal_thoughts\": \"toggle\",\n    \"mood_last_month\": \"select\",\n    \"mental_health_details\": \"textarea\",\n    \"comprehensive_assessment_needed\": \"toggle\",\n    \"comprehensive_assessment_arranged\": \"toggle\",\n    \"additional_comments_details\": \"textarea\"\n  },\n  \"labelKeys\": {\n    \"service_user_full_name\": \"Service User Name\",\n    \"first_name\": \"First Name\",\n    \"surname\": \"Surname\",\n    \"date_of_birth\": \"Date of Birth\",\n    \"phone_number\": \"Phone Number\",\n    \"email_address\": \"Email Address\",\n    \"gp_name\": \"GP Name\",\n    \"medical_card_status\": \"Medical Card\",\n    \"assessment_completion_status\": \"Comprehensive Assessment Completed\",\n    \"assessment_completion_date\": \"Assessment Completion Date\",\n    \"consent_mental_health_shared_record\": \"Consent to Shared Mental Health Record\",\n    \"source_of_referral\": \"Source of Referral\",\n    \"ever_treated_for_substance_use\": \"Ever Treated for Substance Use\",\n    \"ever_treated_for_alcohol\": \"Ever Treated for Alcohol\",\n    \"total_previous_treatments\": \"Total Number of Previous Treatments\",\n    \"age_first_treated\": \"Age First Treated\",\n    \"treatment_providers\": \"Name of Treatment Provider(s)\",\n    \"reason_for_leaving_treatment\": \"Reason for Leaving\",\n    \"longest_time_abstinent\": \"Longest Time Abstinent\",\n    \"current_opiate_agonist_treatment\": \"Current Opiate Agonist Treatment\",\n    \"other_current_treatment_medication\": \"Other Current Treatment / Prescribed Medications\",\n    \"physical_health_concerns\": \"Concerns About Physical Health\",\n    \"known_allergies\": \"Known Allergies\",\n    \"history_of_head_injury\": \"History of Head Injury\",\n    \"last_gp_checkup\": \"Last GP Check-Up\",\n    \"relevant_medical_history\": \"Relevant Medical History\",\n    \"current_medications\": \"Current Medications\",\n    \"history_of_seizures\": \"History of Seizures\",\n    \"mental_health_concerns\": \"Concerns About Mental Health\",\n    \"mental_health_professional_engagement\": \"Seen or Seeing a Mental Health Professional\",\n    \"history_of_psychiatric_care\": \"History of Psychiatric Care\",\n    \"history_of_self_harm_or_suicidal_thoughts\": \"History of Self Harm or Suicidal Thoughts\",\n    \"mood_last_month\": \"Mood Over the Last Month\",\n    \"mental_health_details\": \"Mental Health Details\",\n    \"comprehensive_assessment_needed\": \"Comprehensive Assessment Needed\",\n    \"comprehensive_assessment_arranged\": \"Comprehensive Assessment Arranged\",\n    \"additional_comments_details\": \"Additional Comments Details\"\n  },\n  \"helpKeys\": {\n    \"assessment_completion_status\": \"HSE library source: Consent and confidentiality / AF Printed Page 1.html / json\",\n    \"consent_mental_health_shared_record\": \"HSE library source: Consent and confidentiality / AF Printed Page 3.html / json\",\n    \"source_of_referral\": \"HSE library source: Intake and admin identity / AF Printed Page 6.html / json\",\n    \"ever_treated_for_substance_use\": \"HSE library source: Substance use and treatment history / AF Printed Page 10.html / json\",\n    \"physical_health_concerns\": \"HSE library source: Physical health / AF Printed Page 12.html / json\",\n    \"mental_health_concerns\": \"HSE library source: Mental health / AF Printed Page 13.html / json\",\n    \"comprehensive_assessment_needed\": \"HSE library source: Assessor actions required / AF Printed Page 15.html / json\"\n  },\n  \"selectOptions\": {\n    \"source_of_referral\": [\n      { \"value\": \"gp\", \"label\": \"GP\" },\n      { \"value\": \"family\", \"label\": \"Family\" },\n      { \"value\": \"self\", \"label\": \"Self\" },\n      { \"value\": \"other\", \"label\": \"Other\" }\n    ],\n    \"mood_last_month\": [\n      { \"value\": \"very_low\", \"label\": \"Very low\" },\n      { \"value\": \"low\", \"label\": \"Low\" },\n      { \"value\": \"reasonable\", \"label\": \"Reasonable\" },\n      { \"value\": \"good\", \"label\": \"Good\" }\n    ]\n  }\n}",
@@ -11225,6 +11225,37 @@ namespace Acutis.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Acutis.Domain.Entities.ScreeningScheduleSlot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CentreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("ScheduledDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("UnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CentreId");
+
+                    b.HasIndex("UnitId", "ScheduledDate")
+                        .IsUnique();
+
+                    b.ToTable("ScreeningScheduleSlot", (string)null);
+                });
+
             modelBuilder.Entity("Acutis.Domain.Entities.TextResource", b =>
                 {
                     b.Property<string>("Key")
@@ -11513,6 +11544,11 @@ namespace Acutis.Infrastructure.Migrations
                         },
                         new
                         {
+                            Key = "screening.page.title",
+                            DefaultText = "Screening & Evaluation"
+                        },
+                        new
+                        {
                             Key = "screening.tab.calls",
                             DefaultText = "Call Logging"
                         },
@@ -11530,6 +11566,36 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Key = "evaluation.queue.title",
                             DefaultText = "Evaluation Queue"
+                        },
+                        new
+                        {
+                            Key = "evaluation.queue.all",
+                            DefaultText = "All Queues"
+                        },
+                        new
+                        {
+                            Key = "evaluation.queue.alcohol",
+                            DefaultText = "Alcohol"
+                        },
+                        new
+                        {
+                            Key = "evaluation.queue.drugs",
+                            DefaultText = "Drugs"
+                        },
+                        new
+                        {
+                            Key = "evaluation.queue.gambling",
+                            DefaultText = "Gambling"
+                        },
+                        new
+                        {
+                            Key = "evaluation.queue.ladies",
+                            DefaultText = "Ladies"
+                        },
+                        new
+                        {
+                            Key = "evaluation.queue.general_query",
+                            DefaultText = "General Query"
                         },
                         new
                         {
@@ -11560,6 +11626,16 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Key = "evaluation.table.name",
                             DefaultText = "Name"
+                        },
+                        new
+                        {
+                            Key = "evaluation.table.phone",
+                            DefaultText = "Phone Number"
+                        },
+                        new
+                        {
+                            Key = "evaluation.table.queue",
+                            DefaultText = "Queue"
                         },
                         new
                         {
@@ -11595,6 +11671,26 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Key = "evaluation.action.view",
                             DefaultText = "View"
+                        },
+                        new
+                        {
+                            Key = "evaluation.action.awaiting",
+                            DefaultText = "Awaiting"
+                        },
+                        new
+                        {
+                            Key = "evaluation.action.open",
+                            DefaultText = "Open Evaluation"
+                        },
+                        new
+                        {
+                            Key = "evaluation.action.start",
+                            DefaultText = "Start Screening"
+                        },
+                        new
+                        {
+                            Key = "evaluation.action.review",
+                            DefaultText = "Review Screening"
                         },
                         new
                         {
@@ -11640,6 +11736,536 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Key = "evaluation.status.completed",
                             DefaultText = "Completed"
+                        },
+                        new
+                        {
+                            Key = "evaluation.status.awaiting",
+                            DefaultText = "Awaiting"
+                        },
+                        new
+                        {
+                            Key = "evaluation.status.entity_missing",
+                            DefaultText = "Awaiting Scheduling"
+                        },
+                        new
+                        {
+                            Key = "form.group.default",
+                            DefaultText = "Group"
+                        },
+                        new
+                        {
+                            Key = "form.select.placeholder",
+                            DefaultText = "Select..."
+                        },
+                        new
+                        {
+                            Key = "form.status.saving_progress",
+                            DefaultText = "Saving progress..."
+                        },
+                        new
+                        {
+                            Key = "form.status.progress_saved_on_blur",
+                            DefaultText = "Progress saves on field blur."
+                        },
+                        new
+                        {
+                            Key = "form.status.draft_saved",
+                            DefaultText = "Draft saved."
+                        },
+                        new
+                        {
+                            Key = "form.status.rejected",
+                            DefaultText = "Rejected."
+                        },
+                        new
+                        {
+                            Key = "form.status.submitted",
+                            DefaultText = "Submitted."
+                        },
+                        new
+                        {
+                            Key = "form.status.draft_saved_at",
+                            DefaultText = "Draft saved at {time}."
+                        },
+                        new
+                        {
+                            Key = "form.progress.label",
+                            DefaultText = "Progress"
+                        },
+                        new
+                        {
+                            Key = "form.progress.step",
+                            DefaultText = "Step {current} of {total}"
+                        },
+                        new
+                        {
+                            Key = "form.boolean.applies",
+                            DefaultText = "Applies"
+                        },
+                        new
+                        {
+                            Key = "form.boolean.not_applies",
+                            DefaultText = "Does not apply"
+                        },
+                        new
+                        {
+                            Key = "form.action.previous",
+                            DefaultText = "Previous"
+                        },
+                        new
+                        {
+                            Key = "form.action.next",
+                            DefaultText = "Next"
+                        },
+                        new
+                        {
+                            Key = "form.action.cancel",
+                            DefaultText = "Cancel"
+                        },
+                        new
+                        {
+                            Key = "form.action.save_draft",
+                            DefaultText = "Save Draft"
+                        },
+                        new
+                        {
+                            Key = "form.action.saving",
+                            DefaultText = "Saving..."
+                        },
+                        new
+                        {
+                            Key = "form.action.accept",
+                            DefaultText = "Accept"
+                        },
+                        new
+                        {
+                            Key = "form.action.accepting",
+                            DefaultText = "Accepting..."
+                        },
+                        new
+                        {
+                            Key = "form.action.reject",
+                            DefaultText = "Reject"
+                        },
+                        new
+                        {
+                            Key = "form.action.submit",
+                            DefaultText = "Submit"
+                        },
+                        new
+                        {
+                            Key = "form.action.submitting",
+                            DefaultText = "Submitting..."
+                        },
+                        new
+                        {
+                            Key = "toast.action.close",
+                            DefaultText = "Close"
+                        },
+                        new
+                        {
+                            Key = "form.error.save_progress",
+                            DefaultText = "Unable to save progress."
+                        },
+                        new
+                        {
+                            Key = "form.error.rejection_failed",
+                            DefaultText = "Rejection failed."
+                        },
+                        new
+                        {
+                            Key = "form.error.rejection_reason_required",
+                            DefaultText = "Rejection reason is required."
+                        },
+                        new
+                        {
+                            Key = "form.error.submission_failed",
+                            DefaultText = "Submission failed."
+                        },
+                        new
+                        {
+                            Key = "form.field.rejection_reason",
+                            DefaultText = "Reason for rejection"
+                        },
+                        new
+                        {
+                            Key = "form.field.rejection_reason_placeholder",
+                            DefaultText = "Enter the reason for rejection"
+                        },
+                        new
+                        {
+                            Key = "form.modal.reject.title",
+                            DefaultText = "Reject Assessment"
+                        },
+                        new
+                        {
+                            Key = "form.modal.reject.confirm",
+                            DefaultText = "Confirm Reject"
+                        },
+                        new
+                        {
+                            Key = "form.status.accepted",
+                            DefaultText = "Accepted."
+                        },
+                        new
+                        {
+                            Key = "form.validation.required",
+                            DefaultText = "This field is required."
+                        },
+                        new
+                        {
+                            Key = "form.validation.expected_type",
+                            DefaultText = "Expected {type}."
+                        },
+                        new
+                        {
+                            Key = "form.validation.expected_boolean",
+                            DefaultText = "Expected boolean."
+                        },
+                        new
+                        {
+                            Key = "form.validation.expected_integer",
+                            DefaultText = "Expected integer."
+                        },
+                        new
+                        {
+                            Key = "form.validation.expected_number",
+                            DefaultText = "Expected number."
+                        },
+                        new
+                        {
+                            Key = "form.validation.expected_option_list",
+                            DefaultText = "Expected a list of option codes."
+                        },
+                        new
+                        {
+                            Key = "form.validation.min_length",
+                            DefaultText = "Minimum length is {value}."
+                        },
+                        new
+                        {
+                            Key = "form.validation.max_length",
+                            DefaultText = "Maximum length is {value}."
+                        },
+                        new
+                        {
+                            Key = "form.validation.pattern",
+                            DefaultText = "Value does not match required format."
+                        },
+                        new
+                        {
+                            Key = "form.validation.invalid_format",
+                            DefaultText = "Invalid {format} format."
+                        },
+                        new
+                        {
+                            Key = "form.validation.min_value",
+                            DefaultText = "Minimum value is {value}."
+                        },
+                        new
+                        {
+                            Key = "form.validation.max_value",
+                            DefaultText = "Maximum value is {value}."
+                        },
+                        new
+                        {
+                            Key = "form.validation.invalid_option",
+                            DefaultText = "Invalid option value."
+                        },
+                        new
+                        {
+                            Key = "form.validation.invalid_option_list",
+                            DefaultText = "One or more options are invalid."
+                        },
+                        new
+                        {
+                            Key = "Intake and Administrative Identity",
+                            DefaultText = "Intake and Administrative Identity"
+                        },
+                        new
+                        {
+                            Key = "Consent and Confidentiality",
+                            DefaultText = "Consent and Confidentiality"
+                        },
+                        new
+                        {
+                            Key = "Substance and Treatment History",
+                            DefaultText = "Substance and Treatment History"
+                        },
+                        new
+                        {
+                            Key = "Physical Health",
+                            DefaultText = "Physical Health"
+                        },
+                        new
+                        {
+                            Key = "Mental Health",
+                            DefaultText = "Mental Health"
+                        },
+                        new
+                        {
+                            Key = "Assessor Actions Required",
+                            DefaultText = "Assessor Actions Required"
+                        },
+                        new
+                        {
+                            Key = "Service User Name",
+                            DefaultText = "Service User Name"
+                        },
+                        new
+                        {
+                            Key = "First Name",
+                            DefaultText = "First Name"
+                        },
+                        new
+                        {
+                            Key = "Surname",
+                            DefaultText = "Surname"
+                        },
+                        new
+                        {
+                            Key = "Date of Birth",
+                            DefaultText = "Date of Birth"
+                        },
+                        new
+                        {
+                            Key = "Phone Number",
+                            DefaultText = "Phone Number"
+                        },
+                        new
+                        {
+                            Key = "Email Address",
+                            DefaultText = "Email Address"
+                        },
+                        new
+                        {
+                            Key = "GP Name",
+                            DefaultText = "GP Name"
+                        },
+                        new
+                        {
+                            Key = "Medical Card",
+                            DefaultText = "Medical Card Held"
+                        },
+                        new
+                        {
+                            Key = "Comprehensive Assessment Completed",
+                            DefaultText = "Comprehensive Assessment Completed"
+                        },
+                        new
+                        {
+                            Key = "Assessment Completion Date",
+                            DefaultText = "Assessment Completion Date"
+                        },
+                        new
+                        {
+                            Key = "Consent to Shared Mental Health Record",
+                            DefaultText = "Consent Given to Share the Mental Health Record"
+                        },
+                        new
+                        {
+                            Key = "Source of Referral",
+                            DefaultText = "Source of Referral"
+                        },
+                        new
+                        {
+                            Key = "Ever Treated for Substance Use",
+                            DefaultText = "Previously Treated for Substance Use"
+                        },
+                        new
+                        {
+                            Key = "Ever Treated for Alcohol",
+                            DefaultText = "Previously Treated for Alcohol Use"
+                        },
+                        new
+                        {
+                            Key = "Total Number of Previous Treatments",
+                            DefaultText = "Total Number of Previous Treatments"
+                        },
+                        new
+                        {
+                            Key = "Age First Treated",
+                            DefaultText = "Age First Treated"
+                        },
+                        new
+                        {
+                            Key = "Name of Treatment Provider(s)",
+                            DefaultText = "Name of Treatment Provider(s)"
+                        },
+                        new
+                        {
+                            Key = "Reason for Leaving",
+                            DefaultText = "Reason for Leaving"
+                        },
+                        new
+                        {
+                            Key = "Longest Time Abstinent",
+                            DefaultText = "Longest Time Abstinent"
+                        },
+                        new
+                        {
+                            Key = "Current Opiate Agonist Treatment",
+                            DefaultText = "Currently Receiving Opiate Agonist Treatment"
+                        },
+                        new
+                        {
+                            Key = "Other Current Treatment / Prescribed Medications",
+                            DefaultText = "Currently Taking Other Treatment or Prescribed Medication"
+                        },
+                        new
+                        {
+                            Key = "Concerns About Physical Health",
+                            DefaultText = "Physical Health Concerns Identified"
+                        },
+                        new
+                        {
+                            Key = "Known Allergies",
+                            DefaultText = "Known Allergies (More Info)"
+                        },
+                        new
+                        {
+                            Key = "History of Head Injury",
+                            DefaultText = "History of Head Injury"
+                        },
+                        new
+                        {
+                            Key = "Last GP Check-Up",
+                            DefaultText = "Last GP Check-Up"
+                        },
+                        new
+                        {
+                            Key = "Relevant Medical History",
+                            DefaultText = "Relevant Medical History"
+                        },
+                        new
+                        {
+                            Key = "Current Medications",
+                            DefaultText = "Current Medications"
+                        },
+                        new
+                        {
+                            Key = "History of Seizures",
+                            DefaultText = "History of Seizures"
+                        },
+                        new
+                        {
+                            Key = "Concerns About Mental Health",
+                            DefaultText = "Mental Health Concerns Identified"
+                        },
+                        new
+                        {
+                            Key = "Seen or Seeing a Mental Health Professional",
+                            DefaultText = "Seen or Seeing a Mental Health Professional (More Info)"
+                        },
+                        new
+                        {
+                            Key = "History of Psychiatric Care",
+                            DefaultText = "History of Psychiatric Care"
+                        },
+                        new
+                        {
+                            Key = "History of Self Harm or Suicidal Thoughts",
+                            DefaultText = "History of Self-Harm or Suicidal Thoughts"
+                        },
+                        new
+                        {
+                            Key = "Mood Over the Last Month",
+                            DefaultText = "Mood Over the Last Month"
+                        },
+                        new
+                        {
+                            Key = "Mental Health Details",
+                            DefaultText = "Mental Health Details"
+                        },
+                        new
+                        {
+                            Key = "Comprehensive Assessment Needed",
+                            DefaultText = "Comprehensive Assessment Needed"
+                        },
+                        new
+                        {
+                            Key = "Comprehensive Assessment Arranged",
+                            DefaultText = "Comprehensive Assessment Arranged"
+                        },
+                        new
+                        {
+                            Key = "Additional Comments Details",
+                            DefaultText = "Additional Comments Details"
+                        },
+                        new
+                        {
+                            Key = "HSE library source: Consent and confidentiality / AF Printed Page 1.html / json",
+                            DefaultText = "HSE library source: Consent and confidentiality / AF Printed Page 1.html / json"
+                        },
+                        new
+                        {
+                            Key = "HSE library source: Consent and confidentiality / AF Printed Page 3.html / json",
+                            DefaultText = "HSE library source: Consent and confidentiality / AF Printed Page 3.html / json"
+                        },
+                        new
+                        {
+                            Key = "HSE library source: Intake and admin identity / AF Printed Page 6.html / json",
+                            DefaultText = "HSE library source: Intake and admin identity / AF Printed Page 6.html / json"
+                        },
+                        new
+                        {
+                            Key = "HSE library source: Substance use and treatment history / AF Printed Page 10.html / json",
+                            DefaultText = "HSE library source: Substance use and treatment history / AF Printed Page 10.html / json"
+                        },
+                        new
+                        {
+                            Key = "HSE library source: Physical health / AF Printed Page 12.html / json",
+                            DefaultText = "HSE library source: Physical health / AF Printed Page 12.html / json"
+                        },
+                        new
+                        {
+                            Key = "HSE library source: Mental health / AF Printed Page 13.html / json",
+                            DefaultText = "HSE library source: Mental health / AF Printed Page 13.html / json"
+                        },
+                        new
+                        {
+                            Key = "HSE library source: Assessor actions required / AF Printed Page 15.html / json",
+                            DefaultText = "HSE library source: Assessor actions required / AF Printed Page 15.html / json"
+                        },
+                        new
+                        {
+                            Key = "GP",
+                            DefaultText = "GP"
+                        },
+                        new
+                        {
+                            Key = "Family",
+                            DefaultText = "Family"
+                        },
+                        new
+                        {
+                            Key = "Self",
+                            DefaultText = "Self"
+                        },
+                        new
+                        {
+                            Key = "Other",
+                            DefaultText = "Other"
+                        },
+                        new
+                        {
+                            Key = "Very low",
+                            DefaultText = "Very low"
+                        },
+                        new
+                        {
+                            Key = "Low",
+                            DefaultText = "Low"
+                        },
+                        new
+                        {
+                            Key = "Reasonable",
+                            DefaultText = "Reasonable"
+                        },
+                        new
+                        {
+                            Key = "Good",
+                            DefaultText = "Good"
                         });
                 });
 
@@ -12451,10 +13077,59 @@ namespace Acutis.Infrastructure.Migrations
                         },
                         new
                         {
+                            Id = new Guid("b0a3d81e-584f-4756-a727-b2e93b430590"),
+                            Key = "screening.page.title",
+                            Locale = "ar",
+                            Text = "الفحص والتقييم"
+                        },
+                        new
+                        {
                             Id = new Guid("3b977d28-f3d9-4766-8ffb-573df38cbeb4"),
                             Key = "evaluation.queue.title",
                             Locale = "ar",
                             Text = "قائمة التقييم"
+                        },
+                        new
+                        {
+                            Id = new Guid("a4823b67-4145-48ca-8dcb-987e931e478a"),
+                            Key = "evaluation.queue.all",
+                            Locale = "ar",
+                            Text = "كل القوائم"
+                        },
+                        new
+                        {
+                            Id = new Guid("400ca48a-cb25-4170-a286-fd7ab1684989"),
+                            Key = "evaluation.queue.alcohol",
+                            Locale = "ar",
+                            Text = "الكحول"
+                        },
+                        new
+                        {
+                            Id = new Guid("db2c6ce7-bc37-4af4-9a68-5081ea4ea807"),
+                            Key = "evaluation.queue.drugs",
+                            Locale = "ar",
+                            Text = "المخدرات"
+                        },
+                        new
+                        {
+                            Id = new Guid("d886900e-b6b6-42aa-b018-2022044770df"),
+                            Key = "evaluation.queue.gambling",
+                            Locale = "ar",
+                            Text = "القمار"
+                        },
+                        new
+                        {
+                            Id = new Guid("00fd3cde-ac1b-483c-b742-e5781688b9d4"),
+                            Key = "evaluation.queue.ladies",
+                            Locale = "ar",
+                            Text = "السيدات"
+                        },
+                        new
+                        {
+                            Id = new Guid("02269162-87e9-4952-b2df-5575dbe2fa90"),
+                            Key = "evaluation.queue.general_query",
+                            Locale = "ar",
+                            Text = "الاستفسارات العامة"
                         },
                         new
                         {
@@ -12497,6 +13172,20 @@ namespace Acutis.Infrastructure.Migrations
                             Key = "evaluation.table.name",
                             Locale = "ar",
                             Text = "الاسم"
+                        },
+                        new
+                        {
+                            Id = new Guid("7ef25e4d-3fbf-4afe-96bb-9e55ea97894d"),
+                            Key = "evaluation.table.phone",
+                            Locale = "ar",
+                            Text = "رقم الهاتف"
+                        },
+                        new
+                        {
+                            Id = new Guid("51451a8c-29c6-4d77-a3fd-01f5a7696ae7"),
+                            Key = "evaluation.table.queue",
+                            Locale = "ar",
+                            Text = "القائمة"
                         },
                         new
                         {
@@ -12546,6 +13235,34 @@ namespace Acutis.Infrastructure.Migrations
                             Key = "evaluation.action.view",
                             Locale = "ar",
                             Text = "عرض"
+                        },
+                        new
+                        {
+                            Id = new Guid("5e89bcfb-bc40-4139-a36e-893b4534805f"),
+                            Key = "evaluation.action.awaiting",
+                            Locale = "ar",
+                            Text = "بانتظار"
+                        },
+                        new
+                        {
+                            Id = new Guid("fc698803-34b1-4f59-a0c1-7c1c2bfec276"),
+                            Key = "evaluation.action.open",
+                            Locale = "ar",
+                            Text = "فتح التقييم"
+                        },
+                        new
+                        {
+                            Id = new Guid("a1e1e245-82d6-46c9-af3c-f685ec5bc93f"),
+                            Key = "evaluation.action.start",
+                            Locale = "ar",
+                            Text = "بدء الفحص"
+                        },
+                        new
+                        {
+                            Id = new Guid("66758eea-e1f4-472b-a762-e251f310f3e4"),
+                            Key = "evaluation.action.review",
+                            Locale = "ar",
+                            Text = "مراجعة الفحص"
                         },
                         new
                         {
@@ -12609,6 +13326,748 @@ namespace Acutis.Infrastructure.Migrations
                             Key = "evaluation.status.completed",
                             Locale = "ar",
                             Text = "مكتمل"
+                        },
+                        new
+                        {
+                            Id = new Guid("dc5b7061-a7e2-4422-a5c4-0c4949c363fe"),
+                            Key = "evaluation.status.awaiting",
+                            Locale = "ar",
+                            Text = "بانتظار"
+                        },
+                        new
+                        {
+                            Id = new Guid("2c5919be-4289-4727-9845-8d94b404bf0f"),
+                            Key = "evaluation.status.entity_missing",
+                            Locale = "ar",
+                            Text = "بانتظار الجدولة"
+                        },
+                        new
+                        {
+                            Id = new Guid("6b4561f1-fd40-487f-9e59-f0e0e7f65fd0"),
+                            Key = "form.group.default",
+                            Locale = "ar",
+                            Text = "مجموعة"
+                        },
+                        new
+                        {
+                            Id = new Guid("5fef526c-0f52-4bc2-91ba-5933ef0c8397"),
+                            Key = "form.select.placeholder",
+                            Locale = "ar",
+                            Text = "اختر..."
+                        },
+                        new
+                        {
+                            Id = new Guid("a388e4e0-1d7a-4359-adf7-9d60715b27df"),
+                            Key = "form.status.saving_progress",
+                            Locale = "ar",
+                            Text = "جار حفظ التقدم..."
+                        },
+                        new
+                        {
+                            Id = new Guid("60410c00-c9ab-4c75-8c16-a38fe2c9112d"),
+                            Key = "form.status.progress_saved_on_blur",
+                            Locale = "ar",
+                            Text = "يتم حفظ التقدم عند مغادرة الحقل."
+                        },
+                        new
+                        {
+                            Id = new Guid("d3fc7953-cbe0-41f8-9f15-948ad1d21f3c"),
+                            Key = "form.status.draft_saved",
+                            Locale = "ar",
+                            Text = "تم حفظ المسودة."
+                        },
+                        new
+                        {
+                            Id = new Guid("26b6854b-f11f-49bb-9f3e-f535fdbf62a0"),
+                            Key = "form.status.rejected",
+                            Locale = "ar",
+                            Text = "تم الرفض."
+                        },
+                        new
+                        {
+                            Id = new Guid("2adf4542-ab8f-431e-8c9c-12328b3baf24"),
+                            Key = "form.status.submitted",
+                            Locale = "ar",
+                            Text = "تم الإرسال."
+                        },
+                        new
+                        {
+                            Id = new Guid("97f4810f-1bdb-4354-9ff4-f2ef11b07e6d"),
+                            Key = "form.status.draft_saved_at",
+                            Locale = "ar",
+                            Text = "تم حفظ المسودة في {time}."
+                        },
+                        new
+                        {
+                            Id = new Guid("3d9338d2-b2b8-4c6f-a9ec-1bf2336d3b9a"),
+                            Key = "form.progress.label",
+                            Locale = "ar",
+                            Text = "التقدم"
+                        },
+                        new
+                        {
+                            Id = new Guid("0f8b5f6c-f7fb-4eab-9694-2b301430c154"),
+                            Key = "form.progress.step",
+                            Locale = "ar",
+                            Text = "الخطوة {current} من {total}"
+                        },
+                        new
+                        {
+                            Id = new Guid("241b3662-2a41-4f67-8769-d3bcf9dca9c2"),
+                            Key = "form.boolean.applies",
+                            Locale = "ar",
+                            Text = "ينطبق"
+                        },
+                        new
+                        {
+                            Id = new Guid("61fd6f0d-0bb0-4cfc-9c0d-60f00998d950"),
+                            Key = "form.boolean.not_applies",
+                            Locale = "ar",
+                            Text = "لا ينطبق"
+                        },
+                        new
+                        {
+                            Id = new Guid("839b371f-e118-4dab-bd57-37d6a9a0725b"),
+                            Key = "form.action.previous",
+                            Locale = "ar",
+                            Text = "السابق"
+                        },
+                        new
+                        {
+                            Id = new Guid("99a9c9e6-20c7-40c3-be53-47e56ddda35b"),
+                            Key = "form.action.next",
+                            Locale = "ar",
+                            Text = "التالي"
+                        },
+                        new
+                        {
+                            Id = new Guid("f177ea1d-0c2c-4aa1-b11a-97cb3e2d8574"),
+                            Key = "form.action.cancel",
+                            Locale = "ar",
+                            Text = "إلغاء"
+                        },
+                        new
+                        {
+                            Id = new Guid("6b295df7-f278-4614-bae0-c5111e2dcd95"),
+                            Key = "form.action.save_draft",
+                            Locale = "ar",
+                            Text = "حفظ المسودة"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a2990a2-b9c0-49ec-9af9-7eaf3bf1171e"),
+                            Key = "form.action.saving",
+                            Locale = "ar",
+                            Text = "جار الحفظ..."
+                        },
+                        new
+                        {
+                            Id = new Guid("84ef093f-f27a-4977-9b06-80af1e0fb027"),
+                            Key = "form.action.accept",
+                            Locale = "ar",
+                            Text = "قبول"
+                        },
+                        new
+                        {
+                            Id = new Guid("54d5b060-2b3d-4d42-ad3b-7be3467d953a"),
+                            Key = "form.action.accepting",
+                            Locale = "ar",
+                            Text = "جار القبول..."
+                        },
+                        new
+                        {
+                            Id = new Guid("9cda1c6a-00de-4f45-a2cb-6c2f3061fe59"),
+                            Key = "form.action.reject",
+                            Locale = "ar",
+                            Text = "رفض"
+                        },
+                        new
+                        {
+                            Id = new Guid("324dd734-5c19-4f26-8fc9-f8abebfba4b8"),
+                            Key = "form.action.submit",
+                            Locale = "ar",
+                            Text = "إرسال"
+                        },
+                        new
+                        {
+                            Id = new Guid("5df2111d-a81a-4cf8-b822-fb4cbe670f89"),
+                            Key = "form.action.submitting",
+                            Locale = "ar",
+                            Text = "جار الإرسال..."
+                        },
+                        new
+                        {
+                            Id = new Guid("e33731c2-0b64-496f-b4de-e561242cf65f"),
+                            Key = "toast.action.close",
+                            Locale = "ar",
+                            Text = "إغلاق"
+                        },
+                        new
+                        {
+                            Id = new Guid("06b4cf6c-fea5-4b6f-8674-62f87c79d355"),
+                            Key = "form.error.save_progress",
+                            Locale = "ar",
+                            Text = "تعذر حفظ التقدم."
+                        },
+                        new
+                        {
+                            Id = new Guid("9f03d4ec-5582-4ccd-87b7-64dd5e817d57"),
+                            Key = "form.error.rejection_failed",
+                            Locale = "ar",
+                            Text = "فشل الرفض."
+                        },
+                        new
+                        {
+                            Id = new Guid("6593a7e7-dcef-4a7d-b3fe-6c8900c36849"),
+                            Key = "form.error.rejection_reason_required",
+                            Locale = "ar",
+                            Text = "سبب الرفض مطلوب."
+                        },
+                        new
+                        {
+                            Id = new Guid("ed9ec0b5-d97c-41d3-bb6d-b1df8274cb76"),
+                            Key = "form.error.submission_failed",
+                            Locale = "ar",
+                            Text = "فشل الإرسال."
+                        },
+                        new
+                        {
+                            Id = new Guid("c52a6bf9-fc9f-45e4-92ea-e46dfbd66b35"),
+                            Key = "form.field.rejection_reason",
+                            Locale = "ar",
+                            Text = "سبب الرفض"
+                        },
+                        new
+                        {
+                            Id = new Guid("7ab92c1b-49cc-43c6-a812-63bf0b8fe1ef"),
+                            Key = "form.field.rejection_reason_placeholder",
+                            Locale = "ar",
+                            Text = "أدخل سبب الرفض"
+                        },
+                        new
+                        {
+                            Id = new Guid("1fa62ace-f077-4357-86c4-bff00d66fd3f"),
+                            Key = "form.modal.reject.title",
+                            Locale = "ar",
+                            Text = "رفض التقييم"
+                        },
+                        new
+                        {
+                            Id = new Guid("420b766e-69be-4ef4-88be-6d75c2eeccf4"),
+                            Key = "form.modal.reject.confirm",
+                            Locale = "ar",
+                            Text = "تأكيد الرفض"
+                        },
+                        new
+                        {
+                            Id = new Guid("5fe57bbf-cd34-4f82-84ec-6727ea241f05"),
+                            Key = "form.status.accepted",
+                            Locale = "ar",
+                            Text = "تم القبول."
+                        },
+                        new
+                        {
+                            Id = new Guid("f4bfa3d7-b1ab-43a4-a8ec-0356d9f43b4d"),
+                            Key = "form.validation.required",
+                            Locale = "ar",
+                            Text = "هذا الحقل مطلوب."
+                        },
+                        new
+                        {
+                            Id = new Guid("651f170e-57b0-491a-a2b4-0b2423072ae3"),
+                            Key = "form.validation.expected_type",
+                            Locale = "ar",
+                            Text = "القيمة المتوقعة هي {type}."
+                        },
+                        new
+                        {
+                            Id = new Guid("4d26b5f0-b4a7-46e4-958e-fd5046426e8e"),
+                            Key = "form.validation.expected_boolean",
+                            Locale = "ar",
+                            Text = "القيمة المتوقعة منطقية."
+                        },
+                        new
+                        {
+                            Id = new Guid("5a711fec-e093-4f12-a160-490deaf93702"),
+                            Key = "form.validation.expected_integer",
+                            Locale = "ar",
+                            Text = "القيمة المتوقعة عدد صحيح."
+                        },
+                        new
+                        {
+                            Id = new Guid("f5ff2911-4b8d-4d3e-b8c8-7415df4e90e8"),
+                            Key = "form.validation.expected_number",
+                            Locale = "ar",
+                            Text = "القيمة المتوقعة رقم."
+                        },
+                        new
+                        {
+                            Id = new Guid("7d2e4f98-74e9-4e83-88cf-31af3fdd3f14"),
+                            Key = "form.validation.expected_option_list",
+                            Locale = "ar",
+                            Text = "المتوقع قائمة من رموز الخيارات."
+                        },
+                        new
+                        {
+                            Id = new Guid("9f311ef4-cf7b-4976-849f-ebd2335194f1"),
+                            Key = "form.validation.min_length",
+                            Locale = "ar",
+                            Text = "الحد الأدنى للطول هو {value}."
+                        },
+                        new
+                        {
+                            Id = new Guid("eb6eff4b-6370-40ee-b2bb-4689decae667"),
+                            Key = "form.validation.max_length",
+                            Locale = "ar",
+                            Text = "الحد الأقصى للطول هو {value}."
+                        },
+                        new
+                        {
+                            Id = new Guid("64c905cf-cdbe-43f5-90a7-8f4c0733f3be"),
+                            Key = "form.validation.pattern",
+                            Locale = "ar",
+                            Text = "القيمة لا تطابق التنسيق المطلوب."
+                        },
+                        new
+                        {
+                            Id = new Guid("87a3b3df-08bb-4c18-aefc-b29af3147634"),
+                            Key = "form.validation.invalid_format",
+                            Locale = "ar",
+                            Text = "تنسيق {format} غير صالح."
+                        },
+                        new
+                        {
+                            Id = new Guid("53550d97-8d2e-4df7-9e08-8fe6f3b40f6e"),
+                            Key = "form.validation.min_value",
+                            Locale = "ar",
+                            Text = "الحد الأدنى للقيمة هو {value}."
+                        },
+                        new
+                        {
+                            Id = new Guid("b7a4475a-75d0-44a5-8ca1-6ef72ad6e95b"),
+                            Key = "form.validation.max_value",
+                            Locale = "ar",
+                            Text = "الحد الأقصى للقيمة هو {value}."
+                        },
+                        new
+                        {
+                            Id = new Guid("5477f6d8-20c3-4d8d-a904-4f4d98602021"),
+                            Key = "form.validation.invalid_option",
+                            Locale = "ar",
+                            Text = "قيمة الخيار غير صالحة."
+                        },
+                        new
+                        {
+                            Id = new Guid("6bb77c7c-c6b5-4cb0-a2e3-130baed2569d"),
+                            Key = "form.validation.invalid_option_list",
+                            Locale = "ar",
+                            Text = "خيار واحد أو أكثر غير صالح."
+                        },
+                        new
+                        {
+                            Id = new Guid("c4609f85-60d1-4f03-bc41-85133b847891"),
+                            Key = "Intake and Administrative Identity",
+                            Locale = "ar",
+                            Text = "الاستقبال والهوية الإدارية"
+                        },
+                        new
+                        {
+                            Id = new Guid("93c26d2d-4a14-480f-8951-fbb6b00b610b"),
+                            Key = "Consent and Confidentiality",
+                            Locale = "ar",
+                            Text = "الموافقة والسرية"
+                        },
+                        new
+                        {
+                            Id = new Guid("2b6c5d2d-ce64-4fb6-ad54-b5d1006bb615"),
+                            Key = "Substance and Treatment History",
+                            Locale = "ar",
+                            Text = "تاريخ التعاطي والعلاج"
+                        },
+                        new
+                        {
+                            Id = new Guid("a12aff89-f092-4d15-8090-ed658f749eb2"),
+                            Key = "Physical Health",
+                            Locale = "ar",
+                            Text = "الصحة الجسدية"
+                        },
+                        new
+                        {
+                            Id = new Guid("a466b8ab-c0c5-4f84-81e2-fefba79ac784"),
+                            Key = "Mental Health",
+                            Locale = "ar",
+                            Text = "الصحة النفسية"
+                        },
+                        new
+                        {
+                            Id = new Guid("41a58f89-3087-4adf-a124-393a7b5d8fc0"),
+                            Key = "Assessor Actions Required",
+                            Locale = "ar",
+                            Text = "الإجراءات المطلوبة من المقيم"
+                        },
+                        new
+                        {
+                            Id = new Guid("f73ae6be-e73c-4e7c-8482-e36b641acb7c"),
+                            Key = "Service User Name",
+                            Locale = "ar",
+                            Text = "اسم متلقي الخدمة"
+                        },
+                        new
+                        {
+                            Id = new Guid("561c40aa-850b-46ed-bca1-fc5a6e3ce91e"),
+                            Key = "First Name",
+                            Locale = "ar",
+                            Text = "الاسم الأول"
+                        },
+                        new
+                        {
+                            Id = new Guid("554d445a-b2c5-4b54-8d73-4687d304bb76"),
+                            Key = "Surname",
+                            Locale = "ar",
+                            Text = "اللقب"
+                        },
+                        new
+                        {
+                            Id = new Guid("69a5e0ed-f649-4582-b64e-48d3f95af261"),
+                            Key = "Date of Birth",
+                            Locale = "ar",
+                            Text = "تاريخ الميلاد"
+                        },
+                        new
+                        {
+                            Id = new Guid("348725bb-8682-4499-8997-28e4d04bc250"),
+                            Key = "Phone Number",
+                            Locale = "ar",
+                            Text = "رقم الهاتف"
+                        },
+                        new
+                        {
+                            Id = new Guid("c78f0c59-e220-49d0-a8fc-9333f802777d"),
+                            Key = "Email Address",
+                            Locale = "ar",
+                            Text = "البريد الإلكتروني"
+                        },
+                        new
+                        {
+                            Id = new Guid("8c2d9d4f-9560-4c2b-9222-8348d66ad3bb"),
+                            Key = "GP Name",
+                            Locale = "ar",
+                            Text = "اسم الطبيب العام"
+                        },
+                        new
+                        {
+                            Id = new Guid("b3069cc6-6dc3-46dd-a942-f2b5396a51e7"),
+                            Key = "Medical Card",
+                            Locale = "ar",
+                            Text = "بطاقة طبية متوفرة"
+                        },
+                        new
+                        {
+                            Id = new Guid("ecbb8470-5ff5-45cb-80e8-238f5bcbe779"),
+                            Key = "Comprehensive Assessment Completed",
+                            Locale = "ar",
+                            Text = "اكتمل التقييم الشامل"
+                        },
+                        new
+                        {
+                            Id = new Guid("0f9b886d-1538-4a88-8f07-bab77cf88269"),
+                            Key = "Assessment Completion Date",
+                            Locale = "ar",
+                            Text = "تاريخ اكتمال التقييم"
+                        },
+                        new
+                        {
+                            Id = new Guid("57d2224b-e3ec-4dfe-9a5f-b5c51d1770b0"),
+                            Key = "Consent to Shared Mental Health Record",
+                            Locale = "ar",
+                            Text = "تم منح الموافقة على مشاركة سجل الصحة النفسية"
+                        },
+                        new
+                        {
+                            Id = new Guid("7de6b3d0-204f-4ebd-bfb0-8d689592dedb"),
+                            Key = "Source of Referral",
+                            Locale = "ar",
+                            Text = "مصدر الإحالة"
+                        },
+                        new
+                        {
+                            Id = new Guid("a351a748-18c8-4ad5-9d1b-d3dc75abd273"),
+                            Key = "Ever Treated for Substance Use",
+                            Locale = "ar",
+                            Text = "تلقى علاجاً سابقاً لتعاطي المواد"
+                        },
+                        new
+                        {
+                            Id = new Guid("70c4577c-50f2-41c6-9174-f35453295d85"),
+                            Key = "Ever Treated for Alcohol",
+                            Locale = "ar",
+                            Text = "تلقى علاجاً سابقاً لتعاطي الكحول"
+                        },
+                        new
+                        {
+                            Id = new Guid("600e1524-10bb-4be6-a3c1-203377d8b5e5"),
+                            Key = "Total Number of Previous Treatments",
+                            Locale = "ar",
+                            Text = "إجمالي عدد العلاجات السابقة"
+                        },
+                        new
+                        {
+                            Id = new Guid("cc0638f0-d318-408d-966c-5451a8ac20e8"),
+                            Key = "Age First Treated",
+                            Locale = "ar",
+                            Text = "العمر عند أول علاج"
+                        },
+                        new
+                        {
+                            Id = new Guid("507d041d-ec45-4fdd-802b-c32f58e0f6ca"),
+                            Key = "Name of Treatment Provider(s)",
+                            Locale = "ar",
+                            Text = "اسم جهة أو جهات تقديم العلاج"
+                        },
+                        new
+                        {
+                            Id = new Guid("adcd199b-85e2-4d1d-a18f-8d4b09cf45b0"),
+                            Key = "Reason for Leaving",
+                            Locale = "ar",
+                            Text = "سبب المغادرة"
+                        },
+                        new
+                        {
+                            Id = new Guid("135cc8e6-330d-4ad5-8f17-f6a12b60a7a8"),
+                            Key = "Longest Time Abstinent",
+                            Locale = "ar",
+                            Text = "أطول مدة امتناع"
+                        },
+                        new
+                        {
+                            Id = new Guid("9d31db4c-8a78-4a39-bf28-978e05377a87"),
+                            Key = "Current Opiate Agonist Treatment",
+                            Locale = "ar",
+                            Text = "يتلقى حالياً علاجاً بناهضات الأفيونات"
+                        },
+                        new
+                        {
+                            Id = new Guid("57cf1cf1-557e-4efc-b51c-8ff265838780"),
+                            Key = "Other Current Treatment / Prescribed Medications",
+                            Locale = "ar",
+                            Text = "يتناول حالياً علاجاً آخر أو دواءً موصوفاً"
+                        },
+                        new
+                        {
+                            Id = new Guid("7a6c0acb-5c6e-4460-9dd3-b0f77afca2ea"),
+                            Key = "Concerns About Physical Health",
+                            Locale = "ar",
+                            Text = "تم تحديد مخاوف تتعلق بالصحة الجسدية"
+                        },
+                        new
+                        {
+                            Id = new Guid("604c88c3-1e6b-4f3f-b8ca-72da79cbc9d2"),
+                            Key = "Known Allergies",
+                            Locale = "ar",
+                            Text = "حساسيات معروفة (مزيد من المعلومات)"
+                        },
+                        new
+                        {
+                            Id = new Guid("01bd91d0-d906-45bf-ba71-0ab6de2f89d4"),
+                            Key = "History of Head Injury",
+                            Locale = "ar",
+                            Text = "تاريخ إصابات الرأس"
+                        },
+                        new
+                        {
+                            Id = new Guid("5919ffba-7147-4365-9838-1681eb1247ff"),
+                            Key = "Last GP Check-Up",
+                            Locale = "ar",
+                            Text = "آخر فحص عند الطبيب العام"
+                        },
+                        new
+                        {
+                            Id = new Guid("2398ebc8-9128-4f48-9e30-b02872edbba1"),
+                            Key = "Relevant Medical History",
+                            Locale = "ar",
+                            Text = "التاريخ الطبي ذي الصلة"
+                        },
+                        new
+                        {
+                            Id = new Guid("8981d1e4-f4a1-45e5-b2da-4a3b884737ab"),
+                            Key = "Current Medications",
+                            Locale = "ar",
+                            Text = "الأدوية الحالية"
+                        },
+                        new
+                        {
+                            Id = new Guid("bc0c8777-2c67-4a47-8466-b371f0a178d9"),
+                            Key = "History of Seizures",
+                            Locale = "ar",
+                            Text = "تاريخ النوبات"
+                        },
+                        new
+                        {
+                            Id = new Guid("37efcbaf-2539-44ca-aac3-bb8cca1d2acf"),
+                            Key = "Concerns About Mental Health",
+                            Locale = "ar",
+                            Text = "تم تحديد مخاوف تتعلق بالصحة النفسية"
+                        },
+                        new
+                        {
+                            Id = new Guid("e510b335-5ff1-4a32-b4f5-f6fbaeb0e2f4"),
+                            Key = "Seen or Seeing a Mental Health Professional",
+                            Locale = "ar",
+                            Text = "راجع أو يراجع مختصاً في الصحة النفسية (مزيد من المعلومات)"
+                        },
+                        new
+                        {
+                            Id = new Guid("a5786ff5-7c1d-42ff-a826-7e72d14c537c"),
+                            Key = "History of Psychiatric Care",
+                            Locale = "ar",
+                            Text = "تاريخ الرعاية النفسية"
+                        },
+                        new
+                        {
+                            Id = new Guid("954d6b17-b2f8-441f-9d91-a7ee5db65379"),
+                            Key = "History of Self Harm or Suicidal Thoughts",
+                            Locale = "ar",
+                            Text = "تاريخ إيذاء النفس أو الأفكار الانتحارية"
+                        },
+                        new
+                        {
+                            Id = new Guid("efab4558-c9a2-4c76-8098-a279ce2fe167"),
+                            Key = "Mood Over the Last Month",
+                            Locale = "ar",
+                            Text = "الحالة المزاجية خلال الشهر الماضي"
+                        },
+                        new
+                        {
+                            Id = new Guid("c7e03c2c-1946-4ceb-b252-79a3eb5bfa8c"),
+                            Key = "Mental Health Details",
+                            Locale = "ar",
+                            Text = "تفاصيل الصحة النفسية"
+                        },
+                        new
+                        {
+                            Id = new Guid("cb9c1bb2-f682-4c11-861d-284238769783"),
+                            Key = "Comprehensive Assessment Needed",
+                            Locale = "ar",
+                            Text = "التقييم الشامل مطلوب"
+                        },
+                        new
+                        {
+                            Id = new Guid("8ef8a084-1220-4454-aac4-b9c7d90ed1a1"),
+                            Key = "Comprehensive Assessment Arranged",
+                            Locale = "ar",
+                            Text = "تم ترتيب التقييم الشامل"
+                        },
+                        new
+                        {
+                            Id = new Guid("cb1f6f13-f5a1-4544-9093-83d2f57bf679"),
+                            Key = "Additional Comments Details",
+                            Locale = "ar",
+                            Text = "تفاصيل التعليقات الإضافية"
+                        },
+                        new
+                        {
+                            Id = new Guid("0333296b-637b-4b7a-8913-ad14bc58c6c3"),
+                            Key = "HSE library source: Consent and confidentiality / AF Printed Page 1.html / json",
+                            Locale = "ar",
+                            Text = "مصدر مكتبة HSE: الموافقة والسرية / AF Printed Page 1.html / json"
+                        },
+                        new
+                        {
+                            Id = new Guid("a283092b-aa56-4c4c-b43d-37f8dc1be4db"),
+                            Key = "HSE library source: Consent and confidentiality / AF Printed Page 3.html / json",
+                            Locale = "ar",
+                            Text = "مصدر مكتبة HSE: الموافقة والسرية / AF Printed Page 3.html / json"
+                        },
+                        new
+                        {
+                            Id = new Guid("0c0f3029-002e-40c4-a242-51c764a43103"),
+                            Key = "HSE library source: Intake and admin identity / AF Printed Page 6.html / json",
+                            Locale = "ar",
+                            Text = "مصدر مكتبة HSE: الاستقبال والهوية الإدارية / AF Printed Page 6.html / json"
+                        },
+                        new
+                        {
+                            Id = new Guid("fb237fca-f632-4874-b8e1-0180dbf21f84"),
+                            Key = "HSE library source: Substance use and treatment history / AF Printed Page 10.html / json",
+                            Locale = "ar",
+                            Text = "مصدر مكتبة HSE: تاريخ التعاطي والعلاج / AF Printed Page 10.html / json"
+                        },
+                        new
+                        {
+                            Id = new Guid("8ab90d8f-45f3-4e11-8e97-863a03cd6e61"),
+                            Key = "HSE library source: Physical health / AF Printed Page 12.html / json",
+                            Locale = "ar",
+                            Text = "مصدر مكتبة HSE: الصحة الجسدية / AF Printed Page 12.html / json"
+                        },
+                        new
+                        {
+                            Id = new Guid("7aa6f38d-55ca-404d-84da-3b28ecbf4252"),
+                            Key = "HSE library source: Mental health / AF Printed Page 13.html / json",
+                            Locale = "ar",
+                            Text = "مصدر مكتبة HSE: الصحة النفسية / AF Printed Page 13.html / json"
+                        },
+                        new
+                        {
+                            Id = new Guid("ca371ef4-2ccc-49e4-b28a-7807700d5239"),
+                            Key = "HSE library source: Assessor actions required / AF Printed Page 15.html / json",
+                            Locale = "ar",
+                            Text = "مصدر مكتبة HSE: الإجراءات المطلوبة من المقيم / AF Printed Page 15.html / json"
+                        },
+                        new
+                        {
+                            Id = new Guid("b8346b69-3d68-4a47-b090-c08de8ba66fc"),
+                            Key = "GP",
+                            Locale = "ar",
+                            Text = "الطبيب العام"
+                        },
+                        new
+                        {
+                            Id = new Guid("1da9883a-d053-4e26-a0fb-d62f6f5580d8"),
+                            Key = "Family",
+                            Locale = "ar",
+                            Text = "الأسرة"
+                        },
+                        new
+                        {
+                            Id = new Guid("88802650-d75c-4370-b112-57ee8010dbf7"),
+                            Key = "Self",
+                            Locale = "ar",
+                            Text = "الذات"
+                        },
+                        new
+                        {
+                            Id = new Guid("bc6e4c19-46dd-4200-b775-a47dfecdb43f"),
+                            Key = "Other",
+                            Locale = "ar",
+                            Text = "أخرى"
+                        },
+                        new
+                        {
+                            Id = new Guid("8ffcf90e-18ea-45f1-b874-55ba56aede9e"),
+                            Key = "Very low",
+                            Locale = "ar",
+                            Text = "منخفض جدا"
+                        },
+                        new
+                        {
+                            Id = new Guid("8fa2f5f8-f75d-4cb8-a662-123efbf2866e"),
+                            Key = "Low",
+                            Locale = "ar",
+                            Text = "منخفض"
+                        },
+                        new
+                        {
+                            Id = new Guid("74a4d715-f638-4ad7-93d3-e19333656d1d"),
+                            Key = "Reasonable",
+                            Locale = "ar",
+                            Text = "معقول"
+                        },
+                        new
+                        {
+                            Id = new Guid("c65d20ca-d618-4a83-80bd-4c6389ca6d6b"),
+                            Key = "Good",
+                            Locale = "ar",
+                            Text = "جيد"
                         });
                 });
 
@@ -13485,6 +14944,25 @@ namespace Acutis.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ResidentCase");
+
+                    b.Navigation("Unit");
+                });
+
+            modelBuilder.Entity("Acutis.Domain.Entities.ScreeningScheduleSlot", b =>
+                {
+                    b.HasOne("Acutis.Domain.Entities.Centre", "Centre")
+                        .WithMany()
+                        .HasForeignKey("CentreId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Acutis.Domain.Entities.Unit", "Unit")
+                        .WithMany()
+                        .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Centre");
 
                     b.Navigation("Unit");
                 });

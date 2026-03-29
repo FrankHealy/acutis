@@ -1,0 +1,18 @@
+﻿{
+    "formCode":  "admission_detox",
+    "sourceVersion":  0,
+    "form":  {
+                 "titleKey":  "Resident Case Screening and Admission Assessment",
+                 "descriptionKey":  "First real HSE-derived case assessment assembled from Element Library items.",
+                 "schemaJson":  {
+
+                                },
+                 "uiJson":  {
+
+                            },
+                 "rulesJson":  {
+
+                               },
+                 "makeActive":  true
+             }
+}
