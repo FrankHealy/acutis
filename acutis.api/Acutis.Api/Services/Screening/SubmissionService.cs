@@ -514,6 +514,8 @@ public sealed class SubmissionService : ISubmissionService
             IntakeSource = residentCase.IntakeSource,
             ScreeningStartedAtUtc = residentCase.ScreeningStartedAtUtc,
             ScreeningCompletedAtUtc = residentCase.ScreeningCompletedAtUtc,
+            ReferralReference = residentCase.ReferralReference,
+            ReferralCallId = residentCase.ReferralCallId,
             AdmissionDecisionAtUtc = residentCase.AdmissionDecisionAtUtc,
             AdmissionDecisionStatus = residentCase.AdmissionDecisionStatus,
             AdmissionDecisionReason = residentCase.AdmissionDecisionReason,
@@ -545,6 +547,8 @@ public sealed class SubmissionService : ISubmissionService
         public string CaseStatus { get; init; } = string.Empty;
         public string CasePhase { get; init; } = string.Empty;
         public string? IntakeSource { get; init; }
+        public string? ReferralReference { get; init; }
+        public Guid? ReferralCallId { get; init; }
         public DateTime? ScreeningStartedAtUtc { get; init; }
         public DateTime? ScreeningCompletedAtUtc { get; init; }
         public DateTime? AdmissionDecisionAtUtc { get; init; }

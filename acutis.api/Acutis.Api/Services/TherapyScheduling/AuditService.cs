@@ -1,4 +1,5 @@
 using Acutis.Domain.Entities;
+using Acutis.Infrastructure.Auditing;
 using Acutis.Infrastructure.Data;
 using System.Security.Claims;
 using System.Text.Json;
@@ -64,8 +65,8 @@ public sealed class AuditService : IAuditService
             EntityType = entityType,
             EntityId = entityId,
             Action = action,
-            BeforeJson = before is null ? null : JsonSerializer.Serialize(before, JsonOptions),
-            AfterJson = after is null ? null : JsonSerializer.Serialize(after, JsonOptions),
+            BeforeJson = SerializeForAudit(before),
+            AfterJson = SerializeForAudit(after),
             Reason = reason,
             CorrelationId = correlationId,
             RequestPath = httpContext?.Request.Path.Value ?? string.Empty,
@@ -103,5 +104,10 @@ public sealed class AuditService : IAuditService
         }
 
         return SystemActorUserId;
+    }
+
+    private static string? SerializeForAudit(object? value)
+    {
+        return AuditJsonSanitizer.Serialize(value, JsonOptions);
     }
 }

@@ -16,6 +16,7 @@ public sealed class ResidentCaseConfiguration : IEntityTypeConfiguration<Residen
         builder.Property(x => x.IntakeSource).HasMaxLength(40);
         builder.Property(x => x.ReferralSource).HasMaxLength(120);
         builder.Property(x => x.ReferralReference).HasMaxLength(120);
+        builder.Property(x => x.ReferralCallId);
         builder.Property(x => x.ReferralReceivedAtUtc).HasColumnType("datetime2");
         builder.Property(x => x.ScreeningStartedAtUtc).HasColumnType("datetime2");
         builder.Property(x => x.ScreeningCompletedAtUtc).HasColumnType("datetime2");
@@ -34,6 +35,7 @@ public sealed class ResidentCaseConfiguration : IEntityTypeConfiguration<Residen
         builder.HasIndex(x => new { x.CentreId, x.AdmissionDecisionStatus, x.AdmissionDecisionAtUtc });
         builder.HasIndex(x => new { x.CentreId, x.ScreeningCompletedAtUtc });
         builder.HasIndex(x => x.UnitId);
+        builder.HasIndex(x => x.ReferralCallId);
 
         builder.HasOne(x => x.Resident)
             .WithMany()

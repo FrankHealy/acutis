@@ -1,15 +1,37 @@
 ﻿using Acutis.Domain.Entities;
 using Acutis.Domain.Lookups;
+using Acutis.Infrastructure.Auditing;
 using Acutis.Infrastructure.Persistence.Configurations;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Acutis.Infrastructure.Data;
 
 public sealed class AcutisDbContext : DbContext
 {
     private static readonly DateTime SeedCreatedAt = new(2026, 2, 2, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly Guid SystemActorUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+    private static readonly JsonSerializerOptions AuditJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
+    };
+    private static readonly HashSet<string> AutoAuditSkippedEntityTypes = new(StringComparer.Ordinal)
+    {
+        nameof(AuditLog),
+        nameof(FormSubmission),
+        nameof(ResidentCase),
+        nameof(ScheduledIntake),
+        nameof(ScreeningScheduleSlot),
+        nameof(Video),
+        nameof(UnitVideoCuration),
+        nameof(Quote),
+        nameof(UnitQuoteCuration)
+    };
 
     private const string ScreeningFormCode = "alcohol_screening_call";
     private static readonly Guid ScreeningFormId = Guid.Parse("ed6af9de-1397-41f6-b165-b11b5d426f90");
@@ -622,15 +644,19 @@ public sealed class AcutisDbContext : DbContext
         ]
         """;
 
-    public AcutisDbContext(DbContextOptions<AcutisDbContext> options)
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+    private bool _suppressAutomaticAudit;
+
+    public AcutisDbContext(DbContextOptions<AcutisDbContext> options, IHttpContextAccessor? httpContextAccessor = null)
         : base(options)
     {
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         IncrementLookupTypeVersions();
-        return base.SaveChanges(acceptAllChangesOnSuccess);
+        return SaveChangesWithAuditAsync(acceptAllChangesOnSuccess, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public override Task<int> SaveChangesAsync(
@@ -638,7 +664,7 @@ public sealed class AcutisDbContext : DbContext
         CancellationToken cancellationToken = default)
     {
         IncrementLookupTypeVersions();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        return SaveChangesWithAuditAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
     public DbSet<Call> Calls => Set<Call>();
@@ -685,6 +711,166 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<AppPermission> AppPermissions => Set<AppPermission>();
     public DbSet<AppRolePermission> AppRolePermissions => Set<AppRolePermission>();
     public DbSet<AppUserRoleAssignment> AppUserRoleAssignments => Set<AppUserRoleAssignment>();
+
+    private async Task<int> SaveChangesWithAuditAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+    {
+        if (_suppressAutomaticAudit || _httpContextAccessor is null)
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        var pendingAuditEntries = BuildPendingAuditEntries();
+        var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        if (pendingAuditEntries.Count == 0)
+        {
+            return result;
+        }
+
+        var httpContext = _httpContextAccessor.HttpContext;
+        var occurredAt = DateTime.UtcNow;
+        var actorUserId = ResolveActorUserId(httpContext?.User);
+        var actorRole = httpContext?.User.FindFirst(ClaimTypes.Role)?.Value;
+        var correlationId = httpContext?.Request.Headers["X-Correlation-Id"].ToString();
+        if (string.IsNullOrWhiteSpace(correlationId))
+        {
+            correlationId = Guid.NewGuid().ToString("N");
+        }
+
+        foreach (var auditEntry in pendingAuditEntries)
+        {
+            AuditLogs.Add(new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                OccurredAt = occurredAt,
+                ActorUserId = actorUserId,
+                ActorRole = actorRole,
+                CentreId = auditEntry.CentreId,
+                UnitId = auditEntry.UnitId,
+                EntityType = auditEntry.EntityType,
+                EntityId = ResolveEntityId(auditEntry.Entry),
+                Action = auditEntry.Action,
+                BeforeJson = AuditJsonSanitizer.Serialize(auditEntry.Before, AuditJsonOptions),
+                AfterJson = AuditJsonSanitizer.Serialize(CreateCurrentSnapshot(auditEntry.Entry), AuditJsonOptions),
+                Reason = null,
+                CorrelationId = correlationId,
+                RequestPath = httpContext?.Request.Path.Value ?? string.Empty,
+                RequestMethod = httpContext?.Request.Method ?? string.Empty,
+                ClientIp = httpContext?.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = httpContext?.Request.Headers["User-Agent"].ToString()
+            });
+        }
+
+        try
+        {
+            _suppressAutomaticAudit = true;
+            await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        finally
+        {
+            _suppressAutomaticAudit = false;
+        }
+
+        return result;
+    }
+
+    private List<PendingAuditEntry> BuildPendingAuditEntries()
+    {
+        return ChangeTracker.Entries()
+            .Where(entry =>
+                entry.Entity is not AuditLog &&
+                entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted &&
+                !AutoAuditSkippedEntityTypes.Contains(entry.Metadata.ClrType.Name))
+            .Select(entry => new PendingAuditEntry(
+                Entry: entry,
+                EntityType: entry.Metadata.ClrType.Name,
+                Action: entry.State switch
+                {
+                    EntityState.Added => "Create",
+                    EntityState.Modified => "Update",
+                    EntityState.Deleted => "Delete",
+                    _ => "Update"
+                },
+                CentreId: TryGetGuidProperty(entry, "CentreId"),
+                UnitId: TryGetGuidProperty(entry, "UnitId"),
+                Before: entry.State == EntityState.Added ? null : CreateOriginalSnapshot(entry)))
+            .ToList();
+    }
+
+    private static Dictionary<string, object?> CreateOriginalSnapshot(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
+    {
+        var snapshot = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var property in entry.Properties.Where(property => !property.Metadata.IsShadowProperty()))
+        {
+            snapshot[property.Metadata.Name] = property.OriginalValue;
+        }
+
+        return snapshot;
+    }
+
+    private static Dictionary<string, object?> CreateCurrentSnapshot(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
+    {
+        var snapshot = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var property in entry.Properties.Where(property => !property.Metadata.IsShadowProperty()))
+        {
+            snapshot[property.Metadata.Name] = property.CurrentValue;
+        }
+
+        return snapshot;
+    }
+
+    private static Guid? TryGetGuidProperty(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry, string propertyName)
+    {
+        var property = entry.Properties.FirstOrDefault(item => item.Metadata.Name == propertyName);
+        var currentValue = property?.CurrentValue;
+        return currentValue switch
+        {
+            Guid guid => guid,
+            _ => null
+        };
+    }
+
+    private static string ResolveEntityId(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
+    {
+        var primaryKey = entry.Metadata.FindPrimaryKey();
+        if (primaryKey is null)
+        {
+            return string.Empty;
+        }
+
+        return string.Join("|", primaryKey.Properties.Select(property =>
+        {
+            var value = entry.Property(property.Name).CurrentValue;
+            return value?.ToString() ?? string.Empty;
+        }));
+    }
+
+    private static Guid ResolveActorUserId(ClaimsPrincipal? user)
+    {
+        if (user is null)
+        {
+            return SystemActorUserId;
+        }
+
+        foreach (var claimType in new[] { ClaimTypes.NameIdentifier, "sub", "userid", "user_id" })
+        {
+            var claimValue = user.FindFirst(claimType)?.Value;
+            if (!string.IsNullOrWhiteSpace(claimValue) && Guid.TryParse(claimValue, out var parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return SystemActorUserId;
+    }
+
+    private sealed record PendingAuditEntry(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry Entry,
+        string EntityType,
+        string Action,
+        Guid? CentreId,
+        Guid? UnitId,
+        Dictionary<string, object?>? Before);
     public DbSet<Centre> Centres => Set<Centre>();
 
     private void IncrementLookupTypeVersions()

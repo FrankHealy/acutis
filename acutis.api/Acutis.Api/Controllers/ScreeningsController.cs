@@ -5,6 +5,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 
 namespace Acutis.Api.Controllers;
 
@@ -263,17 +264,17 @@ public sealed class ScreeningsController : ControllerBase
             return Ok(Array.Empty<EvaluationQueueItemDto>());
         }
 
-        var callReferenceIds = calls.Select(call => call.Id.ToString()).ToList();
+        var callIds = calls.Select(call => call.Id).ToList();
 
         var linkedCases = await _dbContext.ResidentCases
             .AsNoTracking()
             .Where(residentCase =>
-                residentCase.ReferralReference != null &&
-                callReferenceIds.Contains(residentCase.ReferralReference))
+                residentCase.ReferralCallId.HasValue &&
+                callIds.Contains(residentCase.ReferralCallId.Value))
             .Select(residentCase => new
             {
                 residentCase.Id,
-                residentCase.ReferralReference,
+                residentCase.ReferralCallId,
                 residentCase.ResidentId,
                 residentCase.ScreeningStartedAtUtc,
                 residentCase.ScreeningCompletedAtUtc,
@@ -283,14 +284,13 @@ public sealed class ScreeningsController : ControllerBase
             .ToListAsync(cancellationToken);
 
         var linkedCaseLookup = linkedCases
-            .GroupBy(residentCase => residentCase.ReferralReference!, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(residentCase => residentCase.ReferralCallId!.Value)
             .ToDictionary(
                 group => group.Key,
                 group => group
                     .OrderByDescending(item => item.ScreeningStartedAtUtc ?? DateTime.MinValue)
                     .ThenByDescending(item => item.Id)
-                    .First(),
-                StringComparer.OrdinalIgnoreCase);
+                    .First());
 
         var linkedCaseIds = linkedCases.Select(item => item.Id).ToList();
         var scheduledCaseIds = new HashSet<Guid>();
@@ -308,7 +308,7 @@ public sealed class ScreeningsController : ControllerBase
 
         var queue = calls.Select(call =>
         {
-            var linkedCase = linkedCaseLookup.GetValueOrDefault(call.Id.ToString());
+            var linkedCase = linkedCaseLookup.GetValueOrDefault(call.Id);
             var (firstName, surname) = SplitCallerName(call.Caller);
 
             return new EvaluationQueueItemDto(
@@ -348,14 +348,29 @@ public sealed class ScreeningsController : ControllerBase
             return NotFound();
         }
 
-        var referralReference = callId.ToString();
+        var legacyReferralReference = callId.ToString();
         var existingCase = await _dbContext.ResidentCases
             .FirstOrDefaultAsync(
-                residentCase => residentCase.ReferralReference == referralReference,
+                residentCase => residentCase.ReferralCallId == callId ||
+                    (!residentCase.ReferralCallId.HasValue && residentCase.ReferralReference == legacyReferralReference),
                 cancellationToken);
 
         if (existingCase is not null)
         {
+            if (!existingCase.ReferralCallId.HasValue)
+            {
+                existingCase.ReferralCallId = callId;
+            }
+
+            if (string.Equals(existingCase.ReferralReference, legacyReferralReference, StringComparison.OrdinalIgnoreCase))
+            {
+                existingCase.ReferralReference = await GenerateReferralReferenceAsync(
+                    existingCase.CentreId,
+                    existingCase.UnitId,
+                    call.CallTimeUtc.UtcDateTime,
+                    cancellationToken);
+            }
+
             if (!existingCase.ScreeningStartedAtUtc.HasValue)
             {
                 existingCase.ScreeningStartedAtUtc = DateTime.UtcNow;
@@ -388,6 +403,11 @@ public sealed class ScreeningsController : ControllerBase
             .FirstAsync(cancellationToken);
 
         var now = DateTime.UtcNow;
+        var referralReference = await GenerateReferralReferenceAsync(
+            centreId,
+            unit?.Id,
+            call.CallTimeUtc.UtcDateTime,
+            cancellationToken);
         var residentCase = new ResidentCase
         {
             Id = Guid.NewGuid(),
@@ -399,6 +419,7 @@ public sealed class ScreeningsController : ControllerBase
             IntakeSource = "screening_call",
             ReferralSource = normalizedQueueType,
             ReferralReference = referralReference,
+            ReferralCallId = callId,
             ReferralReceivedAtUtc = call.CallTimeUtc.UtcDateTime,
             ScreeningStartedAtUtc = now,
             OpenedAtUtc = now,
@@ -453,9 +474,9 @@ public sealed class ScreeningsController : ControllerBase
         var callIds = new List<Guid>();
         foreach (var residentCase in scheduledIntakes.Select(item => item.ResidentCase))
         {
-            if (TryParseReferralCallId(residentCase.ReferralReference, out var callId))
+            if (residentCase.ReferralCallId.HasValue)
             {
-                callIds.Add(callId);
+                callIds.Add(residentCase.ReferralCallId.Value);
             }
         }
 
@@ -475,9 +496,9 @@ public sealed class ScreeningsController : ControllerBase
 
         foreach (var residentCase in eligibleCases)
         {
-            if (TryParseReferralCallId(residentCase.ReferralReference, out var callId))
+            if (residentCase.ReferralCallId.HasValue)
             {
-                callIds.Add(callId);
+                callIds.Add(residentCase.ReferralCallId.Value);
             }
         }
 
@@ -786,9 +807,9 @@ public sealed class ScreeningsController : ControllerBase
             cancellationToken);
 
         var calls = new Dictionary<Guid, Call>();
-        if (TryParseReferralCallId(residentCase.ReferralReference, out var callId))
+        if (residentCase.ReferralCallId.HasValue)
         {
-            var call = await _dbContext.Calls.AsNoTracking().SingleOrDefaultAsync(item => item.Id == callId, cancellationToken);
+            var call = await _dbContext.Calls.AsNoTracking().SingleOrDefaultAsync(item => item.Id == residentCase.ReferralCallId.Value, cancellationToken);
             if (call is not null)
             {
                 calls[call.Id] = call;
@@ -1134,17 +1155,97 @@ public sealed class ScreeningsController : ControllerBase
 
     private static Call? ResolveLinkedCall(ResidentCase residentCase, IReadOnlyDictionary<Guid, Call> calls)
     {
-        if (!TryParseReferralCallId(residentCase.ReferralReference, out var callId))
+        if (!residentCase.ReferralCallId.HasValue)
         {
             return null;
         }
 
-        return calls.GetValueOrDefault(callId);
+        return calls.GetValueOrDefault(residentCase.ReferralCallId.Value);
     }
 
-    private static bool TryParseReferralCallId(string? referralReference, out Guid callId)
+    private async Task<string> GenerateReferralReferenceAsync(
+        Guid centreId,
+        Guid? unitId,
+        DateTime referenceDateUtc,
+        CancellationToken cancellationToken)
     {
-        return Guid.TryParse(referralReference, out callId);
+        var centre = await _dbContext.Centres
+            .AsNoTracking()
+            .Where(item => item.Id == centreId)
+            .Select(item => new { item.Code })
+            .SingleAsync(cancellationToken);
+
+        string? unitCode = null;
+        if (unitId.HasValue)
+        {
+            unitCode = await _dbContext.Units
+                .AsNoTracking()
+                .Where(item => item.Id == unitId.Value)
+                .Select(item => item.Code)
+                .SingleOrDefaultAsync(cancellationToken);
+        }
+
+        var prefix = BuildReferralReferencePrefix(centre.Code, unitCode, referenceDateUtc);
+        var sequence = 1;
+        var existingReferences = await _dbContext.ResidentCases
+            .AsNoTracking()
+            .Where(item =>
+                item.CentreId == centreId &&
+                item.UnitId == unitId &&
+                item.ReferralReference != null &&
+                item.ReferralReference.StartsWith(prefix))
+            .Select(item => item.ReferralReference!)
+            .ToListAsync(cancellationToken);
+
+        foreach (var existingReference in existingReferences)
+        {
+            if (TryParseReferralReferenceSequence(existingReference, prefix, out var parsedSequence))
+            {
+                sequence = Math.Max(sequence, parsedSequence + 1);
+            }
+        }
+
+        return $"{prefix}-{sequence:000}";
+    }
+
+    private static string BuildReferralReferencePrefix(string centreCode, string? unitCode, DateTime referenceDateUtc)
+    {
+        var centreSegment = BuildReferenceSegment(centreCode, "CTR");
+        var unitSegment = BuildReferenceSegment(unitCode, "GEN");
+        var isoYear = ISOWeek.GetYear(referenceDateUtc);
+        var isoWeek = ISOWeek.GetWeekOfYear(referenceDateUtc);
+        return $"{centreSegment}-{unitSegment}-{isoYear % 100:00}-{isoWeek:00}";
+    }
+
+    private static string BuildReferenceSegment(string? code, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return fallback;
+        }
+
+        var cleaned = new string(code
+            .Where(char.IsLetterOrDigit)
+            .ToArray())
+            .ToUpperInvariant();
+
+        if (cleaned.Length >= 3)
+        {
+            return cleaned[..3];
+        }
+
+        return cleaned.PadRight(3, 'X');
+    }
+
+    private static bool TryParseReferralReferenceSequence(string referralReference, string prefix, out int sequence)
+    {
+        sequence = 0;
+        if (!referralReference.StartsWith(prefix + "-", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return int.TryParse(referralReference[(prefix.Length + 1)..], out sequence);
     }
 
     private async Task<Unit?> ResolveUnitAsync(string queueType, CancellationToken cancellationToken)

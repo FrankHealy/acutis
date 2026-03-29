@@ -11,6 +11,7 @@ public sealed class ResidentCase
     public string? IntakeSource { get; set; }
     public string? ReferralSource { get; set; }
     public string? ReferralReference { get; set; }
+    public Guid? ReferralCallId { get; set; }
     public DateTime? ReferralReceivedAtUtc { get; set; }
     public DateTime? ScreeningStartedAtUtc { get; set; }
     public DateTime? ScreeningCompletedAtUtc { get; set; }

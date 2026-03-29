@@ -29,15 +29,8 @@ public sealed class CallService : ICallService
 
     public Task<Call> LogCallAsync(Call call, CancellationToken cancellationToken = default)
     {
-        if (call.Id == Guid.Empty)
-        {
-            call.Id = Guid.NewGuid();
-        }
-
-        if (call.CallTimeUtc == default)
-        {
-            call.CallTimeUtc = DateTimeOffset.UtcNow;
-        }
+        call.Id = Guid.NewGuid();
+        call.CallTimeUtc = DateTimeOffset.UtcNow;
 
         return _repository.LogCallAsync(call, cancellationToken);
     }
