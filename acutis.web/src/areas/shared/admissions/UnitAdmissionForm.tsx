@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Camera, Pill, Shield, UserRoundCheck, Venus, Wine } from "lucide-react";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
@@ -58,10 +58,25 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   const [todaysAdmissionsError, setTodaysAdmissionsError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const textRef = useRef<(key: string, fallback: string, values?: Record<string, string | number>) => string>(
+    (_key, fallback, values) => {
+      if (!values) {
+        return fallback;
+      }
+
+      return Object.entries(values).reduce(
+        (message, [name, value]) => message.replaceAll(`{${name}}`, String(value)),
+        fallback
+      );
+    }
+  );
   const Icon = iconByUnit[unitIconKey];
 
   useEffect(() => {
     void loadKeys([
+      "admission.page.header",
+      "admission.generated_form",
+      "admission.configure_activate",
       "admission.loading",
       "admission.sign_in_required",
       "admission.session_expired",
@@ -74,6 +89,9 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       "admission.capture",
       "admission.cancel_camera",
       "admission.upload_photo",
+      "admission.photo.alt",
+      "admission.error.start_camera_preview",
+      "admission.error.access_camera",
       "admission.due_today.title",
       "admission.due_today.description",
       "admission.due_today.none",
@@ -85,10 +103,22 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     ]);
   }, [loadKeys]);
 
-  const text = (key: string, fallback: string) => {
+  const text = useCallback((key: string, fallback: string, values?: Record<string, string | number>) => {
     const resolved = t(key);
-    return resolved === key ? fallback : resolved;
-  };
+    const template = resolved === key ? fallback : resolved;
+    if (!values) {
+      return template;
+    }
+
+    return Object.entries(values).reduce(
+      (message, [name, value]) => message.replaceAll(`{${name}}`, String(value)),
+      template
+    );
+  }, [t]);
+
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
 
   useEffect(() => {
     let active = true;
@@ -105,7 +135,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         setLoading(true);
         const accessToken = session?.accessToken;
         if (!accessToken) {
-          setError("Session expired.");
+          setError(textRef.current("admission.session_expired", "Session expired."));
           return;
         }
         const response = await getActiveForm(
@@ -122,7 +152,11 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         setError(null);
       } catch (loadError) {
         if (!active) return;
-        setError(loadError instanceof Error ? loadError.message : "Unable to load admission form.");
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : textRef.current("admission.unable_to_load", "Unable to load admission form.")
+        );
       } finally {
         if (active) {
           setLoading(false);
@@ -181,7 +215,11 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         }
 
         setTodaysAdmissions([]);
-        setTodaysAdmissionsError(nextError instanceof Error ? nextError.message : "Unable to load today's admissions.");
+        setTodaysAdmissionsError(
+          nextError instanceof Error
+            ? nextError.message
+            : textRef.current("admission.unable_to_load", "Unable to load admission form.")
+        );
       } finally {
         if (active) {
           setLoadingTodaysAdmissions(false);
@@ -218,7 +256,11 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
 
     video.srcObject = stream;
     void video.play().catch((playError) => {
-      setCameraError(playError instanceof Error ? playError.message : "Unable to start camera preview.");
+      setCameraError(
+        playError instanceof Error
+          ? playError.message
+          : textRef.current("admission.error.start_camera_preview", "Unable to start camera preview.")
+      );
     });
   }, [cameraOpen]);
 
@@ -240,7 +282,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       streamRef.current = stream;
       setCameraOpen(true);
     } catch (openError) {
-      setCameraError(openError instanceof Error ? openError.message : "Unable to access camera.");
+      setCameraError(openError instanceof Error ? openError.message : text("admission.error.access_camera", "Unable to access camera."));
     }
   };
 
@@ -298,7 +340,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   if (!accessToken) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-amber-900">{unitName} Admission</h2>
+        <h2 className="text-lg font-semibold text-amber-900">{text("admission.page.header", "{unitName} Admission", { unitName })}</h2>
         <p className="mt-2 text-sm text-amber-800">{text("admission.session_expired", "Session expired.")}</p>
       </div>
     );
@@ -307,10 +349,10 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   if (error) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-amber-900">{unitName} Admission</h2>
+        <h2 className="text-lg font-semibold text-amber-900">{text("admission.page.header", "{unitName} Admission", { unitName })}</h2>
         <p className="mt-2 text-sm text-amber-800">{error}</p>
         <p className="mt-2 text-xs text-amber-700">
-          Configure or activate <code>{admissionFormCode}</code> in the forms generator.
+          {text("admission.configure_activate", "Configure or activate {formCode} in the forms generator.", { formCode: admissionFormCode })}
         </p>
       </div>
     );
@@ -371,9 +413,12 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
               <Icon className="h-5 w-5 text-slate-700" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">{unitName} Admission</h2>
+              <h2 className="text-xl font-semibold text-slate-900">{text("admission.page.header", "{unitName} Admission", { unitName })}</h2>
               <p className="mt-1 text-sm text-slate-600">
-                Unit-scoped generated form: <code>{formData.form.code}</code> v{formData.form.version}
+                {text("admission.generated_form", "Unit-scoped generated form: {formCode} v{version}", {
+                  formCode: formData.form.code,
+                  version: formData.form.version,
+                })}
               </p>
             </div>
           </div>
@@ -441,7 +486,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
           <div className="h-52 w-full overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50">
             {photoDataUrl ? (
-              <img src={photoDataUrl} alt="Captured resident" className="h-full w-full object-cover" />
+              <img src={photoDataUrl} alt={text("admission.photo.alt", "Captured resident")} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-gray-500">{text("admission.no_photo", "No photo captured")}</div>
             )}

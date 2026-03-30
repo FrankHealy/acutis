@@ -16,6 +16,7 @@ import { applyRules } from "./RuleEngine";
 import { validateAnswers, type ValidationErrors } from "./Validation";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import Toast from "@/units/shared/ui/Toast";
+import InjectionBodyMap from "@/areas/shared/admissions/InjectionBodyMap";
 
 type DynamicFormRendererProps = {
   form: FormDefinitionDto;
@@ -62,14 +63,14 @@ const getJsonObject = (value: JsonValue): Record<string, JsonValue> | null => {
 };
 
 const injectionBodyZones = [
-  { key: "left_arm", label: "Left Arm", x: "16%", y: "40%" },
-  { key: "right_arm", label: "Right Arm", x: "84%", y: "40%" },
-  { key: "left_hand", label: "Left Hand", x: "10%", y: "57%" },
-  { key: "right_hand", label: "Right Hand", x: "90%", y: "57%" },
-  { key: "torso", label: "Torso", x: "50%", y: "44%" },
-  { key: "left_leg", label: "Left Leg", x: "42%", y: "76%" },
-  { key: "right_leg", label: "Right Leg", x: "58%", y: "76%" },
-  { key: "feet", label: "Feet", x: "50%", y: "94%" },
+  { key: "left_arm", label: "Left Arm", x: 33.012, y: 82.53 },
+  { key: "right_arm", label: "Right Arm", x: 173.314, y: 82.53 },
+  { key: "left_hand", label: "Left Hand", x: 20.633, y: 117.605 },
+  { key: "right_hand", label: "Right Hand", x: 185.693, y: 117.605 },
+  { key: "torso", label: "Torso", x: 103.163, y: 90.783 },
+  { key: "left_leg", label: "Left Leg", x: 86.657, y: 156.808 },
+  { key: "right_leg", label: "Right Leg", x: 119.669, y: 156.808 },
+  { key: "feet", label: "Feet", x: 103.163, y: 193.947 },
 ] as const;
 
 const parseJsonStringObject = (value: JsonValue): Record<string, JsonValue> => {
@@ -244,6 +245,10 @@ export default function DynamicFormRenderer({
       "form.validation.invalid_option",
       "form.validation.invalid_option_list",
       "toast.action.close",
+      "admission.body_map.clear",
+      "admission.body_map.instruction",
+      "admission.body_map.stored_coordinates",
+      "admission.body_map.mark",
     ]);
   }, [loadKeys]);
 
@@ -723,6 +728,29 @@ export default function DynamicFormRenderer({
         )}
 
         {isBodyMapField && (
+          <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs text-slate-500">
+              {helpText || (isRtl ? "Ø­Ø¯Ø¯ Ù…ÙˆØ§Ø¶Ø¹ Ø§Ù„Ø­Ù‚Ù† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ø¹Ù„Ù‰ Ù…Ø®Ø·Ø· Ø§Ù„Ø¬Ø³Ù…" : "Mark the main injection sites on the body outline.")}
+            </p>
+            <InjectionBodyMap
+              value={parseJsonStringObject(value)}
+              disabled={disabled}
+              width="100%"
+              showCoordinates={false}
+              title={label}
+              clearButtonLabel={text("admission.body_map.clear", "Clear marks", undefined, "مسح العلامات")}
+              instructionText={text("admission.body_map.instruction", "Click the body to add injection marks.", undefined, "اضغط على مخطط الجسم لإضافة علامات الحقن.")}
+              storedCoordinatesLabel={text("admission.body_map.stored_coordinates", "Stored coordinates", undefined, "الإحداثيات المحفوظة")}
+              markLabelPrefix={text("admission.body_map.mark", "Mark", undefined, "علامة")}
+              className="rounded-xl bg-white p-3"
+              onChange={(nextValue) => {
+                handleChange(fieldKey, JSON.stringify(nextValue));
+                void handleBlur(fieldKey);
+              }}
+            />
+          </div>
+        )}
+        {false && (
           <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
               <div className="relative mx-auto h-[360px] w-[180px] rounded-3xl border border-slate-200 bg-white p-4">

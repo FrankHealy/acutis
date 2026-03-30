@@ -1,0 +1,1418 @@
+[
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.detox.form.description",
+    "EnglishText": "Expanded detox admission assessment from fuller HSE source pages including housing, family, detailed substance use, alcohol detail, and injection-site marking.",
+    "ArabicText": "????? ???? ????? ????? ?????? ????? ?? ????? HSE ???????? ???????? ??? ?? ??? ????? ??????? ???????? ?????? ??????? ??????? ?????? ???? ?????? ????? ?????."
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.detox.section.02.title",
+    "EnglishText": "Family and Community Supports",
+    "ArabicText": "دعم الأسرة والمجتمع"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.detox.section.03.title",
+    "EnglishText": "Housing and Homelessness",
+    "ArabicText": "السكن والتشرد"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.detox.section.06.title",
+    "EnglishText": "Alcohol Use Detail",
+    "ArabicText": "تفاصيل استخدام الكحول"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.detox.section.08.title",
+    "EnglishText": "Sexual Wellbeing",
+    "ArabicText": "الرفاهية الجنسية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.detox.section.10.title",
+    "EnglishText": "Domestic Violence / Justice / Health and Safety",
+    "ArabicText": "العنف المنزلي / العدالة / الصحة والسلامة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.detox.section.11.title",
+    "EnglishText": "Happiness Scale",
+    "ArabicText": "مقياس السعادة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.accommodation_difficulties_details.label",
+    "EnglishText": "Accommodation Difficulties Details",
+    "ArabicText": "تفاصيل صعوبات الإقامة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.additional_comments_needed.label",
+    "EnglishText": "Additional Comments Required",
+    "ArabicText": "تعليقات إضافية مطلوبة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.additional_consent_contacts.label",
+    "EnglishText": "Additional Consent Contacts",
+    "ArabicText": "جهات اتصال الموافقة الإضافية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.adheres_to_medication.label",
+    "EnglishText": "Adheres to Medication",
+    "ArabicText": "يلتزم بالأدوية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.age_first_injected.label",
+    "EnglishText": "Age First Injected",
+    "ArabicText": "????? ??? ??? ????? ??????"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.age_first_opiate_substitution.label",
+    "EnglishText": "Age First Received Opiate Substitution",
+    "ArabicText": "????? ??? ??? ???? ???? ???? ?????????"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.age_left_school_first_time.label",
+    "EnglishText": "Age Left School for the First Time",
+    "ArabicText": "العمر ترك المدرسة لأول مرة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.alcohol_use_history_table.help",
+    "EnglishText": "Capture route, frequency, quantity, duration, age first used, and reason used for each alcohol type.",
+    "ArabicText": "??? ????? ??????? ???????? ??????? ?????? ?????? ??? ??? ??????? ???? ????????? ??? ??? ?? ????? ??????."
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.alcohol_use_history_table.label",
+    "EnglishText": "Detailed Alcohol Use History",
+    "ArabicText": "التاريخ التفصيلي لاستخدام الكحول"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.amount_of_income.label",
+    "EnglishText": "Amount of Income",
+    "ArabicText": "مقدار الدخل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.assessment_checklist.label",
+    "EnglishText": "Assessment Checklist",
+    "ArabicText": "قائمة مراجعة التقييم"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.behaviour_impacting_treatment_plan.label",
+    "EnglishText": "Behaviour May Impact Treatment Plan",
+    "ArabicText": "قد يؤثر السلوك على خطة العلاج"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.can_access_medication.label",
+    "EnglishText": "Can Access Medication",
+    "ArabicText": "يمكن الوصول إلى الدواء"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.community_welfare_deposit_details.label",
+    "EnglishText": "Community Welfare Deposit Details",
+    "ArabicText": "تفاصيل وديعة رعاية المجتمع"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.consent_explainer.help",
+    "EnglishText": "Consent and confidentiality explainer covering purpose, privacy, and shared-record boundaries.",
+    "ArabicText": "شرح الموافقة والسرية الذي يغطي الغرض والخصوصية وحدود السجل المشترك."
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.consent_explainer.label",
+    "EnglishText": "Consent and Confidentiality Explainer",
+    "ArabicText": "شرح الموافقة والسرية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.contact_permissions.label",
+    "EnglishText": "Contact Permissions",
+    "ArabicText": "أذونات الاتصال"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.country_of_birth.label",
+    "EnglishText": "Country of Birth",
+    "ArabicText": "بلد الميلاد"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.current_housing_situation.label",
+    "EnglishText": "Describe Current Housing Situation",
+    "ArabicText": "وصف الوضع السكني الحالي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.current_or_recent_social_worker_involvement.label",
+    "EnglishText": "Current or Recent Social Worker Involvement",
+    "ArabicText": "مشاركة الأخصائي الاجتماعي الحالية أو الأخيرة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.current_relationship_safety.label",
+    "EnglishText": "Feels Safe in Current Relationship",
+    "ArabicText": "يشعر بالأمان في العلاقة الحالية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.custodial_sentence_history.label",
+    "EnglishText": "History of Custodial Sentence",
+    "ArabicText": "تاريخ عقوبة الحبس"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.domestic_violence_details.label",
+    "EnglishText": "Domestic Violence Details",
+    "ArabicText": "تفاصيل العنف المنزلي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.drinking_problem_extent.label",
+    "EnglishText": "Extent of Drinking Problem",
+    "ArabicText": "مدى مشكلة الشرب"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.drug_use_history_table.help",
+    "EnglishText": "Capture route, frequency, quantity, duration, age first used, and date last used for each drug used.",
+    "ArabicText": "??? ????? ??????? ???????? ??????? ?????? ?????? ??? ??? ??????? ?????? ??? ??????? ??? ???? ???????."
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.drug_use_history_table.label",
+    "EnglishText": "Detailed Drug Use History",
+    "ArabicText": "التاريخ التفصيلي لاستخدام المخدرات"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.eating_disorder_history.label",
+    "EnglishText": "Eating Disorder History",
+    "ArabicText": "تاريخ اضطرابات الأكل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.education_level.label",
+    "EnglishText": "Education Level",
+    "ArabicText": "مستوى التعليم"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.emergency_contact_aware_current_problems.label",
+    "EnglishText": "Emergency Contact Aware of Current Problems",
+    "ArabicText": "جهة الاتصال في حالات الطوارئ على علم بالمشاكل الحالية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.emergency_contact_contact_details.label",
+    "EnglishText": "Emergency Contact Details",
+    "ArabicText": "تفاصيل الاتصال في حالات الطوارئ"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.emergency_contact_name.label",
+    "EnglishText": "Emergency Contact Name",
+    "ArabicText": "اسم جهة اتصال الطوارئ"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.emergency_contact_relationship.label",
+    "EnglishText": "Emergency Contact Relationship",
+    "ArabicText": "علاقة الاتصال في حالات الطوارئ"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.employment_status.label",
+    "EnglishText": "Employment Status",
+    "ArabicText": "الحالة الوظيفية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.ethnicity.label",
+    "EnglishText": "Ethnicity",
+    "ArabicText": "عِرق"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.ethnicity_description.label",
+    "EnglishText": "Ethnicity Description",
+    "ArabicText": "وصف العرق"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.family_substance_use_history.label",
+    "EnglishText": "Family Substance Use History",
+    "ArabicText": "تاريخ استخدام المواد العائلية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.family_support_details.label",
+    "EnglishText": "Family Support Details",
+    "ArabicText": "تفاصيل دعم الأسرة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.gambling_history.label",
+    "EnglishText": "Gambling History",
+    "ArabicText": "تاريخ القمار"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.gender_identity.label",
+    "EnglishText": "Gender Identity",
+    "ArabicText": "الهوية الجنسية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.gp_address.label",
+    "EnglishText": "GP Address",
+    "ArabicText": "عنوان الطبيب العام"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.gp_aware_of_use.label",
+    "EnglishText": "GP Aware of Alcohol / Drug Use",
+    "ArabicText": "GP على علم بتعاطي الكحول / المخدرات"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.gp_mobile.label",
+    "EnglishText": "GP Mobile",
+    "ArabicText": "جي بي موبايل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.happiness_scale_matrix.help",
+    "EnglishText": "Low numbers indicate lower happiness; high numbers indicate greater happiness.",
+    "ArabicText": "تشير الأرقام المنخفضة إلى انخفاض السعادة؛ الأرقام العالية تشير إلى سعادة أكبر."
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.happiness_scale_matrix.label",
+    "EnglishText": "Happiness Scale Matrix",
+    "ArabicText": "مصفوفة مقياس السعادة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.harm_reduction_advice_given.label",
+    "EnglishText": "Harm Reduction Advice Given",
+    "ArabicText": "تم تقديم نصيحة للحد من الضرر"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.has_solicitor.label",
+    "EnglishText": "Has a Solicitor",
+    "ArabicText": "لديه محام"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.health_and_safety_details.label",
+    "EnglishText": "Health and Safety Details",
+    "ArabicText": "تفاصيل الصحة والسلامة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.history_of_abuse.label",
+    "EnglishText": "History of Physical / Mental / Sexual Abuse",
+    "ArabicText": "تاريخ الاعتداء الجسدي / العقلي / الجنسي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.homeless_before_details.label",
+    "EnglishText": "Homeless Before? Give Details",
+    "ArabicText": "بلا مأوى من قبل؟ إعطاء التفاصيل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.homeless_service_medical_card_number.label",
+    "EnglishText": "Homeless Service Medical Card Number",
+    "ArabicText": "رقم البطاقة الطبية لخدمة المشردين"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.homelessness_reasons.label",
+    "EnglishText": "Main Reasons for Becoming Homeless on This Occasion",
+    "ArabicText": "الأسباب الرئيسية لتصبح بلا مأوى في هذه المناسبة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.iv_needles_disposed.label",
+    "EnglishText": "If Using IV Needles, How Are They Disposed?",
+    "ArabicText": "في حالة استخدام الإبر الوريدية، كيف يتم التخلص منها؟"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.iv_needles_obtained.label",
+    "EnglishText": "If Using IV Needles, How Are They Obtained?",
+    "ArabicText": "في حالة استخدام الإبر الوريدية، كيف يتم الحصول عليها؟"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.justice_details.label",
+    "EnglishText": "Justice Details",
+    "ArabicText": "تفاصيل العدالة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.key_work_other_service_details.label",
+    "EnglishText": "Key Work Other Service Details",
+    "ArabicText": "تفاصيل الخدمة الأخرى للعمل الرئيسي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.knows_barrier_access_points.label",
+    "EnglishText": "Knows Where Barriers Are Freely Available",
+    "ArabicText": "???? ????? ???? ????? ??????? ??????"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.language_other_specify.label",
+    "EnglishText": "If Yes, Specify Language",
+    "ArabicText": "إذا كانت الإجابة بنعم، حدد اللغة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.language_other_than_english_or_irish_at_home.label",
+    "EnglishText": "Language Other Than English or Irish at Home",
+    "ArabicText": "لغة أخرى غير الإنجليزية أو الأيرلندية في المنزل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.lived_independently.label",
+    "EnglishText": "Ever Lived Independently",
+    "ArabicText": "عاشت بشكل مستقل من أي وقت مضى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.living_where.label",
+    "EnglishText": "Living Where",
+    "ArabicText": "العيش أين"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.living_with.label",
+    "EnglishText": "Living With",
+    "ArabicText": "العيش مع"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.living_with_people_using_substances.label",
+    "EnglishText": "Living With People Using Substances / Gambling / Other Addictions",
+    "ArabicText": "العيش مع أشخاص يتعاطون المواد / المقامرة / أنواع الإدمان الأخرى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.local_authority_registration.label",
+    "EnglishText": "Registered With Local Authority? Specify Which",
+    "ArabicText": "مسجل لدى السلطة المحلية؟ تحديد أي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.longest_abstinent_date.label",
+    "EnglishText": "Date of Longest Abstinent Period",
+    "ArabicText": "تاريخ أطول فترة امتناع"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.loved_one_family_worried.label",
+    "EnglishText": "Loved One or Family Worried / Suspicious",
+    "ArabicText": "أحد أفراد أسرته أو الأسرة قلقة / مشبوهة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.main_problem_drug_assessability.label",
+    "EnglishText": "Difficulty Assessing Main Problem Drug",
+    "ArabicText": "????? ????? ?????? ???????? ??? ???????"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.medical_card_status_detailed.label",
+    "EnglishText": "Medical Card Status",
+    "ArabicText": "حالة البطاقة الطبية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.medical_card_valid_until.label",
+    "EnglishText": "Medical Card Valid Until",
+    "ArabicText": "البطاقة الطبية صالحة حتى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.mental_health_consent_shared_record.label",
+    "EnglishText": "Mental Health Shared Record Consent",
+    "ArabicText": "موافقة السجل المشترك للصحة العقلية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.mobile_number.label",
+    "EnglishText": "Mobile Number",
+    "ArabicText": "رقم الهاتف المحمول"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.most_recent_address.label",
+    "EnglishText": "Most Recent Address",
+    "ArabicText": "أحدث عنوان"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.national_screening_interest.label",
+    "EnglishText": "Would Like Access to National Screening Service",
+    "ArabicText": "أرغب في الوصول إلى خدمة الفحص الوطنية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.national_waiting_list_consent.label",
+    "EnglishText": "National Waiting List Consent",
+    "ArabicText": "الموافقة على قائمة الانتظار الوطنية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.nationality.label",
+    "EnglishText": "Nationality",
+    "ArabicText": "جنسية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.next_of_kin_aware_current_problems.label",
+    "EnglishText": "Next of Kin Aware of Current Problems",
+    "ArabicText": "أقرب الأقارب على علم بالمشاكل الحالية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.next_of_kin_contact_details.label",
+    "EnglishText": "Next of Kin Contact Details",
+    "ArabicText": "تفاصيل الاتصال بأقرب الأقارب"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.next_of_kin_details.label",
+    "EnglishText": "Next of Kin Details",
+    "ArabicText": "تفاصيل أقرباء"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.next_of_kin_name.label",
+    "EnglishText": "Next of Kin Name",
+    "ArabicText": "اسم الأقرباء"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.next_of_kin_relationship.label",
+    "EnglishText": "Next of Kin Relationship",
+    "ArabicText": "التالي من علاقة الأقارب"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.occupation.label",
+    "EnglishText": "Occupation",
+    "ArabicText": "إشغال"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.other_harm_reduction_details.label",
+    "EnglishText": "Other Harm Reduction Details",
+    "ArabicText": "تفاصيل أخرى للحد من الأضرار"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.pass_database_consent.label",
+    "EnglishText": "PASS Database Consent",
+    "ArabicText": "الموافقة على قاعدة بيانات PASS"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.pending_court_cases.label",
+    "EnglishText": "Pending Court Cases",
+    "ArabicText": "قضايا المحكمة المعلقة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.physical_health_details.label",
+    "EnglishText": "Physical Health Details",
+    "ArabicText": "تفاصيل الصحة البدنية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.preferred_language.label",
+    "EnglishText": "Preferred Language to Work With",
+    "ArabicText": "اللغة المفضلة للعمل بها"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.previous_methadone_maintenance.label",
+    "EnglishText": "Previous Methadone Maintenance",
+    "ArabicText": "صيانة الميثادون السابقة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.probation_service_engagement.label",
+    "EnglishText": "Engaged With Probation Services",
+    "ArabicText": "تشارك في خدمات المراقبة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.referral_date.label",
+    "EnglishText": "Date of Referral",
+    "ArabicText": "تاريخ الإحالة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.referral_other_details.label",
+    "EnglishText": "If Other Selected, Give Details",
+    "ArabicText": "في حالة تحديد أخرى، قم بإعطاء التفاصيل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.referral_reason.label",
+    "EnglishText": "Main Reason for Referral / Access to Service",
+    "ArabicText": "السبب الرئيسي للإحالة / الوصول إلى الخدمة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.referral_reference_number.label",
+    "EnglishText": "Referral Reference Number",
+    "ArabicText": "الرقم المرجعي للإحالة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.rent_arrears_local_authority.label",
+    "EnglishText": "Rent Arrears With Local Authority",
+    "ArabicText": "متأخرات الإيجار لدى السلطة المحلية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.risk_behaviour_history.label",
+    "EnglishText": "Risk Behaviour History",
+    "ArabicText": "تاريخ السلوك الخطر"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.self_defined_sexual_orientation.label",
+    "EnglishText": "Self-Defined Sexual Orientation",
+    "ArabicText": "التوجه الجنسي المحدد ذاتيا"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.self_help_support_group_attendance.label",
+    "EnglishText": "Attend AA, NA or Another Self Help Support Group",
+    "ArabicText": "???? ??????? ????? ?????? ??? AA ?? NA ?? ?????"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.service_user_signature.label",
+    "EnglishText": "Service User Signature",
+    "ArabicText": "توقيع مستخدم الخدمة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.sexual_health_concerns.label",
+    "EnglishText": "Concerns About Sexual Health and Wellbeing",
+    "ArabicText": "مخاوف بشأن الصحة الجنسية والرفاهية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.sexual_wellbeing_details.label",
+    "EnglishText": "Sexual Wellbeing Details",
+    "ArabicText": "تفاصيل الرفاهية الجنسية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.slept_rough_details.label",
+    "EnglishText": "Slept Rough? When and For How Long",
+    "ArabicText": "ينام الخام؟ متى وإلى متى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.social_worker_details.label",
+    "EnglishText": "Social Worker Details",
+    "ArabicText": "تفاصيل الأخصائي الاجتماعي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.source_of_income.label",
+    "EnglishText": "Source of Income",
+    "ArabicText": "مصدر الدخل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.staff_signature.label",
+    "EnglishText": "Staff Signature",
+    "ArabicText": "توقيع الموظفين"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.state_care_under_18.label",
+    "EnglishText": "Ever in State Care Under 18",
+    "ArabicText": "من أي وقت مضى في رعاية الدولة تحت سن 18 عامًا"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.sti_screening_history.label",
+    "EnglishText": "History of STI Screening / Testing",
+    "ArabicText": "تاريخ فحص/اختبار الأمراض المنقولة بالاتصال الجنسي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.substance_problem_overview.help",
+    "EnglishText": "Capture broader substance use context including gambling and eating-disorder history where relevant.",
+    "ArabicText": "التقط سياقًا أوسع لاستخدام المواد بما في ذلك تاريخ المقامرة واضطرابات الأكل حيثما كان ذلك مناسبًا."
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.substance_problem_overview.label",
+    "EnglishText": "Substance Use / Gambling / Eating Disorder Overview",
+    "ArabicText": "استخدام المواد المخدرة / القمار / نظرة عامة على اضطرابات الأكل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.supervised_alcohol_detox_count.label",
+    "EnglishText": "Previous Medically Supervised Alcohol Detox Count",
+    "ArabicText": "عدد السموم الكحولية السابق الخاضع للإشراف الطبي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.treatment_medication_details.label",
+    "EnglishText": "Treatment / Medication Details",
+    "ArabicText": "تفاصيل العلاج / الدواء"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.treatment_types.label",
+    "EnglishText": "Treatment Type(s)",
+    "ArabicText": "نوع (أنواع) العلاج"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.uses_condoms_or_barriers.label",
+    "EnglishText": "Uses Condoms or Other Physical Barriers",
+    "ArabicText": "يستخدم الواقي الذكري أو الحواجز المادية الأخرى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.work_days.label",
+    "EnglishText": "What Days Do You Work",
+    "ArabicText": "ما هي الأيام التي تعمل فيها"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.field.work_hours.label",
+    "EnglishText": "What Hours Do You Work",
+    "ArabicText": "ما هي ساعات العمل؟"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.alcohol_use_history_table.alcopops",
+    "EnglishText": "Alcopops",
+    "ArabicText": "الكوبوبس"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.alcohol_use_history_table.beer",
+    "EnglishText": "Beer",
+    "ArabicText": "جعة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.alcohol_use_history_table.cider",
+    "EnglishText": "Cider",
+    "ArabicText": "عصير التفاح"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.alcohol_use_history_table.fortified_wine",
+    "EnglishText": "Fortified wine",
+    "ArabicText": "النبيذ المدعم"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.alcohol_use_history_table.others",
+    "EnglishText": "Others",
+    "ArabicText": "آحرون"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.alcohol_use_history_table.spirits",
+    "EnglishText": "Spirits",
+    "ArabicText": "المشروبات الروحية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.alcohol_use_history_table.wine",
+    "EnglishText": "Wine",
+    "ArabicText": "خمر"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessment_checklist.circumstances_changed",
+    "EnglishText": "Have the Service User's circumstances changed? If so, update this assessment",
+    "ArabicText": "?? ????? ???? ????? ??????? ??? ???? ??? ?????? ??? ???????"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessment_checklist.consent_explained",
+    "EnglishText": "Explain consent and confidentiality",
+    "ArabicText": "شرح الموافقة والسرية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessment_checklist.consent_signed_understood",
+    "EnglishText": "Consent signed and understood by Service User",
+    "ArabicText": "موافقة موقعة ومفهومة من قبل مستخدم الخدمة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessment_checklist.initial_care_plan_agreed",
+    "EnglishText": "Initial care plan developed and agreed with Service User based on assessment",
+    "ArabicText": "تم تطوير خطة الرعاية الأولية والاتفاق عليها مع مستخدم الخدمة بناءً على التقييم"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessment_checklist.new_treatment_episode",
+    "EnglishText": "Is this a new treatment episode?",
+    "ArabicText": "هل هذه حلقة علاجية جديدة؟"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessor_actions_required.child_protection_referral",
+    "EnglishText": "Children First / Child Protection / social work referral",
+    "ArabicText": "الأطفال أولاً / حماية الطفل / إحالة العمل الاجتماعي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessor_actions_required.homeless_action_team",
+    "EnglishText": "Referral to a homeless Action Team",
+    "ArabicText": "????? ??? ???? ????? ?????? ???????"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessor_actions_required.key_work_other_service",
+    "EnglishText": "Key work engagement from other service provider",
+    "ArabicText": "???????? ?? ??? ????? ?? ???? ???? ???"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessor_actions_required.medical_assessment",
+    "EnglishText": "Medical assessment",
+    "ArabicText": "التقييم الطبي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessor_actions_required.multi_agency_meeting",
+    "EnglishText": "Multi-agency meeting or review",
+    "ArabicText": "اجتماع أو مراجعة متعددة الوكالات"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessor_actions_required.opiate_substitution_protocols",
+    "EnglishText": "Progress to opiate substitution protocols",
+    "ArabicText": "التقدم نحو بروتوكولات استبدال المواد الأفيونية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessor_actions_required.other_action",
+    "EnglishText": "Other action (e.g. placement on waiting list)",
+    "ArabicText": "إجراءات أخرى (مثل الإدراج في قائمة الانتظار)"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessor_actions_required.psychiatric_assessment",
+    "EnglishText": "Psychiatric assessment",
+    "ArabicText": "التقييم النفسي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.assessor_actions_required.register_screening_service",
+    "EnglishText": "Register with National Screening Service",
+    "ArabicText": "??????? ?? ???? ????? ???????"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.contact_permissions.contact_at_address",
+    "EnglishText": "Agree to be contacted at the above address",
+    "ArabicText": "توافق على أن يتم الاتصال بك على العنوان أعلاه"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.contact_permissions.contact_by_email",
+    "EnglishText": "Agree to be contacted by email",
+    "ArabicText": "توافق على أن يتم الاتصال بك عن طريق البريد الإلكتروني"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.contact_permissions.contact_via_phone_text",
+    "EnglishText": "Agree to be contacted via phone text",
+    "ArabicText": "توافق على أن يتم الاتصال بك عبر رسالة نصية عبر الهاتف"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drinking_problem_extent.dependent",
+    "EnglishText": "Dependent",
+    "ArabicText": "متكل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drinking_problem_extent.harmful",
+    "EnglishText": "Harmful",
+    "ArabicText": "ضار"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drinking_problem_extent.hazardous",
+    "EnglishText": "Hazardous",
+    "ArabicText": "خطرة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drinking_problem_extent.not_known",
+    "EnglishText": "Not known",
+    "ArabicText": "غير معروف"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.amphetamine",
+    "EnglishText": "Amphetamine",
+    "ArabicText": "الأمفيتامين"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.benzodiazepines",
+    "EnglishText": "Benzodiazepine(s)",
+    "ArabicText": "البنزوديازيبينات"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.cannabis",
+    "EnglishText": "Cannabis",
+    "ArabicText": "القنب"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.cocaine",
+    "EnglishText": "Cocaine",
+    "ArabicText": "الكوكايين"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.ecstasy_mdma",
+    "EnglishText": "Ecstasy / MDMA",
+    "ArabicText": "النشوة / إم دي إم إيه"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.hallucinogens",
+    "EnglishText": "Hallucinogens",
+    "ArabicText": "المهلوسات"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.heroin",
+    "EnglishText": "Heroin",
+    "ArabicText": "الهيروين"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.methadone",
+    "EnglishText": "Methadone",
+    "ArabicText": "الميثادون"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.otc_drugs",
+    "EnglishText": "Over the Counter Drugs",
+    "ArabicText": "المخدرات التي لا تستلزم وصفة طبية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.other_drugs",
+    "EnglishText": "Any Other Drugs",
+    "ArabicText": "أي أدوية أخرى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.drug_use_history_table.other_opiates",
+    "EnglishText": "Other Opiates",
+    "ArabicText": "المواد الأفيونية الأخرى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.education_level.junior_cert",
+    "EnglishText": "Junior cert",
+    "ArabicText": "شهادة المبتدئين"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.education_level.leaving_cert",
+    "EnglishText": "Leaving Cert",
+    "ArabicText": "مغادرة الشهادة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.education_level.never_school",
+    "EnglishText": "Never went to school",
+    "ArabicText": "لم أذهب إلى المدرسة قط"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.education_level.not_known",
+    "EnglishText": "Not known",
+    "ArabicText": "غير معروف"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.education_level.primary",
+    "EnglishText": "Primary level",
+    "ArabicText": "المستوى الابتدائي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.education_level.primary_incomplete",
+    "EnglishText": "Primary level incomplete",
+    "ArabicText": "المستوى الابتدائي غير مكتمل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.education_level.third_level",
+    "EnglishText": "Third level",
+    "ArabicText": "المستوى الثالث"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.arab",
+    "EnglishText": "Arab",
+    "ArabicText": "عربي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.asian_irish",
+    "EnglishText": "Asian or Asian Irish",
+    "ArabicText": "الآسيوية أو الأيرلندية الآسيوية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.black",
+    "EnglishText": "Black",
+    "ArabicText": "أسود"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.black_irish",
+    "EnglishText": "Black or Black Irish",
+    "ArabicText": "أسود أو أسود أيرلندي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.chinese",
+    "EnglishText": "Chinese",
+    "ArabicText": "الصينية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.indian_pakistani_bangladeshi",
+    "EnglishText": "Indian / Pakistani / Bangladeshi",
+    "ArabicText": "هندي / باكستاني / بنجلاديشي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.irish_traveller",
+    "EnglishText": "Irish Traveller",
+    "ArabicText": "المسافر الايرلندي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.mixed_multiple",
+    "EnglishText": "Mixed / multiple ethnic group",
+    "ArabicText": "مجموعة عرقية مختلطة / متعددة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.mixed_other",
+    "EnglishText": "Other, including mixed group / background",
+    "ArabicText": "أخرى، بما في ذلك المجموعة / الخلفية المختلطة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.other_asian",
+    "EnglishText": "Any other Asian background",
+    "ArabicText": "أي خلفية آسيوية أخرى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.other_black",
+    "EnglishText": "Any other black background",
+    "ArabicText": "أي خلفية سوداء أخرى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.other_white",
+    "EnglishText": "Any other white background",
+    "ArabicText": "أي خلفية بيضاء أخرى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.other_write_in",
+    "EnglishText": "Other, write in description",
+    "ArabicText": "اخرى اكتب في الوصف"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.roma",
+    "EnglishText": "Roma",
+    "ArabicText": "روما"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.ethnicity.white_irish",
+    "EnglishText": "White Irish",
+    "ArabicText": "الأيرلندية البيضاء"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.gender_identity.another_way",
+    "EnglishText": "In another way",
+    "ArabicText": "بطريقة أخرى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.gender_identity.man",
+    "EnglishText": "Man (including trans man)",
+    "ArabicText": "رجل (بما في ذلك الرجل المتحول)"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.gender_identity.non_binary",
+    "EnglishText": "Non-binary",
+    "ArabicText": "غير ثنائي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.gender_identity.not_listed",
+    "EnglishText": "My gender is not listed here",
+    "ArabicText": "جنسي غير مدرج هنا"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.gender_identity.woman",
+    "EnglishText": "Woman (including trans woman)",
+    "ArabicText": "امرأة (بما في ذلك المرأة المتحولة)"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.appearance_life",
+    "EnglishText": "Appearance / life",
+    "ArabicText": "المظهر / الحياة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.communication_skills",
+    "EnglishText": "Communication Skills",
+    "ArabicText": "مهارات الاتصال"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.confidence_in_self",
+    "EnglishText": "Confidence in self",
+    "ArabicText": "الثقة بالنفس"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.housing",
+    "EnglishText": "Housing",
+    "ArabicText": "السكن"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.inner_peace",
+    "EnglishText": "Inner peace",
+    "ArabicText": "السلام الداخلي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.job_role",
+    "EnglishText": "Job/role",
+    "ArabicText": "الوظيفة/الدور"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.legal_issues",
+    "EnglishText": "Legal issues",
+    "ArabicText": "القضايا القانونية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.mental_health_and_happiness",
+    "EnglishText": "Mental health and happiness",
+    "ArabicText": "الصحة النفسية والسعادة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.other",
+    "EnglishText": "Other (be specific)",
+    "ArabicText": "أخرى (كن محددًا)"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.relationships",
+    "EnglishText": "Relationships",
+    "ArabicText": "العلاقات"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.social_life",
+    "EnglishText": "Social life",
+    "ArabicText": "الحياة الاجتماعية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.happiness_scale_matrix.spirituality",
+    "EnglishText": "Spirituality",
+    "ArabicText": "الروحانية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.harm_reduction_advice_given.access_to_naloxone",
+    "EnglishText": "Access to Naloxone",
+    "ArabicText": "الوصول إلى النالوكسون"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.harm_reduction_advice_given.alcohol_use",
+    "EnglishText": "Alcohol Use",
+    "ArabicText": "استخدام الكحول"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.harm_reduction_advice_given.drug_interactions",
+    "EnglishText": "Drug Interactions",
+    "ArabicText": "التفاعلات الدوائية"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.harm_reduction_advice_given.drug_use",
+    "EnglishText": "Drug Use",
+    "ArabicText": "تعاطي المخدرات"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.harm_reduction_advice_given.needle_exchange",
+    "EnglishText": "Needle Exchange time and places",
+    "ArabicText": "تبادل الإبرة الأوقات والأماكن"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.harm_reduction_advice_given.overdose_prevention",
+    "EnglishText": "Overdose Prevention",
+    "ArabicText": "الوقاية من الجرعة الزائدة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.harm_reduction_advice_given.safe_injecting_practice",
+    "EnglishText": "Safe Injecting Practice",
+    "ArabicText": "ممارسة الحقن الآمنة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.harm_reduction_advice_given.sexual_activity",
+    "EnglishText": "Sexual Activity",
+    "ArabicText": "النشاط الجنسي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.language_other_than_english_or_irish_at_home.no",
+    "EnglishText": "No",
+    "ArabicText": "لا"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.language_other_than_english_or_irish_at_home.not_known",
+    "EnglishText": "Not known",
+    "ArabicText": "غير معروف"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.language_other_than_english_or_irish_at_home.yes",
+    "EnglishText": "Yes",
+    "ArabicText": "نعم"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_where.dv_refuge",
+    "EnglishText": "Domestic Violence refuge",
+    "ArabicText": "ملجأ العنف المنزلي"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_where.homeless",
+    "EnglishText": "Homeless",
+    "ArabicText": "بلا مأوى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_where.institution",
+    "EnglishText": "Prison / institution / residential care / halting house",
+    "ArabicText": "السجن / المؤسسة / الرعاية السكنية / دار التوقف"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_where.not_known",
+    "EnglishText": "Not known",
+    "ArabicText": "غير معروف"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_where.other_unstable",
+    "EnglishText": "Other unstable accommodation / details",
+    "ArabicText": "أماكن إقامة / تفاصيل أخرى غير مستقرة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_where.stable_accommodation",
+    "EnglishText": "Stable accommodation",
+    "ArabicText": "إقامة مستقرة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_with.alone",
+    "EnglishText": "Alone",
+    "ArabicText": "وحيد"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_with.alone_children",
+    "EnglishText": "Alone and Children",
+    "ArabicText": "وحده والأطفال"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_with.foster_care",
+    "EnglishText": "Foster Care",
+    "ArabicText": "الرعاية البديلة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_with.friends",
+    "EnglishText": "Friends",
+    "ArabicText": "أصدقاء"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_with.not_known",
+    "EnglishText": "Not known",
+    "ArabicText": "غير معروف"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_with.parents_family",
+    "EnglishText": "Parents / Family",
+    "ArabicText": "الوالدين / العائلة"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_with.partner_alone",
+    "EnglishText": "Partner (alone)",
+    "ArabicText": "شريك (وحده)"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.living_with.partner_children",
+    "EnglishText": "Partner and Children",
+    "ArabicText": "الشريك والأطفال"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.medical_card_status_detailed.applied_for",
+    "EnglishText": "Applied for",
+    "ArabicText": "تقدمت ل"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.medical_card_status_detailed.no",
+    "EnglishText": "No",
+    "ArabicText": "لا"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.medical_card_status_detailed.yes",
+    "EnglishText": "Yes",
+    "ArabicText": "نعم"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.referral_reason.alcohol_use",
+    "EnglishText": "Alcohol Use",
+    "ArabicText": "استخدام الكحول"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.referral_reason.concerned_person",
+    "EnglishText": "Concerned Person",
+    "ArabicText": "الشخص المعني"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.referral_reason.drug_use",
+    "EnglishText": "Drug Use",
+    "ArabicText": "تعاطي المخدرات"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.referral_reason.homelessness",
+    "EnglishText": "Homelessness",
+    "ArabicText": "التشرد"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.risk_behaviour_history.ever_injected",
+    "EnglishText": "Ever injected",
+    "ArabicText": "حقن من أي وقت مضى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.risk_behaviour_history.shared_needles",
+    "EnglishText": "Ever shared needles / syringes",
+    "ArabicText": "الإبر / المحاقن المشتركة من أي وقت مضى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.risk_behaviour_history.shared_paraphernalia",
+    "EnglishText": "Ever shared other paraphernalia",
+    "ArabicText": "من أي وقت مضى شاركت أدوات أخرى"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.self_defined_sexual_orientation.bisexual",
+    "EnglishText": "Bisexual",
+    "ArabicText": "ثنائي الجنس"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.self_defined_sexual_orientation.heterosexual",
+    "EnglishText": "Heterosexual or Straight",
+    "ArabicText": "من جنسين مختلفين أو مستقيمين"
+  },
+  {
+    "FormCode": "admission_detox",
+    "Key": "admission.option.self_defined_sexual_orientation.other",
+    "EnglishText": "Other sexual orientation not listed",
+    "ArabicText": "التوجه الجنسي الآخر غير مدرج"
+  },
+  {
+    "FormCode": "admission_alcohol",
+    "Key": "admission.alcohol.form.description",
+    "EnglishText": "First real HSE-derived case assessment assembled from Element Library items.",
+    "ArabicText": "??? ????? ????? ??????? ??????? ???? ??? ????? ????? HSE."
+  }
+]

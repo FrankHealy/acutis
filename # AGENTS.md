@@ -191,3 +191,22 @@ Rules:
 
 ## Architectural Guardrails
 If a change appears to require architectural modification, stop and explain the issue instead of implementing it.
+## Form-field promotion rule (JSON -> bounded schema)
+
+Many assessment/admissions fields will begin life inside dynamic JSON-backed form submissions, especially for HSE forms. This is acceptable initially, but the design must always preserve a clean migration path from unbounded JSON into first-class bounded columns/tables.
+
+### Mandatory rule
+Any new dynamic form field that may later become operationally important MUST be designed so it can be promoted to bounded schema without breaking existing data, APIs, or UI flows.
+
+### Required design constraints
+1. **Stable field keys**
+   - Every form field must have a stable, explicit machine key.
+   - Keys must never depend on display label text.
+   - Renaming a label must not rename the stored key.
+
+2. **Typed field metadata**
+   - Each field definition must declare an intended type such as:
+     - string
+     - integer
+     - decimal
+     - boolean

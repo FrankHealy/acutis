@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "acutis.tab",
+    "slug": "acutis-tab",
+    "plugins": [
+      "expo-router",
+      "expo-localization"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b5f5142e-085e-4803-b48a-e4fd3e53a80d"
+      }
+    },
+    "android": {
+      "package": "com.salientrecovery.acutis.tab"
+    }
+  }
+}

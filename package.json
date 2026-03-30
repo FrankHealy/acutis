@@ -6,5 +6,8 @@
     "api": "dotnet watch --project acutis.api run",
     "mob": "powershell -NoProfile -Command \"Set-Location 'acutis.mob'; npm run start\"",
     "dev": "npm run web"
+  },
+  "dependencies": {
+    "expo": "^55.0.9"
   }
 }

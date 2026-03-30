@@ -1,0 +1,1182 @@
+[
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.detox.form.description",
+        "EnglishText":  "Expanded detox admission assessment from fuller HSE source pages including housing, family, detailed substance use, alcohol detail, and injection-site marking."
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.detox.section.02.title",
+        "EnglishText":  "Family and Community Supports"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.detox.section.03.title",
+        "EnglishText":  "Housing and Homelessness"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.detox.section.06.title",
+        "EnglishText":  "Alcohol Use Detail"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.detox.section.08.title",
+        "EnglishText":  "Sexual Wellbeing"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.detox.section.10.title",
+        "EnglishText":  "Domestic Violence / Justice / Health and Safety"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.detox.section.11.title",
+        "EnglishText":  "Happiness Scale"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.accommodation_difficulties_details.label",
+        "EnglishText":  "Accommodation Difficulties Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.additional_comments_needed.label",
+        "EnglishText":  "Additional Comments Required"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.additional_consent_contacts.label",
+        "EnglishText":  "Additional Consent Contacts"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.adheres_to_medication.label",
+        "EnglishText":  "Adheres to Medication"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.age_first_injected.label",
+        "EnglishText":  "Age First Injected"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.age_first_opiate_substitution.label",
+        "EnglishText":  "Age First Received Opiate Substitution"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.age_left_school_first_time.label",
+        "EnglishText":  "Age Left School for the First Time"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.alcohol_use_history_table.help",
+        "EnglishText":  "Capture route, frequency, quantity, duration, age first used, and reason used for each alcohol type."
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.alcohol_use_history_table.label",
+        "EnglishText":  "Detailed Alcohol Use History"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.amount_of_income.label",
+        "EnglishText":  "Amount of Income"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.assessment_checklist.label",
+        "EnglishText":  "Assessment Checklist"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.behaviour_impacting_treatment_plan.label",
+        "EnglishText":  "Behaviour May Impact Treatment Plan"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.can_access_medication.label",
+        "EnglishText":  "Can Access Medication"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.community_welfare_deposit_details.label",
+        "EnglishText":  "Community Welfare Deposit Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.consent_explainer.help",
+        "EnglishText":  "Consent and confidentiality explainer covering purpose, privacy, and shared-record boundaries."
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.consent_explainer.label",
+        "EnglishText":  "Consent and Confidentiality Explainer"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.contact_permissions.label",
+        "EnglishText":  "Contact Permissions"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.country_of_birth.label",
+        "EnglishText":  "Country of Birth"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.current_housing_situation.label",
+        "EnglishText":  "Describe Current Housing Situation"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.current_or_recent_social_worker_involvement.label",
+        "EnglishText":  "Current or Recent Social Worker Involvement"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.current_relationship_safety.label",
+        "EnglishText":  "Feels Safe in Current Relationship"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.custodial_sentence_history.label",
+        "EnglishText":  "History of Custodial Sentence"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.domestic_violence_details.label",
+        "EnglishText":  "Domestic Violence Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.drinking_problem_extent.label",
+        "EnglishText":  "Extent of Drinking Problem"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.drug_use_history_table.help",
+        "EnglishText":  "Capture route, frequency, quantity, duration, age first used, and date last used for each drug used."
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.drug_use_history_table.label",
+        "EnglishText":  "Detailed Drug Use History"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.eating_disorder_history.label",
+        "EnglishText":  "Eating Disorder History"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.education_level.label",
+        "EnglishText":  "Education Level"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.emergency_contact_aware_current_problems.label",
+        "EnglishText":  "Emergency Contact Aware of Current Problems"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.emergency_contact_contact_details.label",
+        "EnglishText":  "Emergency Contact Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.emergency_contact_name.label",
+        "EnglishText":  "Emergency Contact Name"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.emergency_contact_relationship.label",
+        "EnglishText":  "Emergency Contact Relationship"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.employment_status.label",
+        "EnglishText":  "Employment Status"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.ethnicity.label",
+        "EnglishText":  "Ethnicity"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.ethnicity_description.label",
+        "EnglishText":  "Ethnicity Description"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.family_substance_use_history.label",
+        "EnglishText":  "Family Substance Use History"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.family_support_details.label",
+        "EnglishText":  "Family Support Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.gambling_history.label",
+        "EnglishText":  "Gambling History"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.gender_identity.label",
+        "EnglishText":  "Gender Identity"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.gp_address.label",
+        "EnglishText":  "GP Address"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.gp_aware_of_use.label",
+        "EnglishText":  "GP Aware of Alcohol / Drug Use"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.gp_mobile.label",
+        "EnglishText":  "GP Mobile"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.happiness_scale_matrix.help",
+        "EnglishText":  "Low numbers indicate lower happiness; high numbers indicate greater happiness."
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.happiness_scale_matrix.label",
+        "EnglishText":  "Happiness Scale Matrix"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.harm_reduction_advice_given.label",
+        "EnglishText":  "Harm Reduction Advice Given"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.has_solicitor.label",
+        "EnglishText":  "Has a Solicitor"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.health_and_safety_details.label",
+        "EnglishText":  "Health and Safety Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.history_of_abuse.label",
+        "EnglishText":  "History of Physical / Mental / Sexual Abuse"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.homeless_before_details.label",
+        "EnglishText":  "Homeless Before? Give Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.homeless_service_medical_card_number.label",
+        "EnglishText":  "Homeless Service Medical Card Number"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.homelessness_reasons.label",
+        "EnglishText":  "Main Reasons for Becoming Homeless on This Occasion"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.iv_needles_disposed.label",
+        "EnglishText":  "If Using IV Needles, How Are They Disposed?"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.iv_needles_obtained.label",
+        "EnglishText":  "If Using IV Needles, How Are They Obtained?"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.justice_details.label",
+        "EnglishText":  "Justice Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.key_work_other_service_details.label",
+        "EnglishText":  "Key Work Other Service Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.knows_barrier_access_points.label",
+        "EnglishText":  "Knows Where Barriers Are Freely Available"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.language_other_specify.label",
+        "EnglishText":  "If Yes, Specify Language"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.language_other_than_english_or_irish_at_home.label",
+        "EnglishText":  "Language Other Than English or Irish at Home"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.lived_independently.label",
+        "EnglishText":  "Ever Lived Independently"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.living_where.label",
+        "EnglishText":  "Living Where"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.living_with.label",
+        "EnglishText":  "Living With"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.living_with_people_using_substances.label",
+        "EnglishText":  "Living With People Using Substances / Gambling / Other Addictions"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.local_authority_registration.label",
+        "EnglishText":  "Registered With Local Authority? Specify Which"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.longest_abstinent_date.label",
+        "EnglishText":  "Date of Longest Abstinent Period"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.loved_one_family_worried.label",
+        "EnglishText":  "Loved One or Family Worried / Suspicious"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.main_problem_drug_assessability.label",
+        "EnglishText":  "Difficulty Assessing Main Problem Drug"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.medical_card_status_detailed.label",
+        "EnglishText":  "Medical Card Status"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.medical_card_valid_until.label",
+        "EnglishText":  "Medical Card Valid Until"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.mental_health_consent_shared_record.label",
+        "EnglishText":  "Mental Health Shared Record Consent"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.mobile_number.label",
+        "EnglishText":  "Mobile Number"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.most_recent_address.label",
+        "EnglishText":  "Most Recent Address"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.national_screening_interest.label",
+        "EnglishText":  "Would Like Access to National Screening Service"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.national_waiting_list_consent.label",
+        "EnglishText":  "National Waiting List Consent"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.nationality.label",
+        "EnglishText":  "Nationality"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.next_of_kin_aware_current_problems.label",
+        "EnglishText":  "Next of Kin Aware of Current Problems"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.next_of_kin_contact_details.label",
+        "EnglishText":  "Next of Kin Contact Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.next_of_kin_details.label",
+        "EnglishText":  "Next of Kin Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.next_of_kin_name.label",
+        "EnglishText":  "Next of Kin Name"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.next_of_kin_relationship.label",
+        "EnglishText":  "Next of Kin Relationship"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.occupation.label",
+        "EnglishText":  "Occupation"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.other_harm_reduction_details.label",
+        "EnglishText":  "Other Harm Reduction Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.pass_database_consent.label",
+        "EnglishText":  "PASS Database Consent"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.pending_court_cases.label",
+        "EnglishText":  "Pending Court Cases"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.physical_health_details.label",
+        "EnglishText":  "Physical Health Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.preferred_language.label",
+        "EnglishText":  "Preferred Language to Work With"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.previous_methadone_maintenance.label",
+        "EnglishText":  "Previous Methadone Maintenance"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.probation_service_engagement.label",
+        "EnglishText":  "Engaged With Probation Services"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.referral_date.label",
+        "EnglishText":  "Date of Referral"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.referral_other_details.label",
+        "EnglishText":  "If Other Selected, Give Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.referral_reason.label",
+        "EnglishText":  "Main Reason for Referral / Access to Service"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.referral_reference_number.label",
+        "EnglishText":  "Referral Reference Number"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.rent_arrears_local_authority.label",
+        "EnglishText":  "Rent Arrears With Local Authority"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.risk_behaviour_history.label",
+        "EnglishText":  "Risk Behaviour History"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.self_defined_sexual_orientation.label",
+        "EnglishText":  "Self-Defined Sexual Orientation"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.self_help_support_group_attendance.label",
+        "EnglishText":  "Attend AA, NA or Another Self Help Support Group"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.service_user_signature.label",
+        "EnglishText":  "Service User Signature"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.sexual_health_concerns.label",
+        "EnglishText":  "Concerns About Sexual Health and Wellbeing"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.sexual_wellbeing_details.label",
+        "EnglishText":  "Sexual Wellbeing Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.slept_rough_details.label",
+        "EnglishText":  "Slept Rough? When and For How Long"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.social_worker_details.label",
+        "EnglishText":  "Social Worker Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.source_of_income.label",
+        "EnglishText":  "Source of Income"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.staff_signature.label",
+        "EnglishText":  "Staff Signature"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.state_care_under_18.label",
+        "EnglishText":  "Ever in State Care Under 18"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.sti_screening_history.label",
+        "EnglishText":  "History of STI Screening / Testing"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.substance_problem_overview.help",
+        "EnglishText":  "Capture broader substance use context including gambling and eating-disorder history where relevant."
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.substance_problem_overview.label",
+        "EnglishText":  "Substance Use / Gambling / Eating Disorder Overview"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.supervised_alcohol_detox_count.label",
+        "EnglishText":  "Previous Medically Supervised Alcohol Detox Count"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.treatment_medication_details.label",
+        "EnglishText":  "Treatment / Medication Details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.treatment_types.label",
+        "EnglishText":  "Treatment Type(s)"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.uses_condoms_or_barriers.label",
+        "EnglishText":  "Uses Condoms or Other Physical Barriers"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.work_days.label",
+        "EnglishText":  "What Days Do You Work"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.field.work_hours.label",
+        "EnglishText":  "What Hours Do You Work"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.alcohol_use_history_table.alcopops",
+        "EnglishText":  "Alcopops"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.alcohol_use_history_table.beer",
+        "EnglishText":  "Beer"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.alcohol_use_history_table.cider",
+        "EnglishText":  "Cider"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.alcohol_use_history_table.fortified_wine",
+        "EnglishText":  "Fortified wine"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.alcohol_use_history_table.others",
+        "EnglishText":  "Others"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.alcohol_use_history_table.spirits",
+        "EnglishText":  "Spirits"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.alcohol_use_history_table.wine",
+        "EnglishText":  "Wine"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessment_checklist.circumstances_changed",
+        "EnglishText":  "Have the Service User\u0027s circumstances changed? If so, update this assessment"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessment_checklist.consent_explained",
+        "EnglishText":  "Explain consent and confidentiality"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessment_checklist.consent_signed_understood",
+        "EnglishText":  "Consent signed and understood by Service User"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessment_checklist.initial_care_plan_agreed",
+        "EnglishText":  "Initial care plan developed and agreed with Service User based on assessment"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessment_checklist.new_treatment_episode",
+        "EnglishText":  "Is this a new treatment episode?"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessor_actions_required.child_protection_referral",
+        "EnglishText":  "Children First / Child Protection / social work referral"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessor_actions_required.homeless_action_team",
+        "EnglishText":  "Referral to a homeless Action Team"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessor_actions_required.key_work_other_service",
+        "EnglishText":  "Key work engagement from other service provider"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessor_actions_required.medical_assessment",
+        "EnglishText":  "Medical assessment"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessor_actions_required.multi_agency_meeting",
+        "EnglishText":  "Multi-agency meeting or review"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessor_actions_required.opiate_substitution_protocols",
+        "EnglishText":  "Progress to opiate substitution protocols"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessor_actions_required.other_action",
+        "EnglishText":  "Other action (e.g. placement on waiting list)"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessor_actions_required.psychiatric_assessment",
+        "EnglishText":  "Psychiatric assessment"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.assessor_actions_required.register_screening_service",
+        "EnglishText":  "Register with National Screening Service"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.contact_permissions.contact_at_address",
+        "EnglishText":  "Agree to be contacted at the above address"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.contact_permissions.contact_by_email",
+        "EnglishText":  "Agree to be contacted by email"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.contact_permissions.contact_via_phone_text",
+        "EnglishText":  "Agree to be contacted via phone text"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drinking_problem_extent.dependent",
+        "EnglishText":  "Dependent"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drinking_problem_extent.harmful",
+        "EnglishText":  "Harmful"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drinking_problem_extent.hazardous",
+        "EnglishText":  "Hazardous"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drinking_problem_extent.not_known",
+        "EnglishText":  "Not known"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.amphetamine",
+        "EnglishText":  "Amphetamine"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.benzodiazepines",
+        "EnglishText":  "Benzodiazepine(s)"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.cannabis",
+        "EnglishText":  "Cannabis"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.cocaine",
+        "EnglishText":  "Cocaine"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.ecstasy_mdma",
+        "EnglishText":  "Ecstasy / MDMA"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.hallucinogens",
+        "EnglishText":  "Hallucinogens"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.heroin",
+        "EnglishText":  "Heroin"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.methadone",
+        "EnglishText":  "Methadone"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.otc_drugs",
+        "EnglishText":  "Over the Counter Drugs"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.other_drugs",
+        "EnglishText":  "Any Other Drugs"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.drug_use_history_table.other_opiates",
+        "EnglishText":  "Other Opiates"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.education_level.junior_cert",
+        "EnglishText":  "Junior cert"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.education_level.leaving_cert",
+        "EnglishText":  "Leaving Cert"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.education_level.never_school",
+        "EnglishText":  "Never went to school"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.education_level.not_known",
+        "EnglishText":  "Not known"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.education_level.primary",
+        "EnglishText":  "Primary level"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.education_level.primary_incomplete",
+        "EnglishText":  "Primary level incomplete"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.education_level.third_level",
+        "EnglishText":  "Third level"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.arab",
+        "EnglishText":  "Arab"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.asian_irish",
+        "EnglishText":  "Asian or Asian Irish"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.black",
+        "EnglishText":  "Black"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.black_irish",
+        "EnglishText":  "Black or Black Irish"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.chinese",
+        "EnglishText":  "Chinese"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.indian_pakistani_bangladeshi",
+        "EnglishText":  "Indian / Pakistani / Bangladeshi"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.irish_traveller",
+        "EnglishText":  "Irish Traveller"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.mixed_multiple",
+        "EnglishText":  "Mixed / multiple ethnic group"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.mixed_other",
+        "EnglishText":  "Other, including mixed group / background"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.other_asian",
+        "EnglishText":  "Any other Asian background"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.other_black",
+        "EnglishText":  "Any other black background"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.other_white",
+        "EnglishText":  "Any other white background"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.other_write_in",
+        "EnglishText":  "Other, write in description"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.roma",
+        "EnglishText":  "Roma"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.ethnicity.white_irish",
+        "EnglishText":  "White Irish"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.gender_identity.another_way",
+        "EnglishText":  "In another way"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.gender_identity.man",
+        "EnglishText":  "Man (including trans man)"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.gender_identity.non_binary",
+        "EnglishText":  "Non-binary"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.gender_identity.not_listed",
+        "EnglishText":  "My gender is not listed here"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.gender_identity.woman",
+        "EnglishText":  "Woman (including trans woman)"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.appearance_life",
+        "EnglishText":  "Appearance / life"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.communication_skills",
+        "EnglishText":  "Communication Skills"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.confidence_in_self",
+        "EnglishText":  "Confidence in self"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.housing",
+        "EnglishText":  "Housing"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.inner_peace",
+        "EnglishText":  "Inner peace"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.job_role",
+        "EnglishText":  "Job/role"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.legal_issues",
+        "EnglishText":  "Legal issues"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.mental_health_and_happiness",
+        "EnglishText":  "Mental health and happiness"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.other",
+        "EnglishText":  "Other (be specific)"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.relationships",
+        "EnglishText":  "Relationships"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.social_life",
+        "EnglishText":  "Social life"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.happiness_scale_matrix.spirituality",
+        "EnglishText":  "Spirituality"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.harm_reduction_advice_given.access_to_naloxone",
+        "EnglishText":  "Access to Naloxone"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.harm_reduction_advice_given.alcohol_use",
+        "EnglishText":  "Alcohol Use"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.harm_reduction_advice_given.drug_interactions",
+        "EnglishText":  "Drug Interactions"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.harm_reduction_advice_given.drug_use",
+        "EnglishText":  "Drug Use"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.harm_reduction_advice_given.needle_exchange",
+        "EnglishText":  "Needle Exchange time and places"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.harm_reduction_advice_given.overdose_prevention",
+        "EnglishText":  "Overdose Prevention"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.harm_reduction_advice_given.safe_injecting_practice",
+        "EnglishText":  "Safe Injecting Practice"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.harm_reduction_advice_given.sexual_activity",
+        "EnglishText":  "Sexual Activity"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.language_other_than_english_or_irish_at_home.no",
+        "EnglishText":  "No"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.language_other_than_english_or_irish_at_home.not_known",
+        "EnglishText":  "Not known"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.language_other_than_english_or_irish_at_home.yes",
+        "EnglishText":  "Yes"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_where.dv_refuge",
+        "EnglishText":  "Domestic Violence refuge"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_where.homeless",
+        "EnglishText":  "Homeless"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_where.institution",
+        "EnglishText":  "Prison / institution / residential care / halting house"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_where.not_known",
+        "EnglishText":  "Not known"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_where.other_unstable",
+        "EnglishText":  "Other unstable accommodation / details"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_where.stable_accommodation",
+        "EnglishText":  "Stable accommodation"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_with.alone",
+        "EnglishText":  "Alone"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_with.alone_children",
+        "EnglishText":  "Alone and Children"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_with.foster_care",
+        "EnglishText":  "Foster Care"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_with.friends",
+        "EnglishText":  "Friends"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_with.not_known",
+        "EnglishText":  "Not known"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_with.parents_family",
+        "EnglishText":  "Parents / Family"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_with.partner_alone",
+        "EnglishText":  "Partner (alone)"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.living_with.partner_children",
+        "EnglishText":  "Partner and Children"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.medical_card_status_detailed.applied_for",
+        "EnglishText":  "Applied for"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.medical_card_status_detailed.no",
+        "EnglishText":  "No"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.medical_card_status_detailed.yes",
+        "EnglishText":  "Yes"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.referral_reason.alcohol_use",
+        "EnglishText":  "Alcohol Use"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.referral_reason.concerned_person",
+        "EnglishText":  "Concerned Person"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.referral_reason.drug_use",
+        "EnglishText":  "Drug Use"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.referral_reason.homelessness",
+        "EnglishText":  "Homelessness"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.risk_behaviour_history.ever_injected",
+        "EnglishText":  "Ever injected"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.risk_behaviour_history.shared_needles",
+        "EnglishText":  "Ever shared needles / syringes"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.risk_behaviour_history.shared_paraphernalia",
+        "EnglishText":  "Ever shared other paraphernalia"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.self_defined_sexual_orientation.bisexual",
+        "EnglishText":  "Bisexual"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.self_defined_sexual_orientation.heterosexual",
+        "EnglishText":  "Heterosexual or Straight"
+    },
+    {
+        "FormCode":  "admission_detox",
+        "Key":  "admission.option.self_defined_sexual_orientation.other",
+        "EnglishText":  "Other sexual orientation not listed"
+    },
+    {
+        "FormCode":  "admission_alcohol",
+        "Key":  "admission.alcohol.form.description",
+        "EnglishText":  "First real HSE-derived case assessment assembled from Element Library items."
+    }
+]
