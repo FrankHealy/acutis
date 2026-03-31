@@ -8,6 +8,16 @@
     ],
     "extra": {
       "router": {},
+      "apiBaseUrl": "http://10.77.12.112:5009",
+      "keycloak": {
+        "issuer": "http://10.77.12.112:8080/realms/AcutisRealm",
+        "clientId": "tab-client",
+        "audience": "api-client",
+        "redirectUri": "acutis-tab://redirect"
+      },
+      "development": {
+        "authorizationDisabled": true
+      },
       "eas": {
         "projectId": "b5f5142e-085e-4803-b48a-e4fd3e53a80d"
       }

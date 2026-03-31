@@ -1,72 +1,97 @@
-﻿import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
-import { useRollCall } from "../../../src/features/rollCall/useRollCall";
+﻿import { useRouter } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  getRollCallDateLabel,
+  getRollCallWindowLabel,
+  ROLL_CALL_UNITS,
+} from "../../../src/features/rollCall/units";
 
-const DUMMY_RESIDENTS = [
-  { id: "resident-1", name: "Alice" },
-  { id: "resident-2", name: "Bob" },
-  { id: "resident-3", name: "Carol" },
-  { id: "resident-4", name: "David" },
-];
-
-const SESSION_ID = "session-1";
-
-export default function RollCallScreen() {
-  const { records, loading, error, markAttendance, countStatus } = useRollCall(SESSION_ID);
-
-  const getStatus = (residentId: string) => {
-    const record = records.find((item) => item.residentId === residentId);
-    return record?.status ?? "unknown";
-  };
-
-  const setStatus = async (residentId: string, status: "present" | "absent") => {
-    await markAttendance(residentId, status);
-  };
+export default function RollCallHomeScreen() {
+  const router = useRouter();
+  const dateLabel = getRollCallDateLabel();
+  const windowLabel = getRollCallWindowLabel();
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Roll Call</Text>
-      <Text style={styles.subtitle}>Session: {SESSION_ID}</Text>
+      <Text style={styles.subtitle}>{dateLabel} · {windowLabel} round</Text>
+      <Text style={styles.intro}>
+        Choose a unit to open the live resident roster from `acutis.api` and mark attendance incrementally.
+      </Text>
 
-      <Text style={styles.counter}>present: {countStatus.present} · absent: {countStatus.absent} · unknown: {countStatus.unknown}</Text>
-
-      {loading && <Text>Loading...</Text>}
-      {error && <Text style={styles.error}>Error: {error}</Text>}
-
-      <FlatList
-        data={DUMMY_RESIDENTS}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <View>
-              <Text style={styles.residentName}>{item.name}</Text>
-              <Text style={styles.status}>Status: {getStatus(item.id)}</Text>
-            </View>
-            <View style={styles.buttons}>
-              <Pressable style={styles.present} onPress={() => setStatus(item.id, "present")}> 
-                <Text style={styles.buttonText}>Present</Text>
-              </Pressable>
-              <Pressable style={styles.absent} onPress={() => setStatus(item.id, "absent")}> 
-                <Text style={styles.buttonText}>Absent</Text>
-              </Pressable>
-            </View>
+      {ROLL_CALL_UNITS.map((unit) => (
+        <Pressable
+          key={unit.id}
+          onPress={() =>
+            router.push({
+              pathname: "/(tabs)/roll-call/[unitId]",
+              params: { unitId: unit.id },
+            })
+          }
+          style={[styles.card, { backgroundColor: unit.surfaceColor }]}
+        >
+          <View style={[styles.accentBar, { backgroundColor: unit.accentColor }]} />
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle}>{unit.name} Unit</Text>
+            <Text style={styles.cardDescription}>{unit.description}</Text>
+            <Text style={[styles.cardBadge, { color: unit.accentColor }]}>Start {windowLabel} roll call</Text>
           </View>
-        )}
-      />
-    </View>
+        </Pressable>
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 28, fontWeight: "700", marginBottom: 8 },
-  subtitle: { fontSize: 16, marginBottom: 12 },
-  counter: { marginBottom: 12, fontSize: 14 },
-  error: { color: "red" },
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#ccc" },
-  residentName: { fontSize: 18, fontWeight: "600" },
-  status: { fontSize: 14, color: "#555" },
-  buttons: { flexDirection: "row" },
-  present: { backgroundColor: "#0a0", padding: 8, borderRadius: 6, marginRight: 8 },
-  absent: { backgroundColor: "#c00", padding: 8, borderRadius: 6 },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  container: {
+    padding: 16,
+    backgroundColor: "#F5F7FB",
+    flexGrow: 1,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#4B5563",
+    marginBottom: 8,
+  },
+  intro: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 16,
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    marginBottom: 12,
+    overflow: "hidden",
+    flexDirection: "row",
+  },
+  accentBar: {
+    width: 6,
+  },
+  cardBody: {
+    flex: 1,
+    padding: 16,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 6,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: "#4B5563",
+    marginBottom: 10,
+  },
+  cardBadge: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
 });

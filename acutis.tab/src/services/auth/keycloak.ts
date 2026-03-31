@@ -1,40 +1,45 @@
 import * as AuthSession from "expo-auth-session";
-import Constants from "expo-constants";
-import { setAuthTokens, clearAuthTokens } from "./secureTokenStorage";
+import { getKeycloakConfig } from "../../constants/runtimeConfig";
+import { clearAuthTokens, getAuthTokens, setAuthTokens } from "./secureTokenStorage";
 
-const { keycloak } = Constants.expoConfig?.extra ?? { keycloak: { issuer: "", clientId: "", redirectUri: "" } };
-
-const discovery = {
-  authorizationEndpoint: `${keycloak.issuer}/protocol/openid-connect/auth`,
-  tokenEndpoint: `${keycloak.issuer}/protocol/openid-connect/token`,
-  revocationEndpoint: `${keycloak.issuer}/protocol/openid-connect/revoke`,
-};
+async function getDiscovery(): Promise<AuthSession.DiscoveryDocument> {
+  const { issuer } = getKeycloakConfig();
+  if (!issuer) {
+    throw new Error("Missing Keycloak issuer in app.json under expo.extra.keycloak");
+  }
+  return AuthSession.fetchDiscoveryAsync(issuer);
+}
 
 export async function signInWithKeycloak(): Promise<void> {
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: "acutis-tab" });
+  const { clientId, redirectUri: configuredRedirectUri } = getKeycloakConfig();
+  if (!clientId) {
+    throw new Error("Missing Keycloak clientId in app.json under expo.extra.keycloak");
+  }
 
-  const authRequestConfig = {
-    clientId: keycloak.clientId,
+  const redirectUri = configuredRedirectUri || AuthSession.makeRedirectUri({ scheme: "acutis-tab" });
+  const discovery = await getDiscovery();
+
+  const request = new AuthSession.AuthRequest({
+    clientId,
     scopes: ["openid", "profile", "email"],
     redirectUri,
     responseType: AuthSession.ResponseType.Code,
     usePKCE: true,
-  };
+  });
 
-  const request = new AuthSession.AuthRequest(authRequestConfig);
-  await request.promptAsync(discovery, { useProxy: false });
+  const result = await request.promptAsync(discovery);
 
-  if (!request.code) {
-    throw new Error("Keycloak auth failed: no authorization code");
+  if (result.type !== "success" || !result.params.code) {
+    throw new Error(`Keycloak auth failed: ${result.type}`);
   }
 
   const tokenResponse = await AuthSession.exchangeCodeAsync(
     {
-      clientId: keycloak.clientId,
-      code: request.code,
+      clientId,
+      code: result.params.code,
       redirectUri,
       extraParams: {
-        code_verifier: request.codeVerifier || "",
+        code_verifier: request.codeVerifier ?? "",
       },
     },
     discovery
@@ -48,5 +53,17 @@ export async function signInWithKeycloak(): Promise<void> {
 }
 
 export async function signOut(): Promise<void> {
-  await clearAuthTokens();
+  try {
+    const { clientId } = getKeycloakConfig();
+    const { refreshToken } = await getAuthTokens();
+
+    if (refreshToken) {
+      const discovery = await getDiscovery();
+      await AuthSession.revokeAsync({ token: refreshToken, clientId }, discovery);
+    }
+  } catch {
+    // local clear still happens below so sign-out remains reliable
+  } finally {
+    await clearAuthTokens();
+  }
 }

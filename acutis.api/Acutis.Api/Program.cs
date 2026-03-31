@@ -1,3 +1,4 @@
+using Acutis.Api.Middleware;
 using Acutis.Api.Security;
 using Acutis.Api.Services.Configuration;
 using Acutis.Api.Services.Forms;
@@ -18,6 +19,7 @@ using Acutis.Infrastructure.Data;
 using Acutis.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
@@ -29,6 +31,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields = HttpLoggingFields.RequestMethod |
+                            HttpLoggingFields.RequestPath |
+                            HttpLoggingFields.RequestQuery |
+                            HttpLoggingFields.ResponseStatusCode |
+                            HttpLoggingFields.Duration;
+});
 
 builder.Services.AddDbContext<AcutisDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -167,6 +177,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseHttpLogging();
+app.UseMiddleware<FileRequestLoggingMiddleware>();
 app.UseHttpsRedirection();
 app.UseMiddleware<RequestCorrelationMiddleware>();
 app.UseCors("WebApp");

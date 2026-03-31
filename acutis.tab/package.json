@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
+    "start": "expo start",
+    "android": "powershell -ExecutionPolicy Bypass -File .\\start-dev.ps1",
+    "android:clear": "powershell -ExecutionPolicy Bypass -File .\\start-dev.ps1 -ClearCache",
+    "metro": "powershell -ExecutionPolicy Bypass -File .\\start-dev.ps1 -NoAndroid",
+    "metro:clear": "powershell -ExecutionPolicy Bypass -File .\\start-dev.ps1 -NoAndroid -ClearCache",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

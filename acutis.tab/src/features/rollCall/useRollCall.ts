@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { getRollCallForSession, upsertRollCallAttendance, RollCallRecord, AttendanceStatus } from "./repository";
+import {
+  AttendanceStatus,
+  getPendingRollCallSyncCount,
+  getRollCallForSession,
+  RollCallRecord,
+  upsertRollCallAttendance,
+} from "./repository";
 
 export function useRollCall(sessionId: string) {
   const [records, setRecords] = useState<RollCallRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -12,19 +20,26 @@ export function useRollCall(sessionId: string) {
     async function load() {
       try {
         setLoading(true);
-        const data = await getRollCallForSession(sessionId);
+        const [data, pending] = await Promise.all([
+          getRollCallForSession(sessionId),
+          getPendingRollCallSyncCount(sessionId),
+        ]);
+
         if (active) {
           setRecords(data);
+          setPendingSyncCount(pending);
           setError(null);
         }
       } catch (e) {
-        if (active) setError((e as Error).message);
+        if (active) {
+          setError((e as Error).message);
+        }
       } finally {
         if (active) setLoading(false);
       }
     }
 
-    load();
+    void load();
 
     return () => {
       active = false;
@@ -33,6 +48,7 @@ export function useRollCall(sessionId: string) {
 
   const markAttendance = async (residentId: string, status: AttendanceStatus) => {
     try {
+      setSaving(true);
       const updated = await upsertRollCallAttendance(sessionId, residentId, status);
       setRecords((prev: RollCallRecord[]) => {
         const existingIndex = prev.findIndex((item: RollCallRecord) => item.residentId === residentId);
@@ -43,10 +59,13 @@ export function useRollCall(sessionId: string) {
         }
         return [...prev, updated];
       });
+      setPendingSyncCount(await getPendingRollCallSyncCount(sessionId));
       return updated;
     } catch (e) {
       setError((e as Error).message);
       throw e;
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -60,5 +79,5 @@ export function useRollCall(sessionId: string) {
     );
   }, [records]);
 
-  return { records, loading, error, markAttendance, countStatus };
+  return { records, loading, saving, pendingSyncCount, error, markAttendance, countStatus };
 }
