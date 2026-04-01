@@ -128,6 +128,21 @@ public sealed class ScreeningController : ControllerBase
             cancellationToken);
 
         var draftAnswers = ParseAnswers(latestSubmission?.AnswersJson);
+        if (string.Equals(subjectType, "admission", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(subjectId))
+        {
+            var inheritedSubmission = await _submissionService.FindLatestForSubjectAsync(
+                subjectType,
+                subjectId,
+                form.Code,
+                cancellationToken);
+
+            if (inheritedSubmission is not null)
+            {
+                var inheritedAnswers = ParseAnswers(inheritedSubmission.AnswersJson);
+                draftAnswers = MergeAnswersForForm(form, inheritedAnswers, draftAnswers);
+            }
+        }
 
         return Ok(new GetActiveFormResponse
         {
@@ -300,6 +315,29 @@ public sealed class ScreeningController : ControllerBase
         }
 
         return JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(answersJson) ?? new Dictionary<string, JsonElement>();
+    }
+
+    private static Dictionary<string, JsonElement> MergeAnswersForForm(
+        FormDefinitionDto form,
+        Dictionary<string, JsonElement> inheritedAnswers,
+        Dictionary<string, JsonElement> currentAnswers)
+    {
+        var merged = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var fieldKey in form.Schema.Properties.Keys)
+        {
+            if (inheritedAnswers.TryGetValue(fieldKey, out var inheritedValue))
+            {
+                merged[fieldKey] = inheritedValue;
+            }
+        }
+
+        foreach (var (fieldKey, value) in currentAnswers)
+        {
+            merged[fieldKey] = value;
+        }
+
+        return merged;
     }
 
     private async Task<List<ValidationErrorDto>> ValidateOptionSetValuesAsync(

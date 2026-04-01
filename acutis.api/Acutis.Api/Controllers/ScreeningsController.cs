@@ -2,6 +2,7 @@ using Acutis.Application.Interfaces;
 using Acutis.Domain.Entities;
 using Acutis.Api.Services.TherapyScheduling;
 using Acutis.Infrastructure.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -580,7 +581,15 @@ public sealed class ScreeningsController : ControllerBase
         };
 
         _dbContext.ScreeningScheduleSlots.Add(slot);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsDuplicateScreeningScheduleSlot(exception))
+        {
+            _dbContext.Entry(slot).State = EntityState.Detached;
+            return Conflict(new { message = "That admission date already exists." });
+        }
 
         await _auditService.WriteAsync(
             unit.CentreId,
@@ -972,19 +981,32 @@ public sealed class ScreeningsController : ControllerBase
             };
 
             _dbContext.ScreeningScheduleSlots.Add(slot);
-            existingDates.Add(candidateDate);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            var slotCreated = false;
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                slotCreated = true;
+            }
+            catch (DbUpdateException exception) when (IsDuplicateScreeningScheduleSlot(exception))
+            {
+                _dbContext.Entry(slot).State = EntityState.Detached;
+            }
 
-            await _auditService.WriteAsync(
-                centreId,
-                unitId,
-                nameof(ScreeningScheduleSlot),
-                slot.Id.ToString(),
-                "AutoCreate",
-                null,
-                new { slot.Id, slot.UnitId, slot.ScheduledDate },
-                "System generated upcoming screening admission date.",
-                cancellationToken);
+            existingDates.Add(candidateDate);
+
+            if (slotCreated)
+            {
+                await _auditService.WriteAsync(
+                    centreId,
+                    unitId,
+                    nameof(ScreeningScheduleSlot),
+                    slot.Id.ToString(),
+                    "AutoCreate",
+                    null,
+                    new { slot.Id, slot.UnitId, slot.ScheduledDate },
+                    "System generated upcoming screening admission date.",
+                    cancellationToken);
+            }
 
             if (existingDates.Count >= 3)
             {
@@ -1020,11 +1042,6 @@ public sealed class ScreeningsController : ControllerBase
             return "Admission date cannot be in the past.";
         }
 
-        if (scheduledDate.DayOfWeek != DayOfWeek.Monday)
-        {
-            return "Admission date must be a Monday.";
-        }
-
         if (IsIrishBankHoliday(scheduledDate))
         {
             return "Admission date cannot fall on an Irish bank holiday.";
@@ -1036,6 +1053,12 @@ public sealed class ScreeningsController : ControllerBase
     private static bool IsIrishBankHoliday(DateOnly date)
     {
         return GetIrishBankHolidays(date.Year).Contains(date);
+    }
+
+    private static bool IsDuplicateScreeningScheduleSlot(DbUpdateException exception)
+    {
+        return exception.InnerException is SqlException sqlException &&
+               (sqlException.Number == 2601 || sqlException.Number == 2627);
     }
 
     private static HashSet<DateOnly> GetIrishBankHolidays(int year)
@@ -1253,6 +1276,17 @@ public sealed class ScreeningsController : ControllerBase
         if (string.Equals(queueType, "general_query", StringComparison.OrdinalIgnoreCase))
         {
             return null;
+        }
+
+        var detoxUnit = await _dbContext.Units
+            .AsNoTracking()
+            .Where(unit => unit.IsActive && unit.Code == "detox")
+            .OrderBy(unit => unit.DisplayOrder)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (detoxUnit is not null)
+        {
+            return detoxUnit;
         }
 
         return await _dbContext.Units

@@ -16,6 +16,10 @@ public sealed class AcutisDbContext : DbContext
 {
     private static readonly DateTime SeedCreatedAt = new(2026, 2, 2, 0, 0, 0, DateTimeKind.Utc);
     private static readonly Guid SystemActorUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+    private const string CreatedAtUtcPropertyName = "CreatedAtUtc";
+    private const string UpdatedAtUtcPropertyName = "UpdatedAtUtc";
+    private const string CreatedByUserIdPropertyName = "CreatedByUserId";
+    private const string UpdatedByUserIdPropertyName = "UpdatedByUserId";
     private static readonly JsonSerializerOptions AuditJsonOptions = new(JsonSerializerDefaults.Web)
     {
         ReferenceHandler = ReferenceHandler.IgnoreCycles
@@ -716,9 +720,11 @@ public sealed class AcutisDbContext : DbContext
     {
         if (_suppressAutomaticAudit || _httpContextAccessor is null)
         {
+            ApplyAuditMetadata();
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
 
+        ApplyAuditMetadata();
         var pendingAuditEntries = BuildPendingAuditEntries();
         var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 
@@ -764,6 +770,7 @@ public sealed class AcutisDbContext : DbContext
         try
         {
             _suppressAutomaticAudit = true;
+            ApplyAuditMetadata();
             await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
         finally
@@ -871,6 +878,120 @@ public sealed class AcutisDbContext : DbContext
         Guid? CentreId,
         Guid? UnitId,
         Dictionary<string, object?>? Before);
+
+    private void ApplyAuditMetadata()
+    {
+        ChangeTracker.DetectChanges();
+
+        var now = DateTime.UtcNow;
+        var actorUserId = ResolveActorUserId(_httpContextAccessor?.HttpContext?.User);
+
+        foreach (var entry in ChangeTracker.Entries()
+                     .Where(entry => entry.State is EntityState.Added or EntityState.Modified))
+        {
+            ApplyAuditMetadata(entry, now, actorUserId);
+        }
+    }
+
+    private static void ApplyAuditMetadata(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry,
+        DateTime now,
+        Guid actorUserId)
+    {
+        if (entry.State == EntityState.Added)
+        {
+            SetDateTimePropertyIfMissing(entry, CreatedAtUtcPropertyName, now);
+            SetGuidPropertyIfMissing(entry, CreatedByUserIdPropertyName, actorUserId);
+        }
+
+        SetDateTimeProperty(entry, UpdatedAtUtcPropertyName, now);
+        SetGuidProperty(entry, UpdatedByUserIdPropertyName, actorUserId);
+
+        PreventAuditMetadataOverwrite(entry, CreatedAtUtcPropertyName);
+        PreventAuditMetadataOverwrite(entry, CreatedByUserIdPropertyName);
+    }
+
+    private static void SetDateTimePropertyIfMissing(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry,
+        string propertyName,
+        DateTime value)
+    {
+        var property = entry.Properties.FirstOrDefault(item => item.Metadata.Name == propertyName);
+        if (property is null)
+        {
+            return;
+        }
+
+        if (property.CurrentValue is DateTime current && current != default)
+        {
+            return;
+        }
+
+        property.CurrentValue = value;
+    }
+
+    private static void SetGuidPropertyIfMissing(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry,
+        string propertyName,
+        Guid value)
+    {
+        var property = entry.Properties.FirstOrDefault(item => item.Metadata.Name == propertyName);
+        if (property is null)
+        {
+            return;
+        }
+
+        if (property.CurrentValue is Guid current && current != Guid.Empty)
+        {
+            return;
+        }
+
+        property.CurrentValue = value;
+    }
+
+    private static void SetDateTimeProperty(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry,
+        string propertyName,
+        DateTime value)
+    {
+        var property = entry.Properties.FirstOrDefault(item => item.Metadata.Name == propertyName);
+        if (property is null)
+        {
+            return;
+        }
+
+        property.CurrentValue = value;
+    }
+
+    private static void SetGuidProperty(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry,
+        string propertyName,
+        Guid value)
+    {
+        var property = entry.Properties.FirstOrDefault(item => item.Metadata.Name == propertyName);
+        if (property is null)
+        {
+            return;
+        }
+
+        property.CurrentValue = value;
+    }
+
+    private static void PreventAuditMetadataOverwrite(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry,
+        string propertyName)
+    {
+        if (entry.State != EntityState.Modified)
+        {
+            return;
+        }
+
+        var property = entry.Properties.FirstOrDefault(item => item.Metadata.Name == propertyName);
+        if (property is not null)
+        {
+            property.IsModified = false;
+        }
+    }
     public DbSet<Centre> Centres => Set<Centre>();
 
     private void IncrementLookupTypeVersions()
@@ -1132,6 +1253,7 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new UnitQuoteCurationConfiguration());
         modelBuilder.ApplyConfiguration(new VideoConfiguration());
         modelBuilder.ApplyConfiguration(new UnitVideoCurationConfiguration());
+        ConfigureAuditMetadataProperties(modelBuilder);
 
         SeedFormDefinition(modelBuilder);
         SeedOptionSets(modelBuilder);
@@ -1147,6 +1269,45 @@ public sealed class AcutisDbContext : DbContext
         SeedTherapyTopics(modelBuilder);
         SeedEpisodeEventTypes(modelBuilder);
         SeedIncidentTypes(modelBuilder);
+    }
+
+    private static void ConfigureAuditMetadataProperties(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (entityType.IsOwned() || entityType.ClrType is null)
+            {
+                continue;
+            }
+
+            var entity = modelBuilder.Entity(entityType.ClrType);
+
+            if (entityType.FindProperty(CreatedAtUtcPropertyName) is null)
+            {
+                entity.Property<DateTime>(CreatedAtUtcPropertyName)
+                    .HasColumnType("datetime2")
+                    .HasDefaultValueSql("SYSUTCDATETIME()");
+            }
+
+            if (entityType.FindProperty(UpdatedAtUtcPropertyName) is null)
+            {
+                entity.Property<DateTime>(UpdatedAtUtcPropertyName)
+                    .HasColumnType("datetime2")
+                    .HasDefaultValueSql("SYSUTCDATETIME()");
+            }
+
+            if (entityType.FindProperty(CreatedByUserIdPropertyName) is null)
+            {
+                entity.Property<Guid>(CreatedByUserIdPropertyName)
+                    .HasDefaultValue(SystemActorUserId);
+            }
+
+            if (entityType.FindProperty(UpdatedByUserIdPropertyName) is null)
+            {
+                entity.Property<Guid>(UpdatedByUserIdPropertyName)
+                    .HasDefaultValue(SystemActorUserId);
+            }
+        }
     }
 
     private static void SeedCentres(ModelBuilder modelBuilder)

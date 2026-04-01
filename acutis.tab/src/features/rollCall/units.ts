@@ -1,4 +1,4 @@
-export type RollCallUnitId = "alcohol" | "detox" | "drugs" | "ladies";
+export type RollCallUnitId = "alcohol" | "detox";
 
 export type RollCallUnitDefinition = {
   id: RollCallUnitId;
@@ -11,8 +11,8 @@ export type RollCallUnitDefinition = {
 export const ROLL_CALL_UNITS: RollCallUnitDefinition[] = [
   {
     id: "alcohol",
-    name: "Alcohol",
-    description: "General residential unit roll call",
+    name: "Alcohol & Gambling",
+    description: "Alcohol and gambling residential roll call",
     accentColor: "#2563EB",
     surfaceColor: "#EFF6FF",
   },
@@ -22,20 +22,6 @@ export const ROLL_CALL_UNITS: RollCallUnitDefinition[] = [
     description: "Detox admissions and room check roll call",
     accentColor: "#DC2626",
     surfaceColor: "#FEF2F2",
-  },
-  {
-    id: "drugs",
-    name: "Drugs",
-    description: "Drug recovery unit attendance sweep",
-    accentColor: "#EA580C",
-    surfaceColor: "#FFF7ED",
-  },
-  {
-    id: "ladies",
-    name: "Ladies",
-    description: "Ladies unit morning and evening roll call",
-    accentColor: "#DB2777",
-    surfaceColor: "#FDF2F8",
   },
 ];
 

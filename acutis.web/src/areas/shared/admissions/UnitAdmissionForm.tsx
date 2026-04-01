@@ -38,6 +38,24 @@ const iconByUnit: Record<UnitDefinition["iconKey"], React.ComponentType<{ classN
 
 const PHOTO_ANSWER_KEY = "residentPhotoDataUrl";
 
+const isSameLocalDate = (scheduledDate: string, targetDate: Date): boolean => {
+  const normalizedDate = scheduledDate.slice(0, 10);
+  const [yearText, monthText, dayText] = normalizedDate.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return false;
+  }
+
+  return (
+    year === targetDate.getFullYear() &&
+    month === targetDate.getMonth() + 1 &&
+    day === targetDate.getDate()
+  );
+};
+
 const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   unitId,
   unitName,
@@ -56,6 +74,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   const [todaysAdmissions, setTodaysAdmissions] = useState<ScreeningSchedulingAssignment[]>([]);
   const [loadingTodaysAdmissions, setLoadingTodaysAdmissions] = useState(false);
   const [todaysAdmissionsError, setTodaysAdmissionsError] = useState<string | null>(null);
+  const [selectedAdmissionCaseId, setSelectedAdmissionCaseId] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const textRef = useRef<(key: string, fallback: string, values?: Record<string, string | number>) => string>(
@@ -100,6 +119,8 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       "admission.due_today.phone",
       "admission.due_today.queue",
       "admission.due_today.status",
+      "admission.due_today.prefill",
+      "admission.due_today.click_to_prefill",
     ]);
   }, [loadKeys]);
 
@@ -142,7 +163,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
           accessToken,
           locale,
           "admission",
-          null,
+          selectedAdmissionCaseId,
           admissionFormCode
         );
 
@@ -168,71 +189,60 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     return () => {
       active = false;
     };
-  }, [admissionFormCode, locale, mergeTranslations, session?.accessToken, status]);
+  }, [admissionFormCode, locale, mergeTranslations, selectedAdmissionCaseId, session?.accessToken, status]);
 
-  useEffect(() => {
-    let active = true;
-
-    const loadTodaysAdmissions = async () => {
+  const loadTodaysAdmissions = useCallback(async () => {
+    try {
       if (unitId !== "detox") {
-        if (active) {
-          setTodaysAdmissions([]);
-          setTodaysAdmissionsError(null);
-          setLoadingTodaysAdmissions(false);
-        }
+        setTodaysAdmissions([]);
+        setTodaysAdmissionsError(null);
+        setLoadingTodaysAdmissions(false);
         return;
       }
 
       if (!isAuthorizedClient(status, session?.accessToken)) {
-        if (active) {
-          setTodaysAdmissions([]);
-          setTodaysAdmissionsError(null);
-          setLoadingTodaysAdmissions(false);
-        }
+        setTodaysAdmissions([]);
+        setTodaysAdmissionsError(null);
+        setLoadingTodaysAdmissions(false);
         return;
       }
 
-      try {
-        setLoadingTodaysAdmissions(true);
-        const board = await screeningSchedulingService.getBoard(unitId, session?.accessToken);
-        if (!active) {
-          return;
-        }
+      setLoadingTodaysAdmissions(true);
+      const board = await screeningSchedulingService.getBoard(unitId, session?.accessToken);
+      const now = new Date();
+      const todaysAssignments = board.slots
+        .filter((slot) => isSameLocalDate(slot.scheduledDate, now))
+        .flatMap((slot) => slot.assignments);
 
-        const now = new Date();
-        const todayLocal = [
-          now.getFullYear(),
-          String(now.getMonth() + 1).padStart(2, "0"),
-          String(now.getDate()).padStart(2, "0"),
-        ].join("-");
-
-        const todaysSlot = board.slots.find((slot) => slot.scheduledDate.startsWith(todayLocal));
-        setTodaysAdmissions(todaysSlot?.assignments ?? []);
-        setTodaysAdmissionsError(null);
-      } catch (nextError) {
-        if (!active) {
-          return;
-        }
-
-        setTodaysAdmissions([]);
-        setTodaysAdmissionsError(
-          nextError instanceof Error
-            ? nextError.message
-            : textRef.current("admission.unable_to_load", "Unable to load admission form.")
-        );
-      } finally {
-        if (active) {
-          setLoadingTodaysAdmissions(false);
-        }
-      }
-    };
-
-    void loadTodaysAdmissions();
-
-    return () => {
-      active = false;
-    };
+      setTodaysAdmissions(todaysAssignments);
+      setTodaysAdmissionsError(null);
+    } catch (nextError) {
+      setTodaysAdmissions([]);
+      setTodaysAdmissionsError(
+        nextError instanceof Error
+          ? nextError.message
+          : textRef.current("admission.unable_to_load", "Unable to load admission form.")
+      );
+    } finally {
+      setLoadingTodaysAdmissions(false);
+    }
   }, [session?.accessToken, status, unitId]);
+
+  useEffect(() => {
+    void loadTodaysAdmissions();
+  }, [loadTodaysAdmissions]);
+
+  useEffect(() => {
+    if (todaysAdmissions.length === 0) {
+      setSelectedAdmissionCaseId(null);
+      return;
+    }
+
+    const selectedStillPresent = todaysAdmissions.some((assignment) => assignment.caseId === selectedAdmissionCaseId);
+    if (!selectedStillPresent) {
+      setSelectedAdmissionCaseId(todaysAdmissions[0]?.caseId ?? null);
+    }
+  }, [selectedAdmissionCaseId, todaysAdmissions]);
 
   useEffect(() => {
     const savedPhoto = formData?.draftAnswers?.[PHOTO_ANSWER_KEY];
@@ -379,7 +389,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       formVersion: formData.form.version,
       locale,
       subjectType: "admission",
-      subjectId: null,
+      subjectId: selectedAdmissionCaseId,
       submissionId: payload.submissionId,
       answers,
     });
@@ -398,7 +408,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       formVersion: formData.form.version,
       locale,
       subjectType: "admission",
-      subjectId: null,
+      subjectId: selectedAdmissionCaseId,
       submissionId: payload.submissionId,
       answers,
     });
@@ -442,6 +452,11 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
             <p className="mt-1 text-sm text-slate-600">
               {text("admission.due_today.description", "Screened people scheduled for admission on today's date.")}
             </p>
+            {selectedAdmissionCaseId ? (
+              <p className="mt-2 text-xs font-medium text-blue-700">
+                {text("admission.due_today.prefill", "Admission fields are being prefilled from the selected screening case.")}
+              </p>
+            ) : null}
           </div>
 
           {loadingTodaysAdmissions ? (
@@ -463,7 +478,16 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {todaysAdmissions.map((assignment) => (
-                    <tr key={assignment.scheduledIntakeId} className="bg-white">
+                    <tr
+                      key={assignment.scheduledIntakeId}
+                      className={
+                        assignment.caseId === selectedAdmissionCaseId
+                          ? "cursor-pointer bg-blue-50 ring-1 ring-inset ring-blue-200"
+                          : "cursor-pointer bg-white hover:bg-slate-50"
+                      }
+                      onClick={() => setSelectedAdmissionCaseId(assignment.caseId)}
+                      title={text("admission.due_today.click_to_prefill", "Select this resident to prefill the admission form.")}
+                    >
                       <td className="px-4 py-3 text-slate-900">{[assignment.name, assignment.surname].filter(Boolean).join(" ")}</td>
                       <td className="px-4 py-3 text-slate-700">{assignment.phoneNumber || "-"}</td>
                       <td className="px-4 py-3 text-slate-700">{assignment.queueType || "-"}</td>

@@ -735,7 +735,7 @@ export default function DynamicFormRenderer({
             <InjectionBodyMap
               value={parseJsonStringObject(value)}
               disabled={disabled}
-              width="100%"
+              width={420}
               showCoordinates={false}
               title={label}
               clearButtonLabel={text("admission.body_map.clear", "Clear marks", undefined, "مسح العلامات")}
@@ -743,7 +743,7 @@ export default function DynamicFormRenderer({
               storedCoordinatesLabel={text("admission.body_map.stored_coordinates", "Stored coordinates", undefined, "الإحداثيات المحفوظة")}
               markLabelPrefix={text("admission.body_map.mark", "Mark", undefined, "علامة")}
               className="rounded-xl bg-white p-3"
-              onChange={(nextValue) => {
+              onChange={(nextValue: Record<string, JsonValue>) => {
                 handleChange(fieldKey, JSON.stringify(nextValue));
                 void handleBlur(fieldKey);
               }}

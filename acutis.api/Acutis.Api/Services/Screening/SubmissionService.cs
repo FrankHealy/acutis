@@ -16,6 +16,12 @@ public interface ISubmissionService
         string? subjectId,
         CancellationToken cancellationToken = default);
 
+    Task<FormSubmission?> FindLatestForSubjectAsync(
+        string subjectType,
+        string? subjectId,
+        string? excludeFormCode = null,
+        CancellationToken cancellationToken = default);
+
     Task<FormSubmission> UpsertProgressAsync(
         SaveProgressRequest request,
         CancellationToken cancellationToken = default);
@@ -56,6 +62,23 @@ public sealed class SubmissionService : ISubmissionService
                 submission.SubjectId == subjectId)
             .OrderByDescending(submission => submission.UpdatedAt)
             .ThenByDescending(submission => submission.CompletedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<FormSubmission?> FindLatestForSubjectAsync(
+        string subjectType,
+        string? subjectId,
+        string? excludeFormCode = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.FormSubmissions
+            .AsNoTracking()
+            .Where(submission =>
+                submission.SubjectType == subjectType &&
+                submission.SubjectId == subjectId &&
+                (string.IsNullOrWhiteSpace(excludeFormCode) || submission.FormCode != excludeFormCode))
+            .OrderByDescending(submission => submission.CompletedAt ?? submission.UpdatedAt)
+            .ThenByDescending(submission => submission.UpdatedAt)
             .FirstOrDefaultAsync(cancellationToken);
     }
 

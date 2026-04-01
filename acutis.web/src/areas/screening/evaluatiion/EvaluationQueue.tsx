@@ -35,7 +35,7 @@ interface EvaluationCandidate {
   numCalls: number;
   lastCallDate: string;
   hasEvaluationStarted: boolean;
-  status: "awaiting" | "in_progress" | "entity_missing";
+  status: "awaiting" | "in_progress" | "entity_missing" | "scheduled";
   evaluationData?: Record<string, unknown>;
   canOpenEvaluation: boolean;
 }
@@ -116,12 +116,14 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
       "evaluation.table.source",
       "evaluation.table.last_call_date",
       "evaluation.table.num_calls",
+      "evaluation.table.status",
       "evaluation.table.action",
       "evaluation.action.awaiting",
       "evaluation.action.open",
       "evaluation.status.awaiting",
       "evaluation.status.in_progress",
       "evaluation.status.entity_missing",
+      "evaluation.status.scheduled",
       "evaluation.modal.subtitle",
       "evaluation.loading.queue",
       "evaluation.empty.queue",
@@ -347,6 +349,19 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
     return text("evaluation.action.open", "Open Evaluation", "فتح التقييم");
   };
 
+  const getStatusLabel = (status: EvaluationCandidate["status"]) => {
+    switch (status) {
+      case "scheduled":
+        return text("evaluation.status.scheduled", "Scheduled", "مجدول");
+      case "in_progress":
+        return text("evaluation.status.in_progress", "In Progress", "قيد التنفيذ");
+      case "entity_missing":
+        return text("evaluation.status.entity_missing", "Entity Missing", "الكيان مفقود");
+      default:
+        return text("evaluation.status.awaiting", "Awaiting", "بانتظار");
+    }
+  };
+
   const getSourceLabel = (intakeSource: string) => {
     switch (intakeSource) {
       case "face_to_face":
@@ -485,6 +500,9 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                   {t("evaluation.table.num_calls")}
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {text("evaluation.table.status", "Status", "الحالة")}
+                </th>
                 <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
                   {t("evaluation.table.action")}
                 </th>
@@ -525,6 +543,7 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
                   <td className="px-6 py-4 text-sm text-gray-700">{getSourceLabel(candidate.intakeSource)}</td>
                   <td className="px-6 py-4 text-sm text-gray-700">{formatDate(candidate.lastCallDate)}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-700">{candidate.numCalls}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{getStatusLabel(candidate.status)}</td>
                   <td className="px-6 py-4 text-right">
                     <button
                       type="button"
