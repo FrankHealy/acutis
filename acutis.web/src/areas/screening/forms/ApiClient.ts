@@ -1,4 +1,5 @@
 import { createAuthHeaders } from "@/lib/authMode";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
@@ -139,8 +140,6 @@ export type UpsertFormDefinitionRequest = {
   makeActive: boolean;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
-
 const formatApiErrorMessage = (status: number, bodyText: string): string => {
   if (!bodyText) {
     return `Request failed (${status}).`;
@@ -188,7 +187,7 @@ const request = async <TResponse>(
   accessToken?: string,
   init?: RequestInit
 ): Promise<TResponse> => {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",

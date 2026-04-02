@@ -1,5 +1,6 @@
 using Acutis.Application.Interfaces;
 using Acutis.Domain.Entities;
+using Acutis.Domain.Lookups;
 using Acutis.Api.Services.TherapyScheduling;
 using Acutis.Infrastructure.Data;
 using Microsoft.Data.SqlClient;
@@ -147,13 +148,17 @@ public sealed class ScreeningsController : ControllerBase
             .Where(residentCase =>
                 residentCase.ResidentId != null &&
                 residentCase.ClosedAtUtc == null &&
+                residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission &&
+                residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.Declined &&
                 residentCase.CaseStatus != "closed_without_admission" &&
                 residentCase.CaseStatus != "declined")
             .Select(residentCase => new
             {
                 residentCase.Id,
                 residentCase.ResidentId,
+                residentCase.CaseStatusLookupValueId,
                 residentCase.CaseStatus,
+                residentCase.AdmissionDecisionStatusLookupValueId,
                 residentCase.AdmissionDecisionStatus,
                 residentCase.IntakeSource,
                 residentCase.ReferralReceivedAtUtc,
@@ -196,7 +201,9 @@ public sealed class ScreeningsController : ControllerBase
                 var subjectId = residentCase.Id.ToString();
                 var hasSubmission = screeningSubmissionStats.TryGetValue(subjectId, out var submissionStats);
                 var status = ResolveScreeningStatus(
+                    residentCase.CaseStatusLookupValueId,
                     residentCase.CaseStatus,
+                    residentCase.AdmissionDecisionStatusLookupValueId,
                     residentCase.AdmissionDecisionStatus,
                     residentCase.ScreeningStartedAtUtc,
                     residentCase.ScreeningCompletedAtUtc,
@@ -279,7 +286,9 @@ public sealed class ScreeningsController : ControllerBase
                 residentCase.ResidentId,
                 residentCase.ScreeningStartedAtUtc,
                 residentCase.ScreeningCompletedAtUtc,
+                residentCase.CaseStatusLookupValueId,
                 residentCase.CaseStatus,
+                residentCase.AdmissionDecisionStatusLookupValueId,
                 residentCase.AdmissionDecisionStatus
             })
             .ToListAsync(cancellationToken);
@@ -301,7 +310,8 @@ public sealed class ScreeningsController : ControllerBase
                 .AsNoTracking()
                 .Where(scheduledIntake =>
                     linkedCaseIds.Contains(scheduledIntake.ResidentCaseId) &&
-                    scheduledIntake.Status == "scheduled")
+                    (scheduledIntake.StatusLookupValueId == ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled ||
+                     scheduledIntake.Status == "scheduled"))
                 .Select(scheduledIntake => scheduledIntake.ResidentCaseId)
                 .ToListAsync(cancellationToken);
             scheduledCaseIds = scheduledCaseIdList.ToHashSet();
@@ -311,6 +321,7 @@ public sealed class ScreeningsController : ControllerBase
         {
             var linkedCase = linkedCaseLookup.GetValueOrDefault(call.Id);
             var (firstName, surname) = SplitCallerName(call.Caller);
+            var isScheduled = linkedCase is not null && scheduledCaseIds.Contains(linkedCase.Id);
 
             return new EvaluationQueueItemDto(
                 CallId: call.Id,
@@ -324,17 +335,34 @@ public sealed class ScreeningsController : ControllerBase
                 LastCallDate: call.CallTimeUtc,
                 HasEvaluationStarted: linkedCase is not null &&
                     (linkedCase.ScreeningStartedAtUtc.HasValue ||
-                     string.Equals(linkedCase.CaseStatus, "screening_in_progress", StringComparison.OrdinalIgnoreCase) ||
-                     string.Equals(linkedCase.CaseStatus, "screening_completed", StringComparison.OrdinalIgnoreCase)),
+                     ScreeningLifecycleLookups.MatchesCaseStatus(
+                         linkedCase.CaseStatusLookupValueId,
+                         linkedCase.CaseStatus,
+                         ScreeningLifecycleLookups.CaseStatuses.ScreeningInProgress,
+                         ScreeningLifecycleLookups.CaseStatuses.ScreeningCompleted)),
                 Status: ResolveEvaluationQueueStatus(
                     linkedCase?.ResidentId,
                     linkedCase?.ScreeningStartedAtUtc,
                     linkedCase?.ScreeningCompletedAtUtc,
+                    linkedCase?.CaseStatusLookupValueId,
                     linkedCase?.CaseStatus,
+                    linkedCase?.AdmissionDecisionStatusLookupValueId,
                     linkedCase?.AdmissionDecisionStatus,
-                    linkedCase is not null && scheduledCaseIds.Contains(linkedCase.Id))
+                    isScheduled)
             );
-        }).ToList();
+        })
+        .Where(item =>
+        {
+            var linkedCase = linkedCaseLookup.GetValueOrDefault(item.CallId);
+            var isScheduled = linkedCase is not null && scheduledCaseIds.Contains(linkedCase.Id);
+            return !ShouldExcludeFromEvaluationQueue(
+                linkedCase?.CaseStatusLookupValueId,
+                linkedCase?.CaseStatus,
+                linkedCase?.AdmissionDecisionStatusLookupValueId,
+                linkedCase?.AdmissionDecisionStatus,
+                isScheduled);
+        })
+        .ToList();
 
         return Ok(queue);
     }
@@ -377,16 +405,24 @@ public sealed class ScreeningsController : ControllerBase
                 existingCase.ScreeningStartedAtUtc = DateTime.UtcNow;
             }
 
-            if (string.Equals(existingCase.CaseStatus, "referred", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(existingCase.CaseStatus, "referral_received", StringComparison.OrdinalIgnoreCase))
+            if (ScreeningLifecycleLookups.MatchesCaseStatus(
+                existingCase.CaseStatusLookupValueId,
+                existingCase.CaseStatus,
+                ScreeningLifecycleLookups.CaseStatuses.Referred,
+                ScreeningLifecycleLookups.CaseStatuses.ReferralReceived))
             {
                 existingCase.CaseStatus = "screening_in_progress";
+                existingCase.CaseStatusLookupValueId = ScreeningLifecycleLookups.CaseStatuses.ScreeningInProgress;
             }
 
-            if (string.Equals(existingCase.CasePhase, "intake", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(existingCase.CasePhase, "referral", StringComparison.OrdinalIgnoreCase))
+            if (ScreeningLifecycleLookups.MatchesCasePhase(
+                existingCase.CasePhaseLookupValueId,
+                existingCase.CasePhase,
+                ScreeningLifecycleLookups.CasePhases.Intake,
+                ScreeningLifecycleLookups.CasePhases.Referral))
             {
                 existingCase.CasePhase = "screening";
+                existingCase.CasePhaseLookupValueId = ScreeningLifecycleLookups.CasePhases.Screening;
             }
 
             existingCase.LastContactAtUtc = DateTime.UtcNow;
@@ -415,6 +451,8 @@ public sealed class ScreeningsController : ControllerBase
             ResidentId = null,
             CentreId = centreId,
             UnitId = unit?.Id,
+            CaseStatusLookupValueId = ScreeningLifecycleLookups.CaseStatuses.ScreeningInProgress,
+            CasePhaseLookupValueId = ScreeningLifecycleLookups.CasePhases.Screening,
             CaseStatus = "screening_in_progress",
             CasePhase = "screening",
             IntakeSource = "screening_call",
@@ -465,7 +503,8 @@ public sealed class ScreeningsController : ControllerBase
                 .AsNoTracking()
                 .Where(scheduledIntake =>
                     scheduledIntake.UnitId == unit.Id &&
-                    scheduledIntake.Status == "scheduled" &&
+                    (scheduledIntake.StatusLookupValueId == ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled ||
+                     scheduledIntake.Status == "scheduled") &&
                     slotDateSet.Contains(scheduledIntake.ScheduledDate))
                 .Include(scheduledIntake => scheduledIntake.ResidentCase)
                 .ThenInclude(residentCase => residentCase.Resident)
@@ -489,6 +528,10 @@ public sealed class ScreeningsController : ControllerBase
                 residentCase.ResidentId == null &&
                 residentCase.ClosedAtUtc == null &&
                 residentCase.ScreeningCompletedAtUtc != null &&
+                residentCase.AdmissionDecisionStatusLookupValueId != ScreeningLifecycleLookups.AdmissionDecisionStatuses.Rejected &&
+                residentCase.AdmissionDecisionStatusLookupValueId != ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted &&
+                residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.Declined &&
+                residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission &&
                 residentCase.AdmissionDecisionStatus != "rejected" &&
                 residentCase.AdmissionDecisionStatus != "admitted" &&
                 residentCase.CaseStatus != "declined" &&
@@ -631,7 +674,11 @@ public sealed class ScreeningsController : ControllerBase
         }
 
         var assignments = await _dbContext.ScheduledIntakes
-            .Where(item => item.UnitId == slot.UnitId && item.Status == "scheduled" && item.ScheduledDate == slot.ScheduledDate)
+            .Where(item =>
+                item.UnitId == slot.UnitId &&
+                item.ScheduledDate == slot.ScheduledDate &&
+                (item.StatusLookupValueId == ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled ||
+                 item.Status == "scheduled"))
             .ToListAsync(cancellationToken);
 
         if (assignments.Count > 0 && !request.Force)
@@ -705,7 +752,11 @@ public sealed class ScreeningsController : ControllerBase
         }
 
         var assignments = await _dbContext.ScheduledIntakes
-            .Where(item => item.UnitId == slot.UnitId && item.Status == "scheduled" && item.ScheduledDate == slot.ScheduledDate)
+            .Where(item =>
+                item.UnitId == slot.UnitId &&
+                item.ScheduledDate == slot.ScheduledDate &&
+                (item.StatusLookupValueId == ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled ||
+                 item.Status == "scheduled"))
             .ToListAsync(cancellationToken);
 
         if (assignments.Count > 0 && !force)
@@ -718,6 +769,7 @@ public sealed class ScreeningsController : ControllerBase
         {
             var assignmentBefore = new { assignment.Id, assignment.ScheduledDate, assignment.Status };
             assignment.Status = "cancelled";
+            assignment.StatusLookupValueId = ScreeningLifecycleLookups.ScheduledIntakeStatuses.Cancelled;
             assignment.UpdatedAtUtc = DateTime.UtcNow;
             await _auditService.WriteAsync(
                 slot.CentreId,
@@ -770,8 +822,11 @@ public sealed class ScreeningsController : ControllerBase
             residentCase.CentreId != slot.CentreId ||
             residentCase.ResidentId != null ||
             residentCase.ScreeningCompletedAtUtc is null ||
-            string.Equals(residentCase.AdmissionDecisionStatus, "rejected", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(residentCase.AdmissionDecisionStatus, "admitted", StringComparison.OrdinalIgnoreCase))
+            ScreeningLifecycleLookups.MatchesAdmissionDecisionStatus(
+                residentCase.AdmissionDecisionStatusLookupValueId,
+                residentCase.AdmissionDecisionStatus,
+                ScreeningLifecycleLookups.AdmissionDecisionStatuses.Rejected,
+                ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted))
         {
             return BadRequest(new { message = "Resident case is not eligible for screening scheduling." });
         }
@@ -791,6 +846,7 @@ public sealed class ScreeningsController : ControllerBase
             {
                 Id = Guid.NewGuid(),
                 ResidentCaseId = request.CaseId,
+                StatusLookupValueId = ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled,
                 CreatedAtUtc = DateTime.UtcNow
             };
             _dbContext.ScheduledIntakes.Add(existing);
@@ -798,6 +854,7 @@ public sealed class ScreeningsController : ControllerBase
 
         existing.UnitId = slot.UnitId;
         existing.ScheduledDate = slot.ScheduledDate;
+        existing.StatusLookupValueId = ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled;
         existing.Status = "scheduled";
         existing.Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
         existing.UpdatedAtUtc = DateTime.UtcNow;
@@ -852,6 +909,7 @@ public sealed class ScreeningsController : ControllerBase
         };
 
         scheduledIntake.Status = "cancelled";
+        scheduledIntake.StatusLookupValueId = ScreeningLifecycleLookups.ScheduledIntakeStatuses.Cancelled;
         scheduledIntake.UpdatedAtUtc = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -879,26 +937,43 @@ public sealed class ScreeningsController : ControllerBase
     }
 
     private static string ResolveScreeningStatus(
+        Guid caseStatusLookupValueId,
         string caseStatus,
+        Guid? admissionDecisionStatusLookupValueId,
         string? admissionDecisionStatus,
         DateTime? screeningStartedAtUtc,
         DateTime? screeningCompletedAtUtc,
         bool hasSubmission)
     {
-        if (screeningCompletedAtUtc.HasValue || string.Equals(caseStatus, "screening_completed", StringComparison.OrdinalIgnoreCase))
+        if (screeningCompletedAtUtc.HasValue ||
+            ScreeningLifecycleLookups.MatchesCaseStatus(
+                caseStatusLookupValueId,
+                caseStatus,
+                ScreeningLifecycleLookups.CaseStatuses.ScreeningCompleted))
         {
             return "completed";
         }
 
-        if (screeningStartedAtUtc.HasValue || hasSubmission || string.Equals(caseStatus, "screening_in_progress", StringComparison.OrdinalIgnoreCase))
+        if (screeningStartedAtUtc.HasValue ||
+            hasSubmission ||
+            ScreeningLifecycleLookups.MatchesCaseStatus(
+                caseStatusLookupValueId,
+                caseStatus,
+                ScreeningLifecycleLookups.CaseStatuses.ScreeningInProgress))
         {
             return "in-progress";
         }
 
-        if (string.Equals(caseStatus, "waitlisted", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(caseStatus, "deferred", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(admissionDecisionStatus, "waitlisted", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(admissionDecisionStatus, "deferred", StringComparison.OrdinalIgnoreCase))
+        if (ScreeningLifecycleLookups.MatchesCaseStatus(
+                caseStatusLookupValueId,
+                caseStatus,
+                ScreeningLifecycleLookups.CaseStatuses.Waitlisted,
+                ScreeningLifecycleLookups.CaseStatuses.Deferred) ||
+            ScreeningLifecycleLookups.MatchesAdmissionDecisionStatus(
+                admissionDecisionStatusLookupValueId,
+                admissionDecisionStatus,
+                ScreeningLifecycleLookups.AdmissionDecisionStatuses.Waitlisted,
+                ScreeningLifecycleLookups.AdmissionDecisionStatuses.Deferred))
         {
             return "scheduled";
         }
@@ -910,16 +985,24 @@ public sealed class ScreeningsController : ControllerBase
         Guid? residentId,
         DateTime? screeningStartedAtUtc,
         DateTime? screeningCompletedAtUtc,
+        Guid? caseStatusLookupValueId,
         string? caseStatus,
+        Guid? admissionDecisionStatusLookupValueId,
         string? admissionDecisionStatus,
         bool hasScheduledIntake)
     {
         var isCompleted =
             screeningCompletedAtUtc.HasValue ||
-            string.Equals(caseStatus, "screening_completed", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(admissionDecisionStatus, "rejected", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(admissionDecisionStatus, "approved", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(admissionDecisionStatus, "admitted", StringComparison.OrdinalIgnoreCase);
+            ScreeningLifecycleLookups.MatchesCaseStatus(
+                caseStatusLookupValueId,
+                caseStatus,
+                ScreeningLifecycleLookups.CaseStatuses.ScreeningCompleted) ||
+            ScreeningLifecycleLookups.MatchesAdmissionDecisionStatus(
+                admissionDecisionStatusLookupValueId,
+                admissionDecisionStatus,
+                ScreeningLifecycleLookups.AdmissionDecisionStatuses.Rejected,
+                ScreeningLifecycleLookups.AdmissionDecisionStatuses.Approved,
+                ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted);
 
         if (isCompleted && hasScheduledIntake)
         {
@@ -931,12 +1014,41 @@ public sealed class ScreeningsController : ControllerBase
             return "entity_missing";
         }
 
-        if (screeningStartedAtUtc.HasValue || string.Equals(caseStatus, "screening_in_progress", StringComparison.OrdinalIgnoreCase))
+        if (screeningStartedAtUtc.HasValue ||
+            ScreeningLifecycleLookups.MatchesCaseStatus(
+                caseStatusLookupValueId,
+                caseStatus,
+                ScreeningLifecycleLookups.CaseStatuses.ScreeningInProgress))
         {
             return "in_progress";
         }
 
         return "awaiting";
+    }
+
+    private static bool ShouldExcludeFromEvaluationQueue(
+        Guid? caseStatusLookupValueId,
+        string? caseStatus,
+        Guid? admissionDecisionStatusLookupValueId,
+        string? admissionDecisionStatus,
+        bool hasScheduledIntake)
+    {
+        if (hasScheduledIntake)
+        {
+            return true;
+        }
+
+        return ScreeningLifecycleLookups.MatchesAdmissionDecisionStatus(
+                   admissionDecisionStatusLookupValueId,
+                   admissionDecisionStatus,
+                   ScreeningLifecycleLookups.AdmissionDecisionStatuses.Approved,
+                   ScreeningLifecycleLookups.AdmissionDecisionStatuses.Rejected,
+                   ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted) ||
+               ScreeningLifecycleLookups.MatchesCaseStatus(
+                   caseStatusLookupValueId,
+                   caseStatus,
+                   ScreeningLifecycleLookups.CaseStatuses.Admitted,
+                   ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission);
     }
 
     private async Task<Unit?> ResolveSchedulingUnitAsync(string unitCode, CancellationToken cancellationToken)

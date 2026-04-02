@@ -6,6 +6,8 @@ public sealed class ResidentCase
     public Guid? ResidentId { get; set; }
     public Guid CentreId { get; set; }
     public Guid? UnitId { get; set; }
+    public Guid CaseStatusLookupValueId { get; set; }
+    public Guid CasePhaseLookupValueId { get; set; }
     public string CaseStatus { get; set; } = "referred";
     public string CasePhase { get; set; } = "intake";
     public string? IntakeSource { get; set; }
@@ -16,6 +18,7 @@ public sealed class ResidentCase
     public DateTime? ScreeningStartedAtUtc { get; set; }
     public DateTime? ScreeningCompletedAtUtc { get; set; }
     public DateTime? AdmissionDecisionAtUtc { get; set; }
+    public Guid? AdmissionDecisionStatusLookupValueId { get; set; }
     public string? AdmissionDecisionStatus { get; set; }
     public string? AdmissionDecisionReason { get; set; }
     public int? IntakePriority { get; set; }

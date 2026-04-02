@@ -120,6 +120,7 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
       "evaluation.table.action",
       "evaluation.action.awaiting",
       "evaluation.action.open",
+      "evaluation.action.continue",
       "evaluation.status.awaiting",
       "evaluation.status.in_progress",
       "evaluation.status.entity_missing",
@@ -186,6 +187,7 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
       const queue = await fetchEvaluationQueue(session?.accessToken);
       const mapped = queue
         .map(mapQueueItem)
+        .filter((item) => item.status !== "scheduled")
         .filter((item) => unitId === "alcohol" || item.queueType === unitId || item.queueType === "general_query");
       setCandidates(mapped);
       setErrorMessage(null);
@@ -346,7 +348,7 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
     if (!candidate.canOpenEvaluation) {
       return text("evaluation.action.awaiting", "Awaiting", "بانتظار");
     }
-    return text("evaluation.action.open", "Open Evaluation", "فتح التقييم");
+    return text("evaluation.action.continue", "Continue", "متابعة");
   };
 
   const getStatusLabel = (status: EvaluationCandidate["status"]) => {

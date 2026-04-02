@@ -90,6 +90,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     }
   );
   const Icon = iconByUnit[unitIconKey];
+  const requiresAdmissionCaseSelection = unitId === "detox";
 
   useEffect(() => {
     void loadKeys([
@@ -152,6 +153,15 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         return;
       }
 
+      if (requiresAdmissionCaseSelection && !selectedAdmissionCaseId) {
+        if (active) {
+          setFormData(null);
+          setError(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         setLoading(true);
         const accessToken = session?.accessToken;
@@ -189,7 +199,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     return () => {
       active = false;
     };
-  }, [admissionFormCode, locale, mergeTranslations, selectedAdmissionCaseId, session?.accessToken, status]);
+  }, [admissionFormCode, locale, mergeTranslations, selectedAdmissionCaseId, session?.accessToken, status, unitId]);
 
   const loadTodaysAdmissions = useCallback(async () => {
     try {
@@ -369,6 +379,62 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   }
 
   if (!formData) {
+    if (requiresAdmissionCaseSelection && !selectedAdmissionCaseId) {
+      return (
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-slate-100 p-2">
+                  <Icon className="h-5 w-5 text-slate-700" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">{text("admission.page.header", "{unitName} Admission", { unitName })}</h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {text("admission.generated_form", "Unit-scoped generated form: {formCode} v{version}", {
+                      formCode: admissionFormCode,
+                      version: "current",
+                    })}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCurrentStep("dashboard")}
+                className="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                <UserRoundCheck className="h-4 w-4" />
+                {text("admission.back_to_dashboard", "Back to Dashboard")}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-3">
+              <h3 className="text-base font-semibold text-slate-900">
+                {text("admission.due_today.title", "Due For Admission Today")}
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                {text("admission.due_today.description", "Screened people scheduled for admission on today's date.")}
+              </p>
+            </div>
+
+            {loadingTodaysAdmissions ? (
+              <p className="text-sm text-slate-600">{text("admission.due_today.loading", "Loading today's admissions...")}</p>
+            ) : todaysAdmissionsError ? (
+              <p className="text-sm text-amber-700">{todaysAdmissionsError}</p>
+            ) : todaysAdmissions.length === 0 ? (
+              <p className="text-sm text-slate-600">{text("admission.due_today.none", "Nobody is due for admission today.")}</p>
+            ) : (
+              <p className="text-sm text-slate-600">
+                {text("admission.due_today.click_to_prefill", "Select this resident to prefill the admission form.")}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
         {text("admission.no_active_form", "No active admission form available.")}
@@ -380,6 +446,10 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     submissionId: string | null;
     answers: Record<string, JsonValue>;
   }): Promise<SaveProgressResponse> => {
+    if (requiresAdmissionCaseSelection && !selectedAdmissionCaseId) {
+      throw new Error(text("admission.due_today.click_to_prefill", "Select this resident to prefill the admission form."));
+    }
+
     const answers = photoDataUrl
       ? { ...payload.answers, [PHOTO_ANSWER_KEY]: photoDataUrl }
       : payload.answers;
@@ -399,6 +469,10 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     submissionId: string | null;
     answers: Record<string, JsonValue>;
   }): Promise<SaveResponse> => {
+    if (requiresAdmissionCaseSelection && !selectedAdmissionCaseId) {
+      throw new Error(text("admission.due_today.click_to_prefill", "Select this resident to prefill the admission form."));
+    }
+
     const answers = photoDataUrl
       ? { ...payload.answers, [PHOTO_ANSWER_KEY]: photoDataUrl }
       : payload.answers;
@@ -557,13 +631,14 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       </div>
 
       <DynamicFormRenderer
+        key={`${formData.form.code}:${formData.form.version}:${selectedAdmissionCaseId ?? "none"}:${formData.submissionId ?? "new"}`}
         form={formData.form}
         optionSets={formData.optionSets}
         locale={locale}
         initialSubmissionId={formData.submissionId}
         initialAnswers={mergedInitialAnswers}
         subjectType="admission"
-        subjectId={null}
+        subjectId={selectedAdmissionCaseId}
         renderMode="wizard"
         onSaveProgress={onSaveProgress}
         onSave={onSave}

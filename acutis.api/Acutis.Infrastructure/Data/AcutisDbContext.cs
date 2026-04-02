@@ -1260,6 +1260,7 @@ public sealed class AcutisDbContext : DbContext
         SeedTranslations(modelBuilder);
         SeedCentres(modelBuilder);
         SeedUnits(modelBuilder);
+        SeedScreeningLifecycleLookups(modelBuilder);
         SeedResidents(modelBuilder);
         SeedAuthorizationModel(modelBuilder);
         SeedScreeningControls(modelBuilder);
@@ -1400,6 +1401,108 @@ public sealed class AcutisDbContext : DbContext
                 UpdatedAtUtc = SeedCreatedAt
             });
     }
+
+    private static void SeedScreeningLifecycleLookups(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<LookupType>().HasData(
+            new LookupType
+            {
+                LookupTypeId = ScreeningLifecycleLookups.LookupTypes.CaseStatus,
+                Key = "screening_case_status",
+                DefaultLocale = "en-IE",
+                IsActive = true,
+                Version = 1
+            },
+            new LookupType
+            {
+                LookupTypeId = ScreeningLifecycleLookups.LookupTypes.CasePhase,
+                Key = "screening_case_phase",
+                DefaultLocale = "en-IE",
+                IsActive = true,
+                Version = 1
+            },
+            new LookupType
+            {
+                LookupTypeId = ScreeningLifecycleLookups.LookupTypes.AdmissionDecisionStatus,
+                Key = "screening_admission_decision_status",
+                DefaultLocale = "en-IE",
+                IsActive = true,
+                Version = 1
+            },
+            new LookupType
+            {
+                LookupTypeId = ScreeningLifecycleLookups.LookupTypes.ScheduledIntakeStatus,
+                Key = "screening_scheduled_intake_status",
+                DefaultLocale = "en-IE",
+                IsActive = true,
+                Version = 1
+            });
+
+        modelBuilder.Entity<LookupValue>().HasData(
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.Referred, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "referred", 10),
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.ReferralReceived, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "referral_received", 20),
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.ScreeningInProgress, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "screening_in_progress", 30),
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.ScreeningCompleted, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "screening_completed", 40),
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.Waitlisted, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "waitlisted", 50),
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.Deferred, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "deferred", 60),
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.Admitted, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "admitted", 70),
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.Declined, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "declined", 80),
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "closed_without_admission", 90),
+            CreateLookupValue(ScreeningLifecycleLookups.CasePhases.Intake, ScreeningLifecycleLookups.LookupTypes.CasePhase, "intake", 10),
+            CreateLookupValue(ScreeningLifecycleLookups.CasePhases.Referral, ScreeningLifecycleLookups.LookupTypes.CasePhase, "referral", 20),
+            CreateLookupValue(ScreeningLifecycleLookups.CasePhases.Screening, ScreeningLifecycleLookups.LookupTypes.CasePhase, "screening", 30),
+            CreateLookupValue(ScreeningLifecycleLookups.CasePhases.AdmissionDecision, ScreeningLifecycleLookups.LookupTypes.CasePhase, "admission_decision", 40),
+            CreateLookupValue(ScreeningLifecycleLookups.CasePhases.Admission, ScreeningLifecycleLookups.LookupTypes.CasePhase, "admission", 50),
+            CreateLookupValue(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Approved, ScreeningLifecycleLookups.LookupTypes.AdmissionDecisionStatus, "approved", 10),
+            CreateLookupValue(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Rejected, ScreeningLifecycleLookups.LookupTypes.AdmissionDecisionStatus, "rejected", 20),
+            CreateLookupValue(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Waitlisted, ScreeningLifecycleLookups.LookupTypes.AdmissionDecisionStatus, "waitlisted", 30),
+            CreateLookupValue(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Deferred, ScreeningLifecycleLookups.LookupTypes.AdmissionDecisionStatus, "deferred", 40),
+            CreateLookupValue(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted, ScreeningLifecycleLookups.LookupTypes.AdmissionDecisionStatus, "admitted", 50),
+            CreateLookupValue(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled, ScreeningLifecycleLookups.LookupTypes.ScheduledIntakeStatus, "scheduled", 10),
+            CreateLookupValue(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Cancelled, ScreeningLifecycleLookups.LookupTypes.ScheduledIntakeStatus, "cancelled", 20));
+
+        modelBuilder.Entity<LookupValueLabel>().HasData(
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Referred, "en-IE", "Referred"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.ReferralReceived, "en-IE", "Referral Received"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.ScreeningInProgress, "en-IE", "Screening In Progress"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.ScreeningCompleted, "en-IE", "Screening Completed"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Waitlisted, "en-IE", "Waitlisted"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Deferred, "en-IE", "Deferred"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Admitted, "en-IE", "Admitted"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Declined, "en-IE", "Declined"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission, "en-IE", "Closed Without Admission"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CasePhases.Intake, "en-IE", "Intake"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CasePhases.Referral, "en-IE", "Referral"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CasePhases.Screening, "en-IE", "Screening"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CasePhases.AdmissionDecision, "en-IE", "Admission Decision"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CasePhases.Admission, "en-IE", "Admission"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Approved, "en-IE", "Approved"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Rejected, "en-IE", "Rejected"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Waitlisted, "en-IE", "Waitlisted"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Deferred, "en-IE", "Deferred"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted, "en-IE", "Admitted"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled, "en-IE", "Scheduled"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Cancelled, "en-IE", "Cancelled"));
+    }
+
+    private static LookupValue CreateLookupValue(Guid lookupValueId, Guid lookupTypeId, string code, int sortOrder) =>
+        new()
+        {
+            LookupValueId = lookupValueId,
+            LookupTypeId = lookupTypeId,
+            UnitId = null,
+            Code = code,
+            SortOrder = sortOrder,
+            IsActive = true
+        };
+
+    private static LookupValueLabel CreateLookupValueLabel(Guid lookupValueId, string locale, string label) =>
+        new()
+        {
+            LookupValueId = lookupValueId,
+            Locale = locale,
+            Label = label
+        };
 
     private static void SeedAuthorizationModel(ModelBuilder modelBuilder)
     {
@@ -1695,6 +1798,8 @@ public sealed class AcutisDbContext : DbContext
                 ResidentId = resident.Id,
                 CentreId = BrureeCentreId,
                 UnitId = AlcoholUnitId,
+                CaseStatusLookupValueId = ScreeningLifecycleLookups.CaseStatuses.Admitted,
+                CasePhaseLookupValueId = ScreeningLifecycleLookups.CasePhases.Admission,
                 CaseStatus = "admitted",
                 CasePhase = "admission",
                 IntakeSource = "screening_call",
@@ -1704,6 +1809,7 @@ public sealed class AcutisDbContext : DbContext
                 ScreeningStartedAtUtc = screeningStartedAtUtc,
                 ScreeningCompletedAtUtc = screeningCompletedAtUtc,
                 AdmissionDecisionAtUtc = admissionDecisionAtUtc,
+                AdmissionDecisionStatusLookupValueId = ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted,
                 AdmissionDecisionStatus = "admitted",
                 AdmissionDecisionReason = "Suitable for residential alcohol programme admission.",
                 ClosedWithoutAdmissionAtUtc = null,

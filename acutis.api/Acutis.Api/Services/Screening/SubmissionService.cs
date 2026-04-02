@@ -2,6 +2,7 @@ using System.Text.Json;
 using Acutis.Api.Contracts;
 using Acutis.Api.Services.TherapyScheduling;
 using Acutis.Domain.Entities;
+using Acutis.Domain.Lookups;
 using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -330,21 +331,38 @@ public sealed class SubmissionService : ISubmissionService
         }
 
         if (string.Equals(residentCase.CasePhase, "intake", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(residentCase.CasePhase, "referral", StringComparison.OrdinalIgnoreCase))
+            string.Equals(residentCase.CasePhase, "referral", StringComparison.OrdinalIgnoreCase) ||
+            ScreeningLifecycleLookups.MatchesCasePhase(
+                residentCase.CasePhaseLookupValueId,
+                residentCase.CasePhase,
+                ScreeningLifecycleLookups.CasePhases.Intake,
+                ScreeningLifecycleLookups.CasePhases.Referral))
         {
-            residentCase.CasePhase = markCompleted ? "admission_decision" : "screening";
+            var nextPhaseCode = markCompleted ? "admission_decision" : "screening";
+            residentCase.CasePhase = nextPhaseCode;
+            residentCase.CasePhaseLookupValueId = ScreeningLifecycleLookups.ResolveCasePhaseLookupValueId(nextPhaseCode);
         }
-        else if (markCompleted && string.Equals(residentCase.CasePhase, "screening", StringComparison.OrdinalIgnoreCase))
+        else if (markCompleted && (
+            string.Equals(residentCase.CasePhase, "screening", StringComparison.OrdinalIgnoreCase) ||
+            ScreeningLifecycleLookups.MatchesCasePhase(
+                residentCase.CasePhaseLookupValueId,
+                residentCase.CasePhase,
+                ScreeningLifecycleLookups.CasePhases.Screening)))
         {
             residentCase.CasePhase = "admission_decision";
+            residentCase.CasePhaseLookupValueId = ScreeningLifecycleLookups.CasePhases.AdmissionDecision;
         }
 
         if (!markCompleted)
         {
-            if (string.Equals(residentCase.CaseStatus, "referred", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(residentCase.CaseStatus, "referral_received", StringComparison.OrdinalIgnoreCase))
+            if (ScreeningLifecycleLookups.MatchesCaseStatus(
+                residentCase.CaseStatusLookupValueId,
+                residentCase.CaseStatus,
+                ScreeningLifecycleLookups.CaseStatuses.Referred,
+                ScreeningLifecycleLookups.CaseStatuses.ReferralReceived))
             {
                 residentCase.CaseStatus = "screening_in_progress";
+                residentCase.CaseStatusLookupValueId = ScreeningLifecycleLookups.CaseStatuses.ScreeningInProgress;
             }
 
             return;
@@ -355,6 +373,7 @@ public sealed class SubmissionService : ISubmissionService
         if (!string.IsNullOrWhiteSpace(admissionDecisionStatus))
         {
             residentCase.AdmissionDecisionStatus = admissionDecisionStatus.Trim();
+            residentCase.AdmissionDecisionStatusLookupValueId = ScreeningLifecycleLookups.ResolveAdmissionDecisionStatusLookupValueId(admissionDecisionStatus);
             residentCase.AdmissionDecisionReason = string.IsNullOrWhiteSpace(admissionDecisionReason)
                 ? null
                 : admissionDecisionReason.Trim();
@@ -363,14 +382,23 @@ public sealed class SubmissionService : ISubmissionService
             if (string.Equals(admissionDecisionStatus, "rejected", StringComparison.OrdinalIgnoreCase))
             {
                 residentCase.CasePhase = "admission_decision";
+                residentCase.CasePhaseLookupValueId = ScreeningLifecycleLookups.CasePhases.AdmissionDecision;
             }
         }
+        else
+        {
+            residentCase.AdmissionDecisionStatusLookupValueId = null;
+        }
 
-        if (string.Equals(residentCase.CaseStatus, "referred", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(residentCase.CaseStatus, "referral_received", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(residentCase.CaseStatus, "screening_in_progress", StringComparison.OrdinalIgnoreCase))
+        if (ScreeningLifecycleLookups.MatchesCaseStatus(
+            residentCase.CaseStatusLookupValueId,
+            residentCase.CaseStatus,
+            ScreeningLifecycleLookups.CaseStatuses.Referred,
+            ScreeningLifecycleLookups.CaseStatuses.ReferralReceived,
+            ScreeningLifecycleLookups.CaseStatuses.ScreeningInProgress))
         {
             residentCase.CaseStatus = "screening_completed";
+            residentCase.CaseStatusLookupValueId = ScreeningLifecycleLookups.CaseStatuses.ScreeningCompleted;
         }
     }
 

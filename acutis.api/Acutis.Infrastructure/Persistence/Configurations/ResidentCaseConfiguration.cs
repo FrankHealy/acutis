@@ -1,4 +1,5 @@
 using Acutis.Domain.Entities;
+using Acutis.Domain.Lookups;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,6 +12,8 @@ public sealed class ResidentCaseConfiguration : IEntityTypeConfiguration<Residen
         builder.ToTable("ResidentCase");
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.CaseStatusLookupValueId).IsRequired();
+        builder.Property(x => x.CasePhaseLookupValueId).IsRequired();
         builder.Property(x => x.CaseStatus).HasMaxLength(40).IsRequired();
         builder.Property(x => x.CasePhase).HasMaxLength(40).IsRequired();
         builder.Property(x => x.IntakeSource).HasMaxLength(40);
@@ -21,6 +24,7 @@ public sealed class ResidentCaseConfiguration : IEntityTypeConfiguration<Residen
         builder.Property(x => x.ScreeningStartedAtUtc).HasColumnType("datetime2");
         builder.Property(x => x.ScreeningCompletedAtUtc).HasColumnType("datetime2");
         builder.Property(x => x.AdmissionDecisionAtUtc).HasColumnType("datetime2");
+        builder.Property(x => x.AdmissionDecisionStatusLookupValueId);
         builder.Property(x => x.AdmissionDecisionStatus).HasMaxLength(40);
         builder.Property(x => x.AdmissionDecisionReason).HasMaxLength(1000);
         builder.Property(x => x.IntakePriority);
@@ -30,9 +34,12 @@ public sealed class ResidentCaseConfiguration : IEntityTypeConfiguration<Residen
         builder.Property(x => x.ClosedAtUtc).HasColumnType("datetime2");
         builder.Property(x => x.SummaryNotes).HasMaxLength(4000);
 
+        builder.HasIndex(x => new { x.CentreId, x.CaseStatusLookupValueId, x.OpenedAtUtc });
         builder.HasIndex(x => new { x.CentreId, x.CaseStatus, x.OpenedAtUtc });
         builder.HasIndex(x => new { x.ResidentId, x.OpenedAtUtc });
+        builder.HasIndex(x => new { x.CentreId, x.AdmissionDecisionStatusLookupValueId, x.AdmissionDecisionAtUtc });
         builder.HasIndex(x => new { x.CentreId, x.AdmissionDecisionStatus, x.AdmissionDecisionAtUtc });
+        builder.HasIndex(x => new { x.CentreId, x.CasePhaseLookupValueId, x.OpenedAtUtc });
         builder.HasIndex(x => new { x.CentreId, x.ScreeningCompletedAtUtc });
         builder.HasIndex(x => x.UnitId);
         builder.HasIndex(x => x.ReferralCallId);
@@ -50,6 +57,21 @@ public sealed class ResidentCaseConfiguration : IEntityTypeConfiguration<Residen
         builder.HasOne(x => x.Unit)
             .WithMany()
             .HasForeignKey(x => x.UnitId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<LookupValue>()
+            .WithMany()
+            .HasForeignKey(x => x.CaseStatusLookupValueId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<LookupValue>()
+            .WithMany()
+            .HasForeignKey(x => x.CasePhaseLookupValueId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<LookupValue>()
+            .WithMany()
+            .HasForeignKey(x => x.AdmissionDecisionStatusLookupValueId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
