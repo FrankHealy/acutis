@@ -103,6 +103,15 @@ public sealed class ScreeningsController : ControllerBase
         string Status
     );
 
+    public sealed record CancelScreeningAwaitingCaseResponseDto(
+        Guid CaseId,
+        string Status
+    );
+
+    public sealed record CancelScreeningAwaitingCaseRequest(
+        string Reason
+    );
+
     private readonly ICallService _callService;
     private readonly AcutisDbContext _dbContext;
     private readonly IAuditService _auditService;
@@ -150,8 +159,10 @@ public sealed class ScreeningsController : ControllerBase
                 residentCase.ClosedAtUtc == null &&
                 residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission &&
                 residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.Declined &&
+                residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.Cancelled &&
                 residentCase.CaseStatus != "closed_without_admission" &&
-                residentCase.CaseStatus != "declined")
+                residentCase.CaseStatus != "declined" &&
+                residentCase.CaseStatus != "cancelled")
             .Select(residentCase => new
             {
                 residentCase.Id,
@@ -491,7 +502,6 @@ public sealed class ScreeningsController : ControllerBase
             .AsNoTracking()
             .Where(slot => slot.UnitId == unit.Id && slot.CentreId == unit.CentreId && slot.ScheduledDate >= today)
             .OrderBy(slot => slot.ScheduledDate)
-            .Take(3)
             .ToListAsync(cancellationToken);
 
         var slotDateLookup = slots.ToDictionary(slot => slot.Id, slot => slot.ScheduledDate);
@@ -532,10 +542,12 @@ public sealed class ScreeningsController : ControllerBase
                 residentCase.AdmissionDecisionStatusLookupValueId != ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted &&
                 residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.Declined &&
                 residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission &&
+                residentCase.CaseStatusLookupValueId != ScreeningLifecycleLookups.CaseStatuses.Cancelled &&
                 residentCase.AdmissionDecisionStatus != "rejected" &&
                 residentCase.AdmissionDecisionStatus != "admitted" &&
                 residentCase.CaseStatus != "declined" &&
-                residentCase.CaseStatus != "closed_without_admission")
+                residentCase.CaseStatus != "closed_without_admission" &&
+                residentCase.CaseStatus != "cancelled")
             .ToListAsync(cancellationToken);
 
         foreach (var residentCase in eligibleCases)
@@ -554,7 +566,15 @@ public sealed class ScreeningsController : ControllerBase
                 .Where(call => distinctCallIds.Contains(call.Id))
                 .ToDictionaryAsync(call => call.Id, cancellationToken);
 
-        var activeScheduledCaseIds = scheduledIntakes.Select(item => item.ResidentCaseId).ToHashSet();
+        var activeScheduledCaseIdList = await _dbContext.ScheduledIntakes
+            .AsNoTracking()
+            .Where(scheduledIntake =>
+                scheduledIntake.UnitId == unit.Id &&
+                (scheduledIntake.StatusLookupValueId == ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled ||
+                 scheduledIntake.Status == "scheduled"))
+            .Select(scheduledIntake => scheduledIntake.ResidentCaseId)
+            .ToListAsync(cancellationToken);
+        var activeScheduledCaseIds = activeScheduledCaseIdList.ToHashSet();
         var awaiting = eligibleCases
             .Where(residentCase => !activeScheduledCaseIds.Contains(residentCase.Id))
             .OrderByDescending(residentCase => residentCase.ScreeningCompletedAtUtc ?? residentCase.LastContactAtUtc ?? residentCase.OpenedAtUtc)
@@ -936,6 +956,79 @@ public sealed class ScreeningsController : ControllerBase
             scheduledIntake.Status));
     }
 
+    [HttpPost("scheduling-cases/{caseId:guid}/cancel")]
+    [Authorize]
+    public async Task<ActionResult<CancelScreeningAwaitingCaseResponseDto>> CancelAwaitingSchedulingCase(
+        Guid caseId,
+        [FromBody] CancelScreeningAwaitingCaseRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var reason = request.Reason?.Trim();
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return BadRequest(new { message = "Cancellation reason is required." });
+        }
+
+        var residentCase = await _dbContext.ResidentCases
+            .SingleOrDefaultAsync(item => item.Id == caseId, cancellationToken);
+
+        if (residentCase is null)
+        {
+            return NotFound();
+        }
+
+        var hasActiveScheduledIntake = await _dbContext.ScheduledIntakes
+            .AsNoTracking()
+            .AnyAsync(item =>
+                item.ResidentCaseId == caseId &&
+                (item.StatusLookupValueId == ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled ||
+                 item.Status == "scheduled"),
+                cancellationToken);
+
+        if (hasActiveScheduledIntake)
+        {
+            return Conflict(new { message = "Scheduled cases must be unscheduled before they can be cancelled." });
+        }
+
+        var before = new
+        {
+            residentCase.Id,
+            residentCase.CaseStatus,
+            residentCase.CaseStatusLookupValueId,
+            residentCase.ClosedAtUtc,
+            residentCase.SummaryNotes
+        };
+
+        residentCase.CaseStatus = "cancelled";
+        residentCase.CaseStatusLookupValueId = ScreeningLifecycleLookups.CaseStatuses.Cancelled;
+        residentCase.ClosedAtUtc = DateTime.UtcNow;
+        residentCase.SummaryNotes = reason;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _auditService.WriteAsync(
+            residentCase.CentreId,
+            residentCase.UnitId,
+            nameof(ResidentCase),
+            residentCase.Id.ToString(),
+            "Cancel",
+            before,
+            new
+            {
+                residentCase.Id,
+                residentCase.CaseStatus,
+                residentCase.CaseStatusLookupValueId,
+                residentCase.ClosedAtUtc,
+                residentCase.SummaryNotes
+            },
+            $"Awaiting screening scheduling case cancelled. Reason: {reason}",
+            cancellationToken);
+
+        return Ok(new CancelScreeningAwaitingCaseResponseDto(
+            residentCase.Id,
+            residentCase.CaseStatus));
+    }
+
     private static string ResolveScreeningStatus(
         Guid caseStatusLookupValueId,
         string caseStatus,
@@ -1048,7 +1141,8 @@ public sealed class ScreeningsController : ControllerBase
                    caseStatusLookupValueId,
                    caseStatus,
                    ScreeningLifecycleLookups.CaseStatuses.Admitted,
-                   ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission);
+                   ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission,
+                   ScreeningLifecycleLookups.CaseStatuses.Cancelled);
     }
 
     private async Task<Unit?> ResolveSchedulingUnitAsync(string unitCode, CancellationToken cancellationToken)

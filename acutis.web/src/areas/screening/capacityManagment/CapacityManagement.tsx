@@ -38,6 +38,17 @@ type ConfirmationState =
       assignmentCount: number;
     };
 
+type CancelAwaitingConfirmationState =
+  | {
+      open: false;
+    }
+  | {
+      open: true;
+      caseId: string;
+      caseName: string;
+      reason: string;
+    };
+
 type DraggedCard =
   | {
       caseId: string;
@@ -103,6 +114,7 @@ const CapacityManagement: React.FC<CapacityManagementProps> = ({ unitId = "alcoh
   const [savingSlot, setSavingSlot] = React.useState(false);
   const [toast, setToast] = React.useState<ToastState>(emptyToast);
   const [confirmation, setConfirmation] = React.useState<ConfirmationState>({ open: false });
+  const [cancelAwaitingConfirmation, setCancelAwaitingConfirmation] = React.useState<CancelAwaitingConfirmationState>({ open: false });
   const [draggedCard, setDraggedCard] = React.useState<DraggedCard>(null);
   const [dragTarget, setDragTarget] = React.useState<string | null>(null);
 
@@ -132,11 +144,16 @@ const CapacityManagement: React.FC<CapacityManagementProps> = ({ unitId = "alcoh
       "screening.scheduling.confirm.edit.body",
       "screening.scheduling.confirm.delete.title",
       "screening.scheduling.confirm.delete.body",
+      "screening.scheduling.confirm.cancel_case.title",
+      "screening.scheduling.confirm.cancel_case.body",
+      "screening.scheduling.confirm.cancel_case.reason",
+      "screening.scheduling.confirm.cancel_case.reason_placeholder",
       "screening.scheduling.confirm.confirm",
       "screening.scheduling.success.date_added",
       "screening.scheduling.success.date_updated",
       "screening.scheduling.success.date_deleted",
       "screening.scheduling.success.assigned",
+      "screening.scheduling.success.cancelled",
       "screening.scheduling.loading",
       "screening.scheduling.retry",
       "toast.action.close",
@@ -349,6 +366,38 @@ const CapacityManagement: React.FC<CapacityManagementProps> = ({ unitId = "alcoh
     [assignmentSelections, loadBoard, session?.accessToken, showToast, status, text],
   );
 
+  const handleCancelAwaiting = React.useCallback(
+    async (caseId: string, reason: string) => {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
+        return;
+      }
+
+      setAssigningCaseId(caseId);
+      try {
+        await screeningSchedulingService.cancelAwaitingCase(caseId, reason, session?.accessToken);
+        showToast(
+          text("screening.scheduling.success.cancelled", "Awaiting case cancelled.", "ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ù†ØªØ¸Ø±Ø©."),
+          "success",
+        );
+        await loadBoard();
+      } catch (error) {
+        showToast(getApiMessage(error, "Unable to cancel awaiting case."), "error");
+      } finally {
+        setAssigningCaseId(null);
+      }
+    },
+    [loadBoard, session?.accessToken, showToast, status, text],
+  );
+
+  const promptCancelAwaiting = React.useCallback((caseId: string, caseName: string) => {
+    setCancelAwaitingConfirmation({
+      open: true,
+      caseId,
+      caseName,
+      reason: "",
+    });
+  }, []);
+
   const handleAssignToSlot = React.useCallback(
     async (slotId: string, caseId: string) => {
       if (!isAuthorizedClient(status, session?.accessToken)) {
@@ -530,7 +579,7 @@ const CapacityManagement: React.FC<CapacityManagementProps> = ({ unitId = "alcoh
               <p className="text-sm text-[var(--app-text-muted)]">
                 {text(
                   "screening.scheduling.subtitle",
-                  "Move accepted alcohol assessments from awaiting scheduling into the next admission dates.",
+                  "Move accepted assessments from awaiting scheduling into saved admission dates.",
                   "انقل التقييمات المقبولة للكحول من قائمة انتظار الجدولة إلى تواريخ القبول التالية.",
                 )}
               </p>
@@ -652,6 +701,14 @@ const CapacityManagement: React.FC<CapacityManagementProps> = ({ unitId = "alcoh
                             <UserPlus2 className="h-4 w-4" />
                             {text("screening.scheduling.awaiting.assign", "Add to Date", "أضف إلى التاريخ")}
                           </button>
+                          <button
+                            type="button"
+                            disabled={assigningCaseId === item.caseId}
+                            onClick={() => promptCancelAwaiting(item.caseId, [item.name, item.surname].join(" ").trim())}
+                            className="inline-flex w-full items-center justify-center rounded-xl border border-[color:color-mix(in_srgb,var(--app-danger)_35%,var(--app-border))] bg-[var(--app-surface)] px-4 py-2 text-sm font-semibold text-[var(--app-danger)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {text("screening.scheduling.cancel", "Cancel", "Ø¥Ù„ØºØ§Ø¡")}
+                          </button>
                         </div>
                       ),
                     }),
@@ -693,7 +750,7 @@ const CapacityManagement: React.FC<CapacityManagementProps> = ({ unitId = "alcoh
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
                   {text(
                     "screening.scheduling.dates.subtitle",
-                    "The board always works from the next 3 Monday admission dates and skips Irish bank holidays.",
+                    "Add and manage future admission dates. Past dates and Irish bank holidays are not allowed.",
                     "تعمل اللوحة دائماً من تواريخ القبول لثلاثة أسابيع مقبلة يوم الاثنين وتتجنب العطل المصرفية الأيرلندية.",
                   )}
                 </p>
@@ -876,6 +933,63 @@ const CapacityManagement: React.FC<CapacityManagementProps> = ({ unitId = "alcoh
                 type="button"
                 onClick={() => void handleConfirmation()}
                 className="rounded-xl bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white"
+              >
+                {text("screening.scheduling.confirm.confirm", "Confirm", "تأكيد")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {cancelAwaitingConfirmation.open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-2xl">
+            <h4 className="text-lg font-semibold text-[var(--app-text)]">
+              {text("screening.scheduling.confirm.cancel_case.title", "Confirm Cancellation", "تأكيد الإلغاء")}
+            </h4>
+            <p className="mt-3 text-sm text-[var(--app-text-muted)]">
+              {text(
+                "screening.scheduling.confirm.cancel_case.body",
+                `Cancel ${cancelAwaitingConfirmation.caseName} and remove them from all screening queues?`,
+                `إلغاء ${cancelAwaitingConfirmation.caseName} وإزالته من جميع قوائم الفرز؟`,
+              )}
+            </p>
+            <label className="mt-4 block text-sm font-semibold text-[var(--app-text)]">
+              {text("screening.scheduling.confirm.cancel_case.reason", "Reason for cancellation", "سبب الإلغاء")}
+            </label>
+            <textarea
+              rows={4}
+              value={cancelAwaitingConfirmation.reason}
+              onChange={(event) =>
+                setCancelAwaitingConfirmation((current) =>
+                  current.open ? { ...current, reason: event.target.value } : current,
+                )
+              }
+              className="mt-2 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm text-[var(--app-text)]"
+              placeholder={text(
+                "screening.scheduling.confirm.cancel_case.reason_placeholder",
+                "Enter the reason for cancellation",
+                "أدخل سبب الإلغاء",
+              )}
+            />
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCancelAwaitingConfirmation({ open: false })}
+                className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-2 text-sm font-semibold text-[var(--app-text)]"
+              >
+                {text("screening.scheduling.cancel", "Cancel", "إلغاء")}
+              </button>
+              <button
+                type="button"
+                disabled={!cancelAwaitingConfirmation.reason.trim()}
+                onClick={() => {
+                  const { caseId, reason } = cancelAwaitingConfirmation;
+                  setCancelAwaitingConfirmation({ open: false });
+                  void handleCancelAwaiting(caseId, reason.trim());
+                }}
+                className="rounded-xl bg-[var(--app-danger)] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {text("screening.scheduling.confirm.confirm", "Confirm", "تأكيد")}
               </button>

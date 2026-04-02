@@ -8,6 +8,7 @@ public static class ScreeningLifecycleLookups
         public static readonly Guid CasePhase = Guid.Parse("94e91511-c0c9-4514-b332-f253f17d71fb");
         public static readonly Guid AdmissionDecisionStatus = Guid.Parse("48ba830e-fb52-435c-8235-62c9265324a8");
         public static readonly Guid ScheduledIntakeStatus = Guid.Parse("4e2a6d0e-dd7e-45dd-9a59-6f81609c80fa");
+        public static readonly Guid FormSubmissionStatus = Guid.Parse("ba44c209-bb7e-4c25-a722-49af6fc40b61");
     }
 
     public static class CaseStatuses
@@ -21,6 +22,7 @@ public static class ScreeningLifecycleLookups
         public static readonly Guid Admitted = Guid.Parse("db73f893-2f2e-4d08-9567-bfce123f76b3");
         public static readonly Guid Declined = Guid.Parse("3295573d-bf71-468f-bbda-21210ae9d939");
         public static readonly Guid ClosedWithoutAdmission = Guid.Parse("3124cff7-ca2e-4f65-8859-41004144ed96");
+        public static readonly Guid Cancelled = Guid.Parse("ec2d1b83-2ea2-4418-a0bd-f7ba92525553");
     }
 
     public static class CasePhases
@@ -47,6 +49,12 @@ public static class ScreeningLifecycleLookups
         public static readonly Guid Cancelled = Guid.Parse("11c771a2-d9a1-4c6a-b5ec-b341248b7d90");
     }
 
+    public static class FormSubmissionStatuses
+    {
+        public static readonly Guid InProgress = Guid.Parse("b62c1e73-9a3c-4975-b9f2-2d51b88ccbb0");
+        public static readonly Guid Submitted = Guid.Parse("e682df6a-1797-4ce1-95f1-a95a3745859c");
+    }
+
     private static readonly IReadOnlyDictionary<string, Guid> CaseStatusCodeMap = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase)
     {
         ["referred"] = CaseStatuses.Referred,
@@ -57,7 +65,8 @@ public static class ScreeningLifecycleLookups
         ["deferred"] = CaseStatuses.Deferred,
         ["admitted"] = CaseStatuses.Admitted,
         ["declined"] = CaseStatuses.Declined,
-        ["closed_without_admission"] = CaseStatuses.ClosedWithoutAdmission
+        ["closed_without_admission"] = CaseStatuses.ClosedWithoutAdmission,
+        ["cancelled"] = CaseStatuses.Cancelled
     };
 
     private static readonly IReadOnlyDictionary<string, Guid> CasePhaseCodeMap = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase)
@@ -84,6 +93,12 @@ public static class ScreeningLifecycleLookups
         ["cancelled"] = ScheduledIntakeStatuses.Cancelled
     };
 
+    private static readonly IReadOnlyDictionary<string, Guid> FormSubmissionStatusCodeMap = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["in_progress"] = FormSubmissionStatuses.InProgress,
+        ["submitted"] = FormSubmissionStatuses.Submitted
+    };
+
     public static Guid ResolveCaseStatusLookupValueId(string code) => CaseStatusCodeMap[NormalizeCode(code)];
 
     public static Guid ResolveCasePhaseLookupValueId(string code) => CasePhaseCodeMap[NormalizeCode(code)];
@@ -100,6 +115,8 @@ public static class ScreeningLifecycleLookups
 
     public static Guid ResolveScheduledIntakeStatusLookupValueId(string code) => ScheduledIntakeStatusCodeMap[NormalizeCode(code)];
 
+    public static Guid ResolveFormSubmissionStatusLookupValueId(string code) => FormSubmissionStatusCodeMap[NormalizeCode(code)];
+
     public static bool MatchesCaseStatus(Guid? lookupValueId, string? legacyCode, params Guid[] expectedIds) =>
         Matches(lookupValueId, legacyCode, expectedIds, CaseStatusCodeMap);
 
@@ -111,6 +128,9 @@ public static class ScreeningLifecycleLookups
 
     public static bool MatchesScheduledIntakeStatus(Guid? lookupValueId, string? legacyCode, params Guid[] expectedIds) =>
         Matches(lookupValueId, legacyCode, expectedIds, ScheduledIntakeStatusCodeMap);
+
+    public static bool MatchesFormSubmissionStatus(Guid? lookupValueId, string? legacyCode, params Guid[] expectedIds) =>
+        Matches(lookupValueId, legacyCode, expectedIds, FormSubmissionStatusCodeMap);
 
     private static bool Matches(
         Guid? lookupValueId,

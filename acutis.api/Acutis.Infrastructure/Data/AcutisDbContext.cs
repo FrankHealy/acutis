@@ -1166,6 +1166,7 @@ public sealed class AcutisDbContext : DbContext
             entity.Property(submission => submission.FormCode).HasMaxLength(100).IsRequired();
             entity.Property(submission => submission.SubjectType).HasMaxLength(30).IsRequired();
             entity.Property(submission => submission.SubjectId).HasMaxLength(100);
+            entity.Property(submission => submission.StatusLookupValueId).IsRequired();
             entity.Property(submission => submission.Status).HasMaxLength(20).IsRequired();
             entity.Property(submission => submission.AnswersJson).HasColumnType("nvarchar(max)").IsRequired();
             entity.Property(submission => submission.CreatedAt).HasColumnType("datetime2").IsRequired();
@@ -1177,8 +1178,21 @@ public sealed class AcutisDbContext : DbContext
                 submission.FormVersion,
                 submission.SubjectType,
                 submission.SubjectId,
+                submission.StatusLookupValueId
+            });
+            entity.HasIndex(submission => new
+            {
+                submission.FormCode,
+                submission.FormVersion,
+                submission.SubjectType,
+                submission.SubjectId,
                 submission.Status
             });
+
+            entity.HasOne<LookupValue>()
+                .WithMany()
+                .HasForeignKey(submission => submission.StatusLookupValueId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.ApplyConfiguration(new UnitConfiguration());
@@ -1436,6 +1450,14 @@ public sealed class AcutisDbContext : DbContext
                 DefaultLocale = "en-IE",
                 IsActive = true,
                 Version = 1
+            },
+            new LookupType
+            {
+                LookupTypeId = ScreeningLifecycleLookups.LookupTypes.FormSubmissionStatus,
+                Key = "form_submission_status",
+                DefaultLocale = "en-IE",
+                IsActive = true,
+                Version = 1
             });
 
         modelBuilder.Entity<LookupValue>().HasData(
@@ -1448,6 +1470,7 @@ public sealed class AcutisDbContext : DbContext
             CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.Admitted, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "admitted", 70),
             CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.Declined, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "declined", 80),
             CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "closed_without_admission", 90),
+            CreateLookupValue(ScreeningLifecycleLookups.CaseStatuses.Cancelled, ScreeningLifecycleLookups.LookupTypes.CaseStatus, "cancelled", 100),
             CreateLookupValue(ScreeningLifecycleLookups.CasePhases.Intake, ScreeningLifecycleLookups.LookupTypes.CasePhase, "intake", 10),
             CreateLookupValue(ScreeningLifecycleLookups.CasePhases.Referral, ScreeningLifecycleLookups.LookupTypes.CasePhase, "referral", 20),
             CreateLookupValue(ScreeningLifecycleLookups.CasePhases.Screening, ScreeningLifecycleLookups.LookupTypes.CasePhase, "screening", 30),
@@ -1459,7 +1482,9 @@ public sealed class AcutisDbContext : DbContext
             CreateLookupValue(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Deferred, ScreeningLifecycleLookups.LookupTypes.AdmissionDecisionStatus, "deferred", 40),
             CreateLookupValue(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted, ScreeningLifecycleLookups.LookupTypes.AdmissionDecisionStatus, "admitted", 50),
             CreateLookupValue(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled, ScreeningLifecycleLookups.LookupTypes.ScheduledIntakeStatus, "scheduled", 10),
-            CreateLookupValue(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Cancelled, ScreeningLifecycleLookups.LookupTypes.ScheduledIntakeStatus, "cancelled", 20));
+            CreateLookupValue(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Cancelled, ScreeningLifecycleLookups.LookupTypes.ScheduledIntakeStatus, "cancelled", 20),
+            CreateLookupValue(ScreeningLifecycleLookups.FormSubmissionStatuses.InProgress, ScreeningLifecycleLookups.LookupTypes.FormSubmissionStatus, "in_progress", 10),
+            CreateLookupValue(ScreeningLifecycleLookups.FormSubmissionStatuses.Submitted, ScreeningLifecycleLookups.LookupTypes.FormSubmissionStatus, "submitted", 20));
 
         modelBuilder.Entity<LookupValueLabel>().HasData(
             CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Referred, "en-IE", "Referred"),
@@ -1471,6 +1496,8 @@ public sealed class AcutisDbContext : DbContext
             CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Admitted, "en-IE", "Admitted"),
             CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Declined, "en-IE", "Declined"),
             CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.ClosedWithoutAdmission, "en-IE", "Closed Without Admission"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Cancelled, "en-IE", "Cancelled"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.CaseStatuses.Cancelled, "ar-EG", "ملغى"),
             CreateLookupValueLabel(ScreeningLifecycleLookups.CasePhases.Intake, "en-IE", "Intake"),
             CreateLookupValueLabel(ScreeningLifecycleLookups.CasePhases.Referral, "en-IE", "Referral"),
             CreateLookupValueLabel(ScreeningLifecycleLookups.CasePhases.Screening, "en-IE", "Screening"),
@@ -1482,7 +1509,9 @@ public sealed class AcutisDbContext : DbContext
             CreateLookupValueLabel(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Deferred, "en-IE", "Deferred"),
             CreateLookupValueLabel(ScreeningLifecycleLookups.AdmissionDecisionStatuses.Admitted, "en-IE", "Admitted"),
             CreateLookupValueLabel(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Scheduled, "en-IE", "Scheduled"),
-            CreateLookupValueLabel(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Cancelled, "en-IE", "Cancelled"));
+            CreateLookupValueLabel(ScreeningLifecycleLookups.ScheduledIntakeStatuses.Cancelled, "en-IE", "Cancelled"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.FormSubmissionStatuses.InProgress, "en-IE", "In Progress"),
+            CreateLookupValueLabel(ScreeningLifecycleLookups.FormSubmissionStatuses.Submitted, "en-IE", "Submitted"));
     }
 
     private static LookupValue CreateLookupValue(Guid lookupValueId, Guid lookupTypeId, string code, int sortOrder) =>

@@ -109,6 +109,7 @@ public sealed class SubmissionService : ISubmissionService
                 FormVersion = request.FormVersion,
                 SubjectType = request.SubjectType,
                 SubjectId = request.SubjectId,
+                StatusLookupValueId = ScreeningLifecycleLookups.FormSubmissionStatuses.InProgress,
                 Status = "in_progress",
                 AnswersJson = JsonSerializer.Serialize(request.Answers),
                 CreatedAt = now,
@@ -121,6 +122,7 @@ public sealed class SubmissionService : ISubmissionService
         {
             submission.AnswersJson = JsonSerializer.Serialize(request.Answers);
             submission.UpdatedAt = now;
+            submission.StatusLookupValueId = ScreeningLifecycleLookups.FormSubmissionStatuses.InProgress;
             submission.Status = "in_progress";
             submission.CompletedAt = null;
         }
@@ -179,12 +181,14 @@ public sealed class SubmissionService : ISubmissionService
                 FormVersion = request.FormVersion,
                 SubjectType = request.SubjectType,
                 SubjectId = request.SubjectId,
+                StatusLookupValueId = ScreeningLifecycleLookups.FormSubmissionStatuses.Submitted,
                 CreatedAt = now
             };
             _dbContext.FormSubmissions.Add(submission);
         }
 
         submission.AnswersJson = JsonSerializer.Serialize(request.Answers);
+        submission.StatusLookupValueId = ScreeningLifecycleLookups.FormSubmissionStatuses.Submitted;
         submission.Status = "submitted";
         submission.UpdatedAt = now;
         submission.CompletedAt = now;
@@ -243,12 +247,14 @@ public sealed class SubmissionService : ISubmissionService
                 FormVersion = request.FormVersion,
                 SubjectType = request.SubjectType,
                 SubjectId = request.SubjectId,
+                StatusLookupValueId = ScreeningLifecycleLookups.FormSubmissionStatuses.Submitted,
                 CreatedAt = now
             };
             _dbContext.FormSubmissions.Add(submission);
         }
 
         submission.AnswersJson = JsonSerializer.Serialize(request.Answers);
+        submission.StatusLookupValueId = ScreeningLifecycleLookups.FormSubmissionStatuses.Submitted;
         submission.Status = "submitted";
         submission.UpdatedAt = now;
         submission.CompletedAt = now;
@@ -307,7 +313,8 @@ public sealed class SubmissionService : ISubmissionService
                 submission.FormVersion == formVersion &&
                 submission.SubjectType == subjectType &&
                 submission.SubjectId == subjectId &&
-                submission.Status == "in_progress",
+                (submission.StatusLookupValueId == ScreeningLifecycleLookups.FormSubmissionStatuses.InProgress ||
+                 submission.Status == "in_progress"),
             cancellationToken);
     }
 

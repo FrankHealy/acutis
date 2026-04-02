@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260402094558_AddFormSubmissionStatusLookupId")]
+    partial class AddFormSubmissionStatusLookupId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -15720,14 +15723,6 @@ namespace Acutis.Infrastructure.Migrations
                         },
                         new
                         {
-                            LookupValueId = new Guid("ec2d1b83-2ea2-4418-a0bd-f7ba92525553"),
-                            Code = "cancelled",
-                            IsActive = true,
-                            LookupTypeId = new Guid("1b9fe05a-8664-4d7f-af4c-096e703d9922"),
-                            SortOrder = 100
-                        },
-                        new
-                        {
                             LookupValueId = new Guid("ab177e88-2252-4852-b313-a6451717bf56"),
                             Code = "intake",
                             IsActive = true,
@@ -15935,18 +15930,6 @@ namespace Acutis.Infrastructure.Migrations
                             LookupValueId = new Guid("3124cff7-ca2e-4f65-8859-41004144ed96"),
                             Locale = "en-IE",
                             Label = "Closed Without Admission"
-                        },
-                        new
-                        {
-                            LookupValueId = new Guid("ec2d1b83-2ea2-4418-a0bd-f7ba92525553"),
-                            Locale = "en-IE",
-                            Label = "Cancelled"
-                        },
-                        new
-                        {
-                            LookupValueId = new Guid("ec2d1b83-2ea2-4418-a0bd-f7ba92525553"),
-                            Locale = "ar-EG",
-                            Label = "ملغى"
                         },
                         new
                         {

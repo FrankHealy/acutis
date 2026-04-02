@@ -7,6 +7,7 @@ public sealed class FormSubmission
     public int FormVersion { get; set; }
     public string SubjectType { get; set; } = string.Empty;
     public string? SubjectId { get; set; }
+    public Guid StatusLookupValueId { get; set; }
     public string Status { get; set; } = "in_progress";
     public string AnswersJson { get; set; } = "{}";
     public DateTime CreatedAt { get; set; }

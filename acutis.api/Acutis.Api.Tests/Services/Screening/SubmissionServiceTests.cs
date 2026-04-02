@@ -4,6 +4,7 @@ using Acutis.Api.Contracts;
 using Acutis.Api.Services.Screening;
 using Acutis.Api.Services.TherapyScheduling;
 using Acutis.Domain.Entities;
+using Acutis.Domain.Lookups;
 using Acutis.Infrastructure.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -215,6 +216,8 @@ public sealed class SubmissionServiceTests
             Id = Guid.NewGuid(),
             CentreId = Guid.NewGuid(),
             UnitId = Guid.NewGuid(),
+            CaseStatusLookupValueId = ScreeningLifecycleLookups.CaseStatuses.Referred,
+            CasePhaseLookupValueId = ScreeningLifecycleLookups.CasePhases.Intake,
             CaseStatus = "referred",
             CasePhase = "intake",
             OpenedAtUtc = DateTime.UtcNow,

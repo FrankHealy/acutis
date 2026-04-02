@@ -159,6 +159,19 @@ export const screeningSchedulingService = {
       },
     );
   },
+
+  cancelAwaitingCase(caseId: string, reason: string, accessToken?: string | null) {
+    return request<void>(
+      `/api/screenings/scheduling-cases/${encodeURIComponent(caseId)}/cancel`,
+      accessToken,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          reason,
+        }),
+      },
+    );
+  },
 };
 
 export type { ApiError as ScreeningSchedulingApiError };

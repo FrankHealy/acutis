@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260402155233_AddCancelledScreeningCaseStatus")]
+    partial class AddCancelledScreeningCaseStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -15941,12 +15944,6 @@ namespace Acutis.Infrastructure.Migrations
                             LookupValueId = new Guid("ec2d1b83-2ea2-4418-a0bd-f7ba92525553"),
                             Locale = "en-IE",
                             Label = "Cancelled"
-                        },
-                        new
-                        {
-                            LookupValueId = new Guid("ec2d1b83-2ea2-4418-a0bd-f7ba92525553"),
-                            Locale = "ar-EG",
-                            Label = "ملغى"
                         },
                         new
                         {
