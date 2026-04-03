@@ -21,6 +21,7 @@ const TOOL_ORDER: Array<{ id: MapTool; icon: React.ComponentType<{ className?: s
   { id: "room", icon: Square, fallbackLabel: "Room" },
   { id: "wall", icon: PanelRightOpen, fallbackLabel: "Wall" },
   { id: "partition", icon: PanelRightOpen, fallbackLabel: "Partition" },
+  { id: "stair", icon: PanelRightOpen, fallbackLabel: "Stair" },
   { id: "door", icon: DoorOpen, fallbackLabel: "Door" },
   { id: "window", icon: DoorOpen, fallbackLabel: "Window" },
   { id: "exit", icon: MapPinned, fallbackLabel: "Exit" },
@@ -35,6 +36,7 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
   room: "config.map_designer.tool.room",
   wall: "config.map_designer.tool.wall",
   partition: "config.map_designer.tool.partition",
+  stair: "config.map_designer.tool.stair",
   door: "config.map_designer.tool.door",
   window: "config.map_designer.tool.window",
   exit: "config.map_designer.tool.exit",
@@ -45,6 +47,7 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
 
 const createId = (prefix: string) => `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
 const normalizeRect = (a: WorldPoint, b: WorldPoint) => ({ x: Math.round(Math.min(a.x, b.x)), y: Math.round(Math.min(a.y, b.y)), width: Math.round(Math.abs(b.x - a.x)), height: Math.round(Math.abs(b.y - a.y)) });
+const MAP_ARTEFACT_TYPES = new Set(["room", "zone", "wall", "door", "window", "partition", "exit", "fireExit", "roundel", "label", "stair"]);
 
 function moveGeometry(geometry: MapGeometry, dx: number, dy: number): MapGeometry {
   if (geometry.kind === "rect") return { ...geometry, x: geometry.x + dx, y: geometry.y + dy };
@@ -75,6 +78,76 @@ function NumberField({
   );
 }
 
+function isValidMapDocument(candidate: unknown): candidate is MapDocument {
+  if (!candidate || typeof candidate !== "object") return false;
+  const documentCandidate = candidate as Record<string, unknown>;
+  if (typeof documentCandidate.id !== "string" || typeof documentCandidate.name !== "string") return false;
+  if (!documentCandidate.world || typeof documentCandidate.world !== "object") return false;
+  const world = documentCandidate.world as Record<string, unknown>;
+  if (typeof world.width !== "number" || typeof world.height !== "number") return false;
+  if (!Array.isArray(documentCandidate.artefacts)) return false;
+
+  return documentCandidate.artefacts.every((artefact) => {
+    if (!artefact || typeof artefact !== "object") return false;
+    const artefactCandidate = artefact as Record<string, unknown>;
+    if (typeof artefactCandidate.id !== "string" || typeof artefactCandidate.type !== "string") return false;
+    if (!MAP_ARTEFACT_TYPES.has(artefactCandidate.type)) return false;
+    if (!artefactCandidate.geometry || typeof artefactCandidate.geometry !== "object") return false;
+    const geometry = artefactCandidate.geometry as Record<string, unknown>;
+    return typeof geometry.kind === "string";
+  });
+}
+
+function sanitizeFilename(value: string): string {
+  const cleaned = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  return cleaned || "map_document";
+}
+
+function toPortableMapDocument(documentModel: MapDocument): MapDocument {
+  const now = new Date().toISOString();
+  const createdAt = documentModel.metadata?.createdAt ?? now;
+  const updatedAt = now;
+
+  return {
+    id: documentModel.id,
+    name: documentModel.name,
+    metadata: {
+      createdAt,
+      updatedAt,
+    },
+    world: {
+      width: documentModel.world.width,
+      height: documentModel.world.height,
+    },
+    artefacts: documentModel.artefacts.map((artefact) => ({
+      ...artefact,
+    })),
+  };
+}
+
+function normalizeImportedMapDocument(documentCandidate: MapDocument & Record<string, unknown>): MapDocument {
+  return {
+    id: documentCandidate.id,
+    name: documentCandidate.name,
+    metadata: {
+      createdAt: documentCandidate.metadata?.createdAt,
+      updatedAt: documentCandidate.metadata?.updatedAt,
+    },
+    world: {
+      width: documentCandidate.world.width,
+      height: documentCandidate.world.height,
+    },
+    artefacts: documentCandidate.artefacts.map((artefact) => ({
+      ...artefact,
+    })),
+  };
+}
+
 function getArtefactLabel(artefact: MapArtefact, t: (key: string) => string) {
   if (artefact.labelOverride) return artefact.labelOverride;
   if (artefact.labelKey) {
@@ -99,8 +172,35 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
   const selectionFill = "color-mix(in srgb, var(--app-primary) 14%, transparent)";
   const geometry = displayGeometry ?? artefact.geometry;
   if (geometry.kind === "rect") {
-    const baseFill = artefact.type === "zone" ? "color-mix(in srgb, var(--app-success) 12%, white)" : "color-mix(in srgb, var(--app-surface-muted) 72%, white)";
-    const stroke = artefact.type === "zone" ? "color-mix(in srgb, var(--app-success) 55%, var(--app-border))" : "var(--app-border)";
+    const baseFill =
+      artefact.type === "zone"
+        ? "color-mix(in srgb, var(--app-success) 12%, white)"
+        : artefact.type === "stair"
+          ? "color-mix(in srgb, var(--app-text-muted) 10%, white)"
+          : "color-mix(in srgb, var(--app-surface-muted) 72%, white)";
+    const stroke =
+      artefact.type === "zone"
+        ? "color-mix(in srgb, var(--app-success) 55%, var(--app-border))"
+        : artefact.type === "stair"
+          ? "var(--app-text)"
+          : "var(--app-border)";
+    if (artefact.type === "stair") {
+      const stepCount = Math.max(4, Math.floor(Math.max(geometry.width, geometry.height) / 18));
+      const isVertical = geometry.height >= geometry.width;
+      return (
+        <>
+          <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={3} fill={selected ? selectionFill : baseFill} stroke={selected ? selectionStroke : stroke} strokeWidth={selected ? 4 : 2} />
+          {Array.from({ length: stepCount }).map((_, index) => {
+            if (isVertical) {
+              const y = geometry.y + (geometry.height / (stepCount + 1)) * (index + 1);
+              return <line key={`step_${index}`} x1={geometry.x + 5} y1={y} x2={geometry.x + geometry.width - 5} y2={y} stroke={selected ? selectionStroke : "var(--app-text-muted)"} strokeWidth={2} />;
+            }
+            const x = geometry.x + (geometry.width / (stepCount + 1)) * (index + 1);
+            return <line key={`step_${index}`} x1={x} y1={geometry.y + 5} x2={x} y2={geometry.y + geometry.height - 5} stroke={selected ? selectionStroke : "var(--app-text-muted)"} strokeWidth={2} />;
+          })}
+        </>
+      );
+    }
     return <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={artefact.type === "zone" ? 0 : 4} fill={selected ? selectionFill : baseFill} stroke={selected ? selectionStroke : stroke} strokeWidth={selected ? 4 : 2} />;
   }
   if (geometry.kind === "polygon") {
@@ -142,6 +242,7 @@ const MapDesigner: React.FC = () => {
   const router = useRouter();
   const { loadKeys, t } = useLocalization();
   const [documentModel, setDocumentModel] = useState<MapDocument>(sampleDetoxReferenceMap);
+  const [ioError, setIoError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<MapTool>("select");
   const [labelsVisible, setLabelsVisible] = useState(true);
   const [selectedArtefactId, setSelectedArtefactId] = useState<string | null>(null);
@@ -152,6 +253,7 @@ const MapDesigner: React.FC = () => {
   const [pendingWallStart, setPendingWallStart] = useState<WorldPoint | null>(null);
   const surfaceRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void loadKeys([
@@ -167,6 +269,7 @@ const MapDesigner: React.FC = () => {
       "config.map_designer.field.end_x","config.map_designer.field.end_y","config.map_designer.field.height","config.map_designer.field.raw",
       "config.map_designer.field.thickness","config.map_designer.field.points","config.map_designer.field.label","config.map_designer.field.visible_toggle",
       "config.map_designer.field.label_override_placeholder",
+      "config.map_designer.io.save","config.map_designer.io.load","config.map_designer.io.invalid",
       ...Object.values(TOOL_LABEL_KEYS),
     ]);
   }, [loadKeys]);
@@ -190,9 +293,9 @@ const MapDesigner: React.FC = () => {
   const documentBounds = useMemo(() => getDocumentBounds(documentModel.artefacts, documentModel.world.width, documentModel.world.height), [documentModel]);
   const selectedArtefact = useMemo(() => documentModel.artefacts.find((artefact) => artefact.id === selectedArtefactId) ?? null, [documentModel.artefacts, selectedArtefactId]);
   const renderOrderedArtefacts = useMemo(() => {
-    const groups: Record<MapArtefact["type"], MapArtefact[]> = { zone: [], room: [], wall: [], partition: [], door: [], window: [], exit: [], fireExit: [], roundel: [], label: [] };
+    const groups: Record<MapArtefact["type"], MapArtefact[]> = { zone: [], room: [], wall: [], partition: [], stair: [], door: [], window: [], exit: [], fireExit: [], roundel: [], label: [] };
     documentModel.artefacts.forEach((artefact) => { if (artefact.visible !== false) groups[artefact.type].push(artefact); });
-    return [...groups.zone, ...groups.room, ...groups.wall, ...groups.partition, ...groups.door, ...groups.window, ...groups.exit, ...groups.fireExit, ...groups.roundel, ...groups.label];
+    return [...groups.zone, ...groups.room, ...groups.stair, ...groups.wall, ...groups.partition, ...groups.door, ...groups.window, ...groups.exit, ...groups.fireExit, ...groups.roundel, ...groups.label];
   }, [documentModel.artefacts]);
   const walls = useMemo(() => documentModel.artefacts.filter((artefact) => artefact.type === "wall"), [documentModel.artefacts]);
   const wallsById = useMemo(() => new Map(walls.map((wall) => [wall.id, wall])), [walls]);
@@ -263,7 +366,7 @@ const MapDesigner: React.FC = () => {
       surfaceRef.current.setPointerCapture(event.pointerId);
       return;
     }
-    if (activeTool === "room" && event.button === 0) {
+    if ((activeTool === "room" || activeTool === "stair") && event.button === 0) {
       setSelectedArtefactId(null);
       const snappedPoint = snapWorldPoint(worldPoint, walls);
       setDragState({ kind: "room", originWorld: snappedPoint, currentWorld: snappedPoint });
@@ -373,7 +476,12 @@ const MapDesigner: React.FC = () => {
     if (dragState?.kind === "room") {
       const draftRect = normalizeRect(dragState.originWorld, dragState.currentWorld);
       if (draftRect.width >= 12 && draftRect.height >= 12) {
-        const nextArtefact: MapArtefact = { id: createId("room"), type: "room", geometry: { kind: "rect", ...draftRect }, labelOverride: "Room" };
+        const nextArtefact: MapArtefact = {
+          id: createId(activeTool === "stair" ? "stair" : "room"),
+          type: activeTool === "stair" ? "stair" : "room",
+          geometry: { kind: "rect", ...draftRect },
+          labelOverride: activeTool === "stair" ? "Stairs" : "Room",
+        };
         setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
         setSelectedArtefactId(nextArtefact.id);
       }
@@ -402,6 +510,40 @@ const MapDesigner: React.FC = () => {
   const updateSelectedGeometry = (updater: (geometry: MapGeometry) => MapGeometry) => {
     if (!selectedArtefact) return;
     updateArtefact(selectedArtefact.id, (artefact) => ({ ...artefact, geometry: updater(artefact.geometry) }));
+  };
+  const handleSave = () => {
+    const payload = toPortableMapDocument(documentModel);
+    setDocumentModel(payload);
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${sanitizeFilename(payload.name)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+  const handleLoadClick = () => fileInputRef.current?.click();
+  const handleLoadFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const textContent = await file.text();
+      const parsed = JSON.parse(textContent) as unknown;
+      if (!isValidMapDocument(parsed)) {
+        setIoError(text("config.map_designer.io.invalid", "Invalid map file."));
+        return;
+      }
+      const normalized = normalizeImportedMapDocument(parsed as MapDocument & Record<string, unknown>);
+      setDocumentModel(normalized);
+      setSelectedArtefactId(null);
+      setPendingWallStart(null);
+      setIoError(null);
+      setHasInitializedViewport(false);
+    } catch {
+      setIoError(text("config.map_designer.io.invalid", "Invalid map file."));
+    } finally {
+      event.target.value = "";
+    }
   };
 
   return (
@@ -476,6 +618,7 @@ const MapDesigner: React.FC = () => {
                     tool.id === "select" ||
                     tool.id === "pan" ||
                     tool.id === "room" ||
+                    tool.id === "stair" ||
                     tool.id === "wall" ||
                     tool.id === "partition" ||
                     tool.id === "door" ||
@@ -500,6 +643,15 @@ const MapDesigner: React.FC = () => {
 
               <div className="mt-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
                 <div className="grid gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={handleSave} className="rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)]">
+                      {text("config.map_designer.io.save", "Save")}
+                    </button>
+                    <button type="button" onClick={handleLoadClick} className="rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)]">
+                      {text("config.map_designer.io.load", "Load")}
+                    </button>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleLoadFile} className="hidden" />
                   <button type="button" onClick={() => setLabelsVisible((current) => !current)} className="rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)]">
                     {labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")}
                   </button>
@@ -511,6 +663,7 @@ const MapDesigner: React.FC = () => {
                   </div>
                 </div>
               </div>
+              {ioError && <div className="mt-3 rounded-xl border border-[var(--app-danger)] bg-[color:color-mix(in_srgb,var(--app-danger)_8%,white)] p-3 text-sm text-[var(--app-danger)]">{ioError}</div>}
 
               <div className="mt-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 text-sm text-[var(--app-text-muted)]">
                 <div className="mb-2 flex items-center gap-2 font-semibold text-[var(--app-text)]"><Info className="h-4 w-4" /><span>{text("config.map_designer.phase3_notice", "Phase 3 status")}</span></div>
@@ -567,7 +720,7 @@ const MapDesigner: React.FC = () => {
                           />
                           <span>{text("config.map_designer.field.visible_toggle", "Visible")}</span>
                         </label>
-                        {(selectedArtefact.type === "room" || selectedArtefact.type === "zone") && selectedArtefact.geometry.kind === "rect" && (
+                        {(selectedArtefact.type === "room" || selectedArtefact.type === "zone" || selectedArtefact.type === "stair") && selectedArtefact.geometry.kind === "rect" && (
                           <div className="grid grid-cols-2 gap-2">
                             <NumberField label={text("config.map_designer.field.x", "X")} value={selectedArtefact.geometry.x} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, x: value } : geometry)} />
                             <NumberField label={text("config.map_designer.field.y", "Y")} value={selectedArtefact.geometry.y} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, y: value } : geometry)} />

@@ -3,6 +3,7 @@ export type MapArtefactType =
   | "wall"
   | "window"
   | "partition"
+  | "stair"
   | "door"
   | "exit"
   | "fireExit"
@@ -56,6 +57,10 @@ export type MapArtefact = {
 export type MapDocument = {
   id: string;
   name: string;
+  metadata?: {
+    createdAt?: string;
+    updatedAt?: string;
+  };
   world: {
     width: number;
     height: number;
@@ -70,6 +75,7 @@ export type MapTool =
   | "wall"
   | "window"
   | "partition"
+  | "stair"
   | "door"
   | "exit"
   | "fireExit"

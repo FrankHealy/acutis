@@ -3,6 +3,10 @@ import type { MapDocument } from "@/areas/config/mapDesigner/types";
 export const sampleDetoxReferenceMap: MapDocument = {
   id: "detox_reference_derived",
   name: "Detox Reference Derived",
+  metadata: {
+    createdAt: "2026-04-03T00:00:00.000Z",
+    updatedAt: "2026-04-03T00:00:00.000Z",
+  },
   world: {
     width: 1600,
     height: 1050,
