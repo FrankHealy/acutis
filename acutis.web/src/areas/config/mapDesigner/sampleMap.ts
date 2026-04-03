@@ -1,8 +1,8 @@
 import type { MapDocument } from "@/areas/config/mapDesigner/types";
 
 export const sampleDetoxReferenceMap: MapDocument = {
-  id: "detox_reference_mvp",
-  name: "Detox Reference MVP",
+  id: "detox_reference_derived",
+  name: "Detox Reference Derived",
   world: {
     width: 1600,
     height: 1050,
@@ -248,19 +248,40 @@ export const sampleDetoxReferenceMap: MapDocument = {
       geometry: { kind: "line", x1: 1160, y1: 205, x2: 1365, y2: 205, thickness: 14 },
     },
     {
+      id: "partition_corridor_mid",
+      type: "partition",
+      geometry: { kind: "line", x1: 700, y1: 505, x2: 700, y2: 905, thickness: 6 },
+      labelOverride: "Partition",
+    },
+    {
       id: "door_entrance",
       type: "door",
-      geometry: { kind: "line", x1: 265, y1: 505, x2: 305, y2: 505, thickness: 8 },
+      geometry: { kind: "point", x: 285, y: 505, size: 18 },
+      wallAttachment: { wallId: "wall_horizontal_main", offset: 70, width: 42 },
     },
     {
       id: "door_fe",
       type: "door",
-      geometry: { kind: "line", x1: 1160, y1: 260, x2: 1160, y2: 285, thickness: 8 },
+      geometry: { kind: "point", x: 1160, y: 273, size: 18 },
+      wallAttachment: { wallId: "wall_vertical_inner", offset: 68, width: 32 },
     },
     {
       id: "door_sa2",
       type: "door",
-      geometry: { kind: "line", x1: 1295, y1: 470, x2: 1295, y2: 500, thickness: 8 },
+      geometry: { kind: "point", x: 1295, y: 485, size: 18 },
+      wallAttachment: { wallId: "wall_vertical_right", offset: 280, width: 34 },
+    },
+    {
+      id: "window_right_wing_1",
+      type: "window",
+      geometry: { kind: "point", x: 1295, y: 360, size: 18 },
+      wallAttachment: { wallId: "wall_vertical_right", offset: 155, width: 40 },
+    },
+    {
+      id: "window_right_wing_2",
+      type: "window",
+      geometry: { kind: "point", x: 1295, y: 720, size: 18 },
+      wallAttachment: { wallId: "wall_vertical_right", offset: 515, width: 40 },
     },
     {
       id: "exit_main",
@@ -280,41 +301,49 @@ export const sampleDetoxReferenceMap: MapDocument = {
       id: "roundel_1a",
       type: "roundel",
       geometry: { kind: "point", x: 262, y: 550, size: 30 },
+      parentId: "room_1",
     },
     {
       id: "roundel_1b",
       type: "roundel",
       geometry: { kind: "point", x: 302, y: 585, size: 30 },
+      parentId: "room_1",
     },
     {
       id: "roundel_2a",
       type: "roundel",
       geometry: { kind: "point", x: 355, y: 548, size: 30 },
+      parentId: "room_2",
     },
     {
       id: "roundel_2b",
       type: "roundel",
       geometry: { kind: "point", x: 395, y: 583, size: 30 },
+      parentId: "room_2",
     },
     {
       id: "roundel_8a",
       type: "roundel",
       geometry: { kind: "point", x: 1202, y: 330, size: 28 },
+      parentId: "room_8",
     },
     {
       id: "roundel_8b",
       type: "roundel",
       geometry: { kind: "point", x: 1252, y: 365, size: 28 },
+      parentId: "room_8",
     },
     {
       id: "roundel_9a",
       type: "roundel",
       geometry: { kind: "point", x: 1202, y: 420, size: 28 },
+      parentId: "room_9",
     },
     {
       id: "roundel_9b",
       type: "roundel",
       geometry: { kind: "point", x: 1252, y: 455, size: 28 },
+      parentId: "room_9",
     },
     {
       id: "label_pt",
@@ -322,6 +351,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
       geometry: { kind: "point", x: 770, y: 315, size: 20 },
       labelKey: "mapDesigner.sample.pt",
       labelOverride: "PT",
+      parentId: "zone_courtyard",
     },
   ],
 };

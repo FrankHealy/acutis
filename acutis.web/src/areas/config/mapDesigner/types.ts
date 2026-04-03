@@ -1,6 +1,8 @@
 export type MapArtefactType =
   | "room"
   | "wall"
+  | "window"
+  | "partition"
   | "door"
   | "exit"
   | "fireExit"
@@ -39,6 +41,12 @@ export type MapArtefact = {
   id: string;
   type: MapArtefactType;
   geometry: MapGeometry;
+  parentId?: string;
+  wallAttachment?: {
+    wallId: string;
+    offset: number;
+    width: number;
+  };
   labelKey?: string;
   labelOverride?: string;
   visible?: boolean;
@@ -60,6 +68,8 @@ export type MapTool =
   | "pan"
   | "room"
   | "wall"
+  | "window"
+  | "partition"
   | "door"
   | "exit"
   | "fireExit"
