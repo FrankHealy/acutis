@@ -7,18 +7,19 @@ import Notifications from './Notifications';
 
 interface DashboardProps {
   setCurrentStep: (step: string) => void;
+  unitId: string;
   unitName: string;
   showAdmissions: boolean;
   onOpenGroupTherapy: (moduleKey?: string) => void;
   onOpenRollCall: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ setCurrentStep, unitName, showAdmissions, onOpenGroupTherapy, onOpenRollCall }) => {
+const Dashboard: React.FC<DashboardProps> = ({ setCurrentStep, unitId, unitName, showAdmissions, onOpenGroupTherapy, onOpenRollCall }) => {
   return (
     <div className="space-y-6">
       <StatsCards unitName={unitName} />
       {/* Replaces the four unit indicators with the Detox Daily Timeline */}
-      <UnitDailyTimeline unitName={unitName} onOpenGroupTherapy={onOpenGroupTherapy} onOpenRollCall={onOpenRollCall} />
+      <UnitDailyTimeline unitId={unitId} unitName={unitName} onOpenGroupTherapy={onOpenGroupTherapy} onOpenRollCall={onOpenRollCall} />
       <QuickActions setCurrentStep={setCurrentStep} showAdmissions={showAdmissions} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -82,6 +82,7 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
         return (
           <Dashboard
             setCurrentStep={goTo}
+            unitId={unitId}
             unitName={unit.name}
             showAdmissions={unit.admissionsEnabled}
             onOpenGroupTherapy={openGroupTherapy}

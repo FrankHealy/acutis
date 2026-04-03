@@ -6,6 +6,8 @@ import type { Resident } from '../../services/mockDataService';
 
 interface ResidentRowProps {
   resident: Resident;
+  showProgrammeColumns: boolean;
+  showCaseStatusColumn: boolean;
   rollCallView: boolean;
   attendance?: { present: boolean; reason?: string; description?: string };
   onAttendanceChange: (residentId: number, isPresent: boolean) => void;
@@ -35,6 +37,8 @@ const ResidentAvatar: React.FC<ResidentAvatarProps> = ({ src, fallbackSrc, alt }
 
 const ResidentRow: React.FC<ResidentRowProps> = ({
   resident,
+  showProgrammeColumns,
+  showCaseStatusColumn,
   rollCallView,
   attendance,
   onAttendanceChange,
@@ -111,13 +115,17 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
         {resident.roomNumber}
       </td>
 
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {formatEnumLabel(resident.programmeType)}
-      </td>
+      {showProgrammeColumns && (
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {formatEnumLabel(resident.programmeType)}
+        </td>
+      )}
 
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {formatEnumLabel(resident.participationMode)}
-      </td>
+      {showProgrammeColumns && (
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {formatEnumLabel(resident.participationMode)}
+        </td>
+      )}
 
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         <div className="font-medium text-gray-900">{episodeSummary}</div>
@@ -126,9 +134,11 @@ const ResidentRow: React.FC<ResidentRowProps> = ({
         )}
       </td>
 
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        <div className="font-medium text-gray-900">{caseStatus}</div>
-      </td>
+      {showCaseStatusColumn && (
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          <div className="font-medium text-gray-900">{caseStatus}</div>
+        </td>
+      )}
 
       {/* Roll call column */}
       {rollCallView && (

@@ -46,6 +46,8 @@ public sealed class UnitConfigurationDto
     public int FreeBeds { get; set; }
     public int CapacityWarningThreshold { get; set; }
     public int DefaultResidentWeekNumber { get; set; }
+    public Guid? ProgrammeDefinitionId { get; set; }
+    public string ProgrammeDefinitionName { get; set; } = string.Empty;
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; }
 }
@@ -60,8 +62,131 @@ public sealed class UpsertUnitRequest
     public int CurrentOccupancy { get; set; }
     public int CapacityWarningThreshold { get; set; }
     public int DefaultResidentWeekNumber { get; set; } = 1;
+    public Guid? ProgrammeDefinitionId { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; } = true;
+}
+
+public sealed class ProgrammeDefinitionDto
+{
+    public Guid ProgrammeDefinitionId { get; set; }
+    public Guid CentreId { get; set; }
+    public string CentreName { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int TotalDurationValue { get; set; }
+    public string TotalDurationUnit { get; set; } = string.Empty;
+    public int? DetoxPhaseDurationValue { get; set; }
+    public string DetoxPhaseDurationUnit { get; set; } = string.Empty;
+    public int? MainPhaseDurationValue { get; set; }
+    public string MainPhaseDurationUnit { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public IReadOnlyList<string> AssignedUnitNames { get; set; } = Array.Empty<string>();
+}
+
+public sealed class UpsertProgrammeDefinitionRequest
+{
+    public Guid CentreId { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int TotalDurationValue { get; set; }
+    public string TotalDurationUnit { get; set; } = string.Empty;
+    public int? DetoxPhaseDurationValue { get; set; }
+    public string DetoxPhaseDurationUnit { get; set; } = string.Empty;
+    public int? MainPhaseDurationValue { get; set; }
+    public string MainPhaseDurationUnit { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+}
+
+public sealed class ScheduleTemplateDto
+{
+    public Guid ScheduleTemplateId { get; set; }
+    public Guid CentreId { get; set; }
+    public string CentreName { get; set; } = string.Empty;
+    public Guid? UnitId { get; set; }
+    public string UnitName { get; set; } = string.Empty;
+    public Guid? ProgrammeDefinitionId { get; set; }
+    public string ProgrammeDefinitionName { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string RecurrenceType { get; set; } = string.Empty;
+    public int? WeeklyDayOfWeek { get; set; }
+    public string StartTime { get; set; } = string.Empty;
+    public string EndTime { get; set; } = string.Empty;
+    public string AudienceType { get; set; } = string.Empty;
+    public string FacilitatorType { get; set; } = string.Empty;
+    public string FacilitatorRole { get; set; } = string.Empty;
+    public string ExternalResourceName { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+}
+
+public sealed class UpsertScheduleTemplateRequest
+{
+    public Guid CentreId { get; set; }
+    public Guid? UnitId { get; set; }
+    public Guid? ProgrammeDefinitionId { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string RecurrenceType { get; set; } = string.Empty;
+    public int? WeeklyDayOfWeek { get; set; }
+    public string StartTime { get; set; } = string.Empty;
+    public string EndTime { get; set; } = string.Empty;
+    public string AudienceType { get; set; } = string.Empty;
+    public string FacilitatorType { get; set; } = string.Empty;
+    public string FacilitatorRole { get; set; } = string.Empty;
+    public string ExternalResourceName { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+}
+
+public sealed class ScheduleOccurrenceDto
+{
+    public Guid ScheduleOccurrenceId { get; set; }
+    public Guid CentreId { get; set; }
+    public string CentreName { get; set; } = string.Empty;
+    public Guid? UnitId { get; set; }
+    public string UnitName { get; set; } = string.Empty;
+    public Guid? ProgrammeDefinitionId { get; set; }
+    public string ProgrammeDefinitionName { get; set; } = string.Empty;
+    public Guid? TemplateId { get; set; }
+    public string TemplateName { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public DateOnly ScheduledDate { get; set; }
+    public string StartTime { get; set; } = string.Empty;
+    public string EndTime { get; set; } = string.Empty;
+    public string AudienceType { get; set; } = string.Empty;
+    public string FacilitatorType { get; set; } = string.Empty;
+    public string FacilitatorRole { get; set; } = string.Empty;
+    public string ExternalResourceName { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
+}
+
+public sealed class UpsertScheduleOccurrenceRequest
+{
+    public Guid CentreId { get; set; }
+    public Guid? UnitId { get; set; }
+    public Guid? ProgrammeDefinitionId { get; set; }
+    public Guid? TemplateId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public DateOnly ScheduledDate { get; set; }
+    public string StartTime { get; set; } = string.Empty;
+    public string EndTime { get; set; } = string.Empty;
+    public string AudienceType { get; set; } = string.Empty;
+    public string FacilitatorType { get; set; } = string.Empty;
+    public string FacilitatorRole { get; set; } = string.Empty;
+    public string ExternalResourceName { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
 }
 
 public sealed class AppPermissionDto

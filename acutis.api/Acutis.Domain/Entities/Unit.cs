@@ -12,8 +12,11 @@ public sealed class Unit
     public int CurrentOccupancy { get; set; }
     public int CapacityWarningThreshold { get; set; }
     public int DefaultResidentWeekNumber { get; set; }
+    public Guid? ProgrammeDefinitionId { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
+
+    public ProgrammeDefinition? ProgrammeDefinition { get; set; }
 }

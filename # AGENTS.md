@@ -1,142 +1,71 @@
 # AGENTS.md
 
 ## Purpose
-Global rules for the Acutis workspace.
+Global rules for the Acutis system.
 
-Applies to:
-- acutis.api
-- acutis.web
-- acutis.tab
-
-Local AGENTS.md files may be stricter, never weaker.
+This file is the single source of truth.
+All work must comply.
 
 ---
 
 ## Golden Rules
 
-### Simplicity
-- Prefer the simplest working solution
-- No clever abstractions unless clearly justified
-- Keep changes small and local
+- Prefer simplicity over cleverness
+- Reuse existing patterns — do not duplicate mechanisms
+- Code must be testable and explicit
+- No stringly-typed core state
+- No unnecessary polling
 
-### Reuse
-- Reuse existing patterns, DTOs, services, components
-- No duplicate mechanisms (auth, state, API, audit, sync, etc.)
+---
 
-### Testability
-- Code must be easy to reason about and verify
-- No hidden behaviour or magic defaults
+## Audit (Non-negotiable)
 
-### Audit (Non-negotiable)
 - Server is authoritative
 - No client-side audit truth
-- Do not weaken audit paths
+- Do not bypass audit paths
 
-### Localisation
-- Use keys, not inline English where feasible
-- Shared semantics across web + tablet
+---
 
-### Theme Awareness
-- No theme builder yet — still mandatory
+## Localisation
+
+- Only localise text shown to users
+- Do not localise machine metadata
+
+---
+
+## Theme
+
 - No hardcoded colours
 - Use semantic tokens only:
   surface, text, primary, success, warning, danger, border
 
 ---
 
-## Core Boundaries
+## Core Domain Boundaries
 
 - Resident = identity only
 - ResidentCase = intake
-- Episode = operational stay
+- ResidentProgrammeEpisode = operational stay
 - EpisodeEvent = timeline
-- Incident = separate from planned events
+- Incident ≠ Event
 
 Do not collapse or blur these.
 
 ---
 
-## Global Prohibitions
-
-- No duplicate mechanisms
-- No stringly-typed core state
-- No unnecessary polling
-- No hidden persistence
-- No divergent platform logic
-
----
-
-## File Touch Discipline (MANDATORY)
-
-Every time a file is modified:
-
-- Re-check against:
-  - simplicity
-  - reuse
-  - testability
-  - audit
-  - localisation
-  - theme awareness
-  - no string state
-  - no duplicate mechanisms
-
-- Fix small issues in that file immediately
-- Do NOT expand into unrelated files
-- Do NOT turn into refactor
-
-If broader change needed → STOP and explain
-
-### Rule
-- Leave file better aligned than found
-- Never introduce new violations
-
----
-
-## Stop Conditions
-
-STOP and explain if changing:
-- auth / permissions
-- audit
-- contracts
-- state architecture
-- sync/offline
-- localisation model
-- theme semantics
-- core domain boundaries
-
----
-
-## Done Means
-
-- Scope respected
-- No duplicate mechanisms
-- No string state
-- Audit intact
-- Localisation considered
-- Theme awareness maintained
-- Code simple + testable
-
-## Form Definition Reality
+## Form Reality (Critical)
 
 Forms are centre/unit specific and may vary.
 
-The system does not enforce perfect structure.
+We do not enforce perfect structure.
 
 Rules:
-- Form must be renderable
-- Form must be storable
-- Unknown or imperfect fields are allowed
-- Capture data is allowed to be messy
+- Forms must be renderable
+- Forms must be storable
+- Imperfect or messy fields are allowed
+- Capture data can remain unstructured
 
-Strict enforcement applies ONLY to:
-- bounded fields
-- schema mappings
-- anything that affects core domain state
-
-Everything else:
-- tolerate
-- store
-- do not over-normalise
+---
 
 ## Bounded Field Rule
 
@@ -148,30 +77,60 @@ If a field declares itself as bounded:
 
 If not:
 → treat as capture only
-→ do not attempt to interpret
+→ do not promote or interpret
 
-## HSE Form Discipline (Critical)
+Default:
+→ all fields are capture unless explicitly bounded
 
-The HSE form is a capture artifact, not canonical domain truth.
+---
 
-Rules:
-- Do NOT treat form fields as authoritative domain structure.
-- Do NOT promote form fields into bounded schema unless explicitly required.
-- Do NOT assume repeated or named fields imply domain importance.
-- Do NOT create new domain fields purely because they exist on the form.
+## File Touch Discipline (MANDATORY)
 
-Allowed:
-- Store in FormSubmission (JSON/unbounded)
-- Capture ambiguity
-- Preserve assessor input
+Every time a file is modified:
 
-Promotion rule:
-A form field may only be promoted into bounded domain schema if:
-- it is semantically stable
-- it is operationally important
-- it is required for reporting, workflow, or safety
-- it can be defined independently of assessor interpretation
+- Re-check:
+  - simplicity
+  - reuse
+  - testability
+  - audit
+  - localisation
+  - theme
+  - no string state
 
-If unsure:
-→ KEEP IT IN FORM SUBMISSION
-→ DO NOT PROMOTE
+- Fix small issues in that file only
+- Do NOT expand into unrelated files
+- Do NOT refactor broadly
+
+If broader change is required:
+→ STOP and explain
+
+Rule:
+- Leave the file better than you found it
+- Never introduce new violations
+
+---
+
+## Stop Conditions
+
+STOP and explain if changing:
+
+- auth / permissions
+- audit logic
+- API contracts
+- state architecture
+- offline/sync model
+- domain boundaries
+- localisation model
+- theme semantics
+
+---
+
+## Done Means
+
+- Scope respected
+- No duplicate mechanisms
+- No stringly-typed state
+- Audit intact
+- Localisation respected
+- Theme-aware UI
+- Code is simple and testable

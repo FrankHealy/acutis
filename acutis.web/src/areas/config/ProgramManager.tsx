@@ -1,855 +1,932 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { ArrowLeft, CalendarClock, ClipboardCheck, PencilLine, Plus, Save, Trash2 } from "lucide-react";
+import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
+import { isAuthorizationDisabled } from "@/lib/authMode";
+import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import {
-  ArrowLeft,
-  ClipboardCheck,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  FileEdit,
-  Layers,
-  PlayCircle,
-  HelpCircle,
-  GripVertical,
-  CornerDownLeft,
-} from "lucide-react";
+  globalConfigurationService,
+  type CentreConfigurationDto,
+  type ProgrammeDefinitionDto,
+  type ScheduleOccurrenceDto,
+  type ScheduleTemplateDto,
+  type UnitConfigurationDto,
+  type UpsertProgrammeDefinitionRequest,
+  type UpsertScheduleOccurrenceRequest,
+  type UpsertScheduleTemplateRequest,
+  type UpsertUnitRequest,
+} from "@/services/globalConfigurationService";
 
-type UnitId = "Alcohol" | "Detox" | "Drugs" | "Ladies";
-type ProgramStatus = "draft" | "active";
-
-type SessionMedia = {
-  id: string;
-  type: "video" | "animation" | "audio" | "image" | "link";
-  label: string;
-  url?: string;
-};
-
-type Session = {
-  id: string;
-  title: string;
-  content: string;
-  questions: string[];
-  discussionPoints: string[];
-  media: SessionMedia[];
-};
-
-type Topic = {
-  id: string;
-  title: string;
-  sessions: Session[];
-};
-
-type Program = {
-  id: string;
-  name: string;
-  unit: UnitId;
-  status: ProgramStatus;
-  description: string;
-  topicIds: string[];
-};
-
-const Units: UnitId[] = ["Alcohol", "Detox", "Drugs", "Ladies"];
-
-const makeId = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
-
-const buildInitialTopics = (): Topic[] => [
-  {
-    id: "topic-01",
-    title: "Accountability & Structure",
-    sessions: [
-      {
-        id: "session-01",
-        title: "Morning Intentions",
-        content: "Introduce daily reflection and commitment to goals.",
-        questions: ["What is one intention you can keep today?", "Who will you ask for support?"],
-        discussionPoints: ["Consistency builds trust", "Shared accountability"],
-        media: [{ id: "media-01", type: "video", label: "Short intro video", url: "" }],
-      },
-    ],
-  },
-  {
-    id: "topic-02",
-    title: "Relapse Prevention",
-    sessions: [],
-  },
+const durationUnits = ["Weeks", "Days"] as const;
+const recurrenceTypes = ["Daily", "Weekly", "OnceOff"] as const;
+const audienceTypes = ["UnitResidents", "AllResidents", "Cohort", "ResidentSubset", "Resident", "OpenSession"] as const;
+const facilitatorTypes = ["None", "Staff", "ResidentLed", "External"] as const;
+const occurrenceStatuses = ["Scheduled", "Cancelled", "Completed"] as const;
+const weekdays = [
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
+  { value: 0, label: "Sunday" },
 ];
 
-const buildInitialPrograms = (): Program[] => [
-  {
-    id: "program-01",
-    name: "Foundations of Recovery",
-    unit: "Alcohol",
-    status: "active",
-    description: "Core program covering daily practices, accountability, and group reflection.",
-    topicIds: ["topic-01"],
-  },
-  {
-    id: "program-02",
-    name: "Renewal Pathway",
-    unit: "Detox",
-    status: "draft",
-    description: "Gentle program with guided reflection and step-based recovery sessions.",
-    topicIds: [],
-  },
-];
+const emptyProgrammeForm: UpsertProgrammeDefinitionRequest = {
+  centreId: "",
+  code: "",
+  name: "",
+  description: "",
+  totalDurationValue: 12,
+  totalDurationUnit: "Weeks",
+  detoxPhaseDurationValue: 2,
+  detoxPhaseDurationUnit: "Weeks",
+  mainPhaseDurationValue: 10,
+  mainPhaseDurationUnit: "Weeks",
+  isActive: true,
+};
+
+const emptyTemplateForm: UpsertScheduleTemplateRequest = {
+  centreId: "",
+  unitId: "",
+  programmeDefinitionId: "",
+  code: "",
+  name: "",
+  description: "",
+  category: "",
+  recurrenceType: "Weekly",
+  weeklyDayOfWeek: 1,
+  startTime: "",
+  endTime: "",
+  audienceType: "UnitResidents",
+  facilitatorType: "None",
+  facilitatorRole: "",
+  externalResourceName: "",
+  isActive: true,
+};
+
+const todayIso = new Date().toISOString().slice(0, 10);
+
+const emptyOccurrenceForm: UpsertScheduleOccurrenceRequest = {
+  centreId: "",
+  unitId: "",
+  programmeDefinitionId: "",
+  templateId: "",
+  title: "",
+  description: "",
+  category: "",
+  scheduledDate: todayIso,
+  startTime: "",
+  endTime: "",
+  audienceType: "UnitResidents",
+  facilitatorType: "None",
+  facilitatorRole: "",
+  externalResourceName: "",
+  status: "Scheduled",
+  notes: "",
+};
 
 const ProgramManager: React.FC = () => {
   const router = useRouter();
-  const [topics, setTopics] = useState<Topic[]>(() => buildInitialTopics());
-  const [programs, setPrograms] = useState<Program[]>(() => buildInitialPrograms());
-  const [selectedId, setSelectedId] = useState(programs[0]?.id ?? "");
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(topics[0]?.id ?? null);
-  const [topicFilter, setTopicFilter] = useState("");
+  const { data: session } = useSession();
+  const { loadKeys, t } = useLocalization();
+  const accessToken = session?.accessToken;
+  const [centres, setCentres] = useState<CentreConfigurationDto[]>([]);
+  const [units, setUnits] = useState<UnitConfigurationDto[]>([]);
+  const [programmes, setProgrammes] = useState<ProgrammeDefinitionDto[]>([]);
+  const [templates, setTemplates] = useState<ScheduleTemplateDto[]>([]);
+  const [occurrences, setOccurrences] = useState<ScheduleOccurrenceDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [editingProgrammeId, setEditingProgrammeId] = useState<string | null>(null);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [editingOccurrenceId, setEditingOccurrenceId] = useState<string | null>(null);
+  const [programmeForm, setProgrammeForm] = useState<UpsertProgrammeDefinitionRequest>(emptyProgrammeForm);
+  const [templateForm, setTemplateForm] = useState<UpsertScheduleTemplateRequest>(emptyTemplateForm);
+  const [occurrenceForm, setOccurrenceForm] = useState<UpsertScheduleOccurrenceRequest>(emptyOccurrenceForm);
 
-  const selectedProgram = useMemo(
-    () => programs.find((program) => program.id === selectedId) ?? programs[0],
-    [programs, selectedId],
-  );
-
-  const filteredTopics = useMemo(() => {
-    if (!topicFilter.trim()) return topics;
-    const needle = topicFilter.toLowerCase();
-    return topics.filter((topic) => topic.title.toLowerCase().includes(needle));
-  }, [topics, topicFilter]);
-
-  const selectedTopic = useMemo(
-    () => topics.find((topic) => topic.id === selectedTopicId) ?? topics[0],
-    [topics, selectedTopicId],
-  );
-
-  const updateProgram = (updater: (program: Program) => Program) => {
-    if (!selectedProgram) return;
-    setPrograms((prev) =>
-      prev.map((program) => (program.id === selectedProgram.id ? updater(program) : program)),
-    );
+  const text = (key: string, fallback: string) => {
+    const resolved = t(key);
+    return resolved === key ? fallback : resolved;
   };
 
-  const updateTopic = (topicId: string, updater: (topic: Topic) => Topic) => {
-    setTopics((prev) => prev.map((topic) => (topic.id === topicId ? updater(topic) : topic)));
-  };
+  useEffect(() => {
+    void loadKeys([
+      "config.programs.title",
+      "config.programs.description",
+      "config.programs.back",
+    ]);
+  }, [loadKeys]);
 
-  const updateSession = (topicId: string, sessionId: string, updater: (session: Session) => Session) => {
-    updateTopic(topicId, (topic) => ({
-      ...topic,
-      sessions: topic.sessions.map((session) => (session.id === sessionId ? updater(session) : session)),
-    }));
-  };
-
-  const addProgram = () => {
-    const id = makeId("program");
-    const newProgram: Program = {
-      id,
-      name: "New Recovery Program",
-      unit: "Alcohol",
-      status: "draft",
-      description: "",
-      topicIds: [],
-    };
-    setPrograms((prev) => [...prev, newProgram]);
-    setSelectedId(id);
-  };
-
-  const deleteProgram = (programId: string) => {
-    setPrograms((prev) => {
-      const next = prev.filter((program) => program.id !== programId);
-      if (selectedId === programId) {
-        setSelectedId(next[0]?.id ?? "");
-      }
-      return next;
-    });
-  };
-
-  const setProgramStatus = (programId: string, status: ProgramStatus) => {
-    setPrograms((prev) =>
-      prev.map((program) => {
-        if (program.id === programId) {
-          return { ...program, status };
-        }
-        if (status === "active") {
-          const target = prev.find((item) => item.id === programId);
-          if (target && program.unit === target.unit) {
-            return { ...program, status: "draft" };
-          }
-        }
-        return program;
-      }),
-    );
-  };
-
-  const addTopic = () => {
-    const id = makeId("topic");
-    setTopics((prev) => [...prev, { id, title: "New Topic", sessions: [] }]);
-    setSelectedTopicId(id);
-  };
-
-  const deleteTopic = (topicId: string) => {
-    setTopics((prev) => prev.filter((topic) => topic.id !== topicId));
-    setPrograms((prev) =>
-      prev.map((program) => ({
-        ...program,
-        topicIds: program.topicIds.filter((id) => id !== topicId),
-      })),
-    );
-    if (selectedTopicId === topicId) {
-      setSelectedTopicId(topics.find((topic) => topic.id !== topicId)?.id ?? null);
-    }
-  };
-
-  const addSession = (topicId: string) => {
-    updateTopic(topicId, (topic) => ({
-      ...topic,
-      sessions: [
-        ...topic.sessions,
-        {
-          id: makeId("session"),
-          title: "New Session",
-          content: "",
-          questions: [],
-          discussionPoints: [],
-          media: [],
-        },
-      ],
-    }));
-  };
-
-  const deleteSession = (topicId: string, sessionId: string) => {
-    updateTopic(topicId, (topic) => ({
-      ...topic,
-      sessions: topic.sessions.filter((session) => session.id !== sessionId),
-    }));
-  };
-
-  const addListItem = (
-    topicId: string,
-    sessionId: string,
-    field: "questions" | "discussionPoints",
-  ) => {
-    updateSession(topicId, sessionId, (session) => ({
-      ...session,
-      [field]: [...session[field], ""],
-    }));
-  };
-
-  const updateListItem = (
-    topicId: string,
-    sessionId: string,
-    field: "questions" | "discussionPoints",
-    index: number,
-    value: string,
-  ) => {
-    updateSession(topicId, sessionId, (session) => ({
-      ...session,
-      [field]: session[field].map((item, idx) => (idx === index ? value : item)),
-    }));
-  };
-
-  const removeListItem = (
-    topicId: string,
-    sessionId: string,
-    field: "questions" | "discussionPoints",
-    index: number,
-  ) => {
-    updateSession(topicId, sessionId, (session) => ({
-      ...session,
-      [field]: session[field].filter((_, idx) => idx !== index),
-    }));
-  };
-
-  const addMedia = (topicId: string, sessionId: string) => {
-    updateSession(topicId, sessionId, (session) => ({
-      ...session,
-      media: [...session.media, { id: makeId("media"), type: "video", label: "", url: "" }],
-    }));
-  };
-
-  const updateMedia = (
-    topicId: string,
-    sessionId: string,
-    mediaId: string,
-    field: keyof SessionMedia,
-    value: string,
-  ) => {
-    updateSession(topicId, sessionId, (session) => ({
-      ...session,
-      media: session.media.map((item) => (item.id === mediaId ? { ...item, [field]: value } : item)),
-    }));
-  };
-
-  const removeMedia = (topicId: string, sessionId: string, mediaId: string) => {
-    updateSession(topicId, sessionId, (session) => ({
-      ...session,
-      media: session.media.filter((item) => item.id !== mediaId),
-    }));
-  };
-
-  const ensureTopicInProgram = (topicId: string) => {
-    updateProgram((program) =>
-      program.topicIds.includes(topicId)
-        ? program
-        : { ...program, topicIds: [...program.topicIds, topicId] },
-    );
-  };
-
-  const removeTopicFromProgram = (topicId: string) => {
-    updateProgram((program) => ({
-      ...program,
-      topicIds: program.topicIds.filter((id) => id !== topicId),
-    }));
-  };
-
-  const moveTopic = (topicIds: string[], draggedId: string, targetId: string | null) => {
-    const next = topicIds.filter((id) => id !== draggedId);
-    if (!targetId) {
-      next.push(draggedId);
-      return next;
-    }
-    const targetIndex = next.indexOf(targetId);
-    if (targetIndex === -1) {
-      next.push(draggedId);
-      return next;
-    }
-    next.splice(targetIndex, 0, draggedId);
-    return next;
-  };
-
-  const handleDragStart = (event: React.DragEvent<HTMLDivElement>, payload: Record<string, string>) => {
-    event.dataTransfer.setData("application/json", JSON.stringify(payload));
-    event.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleProgramDrop = (
-    event: React.DragEvent<HTMLDivElement>,
-    targetId: string | null,
-  ) => {
-    event.preventDefault();
-    const raw = event.dataTransfer.getData("application/json");
-    if (!raw) return;
-    const payload = JSON.parse(raw) as { type: "library" | "program"; id: string };
-    if (!payload?.id || !selectedProgram) return;
-
-    if (payload.type === "library") {
-      updateProgram((program) => ({
-        ...program,
-        topicIds: program.topicIds.includes(payload.id)
-          ? program.topicIds
-          : targetId
-            ? moveTopic([...program.topicIds, payload.id], payload.id, targetId)
-            : [...program.topicIds, payload.id],
-      }));
+  const loadConfiguration = useCallback(async () => {
+    if (!accessToken && !isAuthorizationDisabled) {
       return;
     }
 
-    if (payload.type === "program") {
-      updateProgram((program) => ({
-        ...program,
-        topicIds: moveTopic(program.topicIds, payload.id, targetId),
-      }));
+    setLoading(true);
+    try {
+      setError(null);
+      const [centresResult, unitsResult, programmesResult, templatesResult, occurrencesResult] = await Promise.all([
+        globalConfigurationService.getCentres(accessToken),
+        globalConfigurationService.getUnits(accessToken),
+        globalConfigurationService.getProgrammeDefinitions(accessToken),
+        globalConfigurationService.getScheduleTemplates(accessToken),
+        globalConfigurationService.getScheduleOccurrences(accessToken),
+      ]);
+      setCentres(centresResult.filter((centre) => centre.isActive));
+      setUnits(unitsResult);
+      setProgrammes(programmesResult);
+      setTemplates(templatesResult);
+      setOccurrences(occurrencesResult);
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    void loadConfiguration();
+  }, [loadConfiguration]);
+
+  const unitsByCentre = useMemo(() => {
+    return units.reduce<Record<string, UnitConfigurationDto[]>>((lookup, unit) => {
+      const key = unit.centreId;
+      lookup[key] = [...(lookup[key] ?? []), unit];
+      return lookup;
+    }, {});
+  }, [units]);
+
+  const programmesByCentre = useMemo(() => {
+    return programmes.reduce<Record<string, ProgrammeDefinitionDto[]>>((lookup, programme) => {
+      const key = programme.centreId;
+      lookup[key] = [...(lookup[key] ?? []), programme];
+      return lookup;
+    }, {});
+  }, [programmes]);
+
+  const centreUnitsForTemplate = unitsByCentre[templateForm.centreId] ?? [];
+  const centreProgrammesForTemplate = programmesByCentre[templateForm.centreId] ?? [];
+  const centreUnitsForOccurrence = unitsByCentre[occurrenceForm.centreId] ?? [];
+  const centreProgrammesForOccurrence = programmesByCentre[occurrenceForm.centreId] ?? [];
+  const centreTemplatesForOccurrence = templates.filter((template) => template.centreId === occurrenceForm.centreId && template.isActive);
+
+  const resetProgrammeForm = () => {
+    setEditingProgrammeId(null);
+    setProgrammeForm(emptyProgrammeForm);
+  };
+
+  const resetTemplateForm = () => {
+    setEditingTemplateId(null);
+    setTemplateForm(emptyTemplateForm);
+  };
+
+  const resetOccurrenceForm = () => {
+    setEditingOccurrenceId(null);
+    setOccurrenceForm({ ...emptyOccurrenceForm, scheduledDate: todayIso });
+  };
+
+  const startEditProgramme = (programme: ProgrammeDefinitionDto) => {
+    setEditingProgrammeId(programme.programmeDefinitionId);
+    setProgrammeForm({
+      centreId: programme.centreId,
+      code: programme.code,
+      name: programme.name,
+      description: programme.description,
+      totalDurationValue: programme.totalDurationValue,
+      totalDurationUnit: programme.totalDurationUnit,
+      detoxPhaseDurationValue: programme.detoxPhaseDurationValue ?? null,
+      detoxPhaseDurationUnit: programme.detoxPhaseDurationUnit || "Weeks",
+      mainPhaseDurationValue: programme.mainPhaseDurationValue ?? null,
+      mainPhaseDurationUnit: programme.mainPhaseDurationUnit || "Weeks",
+      isActive: programme.isActive,
+    });
+  };
+
+  const startEditTemplate = (template: ScheduleTemplateDto) => {
+    setEditingTemplateId(template.scheduleTemplateId);
+    setTemplateForm({
+      centreId: template.centreId,
+      unitId: template.unitId ?? "",
+      programmeDefinitionId: template.programmeDefinitionId ?? "",
+      code: template.code,
+      name: template.name,
+      description: template.description,
+      category: template.category,
+      recurrenceType: template.recurrenceType,
+      weeklyDayOfWeek: template.weeklyDayOfWeek ?? null,
+      startTime: template.startTime,
+      endTime: template.endTime,
+      audienceType: template.audienceType,
+      facilitatorType: template.facilitatorType,
+      facilitatorRole: template.facilitatorRole,
+      externalResourceName: template.externalResourceName,
+      isActive: template.isActive,
+    });
+  };
+
+  const startEditOccurrence = (occurrence: ScheduleOccurrenceDto) => {
+    setEditingOccurrenceId(occurrence.scheduleOccurrenceId);
+    setOccurrenceForm({
+      centreId: occurrence.centreId,
+      unitId: occurrence.unitId ?? "",
+      programmeDefinitionId: occurrence.programmeDefinitionId ?? "",
+      templateId: occurrence.templateId ?? "",
+      title: occurrence.title,
+      description: occurrence.description,
+      category: occurrence.category,
+      scheduledDate: occurrence.scheduledDate,
+      startTime: occurrence.startTime,
+      endTime: occurrence.endTime,
+      audienceType: occurrence.audienceType,
+      facilitatorType: occurrence.facilitatorType,
+      facilitatorRole: occurrence.facilitatorRole,
+      externalResourceName: occurrence.externalResourceName,
+      status: occurrence.status,
+      notes: occurrence.notes,
+    });
+  };
+
+  const submitProgramme = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!accessToken && !isAuthorizationDisabled) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      setError(null);
+      const payload = {
+        ...programmeForm,
+        detoxPhaseDurationUnit: programmeForm.detoxPhaseDurationValue ? programmeForm.detoxPhaseDurationUnit : "",
+        mainPhaseDurationUnit: programmeForm.mainPhaseDurationValue ? programmeForm.mainPhaseDurationUnit : "",
+      };
+      if (editingProgrammeId) {
+        await globalConfigurationService.updateProgrammeDefinition(accessToken, editingProgrammeId, payload);
+      } else {
+        await globalConfigurationService.createProgrammeDefinition(accessToken, payload);
+      }
+      resetProgrammeForm();
+      await loadConfiguration();
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const submitTemplate = async (event: React.FormEvent) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
+    if (!accessToken && !isAuthorizationDisabled) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      setError(null);
+      const payload = {
+        ...templateForm,
+        unitId: templateForm.unitId || null,
+        programmeDefinitionId: templateForm.programmeDefinitionId || null,
+        weeklyDayOfWeek: templateForm.recurrenceType === "Weekly" ? templateForm.weeklyDayOfWeek ?? null : null,
+      };
+      if (editingTemplateId) {
+        await globalConfigurationService.updateScheduleTemplate(accessToken, editingTemplateId, payload);
+      } else {
+        await globalConfigurationService.createScheduleTemplate(accessToken, payload);
+      }
+      resetTemplateForm();
+      await loadConfiguration();
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (!selectedProgram) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <p className="text-gray-500">No programs available.</p>
-        </main>
-      </div>
-    );
-  }
+  const submitOccurrence = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!accessToken && !isAuthorizationDisabled) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      setError(null);
+      const payload = {
+        ...occurrenceForm,
+        unitId: occurrenceForm.unitId || null,
+        programmeDefinitionId: occurrenceForm.programmeDefinitionId || null,
+        templateId: occurrenceForm.templateId || null,
+      };
+      if (editingOccurrenceId) {
+        await globalConfigurationService.updateScheduleOccurrence(accessToken, editingOccurrenceId, payload);
+      } else {
+        await globalConfigurationService.createScheduleOccurrence(accessToken, payload);
+      }
+      resetOccurrenceForm();
+      await loadConfiguration();
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveUnitProgramme = async (unit: UnitConfigurationDto, programmeDefinitionId: string | null) => {
+    if (!accessToken && !isAuthorizationDisabled) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      setError(null);
+      const payload: UpsertUnitRequest = {
+        centreId: unit.centreId,
+        unitCode: unit.unitCode,
+        displayName: unit.displayName,
+        description: unit.description,
+        unitCapacity: unit.unitCapacity,
+        currentOccupancy: unit.currentOccupancy,
+        capacityWarningThreshold: unit.capacityWarningThreshold,
+        defaultResidentWeekNumber: unit.defaultResidentWeekNumber,
+        programmeDefinitionId,
+        displayOrder: unit.displayOrder,
+        isActive: unit.isActive,
+      };
+      await globalConfigurationService.updateUnit(accessToken, unit.unitId, payload);
+      await loadConfiguration();
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const archiveProgramme = async (programmeDefinitionId: string) => {
+    if (!accessToken && !isAuthorizationDisabled) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      setError(null);
+      await globalConfigurationService.archiveProgrammeDefinition(accessToken, programmeDefinitionId);
+      if (editingProgrammeId === programmeDefinitionId) {
+        resetProgrammeForm();
+      }
+      await loadConfiguration();
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const archiveTemplate = async (scheduleTemplateId: string) => {
+    if (!accessToken && !isAuthorizationDisabled) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      setError(null);
+      await globalConfigurationService.archiveScheduleTemplate(accessToken, scheduleTemplateId);
+      if (editingTemplateId === scheduleTemplateId) {
+        resetTemplateForm();
+      }
+      await loadConfiguration();
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const archiveOccurrence = async (scheduleOccurrenceId: string) => {
+    if (!accessToken && !isAuthorizationDisabled) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      setError(null);
+      await globalConfigurationService.archiveScheduleOccurrence(accessToken, scheduleOccurrenceId);
+      if (editingOccurrenceId === scheduleOccurrenceId) {
+        resetOccurrenceForm();
+      }
+      await loadConfiguration();
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={() => router.push("/units/config")}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-semibold transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Back to Configuration</span>
-          </button>
-          <div className="flex items-center gap-3">
-            <ClipboardCheck className="h-7 w-7 text-gray-700" />
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Program Manager</h1>
-              <p className="text-gray-600">Design recovery programmes by unit and topic.</p>
+    <SuperAdminGuard
+      title={text("config.programs.title", "Program Manager")}
+      description={text("config.programs.description", "Manage programme definitions, unit assignments, recurring schedule templates, and one-off occurrences.")}
+    >
+      <div className="app-page-shell">
+        <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mb-6 flex items-center gap-3">
+            <button
+              onClick={() => router.push("/units/config")}
+              className="flex items-center gap-2 text-sm font-semibold text-[var(--app-primary)] transition-colors hover:text-[var(--app-primary-strong)]"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span>{text("config.programs.back", "Back to Configuration")}</span>
+            </button>
+            <div className="flex items-center gap-3">
+              <ClipboardCheck className="h-7 w-7 text-[var(--app-primary)]" />
+              <div>
+                <h1 className="text-2xl font-semibold text-[var(--app-text)]">{text("config.programs.title", "Program Manager")}</h1>
+                <p className="text-[var(--app-text-muted)]">
+                  {text("config.programs.description", "Manage programme definitions, unit assignments, recurring schedule templates, and one-off occurrences.")}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr_2fr]">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4 h-fit">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">Programmes</h2>
-              <button
-                onClick={addProgram}
-                className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700"
-              >
-                <Plus className="h-4 w-4" />
-                New
-              </button>
+          {error && (
+            <div className="mb-6 rounded-xl border border-[var(--app-danger)]/30 bg-[var(--app-danger)]/10 px-4 py-3 text-sm text-[var(--app-danger)]">
+              {error}
             </div>
-            <div className="space-y-2">
-              {programs.map((program) => (
-                <button
-                  key={program.id}
-                  onClick={() => setSelectedId(program.id)}
-                  className={`w-full text-left rounded-lg border px-3 py-2 transition ${
-                    program.id === selectedProgram.id
-                      ? "border-blue-200 bg-blue-50"
-                      : "border-gray-200 bg-white hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
+          )}
+
+          {loading ? (
+            <div className="app-card rounded-2xl p-6 text-sm text-[var(--app-text-muted)]">Loading programme configuration...</div>
+          ) : (
+            <div className="space-y-6">
+              <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+                <div className="app-card rounded-2xl p-6">
+                  <div className="mb-4 flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{program.name}</p>
-                      <p className="text-xs text-gray-500">{program.unit} Unit</p>
+                      <h2 className="text-lg font-semibold text-[var(--app-text)]">Programme Definitions</h2>
+                      <p className="text-sm text-[var(--app-text-muted)]">Define duration models per centre and reuse them across units.</p>
                     </div>
-                    <span
-                      className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                        program.status === "active"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
+                    <button
+                      type="button"
+                      onClick={resetProgrammeForm}
+                      className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white"
                     >
-                      {program.status}
-                    </span>
+                      <Plus className="h-4 w-4" />
+                      New programme
+                    </button>
                   </div>
-                </button>
-              ))}
-            </div>
-          </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6 h-fit">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="space-y-2">
-                <input
-                  value={selectedProgram.name}
-                  onChange={(event) =>
-                    updateProgram((program) => ({ ...program, name: event.target.value }))
-                  }
-                  className="w-full text-xl font-semibold text-gray-900 border border-transparent focus:border-blue-200 rounded-lg px-2 py-1"
-                />
-                <textarea
-                  value={selectedProgram.description}
-                  onChange={(event) =>
-                    updateProgram((program) => ({ ...program, description: event.target.value }))
-                  }
-                  placeholder="Describe the purpose and outcomes for this programme."
-                  className="w-full text-sm text-gray-600 border border-gray-200 rounded-lg px-3 py-2 min-h-[80px]"
-                />
-                <div className="flex flex-wrap gap-3">
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Unit
-                    <select
-                      value={selectedProgram.unit}
-                      onChange={(event) =>
-                        updateProgram((program) => ({
-                          ...program,
-                          unit: event.target.value as UnitId,
-                        }))
-                      }
-                      className="mt-1 block rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
-                    >
-                      {Units.map((unit) => (
-                        <option key={unit} value={unit}>
-                          {unit}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Status
-                    <div className="mt-1 flex gap-2">
-                      <button
-                        onClick={() => setProgramStatus(selectedProgram.id, "draft")}
-                        className={`px-3 py-2 rounded-lg text-sm font-semibold ${
-                          selectedProgram.status === "draft"
-                            ? "bg-gray-900 text-white"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        <FileEdit className="h-4 w-4 inline mr-1" />
-                        Draft
-                      </button>
-                      <button
-                        onClick={() => setProgramStatus(selectedProgram.id, "active")}
-                        className={`px-3 py-2 rounded-lg text-sm font-semibold ${
-                          selectedProgram.status === "active"
-                            ? "bg-green-600 text-white"
-                            : "bg-green-50 text-green-700"
-                        }`}
-                      >
-                        <CheckCircle2 className="h-4 w-4 inline mr-1" />
-                        Active
-                      </button>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <button
-                onClick={() => deleteProgram(selectedProgram.id)}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete programme
-              </button>
-            </div>
-
-            <div className="rounded-lg border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-              Drag topics from the library or reorder the list below. Only the topics referenced
-              here appear in the programme.
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-900">Topics in this programme</h3>
-              <div
-                className="space-y-2 min-h-[120px]"
-                onDrop={(event) => handleProgramDrop(event, null)}
-                onDragOver={handleDragOver}
-              >
-                {selectedProgram.topicIds.length === 0 ? (
-                  <div className="text-xs text-gray-400 border border-dashed border-gray-200 rounded-lg p-4">
-                    Drop topics here to add them.
-                  </div>
-                ) : (
-                  selectedProgram.topicIds.map((topicId) => {
-                    const topic = topics.find((item) => item.id === topicId);
-                    if (!topic) return null;
-                    return (
-                      <div
-                        key={topicId}
-                        draggable
-                        onDragStart={(event) =>
-                          handleDragStart(event, { type: "program", id: topicId })
-                        }
-                        onDrop={(event) => handleProgramDrop(event, topicId)}
-                        onDragOver={handleDragOver}
-                        className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm bg-gray-50 cursor-grab"
-                      >
-                        <div className="flex items-center gap-2">
-                          <GripVertical className="h-4 w-4 text-gray-400" />
+                  <div className="space-y-3">
+                    {programmes.map((programme) => (
+                      <div key={programme.programmeDefinitionId} className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <p className="font-semibold text-gray-900">{topic.title}</p>
-                            <p className="text-xs text-gray-500">{topic.sessions.length} sessions</p>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-semibold text-[var(--app-text)]">{programme.name}</h3>
+                              <span className="rounded-full bg-[var(--app-surface-muted)] px-2 py-1 text-xs font-semibold text-[var(--app-text-muted)]">
+                                {programme.code}
+                              </span>
+                              {!programme.isActive && (
+                                <span className="rounded-full bg-[var(--app-warning)]/10 px-2 py-1 text-xs font-semibold text-[var(--app-warning)]">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-sm text-[var(--app-text-muted)]">{programme.description}</p>
+                            <div className="mt-2 flex flex-wrap gap-4 text-xs text-[var(--app-text-muted)]">
+                              <span>{programme.centreName}</span>
+                              <span>{programme.totalDurationValue} {programme.totalDurationUnit}</span>
+                              {programme.detoxPhaseDurationValue ? <span>Detox {programme.detoxPhaseDurationValue} {programme.detoxPhaseDurationUnit}</span> : null}
+                              {programme.mainPhaseDurationValue ? <span>Main {programme.mainPhaseDurationValue} {programme.mainPhaseDurationUnit}</span> : null}
+                            </div>
+                            <p className="mt-2 text-xs text-[var(--app-text-muted)]">
+                              Assigned units: {programme.assignedUnitNames.length > 0 ? programme.assignedUnitNames.join(", ") : "None"}
+                            </p>
                           </div>
-                        </div>
-                        <button
-                          onClick={() => removeTopicFromProgram(topicId)}
-                          className="text-gray-400 hover:text-red-500"
-                          title="Remove from programme"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <Layers className="h-4 w-4 text-gray-500" />
-                Topic Library
-              </h2>
-              <button
-                onClick={addTopic}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
-              >
-                <Plus className="h-4 w-4" />
-                Add topic
-              </button>
-            </div>
-
-            <input
-              value={topicFilter}
-              onChange={(event) => setTopicFilter(event.target.value)}
-              placeholder="Filter topics"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-            />
-
-            {filteredTopics.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-gray-200 p-6 text-sm text-gray-500">
-                No topics found.
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-[360px] overflow-auto pr-1">
-                {filteredTopics.map((topic) => {
-                  const inProgram = selectedProgram.topicIds.includes(topic.id);
-                  return (
-                    <div
-                      key={topic.id}
-                      draggable
-                      onDragStart={(event) => handleDragStart(event, { type: "library", id: topic.id })}
-                      className={`rounded-lg border px-3 py-3 text-sm cursor-grab ${
-                        inProgram ? "border-blue-200 bg-blue-50" : "border-gray-200 bg-gray-50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <button
-                          onClick={() => setSelectedTopicId(topic.id)}
-                          className="text-left"
-                        >
-                          <p className="font-semibold text-gray-900">{topic.title}</p>
-                          <p className="text-xs text-gray-500">{topic.sessions.length} sessions</p>
-                        </button>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() =>
-                              inProgram ? removeTopicFromProgram(topic.id) : ensureTopicInProgram(topic.id)
-                            }
-                            className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                              inProgram ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {inProgram ? "In programme" : "Add"}
-                          </button>
-                          <button
-                            onClick={() => deleteTopic(topic.id)}
-                            className="text-gray-400 hover:text-red-500"
-                            title="Delete topic"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {selectedTopic ? (
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Topic editor</p>
-                    <p className="text-xs text-gray-500">Editing one topic at a time keeps the view fast.</p>
-                  </div>
-                  <div className="text-xs text-gray-500 flex items-center gap-1">
-                    <CornerDownLeft className="h-3 w-3" />
-                    {selectedTopic.sessions.length} sessions
-                  </div>
-                </div>
-
-                <input
-                  value={selectedTopic.title}
-                  onChange={(event) =>
-                    updateTopic(selectedTopic.id, (current) => ({ ...current, title: event.target.value }))
-                  }
-                  className="text-lg font-semibold text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-2"
-                />
-
-                <div className="space-y-4">
-                  {selectedTopic.sessions.map((session) => (
-                    <div key={session.id} className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <input
-                          value={session.title}
-                          onChange={(event) =>
-                            updateSession(selectedTopic.id, session.id, (current) => ({
-                              ...current,
-                              title: event.target.value,
-                            }))
-                          }
-                          className="text-base font-semibold text-gray-900 border border-transparent focus:border-blue-200 rounded-lg px-2 py-1 w-full"
-                        />
-                        <button
-                          onClick={() => deleteSession(selectedTopic.id, session.id)}
-                          className="text-gray-400 hover:text-red-500 ml-3"
-                          title="Delete session"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-
-                      <label className="block text-sm text-gray-600">
-                        Session text
-                        <textarea
-                          value={session.content}
-                          onChange={(event) =>
-                            updateSession(selectedTopic.id, session.id, (current) => ({
-                              ...current,
-                              content: event.target.value,
-                            }))
-                          }
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm min-h-[90px]"
-                        />
-                      </label>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
-                              <HelpCircle className="h-4 w-4 text-gray-400" />
-                              Questions
-                            </span>
+                          <div className="flex gap-2">
                             <button
-                              onClick={() => addListItem(selectedTopic.id, session.id, "questions")}
-                              className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                              type="button"
+                              onClick={() => startEditProgramme(programme)}
+                              className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-text)]"
                             >
-                              + Add
+                              <PencilLine className="h-4 w-4" />
+                              Edit
                             </button>
-                          </div>
-                          {session.questions.length === 0 ? (
-                            <p className="text-xs text-gray-400">No questions yet.</p>
-                          ) : (
-                            session.questions.map((question, index) => (
-                              <div key={`${session.id}-q-${index}`} className="flex items-center gap-2">
-                                <input
-                                  value={question}
-                                  onChange={(event) =>
-                                    updateListItem(
-                                      selectedTopic.id,
-                                      session.id,
-                                      "questions",
-                                      index,
-                                      event.target.value,
-                                    )
-                                  }
-                                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                                />
-                                <button
-                                  onClick={() => removeListItem(selectedTopic.id, session.id, "questions", index)}
-                                  className="text-gray-400 hover:text-red-500"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
-                              <PlayCircle className="h-4 w-4 text-gray-400" />
-                              Discussion points
-                            </span>
-                            <button
-                              onClick={() => addListItem(selectedTopic.id, session.id, "discussionPoints")}
-                              className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-                            >
-                              + Add
-                            </button>
-                          </div>
-                          {session.discussionPoints.length === 0 ? (
-                            <p className="text-xs text-gray-400">No discussion points yet.</p>
-                          ) : (
-                            session.discussionPoints.map((point, index) => (
-                              <div key={`${session.id}-d-${index}`} className="flex items-center gap-2">
-                                <input
-                                  value={point}
-                                  onChange={(event) =>
-                                    updateListItem(
-                                      selectedTopic.id,
-                                      session.id,
-                                      "discussionPoints",
-                                      index,
-                                      event.target.value,
-                                    )
-                                  }
-                                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                                />
-                                <button
-                                  onClick={() =>
-                                    removeListItem(selectedTopic.id, session.id, "discussionPoints", index)
-                                  }
-                                  className="text-gray-400 hover:text-red-500"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-gray-700">Multimedia</span>
-                          <button
-                            onClick={() => addMedia(selectedTopic.id, session.id)}
-                            className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-                          >
-                            + Add media
-                          </button>
-                        </div>
-                        {session.media.length === 0 ? (
-                          <p className="text-xs text-gray-400">No multimedia linked.</p>
-                        ) : (
-                          session.media.map((media) => (
-                            <div key={media.id} className="grid gap-2 sm:grid-cols-[160px_1fr_auto]">
-                              <select
-                                value={media.type}
-                                onChange={(event) =>
-                                  updateMedia(selectedTopic.id, session.id, media.id, "type", event.target.value)
-                                }
-                                className="rounded-lg border border-gray-200 px-2 py-2 text-sm"
-                              >
-                                {['video', 'animation', 'audio', 'image', 'link'].map((option) => (
-                                  <option key={option} value={option}>
-                                    {option}
-                                  </option>
-                                ))}
-                              </select>
-                              <input
-                                value={media.label}
-                                onChange={(event) =>
-                                  updateMedia(selectedTopic.id, session.id, media.id, "label", event.target.value)
-                                }
-                                placeholder="Label"
-                                className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                              />
+                            {programme.isActive && (
                               <button
-                                onClick={() => removeMedia(selectedTopic.id, session.id, media.id)}
-                                className="text-gray-400 hover:text-red-500"
+                                type="button"
+                                onClick={() => void archiveProgramme(programme.programmeDefinitionId)}
+                                className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-danger)]/30 px-3 py-2 text-sm font-semibold text-[var(--app-danger)]"
                               >
                                 <Trash2 className="h-4 w-4" />
+                                Archive
                               </button>
-                              <input
-                                value={media.url ?? ""}
-                                onChange={(event) =>
-                                  updateMedia(selectedTopic.id, session.id, media.id, "url", event.target.value)
-                                }
-                                placeholder="URL (optional)"
-                                className="rounded-lg border border-gray-200 px-3 py-2 text-sm sm:col-span-2"
-                              />
-                            </div>
-                          ))
-                        )}
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => addSession(selectedTopic.id)}
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add session
-                </button>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-gray-200 p-6 text-sm text-gray-500">
-                Select a topic to edit sessions.
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
+                <form onSubmit={submitProgramme} className="app-card rounded-2xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-[var(--app-text)]">
+                      {editingProgrammeId ? "Edit programme" : "Create programme"}
+                    </h2>
+                    {editingProgrammeId && (
+                      <button type="button" onClick={resetProgrammeForm} className="text-sm font-semibold text-[var(--app-text-muted)]">
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Centre</span>
+                      <select value={programmeForm.centreId} onChange={(event) => setProgrammeForm((current) => ({ ...current, centreId: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="">Select centre</option>
+                        {centres.map((centre) => <option key={centre.centreId} value={centre.centreId}>{centre.displayName}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Code</span>
+                      <input value={programmeForm.code} onChange={(event) => setProgrammeForm((current) => ({ ...current, code: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)] sm:col-span-2">
+                      <span>Name</span>
+                      <input value={programmeForm.name} onChange={(event) => setProgrammeForm((current) => ({ ...current, name: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                  </div>
+                  <label className="block space-y-1 text-sm text-[var(--app-text)]">
+                    <span>Description</span>
+                    <textarea value={programmeForm.description} onChange={(event) => setProgrammeForm((current) => ({ ...current, description: event.target.value }))} rows={3} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                  </label>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Total duration</span>
+                      <input type="number" min={1} value={programmeForm.totalDurationValue} onChange={(event) => setProgrammeForm((current) => ({ ...current, totalDurationValue: Number(event.target.value) }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Duration unit</span>
+                      <select value={programmeForm.totalDurationUnit} onChange={(event) => setProgrammeForm((current) => ({ ...current, totalDurationUnit: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        {durationUnits.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Detox phase</span>
+                      <input type="number" min={0} value={programmeForm.detoxPhaseDurationValue ?? 0} onChange={(event) => setProgrammeForm((current) => ({ ...current, detoxPhaseDurationValue: Number(event.target.value) || null }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Detox unit</span>
+                      <select value={programmeForm.detoxPhaseDurationUnit} onChange={(event) => setProgrammeForm((current) => ({ ...current, detoxPhaseDurationUnit: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        {durationUnits.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Main phase</span>
+                      <input type="number" min={0} value={programmeForm.mainPhaseDurationValue ?? 0} onChange={(event) => setProgrammeForm((current) => ({ ...current, mainPhaseDurationValue: Number(event.target.value) || null }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Main unit</span>
+                      <select value={programmeForm.mainPhaseDurationUnit} onChange={(event) => setProgrammeForm((current) => ({ ...current, mainPhaseDurationUnit: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        {durationUnits.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                  <label className="inline-flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
+                    <input type="checkbox" checked={programmeForm.isActive} onChange={(event) => setProgrammeForm((current) => ({ ...current, isActive: event.target.checked }))} />
+                    Active
+                  </label>
+                  <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+                    {editingProgrammeId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    {editingProgrammeId ? "Save programme" : "Create programme"}
+                  </button>
+                </form>
+              </section>
+
+              <section className="app-card rounded-2xl p-6">
+                <h2 className="text-lg font-semibold text-[var(--app-text)]">Unit Programme Assignment</h2>
+                <p className="mt-1 text-sm text-[var(--app-text-muted)]">Assign an optional programme definition to each active unit.</p>
+                <div className="mt-4 grid gap-3">
+                  {units.filter((unit) => unit.isActive).map((unit) => {
+                    const availableProgrammes = programmesByCentre[unit.centreId] ?? [];
+                    return (
+                      <div key={unit.unitId} className="grid gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3 md:grid-cols-[1fr_260px_auto] md:items-center">
+                        <div>
+                          <p className="font-semibold text-[var(--app-text)]">{unit.displayName}</p>
+                          <p className="text-sm text-[var(--app-text-muted)]">{unit.centreName}</p>
+                        </div>
+                        <select
+                          value={unit.programmeDefinitionId ?? ""}
+                          onChange={(event) => void saveUnitProgramme(unit, event.target.value || null)}
+                          className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm text-[var(--app-text)]"
+                        >
+                          <option value="">No programme assigned</option>
+                          {availableProgrammes.map((programme) => (
+                            <option key={programme.programmeDefinitionId} value={programme.programmeDefinitionId}>
+                              {programme.name}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-sm text-[var(--app-text-muted)]">{unit.programmeDefinitionName || "Unassigned"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="app-card rounded-2xl p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-[var(--app-text)]">Schedule Templates</h2>
+                      <p className="text-sm text-[var(--app-text-muted)]">Define recurring daily, weekly, or named reusable schedule items.</p>
+                    </div>
+                    <button type="button" onClick={resetTemplateForm} className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white">
+                      <Plus className="h-4 w-4" />
+                      New template
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {templates.map((template) => (
+                      <div key={template.scheduleTemplateId} className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-[var(--app-text)]">{template.name}</h3>
+                              <span className="rounded-full bg-[var(--app-surface-muted)] px-2 py-1 text-xs font-semibold text-[var(--app-text-muted)]">{template.recurrenceType}</span>
+                              {!template.isActive && <span className="rounded-full bg-[var(--app-warning)]/10 px-2 py-1 text-xs font-semibold text-[var(--app-warning)]">Inactive</span>}
+                            </div>
+                            <p className="mt-1 text-sm text-[var(--app-text-muted)]">{template.unitName || template.centreName}</p>
+                            <p className="text-xs text-[var(--app-text-muted)]">
+                              {template.code} {template.startTime ? `• ${template.startTime}` : ""} {template.endTime ? `- ${template.endTime}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => startEditTemplate(template)} className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-text)]">
+                              <PencilLine className="h-4 w-4" />
+                              Edit
+                            </button>
+                            {template.isActive && (
+                              <button type="button" onClick={() => void archiveTemplate(template.scheduleTemplateId)} className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-danger)]/30 px-3 py-2 text-sm font-semibold text-[var(--app-danger)]">
+                                <Trash2 className="h-4 w-4" />
+                                Archive
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <form onSubmit={submitTemplate} className="app-card rounded-2xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingTemplateId ? "Edit template" : "Create template"}</h2>
+                    {editingTemplateId && <button type="button" onClick={resetTemplateForm} className="text-sm font-semibold text-[var(--app-text-muted)]">Clear</button>}
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Centre</span>
+                      <select value={templateForm.centreId} onChange={(event) => setTemplateForm((current) => ({ ...current, centreId: event.target.value, unitId: "", programmeDefinitionId: "" }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="">Select centre</option>
+                        {centres.map((centre) => <option key={centre.centreId} value={centre.centreId}>{centre.displayName}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Unit</span>
+                      <select value={templateForm.unitId ?? ""} onChange={(event) => setTemplateForm((current) => ({ ...current, unitId: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="">Centre-wide / optional</option>
+                        {centreUnitsForTemplate.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.displayName}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Programme</span>
+                      <select value={templateForm.programmeDefinitionId ?? ""} onChange={(event) => setTemplateForm((current) => ({ ...current, programmeDefinitionId: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="">None</option>
+                        {centreProgrammesForTemplate.map((programme) => <option key={programme.programmeDefinitionId} value={programme.programmeDefinitionId}>{programme.name}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Code</span>
+                      <input value={templateForm.code} onChange={(event) => setTemplateForm((current) => ({ ...current, code: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)] sm:col-span-2">
+                      <span>Name</span>
+                      <input value={templateForm.name} onChange={(event) => setTemplateForm((current) => ({ ...current, name: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                  </div>
+                  <label className="block space-y-1 text-sm text-[var(--app-text)]">
+                    <span>Description</span>
+                    <textarea value={templateForm.description} onChange={(event) => setTemplateForm((current) => ({ ...current, description: event.target.value }))} rows={3} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                  </label>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Category</span>
+                      <input value={templateForm.category} onChange={(event) => setTemplateForm((current) => ({ ...current, category: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Recurrence</span>
+                      <select value={templateForm.recurrenceType} onChange={(event) => setTemplateForm((current) => ({ ...current, recurrenceType: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        {recurrenceTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                    </label>
+                    {templateForm.recurrenceType === "Weekly" && (
+                      <label className="space-y-1 text-sm text-[var(--app-text)]">
+                        <span>Weekday</span>
+                        <select value={templateForm.weeklyDayOfWeek ?? ""} onChange={(event) => setTemplateForm((current) => ({ ...current, weeklyDayOfWeek: Number(event.target.value) }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                          {weekdays.map((day) => <option key={day.value} value={day.value}>{day.label}</option>)}
+                        </select>
+                      </label>
+                    )}
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Start time</span>
+                      <input type="time" value={templateForm.startTime} onChange={(event) => setTemplateForm((current) => ({ ...current, startTime: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>End time</span>
+                      <input type="time" value={templateForm.endTime} onChange={(event) => setTemplateForm((current) => ({ ...current, endTime: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Audience</span>
+                      <select value={templateForm.audienceType} onChange={(event) => setTemplateForm((current) => ({ ...current, audienceType: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        {audienceTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Facilitator type</span>
+                      <select value={templateForm.facilitatorType} onChange={(event) => setTemplateForm((current) => ({ ...current, facilitatorType: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        {facilitatorTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Facilitator role</span>
+                      <input value={templateForm.facilitatorRole} onChange={(event) => setTemplateForm((current) => ({ ...current, facilitatorRole: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>External resource</span>
+                      <input value={templateForm.externalResourceName} onChange={(event) => setTemplateForm((current) => ({ ...current, externalResourceName: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                  </div>
+                  <label className="inline-flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
+                    <input type="checkbox" checked={templateForm.isActive} onChange={(event) => setTemplateForm((current) => ({ ...current, isActive: event.target.checked }))} />
+                    Active
+                  </label>
+                  <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+                    {editingTemplateId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    {editingTemplateId ? "Save template" : "Create template"}
+                  </button>
+                </form>
+              </section>
+
+              <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="app-card rounded-2xl p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-[var(--app-text)]">Schedule Occurrences</h2>
+                      <p className="text-sm text-[var(--app-text-muted)]">Manage one-off or date-specific items that belong on the timeline.</p>
+                    </div>
+                    <button type="button" onClick={resetOccurrenceForm} className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white">
+                      <CalendarClock className="h-4 w-4" />
+                      New occurrence
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {occurrences.slice(0, 24).map((occurrence) => (
+                      <div key={occurrence.scheduleOccurrenceId} className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-[var(--app-text)]">{occurrence.title}</h3>
+                              <span className="rounded-full bg-[var(--app-surface-muted)] px-2 py-1 text-xs font-semibold text-[var(--app-text-muted)]">{occurrence.status}</span>
+                            </div>
+                            <p className="mt-1 text-sm text-[var(--app-text-muted)]">{occurrence.scheduledDate} {occurrence.startTime ? `• ${occurrence.startTime}` : ""}</p>
+                            <p className="text-xs text-[var(--app-text-muted)]">{occurrence.unitName || occurrence.centreName}{occurrence.templateName ? ` • ${occurrence.templateName}` : ""}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => startEditOccurrence(occurrence)} className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-text)]">
+                              <PencilLine className="h-4 w-4" />
+                              Edit
+                            </button>
+                            {occurrence.status !== "Cancelled" && (
+                              <button type="button" onClick={() => void archiveOccurrence(occurrence.scheduleOccurrenceId)} className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-danger)]/30 px-3 py-2 text-sm font-semibold text-[var(--app-danger)]">
+                                <Trash2 className="h-4 w-4" />
+                                Cancel
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <form onSubmit={submitOccurrence} className="app-card rounded-2xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingOccurrenceId ? "Edit occurrence" : "Create occurrence"}</h2>
+                    {editingOccurrenceId && <button type="button" onClick={resetOccurrenceForm} className="text-sm font-semibold text-[var(--app-text-muted)]">Clear</button>}
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Centre</span>
+                      <select value={occurrenceForm.centreId} onChange={(event) => setOccurrenceForm((current) => ({ ...current, centreId: event.target.value, unitId: "", programmeDefinitionId: "", templateId: "" }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="">Select centre</option>
+                        {centres.map((centre) => <option key={centre.centreId} value={centre.centreId}>{centre.displayName}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Unit</span>
+                      <select value={occurrenceForm.unitId ?? ""} onChange={(event) => setOccurrenceForm((current) => ({ ...current, unitId: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="">None</option>
+                        {centreUnitsForOccurrence.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.displayName}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Programme</span>
+                      <select value={occurrenceForm.programmeDefinitionId ?? ""} onChange={(event) => setOccurrenceForm((current) => ({ ...current, programmeDefinitionId: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="">None</option>
+                        {centreProgrammesForOccurrence.map((programme) => <option key={programme.programmeDefinitionId} value={programme.programmeDefinitionId}>{programme.name}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Template</span>
+                      <select value={occurrenceForm.templateId ?? ""} onChange={(event) => setOccurrenceForm((current) => ({ ...current, templateId: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="">None</option>
+                        {centreTemplatesForOccurrence.map((template) => <option key={template.scheduleTemplateId} value={template.scheduleTemplateId}>{template.name}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)] sm:col-span-2">
+                      <span>Title</span>
+                      <input value={occurrenceForm.title} onChange={(event) => setOccurrenceForm((current) => ({ ...current, title: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                  </div>
+                  <label className="block space-y-1 text-sm text-[var(--app-text)]">
+                    <span>Description</span>
+                    <textarea value={occurrenceForm.description} onChange={(event) => setOccurrenceForm((current) => ({ ...current, description: event.target.value }))} rows={3} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                  </label>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Category</span>
+                      <input value={occurrenceForm.category} onChange={(event) => setOccurrenceForm((current) => ({ ...current, category: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Status</span>
+                      <select value={occurrenceForm.status} onChange={(event) => setOccurrenceForm((current) => ({ ...current, status: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        {occurrenceStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Date</span>
+                      <input type="date" value={occurrenceForm.scheduledDate} onChange={(event) => setOccurrenceForm((current) => ({ ...current, scheduledDate: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Audience</span>
+                      <select value={occurrenceForm.audienceType} onChange={(event) => setOccurrenceForm((current) => ({ ...current, audienceType: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        {audienceTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Start time</span>
+                      <input type="time" value={occurrenceForm.startTime} onChange={(event) => setOccurrenceForm((current) => ({ ...current, startTime: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>End time</span>
+                      <input type="time" value={occurrenceForm.endTime} onChange={(event) => setOccurrenceForm((current) => ({ ...current, endTime: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Facilitator type</span>
+                      <select value={occurrenceForm.facilitatorType} onChange={(event) => setOccurrenceForm((current) => ({ ...current, facilitatorType: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        {facilitatorTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Facilitator role</span>
+                      <input value={occurrenceForm.facilitatorRole} onChange={(event) => setOccurrenceForm((current) => ({ ...current, facilitatorRole: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>External resource</span>
+                      <input value={occurrenceForm.externalResourceName} onChange={(event) => setOccurrenceForm((current) => ({ ...current, externalResourceName: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                    </label>
+                  </div>
+                  <label className="block space-y-1 text-sm text-[var(--app-text)]">
+                    <span>Notes</span>
+                    <textarea value={occurrenceForm.notes} onChange={(event) => setOccurrenceForm((current) => ({ ...current, notes: event.target.value }))} rows={3} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2" />
+                  </label>
+                  <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+                    {editingOccurrenceId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    {editingOccurrenceId ? "Save occurrence" : "Create occurrence"}
+                  </button>
+                </form>
+              </section>
+            </div>
+          )}
+        </main>
+      </div>
+    </SuperAdminGuard>
   );
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   Bell,
   Users,
@@ -19,8 +20,10 @@ import {
   CalendarDays,
   type LucideIcon,
 } from "lucide-react";
+import { getUnitTimeline, type UnitTimelineItemDto } from "@/services/unitTimelineService";
 
 interface ScheduleEvent {
+  key: string;
   time: string;
   timeMinutes: number;
   title: string;
@@ -33,15 +36,19 @@ interface ScheduleEvent {
 }
 
 type UnitDailyTimelineProps = {
+  unitId: string;
   unitName: string;
   onOpenGroupTherapy: (moduleKey?: string) => void;
   onOpenRollCall: () => void;
 };
 
-const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenGroupTherapy, onOpenRollCall }) => {
+const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName, onOpenGroupTherapy, onOpenRollCall }) => {
+  const { data: session } = useSession();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [manualViewMode, setManualViewMode] = useState<"morning" | "evening" | null>(null);
+  const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -53,31 +60,123 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
     return hours * 60 + minutes;
   };
 
-  const morningSchedule: ScheduleEvent[] = [
-    { time: "06:30", timeMinutes: 390, title: "Wake Up Bell", icon: Bell, color: "bg-orange-500", description: "Morning wake up call for all residents", stackPosition: 0 },
-    { time: "07:15", timeMinutes: 435, title: "Roll Call", icon: Users, color: "bg-blue-500", description: "Morning roll call followed by guided meditation session", endTime: "07:45", stackPosition: 0 },
-    { time: "07:45", timeMinutes: 465, title: "Works/Group", icon: Briefcase, color: "bg-purple-500", description: "Works Meeting (Mon) OR Group Therapy (Tue-Fri)", days: "Mon: Works | Tue-Fri: Group", endTime: "08:30", stackPosition: 0 },
-    { time: "08:30", timeMinutes: 510, title: "Room Check", icon: Bed, color: "bg-green-500", description: "Daily room inspection and tidiness check", stackPosition: 0 },
-    { time: "08:45", timeMinutes: 525, title: "Coffee", icon: Coffee, color: "bg-amber-600", description: "Morning coffee and social time", stackPosition: 0 },
-    { time: "09:05", timeMinutes: 545, title: "OT", icon: Wrench, color: "bg-teal-500", description: "Morning Occupational Therapy - skills development", endTime: "12:30", stackPosition: 0 },
-    { time: "12:30", timeMinutes: 750, title: "Lunch", icon: UtensilsCrossed, color: "bg-red-500", description: "Midday meal service", stackPosition: 0 },
-  ];
+  const iconForTitle = (title: string): LucideIcon => {
+    switch (title) {
+      case "Wake Up Bell":
+        return Bell;
+      case "Roll Call":
+      case "AA/NA/GA":
+        return Users;
+      case "Works/Group":
+        return Briefcase;
+      case "Room Check":
+        return Bed;
+      case "Coffee":
+        return Coffee;
+      case "OT":
+        return Wrench;
+      case "Lunch":
+      case "Tea":
+        return UtensilsCrossed;
+      case "Gambling Aware":
+        return Brain;
+      case "Focus Meeting":
+      case "OT/Focus":
+        return Target;
+      case "Group A":
+      case "Group B":
+      case "Group C":
+        return HeartHandshake;
+      case "Rosary":
+        return BookOpen;
+      case "Bedtime":
+        return Moon;
+      default:
+        return CalendarDays;
+    }
+  };
 
-  const eveningSchedule: ScheduleEvent[] = [
-    { time: "14:00", timeMinutes: 840, title: "Gambling Aware", icon: Brain, color: "bg-indigo-500", description: "Gambling Awareness Meeting", endTime: "14:45", stackPosition: 0 },
-    { time: "14:00", timeMinutes: 840, title: "Focus Meeting", icon: Target, color: "bg-cyan-500", description: "Focus Meeting", endTime: "14:45", stackPosition: 1 },
-    { time: "14:45", timeMinutes: 885, title: "OT", icon: Wrench, color: "bg-teal-500", description: "Afternoon Occupational Therapy", endTime: "16:00", stackPosition: 0 },
-    { time: "16:00", timeMinutes: 960, title: "Coffee", icon: Coffee, color: "bg-amber-600", description: "Afternoon coffee break", stackPosition: 0 },
-    { time: "16:30", timeMinutes: 990, title: "OT/Focus", icon: Target, color: "bg-cyan-500", description: "OT or Focus Meeting session", endTime: "17:15", stackPosition: 0 },
-    { time: "17:30", timeMinutes: 1050, title: "Tea", icon: UtensilsCrossed, color: "bg-red-500", description: "Evening meal service", stackPosition: 0 },
-    { time: "18:15", timeMinutes: 1095, title: "Roll Call", icon: Users, color: "bg-blue-500", description: "Evening roll call and meditation", stackPosition: 0 },
-    { time: "18:45", timeMinutes: 1125, title: "Group A", icon: HeartHandshake, color: "bg-pink-500", description: "Evening group therapy session - Cohort A", endTime: "19:45", stackPosition: 0 },
-    { time: "18:45", timeMinutes: 1125, title: "Group B", icon: HeartHandshake, color: "bg-purple-500", description: "Evening group therapy session - Cohort B", endTime: "19:45", stackPosition: 1 },
-    { time: "18:45", timeMinutes: 1125, title: "Group C", icon: HeartHandshake, color: "bg-blue-500", description: "Evening group therapy session - Cohort C", endTime: "19:45", stackPosition: 2 },
-    { time: "20:00", timeMinutes: 1200, title: "Rosary", icon: BookOpen, color: "bg-violet-500", description: "Evening prayer service", stackPosition: 0 },
-    { time: "20:30", timeMinutes: 1230, title: "AA/NA/GA", icon: Users, color: "bg-emerald-500", description: "Support group meetings", days: "Not Wednesday", endTime: "21:30", stackPosition: 0 },
-    { time: "22:00", timeMinutes: 1320, title: "Bedtime", icon: Moon, color: "bg-slate-600", description: "Lights out - rest time", stackPosition: 0 },
-  ];
+  const colorForTitle = (title: string): string => {
+    switch (title) {
+      case "Wake Up Bell":
+        return "bg-orange-500";
+      case "Roll Call":
+        return "bg-blue-500";
+      case "Works/Group":
+        return "bg-purple-500";
+      case "Room Check":
+        return "bg-green-500";
+      case "Coffee":
+        return "bg-amber-600";
+      case "OT":
+        return "bg-teal-500";
+      case "Lunch":
+      case "Tea":
+        return "bg-red-500";
+      case "Gambling Aware":
+        return "bg-indigo-500";
+      case "Focus Meeting":
+      case "OT/Focus":
+        return "bg-cyan-500";
+      case "Group A":
+        return "bg-pink-500";
+      case "Group B":
+        return "bg-purple-500";
+      case "Group C":
+        return "bg-blue-500";
+      case "Rosary":
+        return "bg-violet-500";
+      case "AA/NA/GA":
+        return "bg-emerald-500";
+      case "Bedtime":
+        return "bg-slate-600";
+      default:
+        return "bg-slate-500";
+    }
+  };
+
+  const stackForTitle = (title: string): number => {
+    switch (title) {
+      case "Focus Meeting":
+      case "Group B":
+        return 1;
+      case "Group C":
+        return 2;
+      default:
+        return 0;
+    }
+  };
+
+  useEffect(() => {
+    const loadTimeline = async () => {
+      try {
+        setLoadError(null);
+        const date = currentTime.toISOString().slice(0, 10);
+        const items = await getUnitTimeline(session?.accessToken, unitId, date);
+        setEvents(
+          items.map((item) => ({
+            key: item.key,
+            time: item.time,
+            timeMinutes: item.timeMinutes,
+            title: item.title,
+            icon: iconForTitle(item.title),
+            color: colorForTitle(item.title),
+            description: item.description,
+            endTime: item.endTime || undefined,
+            stackPosition: stackForTitle(item.title),
+          })),
+        );
+      } catch (error) {
+        setLoadError((error as Error).message);
+        setEvents([]);
+      }
+    };
+
+    void loadTimeline();
+  }, [currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), session?.accessToken, unitId]);
+
+  const morningSchedule = events.filter((event) => event.timeMinutes <= 750);
+  const eveningSchedule = events.filter((event) => event.timeMinutes >= 840);
 
   const getCurrentSchedule = () => (viewMode === "morning" ? morningSchedule : eveningSchedule);
 
@@ -170,6 +269,19 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
 
   const currentMinutes = getCurrentMinutes();
   const schedule = getCurrentSchedule();
+  if (schedule.length === 0) {
+    return (
+      <div className="app-card overflow-hidden rounded-xl p-6" style={{ paddingBottom: 24 }}>
+        <h2 className="mb-4 flex items-center text-lg font-semibold text-[var(--app-text)]">
+          <CalendarDays className="mr-2 h-5 w-5 text-[var(--app-primary)]" />
+          {unitName} Daily Timeline
+        </h2>
+        <p className="text-sm text-[var(--app-text-muted)]">
+          {loadError ? `Unable to load timeline: ${loadError}` : "No timeline items for this day."}
+        </p>
+      </div>
+    );
+  }
   const maxStack = Math.max(0, ...schedule.map((e) => e.stackPosition ?? 0));
   const verticalSpacing = 132;
   const bubbleSize = 56;
@@ -237,7 +349,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitName, onOpenG
 
             return (
               <div
-                key={`${event.time}-${event.title}`}
+                key={event.key}
                 className="absolute"
                 style={{ left: `${position}%`, transform: "translateX(-50%)", top: `${topOffset}px` }}
               >

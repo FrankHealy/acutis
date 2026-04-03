@@ -18,6 +18,7 @@ public sealed class UnitConfiguration : IEntityTypeConfiguration<Unit>
         builder.Property(x => x.CurrentOccupancy).IsRequired();
         builder.Property(x => x.CapacityWarningThreshold).IsRequired();
         builder.Property(x => x.DefaultResidentWeekNumber).HasDefaultValue(1).IsRequired();
+        builder.Property(x => x.ProgrammeDefinitionId);
         builder.Property(x => x.DisplayOrder).IsRequired();
         builder.Property(x => x.IsActive).IsRequired();
         builder.Property(x => x.CreatedAtUtc).HasColumnType("datetime2").IsRequired();
@@ -25,9 +26,14 @@ public sealed class UnitConfiguration : IEntityTypeConfiguration<Unit>
         builder.HasIndex(x => x.Code).IsUnique();
         builder.HasIndex(x => new { x.CentreId, x.DisplayOrder, x.Name });
         builder.HasIndex(x => new { x.IsActive, x.DisplayOrder, x.Name });
+        builder.HasIndex(x => x.ProgrammeDefinitionId);
         builder.HasOne(x => x.Centre)
             .WithMany(x => x.Units)
             .HasForeignKey(x => x.CentreId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.ProgrammeDefinition)
+            .WithMany(x => x.Units)
+            .HasForeignKey(x => x.ProgrammeDefinitionId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

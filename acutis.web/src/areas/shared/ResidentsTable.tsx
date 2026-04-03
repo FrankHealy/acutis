@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react';
 import ResidentRow from './ResidentRow';
 import type { Resident } from '../../services/mockDataService';
 import type { AttendanceRecord } from '../../services/residentService';
+import type { UnitId } from './unit/unitTypes';
 
 export type SortBy = keyof Pick<
   Resident,
@@ -14,6 +15,7 @@ export type SortOrder = 'asc' | 'desc';
 
 interface ResidentsTableProps {
   residents: Resident[];
+  unitId: UnitId;
   rollCallView: boolean;
   sortBy: SortBy;
   sortOrder: SortOrder;
@@ -53,6 +55,7 @@ const SortableHeader: React.FC<SortableHeaderProps> = ({
 
 const ResidentsTable: React.FC<ResidentsTableProps> = ({
   residents,
+  unitId,
   rollCallView,
   sortBy,
   sortOrder,
@@ -61,6 +64,9 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
   onAttendanceChange,
   onSelect,
 }) => {
+  const showProgrammeColumns = unitId !== "alcohol";
+  const showCaseStatusColumn = unitId !== "alcohol";
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -78,18 +84,24 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
               <SortableHeader column="age" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>Age</SortableHeader>
               <SortableHeader column="weekNumber" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>Week</SortableHeader>
               <SortableHeader column="roomNumber" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>Room</SortableHeader>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Programme
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Participation
-              </th>
+              {showProgrammeColumns && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Programme
+                </th>
+              )}
+              {showProgrammeColumns && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Participation
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Episode
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Case Status
-              </th>
+              {showCaseStatusColumn && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Case Status
+                </th>
+              )}
               {rollCallView && (
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Present
@@ -108,6 +120,8 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
                   <ResidentRow
                     key={resident.id}
                     resident={resident}
+                    showProgrammeColumns={showProgrammeColumns}
+                    showCaseStatusColumn={showCaseStatusColumn}
                     rollCallView={rollCallView}
                     attendance={attendanceData[resident.id]}
                     onAttendanceChange={onAttendanceChange}
@@ -117,7 +131,7 @@ const ResidentsTable: React.FC<ResidentsTableProps> = ({
               })
             ) : (
               <tr>
-                <td colSpan={rollCallView ? 12 : 11} className="text-center py-4 text-gray-500">
+                <td colSpan={rollCallView ? (showProgrammeColumns ? 12 : 9) : (showProgrammeColumns ? 11 : 8)} className="text-center py-4 text-gray-500">
                   No residents found
                 </td>
               </tr>

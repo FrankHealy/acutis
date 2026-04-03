@@ -15,6 +15,8 @@ export type UnitConfigurationDto = {
   freeBeds: number;
   capacityWarningThreshold: number;
   defaultResidentWeekNumber: number;
+  programmeDefinitionId?: string | null;
+  programmeDefinitionName: string;
   displayOrder: number;
   isActive: boolean;
 };
@@ -58,8 +60,125 @@ export type UpsertUnitRequest = {
   currentOccupancy: number;
   capacityWarningThreshold: number;
   defaultResidentWeekNumber: number;
+  programmeDefinitionId?: string | null;
   displayOrder: number;
   isActive: boolean;
+};
+
+export type ProgrammeDefinitionDto = {
+  programmeDefinitionId: string;
+  centreId: string;
+  centreName: string;
+  code: string;
+  name: string;
+  description: string;
+  totalDurationValue: number;
+  totalDurationUnit: string;
+  detoxPhaseDurationValue?: number | null;
+  detoxPhaseDurationUnit: string;
+  mainPhaseDurationValue?: number | null;
+  mainPhaseDurationUnit: string;
+  isActive: boolean;
+  assignedUnitNames: string[];
+};
+
+export type UpsertProgrammeDefinitionRequest = {
+  centreId: string;
+  code: string;
+  name: string;
+  description: string;
+  totalDurationValue: number;
+  totalDurationUnit: string;
+  detoxPhaseDurationValue?: number | null;
+  detoxPhaseDurationUnit: string;
+  mainPhaseDurationValue?: number | null;
+  mainPhaseDurationUnit: string;
+  isActive: boolean;
+};
+
+export type ScheduleTemplateDto = {
+  scheduleTemplateId: string;
+  centreId: string;
+  centreName: string;
+  unitId?: string | null;
+  unitName: string;
+  programmeDefinitionId?: string | null;
+  programmeDefinitionName: string;
+  code: string;
+  name: string;
+  description: string;
+  category: string;
+  recurrenceType: string;
+  weeklyDayOfWeek?: number | null;
+  startTime: string;
+  endTime: string;
+  audienceType: string;
+  facilitatorType: string;
+  facilitatorRole: string;
+  externalResourceName: string;
+  isActive: boolean;
+};
+
+export type UpsertScheduleTemplateRequest = {
+  centreId: string;
+  unitId?: string | null;
+  programmeDefinitionId?: string | null;
+  code: string;
+  name: string;
+  description: string;
+  category: string;
+  recurrenceType: string;
+  weeklyDayOfWeek?: number | null;
+  startTime: string;
+  endTime: string;
+  audienceType: string;
+  facilitatorType: string;
+  facilitatorRole: string;
+  externalResourceName: string;
+  isActive: boolean;
+};
+
+export type ScheduleOccurrenceDto = {
+  scheduleOccurrenceId: string;
+  centreId: string;
+  centreName: string;
+  unitId?: string | null;
+  unitName: string;
+  programmeDefinitionId?: string | null;
+  programmeDefinitionName: string;
+  templateId?: string | null;
+  templateName: string;
+  title: string;
+  description: string;
+  category: string;
+  scheduledDate: string;
+  startTime: string;
+  endTime: string;
+  audienceType: string;
+  facilitatorType: string;
+  facilitatorRole: string;
+  externalResourceName: string;
+  status: string;
+  notes: string;
+};
+
+export type UpsertScheduleOccurrenceRequest = {
+  centreId: string;
+  unitId?: string | null;
+  programmeDefinitionId?: string | null;
+  templateId?: string | null;
+  title: string;
+  description: string;
+  category: string;
+  scheduledDate: string;
+  startTime: string;
+  endTime: string;
+  audienceType: string;
+  facilitatorType: string;
+  facilitatorRole: string;
+  externalResourceName: string;
+  status: string;
+  notes: string;
 };
 
 export type AppPermissionDto = {
@@ -202,6 +321,72 @@ export const globalConfigurationService = {
   },
   archiveUnit(accessToken: string | undefined, unitId: string) {
     return request<void>(`/api/configuration/units/${encodeURIComponent(unitId)}`, accessToken, {
+      method: "DELETE",
+    });
+  },
+  getProgrammeDefinitions(accessToken?: string, includeInactive = true) {
+    return request<ProgrammeDefinitionDto[]>(
+      `/api/configuration/programmes?includeInactive=${includeInactive ? "true" : "false"}`,
+      accessToken,
+    );
+  },
+  createProgrammeDefinition(accessToken: string | undefined, payload: UpsertProgrammeDefinitionRequest) {
+    return request<ProgrammeDefinitionDto>("/api/configuration/programmes", accessToken, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateProgrammeDefinition(accessToken: string | undefined, programmeDefinitionId: string, payload: UpsertProgrammeDefinitionRequest) {
+    return request<ProgrammeDefinitionDto>(`/api/configuration/programmes/${encodeURIComponent(programmeDefinitionId)}`, accessToken, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+  archiveProgrammeDefinition(accessToken: string | undefined, programmeDefinitionId: string) {
+    return request<void>(`/api/configuration/programmes/${encodeURIComponent(programmeDefinitionId)}`, accessToken, {
+      method: "DELETE",
+    });
+  },
+  getScheduleTemplates(accessToken?: string, includeInactive = true) {
+    return request<ScheduleTemplateDto[]>(
+      `/api/configuration/schedule-templates?includeInactive=${includeInactive ? "true" : "false"}`,
+      accessToken,
+    );
+  },
+  createScheduleTemplate(accessToken: string | undefined, payload: UpsertScheduleTemplateRequest) {
+    return request<ScheduleTemplateDto>("/api/configuration/schedule-templates", accessToken, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateScheduleTemplate(accessToken: string | undefined, scheduleTemplateId: string, payload: UpsertScheduleTemplateRequest) {
+    return request<ScheduleTemplateDto>(`/api/configuration/schedule-templates/${encodeURIComponent(scheduleTemplateId)}`, accessToken, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+  archiveScheduleTemplate(accessToken: string | undefined, scheduleTemplateId: string) {
+    return request<void>(`/api/configuration/schedule-templates/${encodeURIComponent(scheduleTemplateId)}`, accessToken, {
+      method: "DELETE",
+    });
+  },
+  getScheduleOccurrences(accessToken?: string) {
+    return request<ScheduleOccurrenceDto[]>("/api/configuration/schedule-occurrences", accessToken);
+  },
+  createScheduleOccurrence(accessToken: string | undefined, payload: UpsertScheduleOccurrenceRequest) {
+    return request<ScheduleOccurrenceDto>("/api/configuration/schedule-occurrences", accessToken, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateScheduleOccurrence(accessToken: string | undefined, scheduleOccurrenceId: string, payload: UpsertScheduleOccurrenceRequest) {
+    return request<ScheduleOccurrenceDto>(`/api/configuration/schedule-occurrences/${encodeURIComponent(scheduleOccurrenceId)}`, accessToken, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+  archiveScheduleOccurrence(accessToken: string | undefined, scheduleOccurrenceId: string) {
+    return request<void>(`/api/configuration/schedule-occurrences/${encodeURIComponent(scheduleOccurrenceId)}`, accessToken, {
       method: "DELETE",
     });
   },

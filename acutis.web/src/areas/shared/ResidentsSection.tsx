@@ -128,11 +128,12 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({
             onMarkAllPresent={handleMarkAllPresent}
             onMarkAllAbsent={handleMarkAllAbsent}
           />
-          <ResidentsTable
-            residents={residents}
-            rollCallView={true}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
+        <ResidentsTable
+          residents={residents}
+          unitId={unitId}
+          rollCallView={true}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
             onSort={handleSort}
             attendanceData={attendanceData}
             onAttendanceChange={handleAttendanceChange}
@@ -143,6 +144,7 @@ const ResidentsSection: React.FC<ResidentsSectionProps> = ({
       ) : (
         <ResidentsTable
           residents={residents}
+          unitId={unitId}
           rollCallView={false}
           sortBy={sortBy}
           sortOrder={sortOrder}

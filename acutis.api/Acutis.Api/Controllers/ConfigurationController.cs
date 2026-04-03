@@ -317,6 +317,109 @@ public sealed class ConfigurationController : ControllerBase
         });
     }
 
+    [HttpGet("programmes")]
+    public async Task<ActionResult<IReadOnlyList<ProgrammeDefinitionDto>>> GetProgrammeDefinitions(
+        [FromQuery] bool includeInactive = true,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetProgrammeDefinitionsAsync(includeInactive, cancellationToken));
+    }
+
+    [HttpPost("programmes")]
+    public async Task<ActionResult<ProgrammeDefinitionDto>> CreateProgrammeDefinition(
+        [FromBody] UpsertProgrammeDefinitionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateProgrammeDefinitionAsync(request, cancellationToken));
+    }
+
+    [HttpPut("programmes/{programmeDefinitionId:guid}")]
+    public async Task<ActionResult<ProgrammeDefinitionDto>> UpdateProgrammeDefinition(
+        Guid programmeDefinitionId,
+        [FromBody] UpsertProgrammeDefinitionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateProgrammeDefinitionAsync(programmeDefinitionId, request, cancellationToken));
+    }
+
+    [HttpDelete("programmes/{programmeDefinitionId:guid}")]
+    public async Task<IActionResult> ArchiveProgrammeDefinition(Guid programmeDefinitionId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchiveProgrammeDefinitionAsync(programmeDefinitionId, cancellationToken);
+            return NoContent();
+        });
+    }
+
+    [HttpGet("schedule-templates")]
+    public async Task<ActionResult<IReadOnlyList<ScheduleTemplateDto>>> GetScheduleTemplates(
+        [FromQuery] bool includeInactive = true,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetScheduleTemplatesAsync(includeInactive, cancellationToken));
+    }
+
+    [HttpPost("schedule-templates")]
+    public async Task<ActionResult<ScheduleTemplateDto>> CreateScheduleTemplate(
+        [FromBody] UpsertScheduleTemplateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateScheduleTemplateAsync(request, cancellationToken));
+    }
+
+    [HttpPut("schedule-templates/{scheduleTemplateId:guid}")]
+    public async Task<ActionResult<ScheduleTemplateDto>> UpdateScheduleTemplate(
+        Guid scheduleTemplateId,
+        [FromBody] UpsertScheduleTemplateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateScheduleTemplateAsync(scheduleTemplateId, request, cancellationToken));
+    }
+
+    [HttpDelete("schedule-templates/{scheduleTemplateId:guid}")]
+    public async Task<IActionResult> ArchiveScheduleTemplate(Guid scheduleTemplateId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchiveScheduleTemplateAsync(scheduleTemplateId, cancellationToken);
+            return NoContent();
+        });
+    }
+
+    [HttpGet("schedule-occurrences")]
+    public async Task<ActionResult<IReadOnlyList<ScheduleOccurrenceDto>>> GetScheduleOccurrences(CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetScheduleOccurrencesAsync(cancellationToken));
+    }
+
+    [HttpPost("schedule-occurrences")]
+    public async Task<ActionResult<ScheduleOccurrenceDto>> CreateScheduleOccurrence(
+        [FromBody] UpsertScheduleOccurrenceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateScheduleOccurrenceAsync(request, cancellationToken));
+    }
+
+    [HttpPut("schedule-occurrences/{scheduleOccurrenceId:guid}")]
+    public async Task<ActionResult<ScheduleOccurrenceDto>> UpdateScheduleOccurrence(
+        Guid scheduleOccurrenceId,
+        [FromBody] UpsertScheduleOccurrenceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateScheduleOccurrenceAsync(scheduleOccurrenceId, request, cancellationToken));
+    }
+
+    [HttpDelete("schedule-occurrences/{scheduleOccurrenceId:guid}")]
+    public async Task<IActionResult> ArchiveScheduleOccurrence(Guid scheduleOccurrenceId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchiveScheduleOccurrenceAsync(scheduleOccurrenceId, cancellationToken);
+            return NoContent();
+        });
+    }
+
     [HttpGet("permissions")]
     public async Task<ActionResult<IReadOnlyList<AppPermissionDto>>> GetPermissions(CancellationToken cancellationToken = default)
     {

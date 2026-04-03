@@ -5,6 +5,12 @@ public enum ProgrammeType
     Alcohol = 1
 }
 
+public enum ProgrammeDurationUnit
+{
+    Days = 1,
+    Weeks = 2
+}
+
 public enum ParticipationMode
 {
     FullProgramme = 1,
@@ -37,4 +43,36 @@ public enum EpisodeEventType
     SelfDischarge = 8,
     ExtendedStay = 9,
     ClinicalDischarge = 10
+}
+
+public enum ScheduleRecurrenceType
+{
+    OnceOff = 1,
+    Daily = 2,
+    Weekly = 3
+}
+
+public enum ScheduleAudienceType
+{
+    UnitResidents = 1,
+    AllResidents = 2,
+    Cohort = 3,
+    ResidentSubset = 4,
+    Resident = 5,
+    OpenSession = 6
+}
+
+public enum ScheduleFacilitatorType
+{
+    None = 1,
+    Staff = 2,
+    ResidentLed = 3,
+    External = 4
+}
+
+public enum ScheduleOccurrenceStatus
+{
+    Scheduled = 1,
+    Cancelled = 2,
+    Completed = 3
 }

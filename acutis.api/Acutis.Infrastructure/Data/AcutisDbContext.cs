@@ -116,6 +116,27 @@ public sealed class AcutisDbContext : DbContext
     private static readonly Guid DetoxUnitId = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid DrugsUnitId = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid LadiesUnitId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+    private static readonly Guid AlcoholGamblingProgrammeDefinitionId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+    private static readonly Guid TemplateWakeUpBellId = Guid.Parse("66666666-1000-1000-1000-100000000001");
+    private static readonly Guid TemplateMorningRollCallId = Guid.Parse("66666666-1000-1000-1000-100000000002");
+    private static readonly Guid TemplateWorksGroupId = Guid.Parse("66666666-1000-1000-1000-100000000003");
+    private static readonly Guid TemplateRoomCheckId = Guid.Parse("66666666-1000-1000-1000-100000000004");
+    private static readonly Guid TemplateMorningCoffeeId = Guid.Parse("66666666-1000-1000-1000-100000000005");
+    private static readonly Guid TemplateMorningOtId = Guid.Parse("66666666-1000-1000-1000-100000000006");
+    private static readonly Guid TemplateLunchId = Guid.Parse("66666666-1000-1000-1000-100000000007");
+    private static readonly Guid TemplateGamblingAwareId = Guid.Parse("66666666-1000-1000-1000-100000000008");
+    private static readonly Guid TemplateFocusMeetingId = Guid.Parse("66666666-1000-1000-1000-100000000009");
+    private static readonly Guid TemplateAfternoonOtId = Guid.Parse("66666666-1000-1000-1000-100000000010");
+    private static readonly Guid TemplateAfternoonCoffeeId = Guid.Parse("66666666-1000-1000-1000-100000000011");
+    private static readonly Guid TemplateOtFocusId = Guid.Parse("66666666-1000-1000-1000-100000000012");
+    private static readonly Guid TemplateTeaId = Guid.Parse("66666666-1000-1000-1000-100000000013");
+    private static readonly Guid TemplateEveningRollCallId = Guid.Parse("66666666-1000-1000-1000-100000000014");
+    private static readonly Guid TemplateGroupAId = Guid.Parse("66666666-1000-1000-1000-100000000015");
+    private static readonly Guid TemplateGroupBId = Guid.Parse("66666666-1000-1000-1000-100000000016");
+    private static readonly Guid TemplateGroupCId = Guid.Parse("66666666-1000-1000-1000-100000000017");
+    private static readonly Guid TemplateRosaryId = Guid.Parse("66666666-1000-1000-1000-100000000018");
+    private static readonly Guid TemplateSupportMeetingId = Guid.Parse("66666666-1000-1000-1000-100000000019");
+    private static readonly Guid TemplateBedtimeId = Guid.Parse("66666666-1000-1000-1000-100000000020");
     private static readonly Guid ConfigurationManagePermissionId = Guid.Parse("55555555-1111-1111-1111-111111111111");
     private static readonly Guid ThemeManagePermissionId = Guid.Parse("55555555-1212-1212-1212-121212121212");
     private static readonly Guid UnitsManagePermissionId = Guid.Parse("55555555-2222-2222-2222-222222222222");
@@ -693,6 +714,9 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<ResidentProgrammeEpisode> ResidentProgrammeEpisodes => Set<ResidentProgrammeEpisode>();
     public DbSet<ScheduledIntake> ScheduledIntakes => Set<ScheduledIntake>();
     public DbSet<ScreeningScheduleSlot> ScreeningScheduleSlots => Set<ScreeningScheduleSlot>();
+    public DbSet<ProgrammeDefinition> ProgrammeDefinitions => Set<ProgrammeDefinition>();
+    public DbSet<ScheduleTemplate> ScheduleTemplates => Set<ScheduleTemplate>();
+    public DbSet<ScheduleOccurrence> ScheduleOccurrences => Set<ScheduleOccurrence>();
     public DbSet<Incident> Incidents => Set<Incident>();
     public DbSet<IncidentType> IncidentTypes => Set<IncidentType>();
     public DbSet<WeeklyTherapyRun> WeeklyTherapyRuns => Set<WeeklyTherapyRun>();
@@ -1196,6 +1220,7 @@ public sealed class AcutisDbContext : DbContext
         });
 
         modelBuilder.ApplyConfiguration(new UnitConfiguration());
+        modelBuilder.ApplyConfiguration(new ProgrammeDefinitionConfiguration());
 
         modelBuilder.Entity<ScreeningControl>(entity =>
         {
@@ -1261,6 +1286,8 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new EpisodeEventTypeLookupConfiguration());
         modelBuilder.ApplyConfiguration(new EpisodeEventConfiguration());
         modelBuilder.ApplyConfiguration(new TherapySchedulingConfigConfiguration());
+        modelBuilder.ApplyConfiguration(new ScheduleTemplateConfiguration());
+        modelBuilder.ApplyConfiguration(new ScheduleOccurrenceConfiguration());
         modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
         modelBuilder.ApplyConfiguration(new MediaAssetConfiguration());
         modelBuilder.ApplyConfiguration(new QuoteConfiguration());
@@ -1274,6 +1301,8 @@ public sealed class AcutisDbContext : DbContext
         SeedTranslations(modelBuilder);
         SeedCentres(modelBuilder);
         SeedUnits(modelBuilder);
+        SeedProgrammeDefinitions(modelBuilder);
+        SeedScheduleTemplates(modelBuilder);
         SeedScreeningLifecycleLookups(modelBuilder);
         SeedResidents(modelBuilder);
         SeedAuthorizationModel(modelBuilder);
@@ -1361,6 +1390,7 @@ public sealed class AcutisDbContext : DbContext
                 CurrentOccupancy = 63,
                 CapacityWarningThreshold = 96,
                 DefaultResidentWeekNumber = 1,
+                ProgrammeDefinitionId = AlcoholGamblingProgrammeDefinitionId,
                 DisplayOrder = 1,
                 IsActive = true,
                 CreatedAtUtc = SeedCreatedAt,
@@ -1414,6 +1444,91 @@ public sealed class AcutisDbContext : DbContext
                 CreatedAtUtc = SeedCreatedAt,
                 UpdatedAtUtc = SeedCreatedAt
             });
+    }
+
+    private static void SeedProgrammeDefinitions(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProgrammeDefinition>().HasData(
+            new ProgrammeDefinition
+            {
+                Id = AlcoholGamblingProgrammeDefinitionId,
+                CentreId = BrureeCentreId,
+                Code = "cm_alcohol_gambling_12_week",
+                Name = "12 Week Alcohol & Gambling Programme",
+                Description = "Twelve week programme with two detox weeks followed by ten module weeks.",
+                TotalDurationValue = 12,
+                TotalDurationUnit = ProgrammeDurationUnit.Weeks,
+                DetoxPhaseDurationValue = 2,
+                DetoxPhaseDurationUnit = ProgrammeDurationUnit.Weeks,
+                MainPhaseDurationValue = 10,
+                MainPhaseDurationUnit = ProgrammeDurationUnit.Weeks,
+                IsActive = true,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            });
+    }
+
+    private static void SeedScheduleTemplates(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ScheduleTemplate>().HasData(
+            CreateSeedScheduleTemplate(TemplateWakeUpBellId, "wake_up_bell", "Wake Up Bell", "Morning wake up call for all residents", "routine", new TimeSpan(6, 30, 0), null),
+            CreateSeedScheduleTemplate(TemplateMorningRollCallId, "roll_call_morning", "Roll Call", "Morning roll call followed by guided meditation session", "attendance", new TimeSpan(7, 15, 0), new TimeSpan(7, 45, 0)),
+            CreateSeedScheduleTemplate(TemplateWorksGroupId, "works_group", "Works/Group", "Works Meeting (Mon) or Group Therapy (Tue-Fri).", "group", new TimeSpan(7, 45, 0), new TimeSpan(8, 30, 0)),
+            CreateSeedScheduleTemplate(TemplateRoomCheckId, "room_check", "Room Check", "Daily room inspection and tidiness check", "checks", new TimeSpan(8, 30, 0), null),
+            CreateSeedScheduleTemplate(TemplateMorningCoffeeId, "coffee_morning", "Coffee", "Morning coffee and social time", "refreshments", new TimeSpan(8, 45, 0), null),
+            CreateSeedScheduleTemplate(TemplateMorningOtId, "ot_morning", "OT", "Morning Occupational Therapy - skills development", "therapy", new TimeSpan(9, 5, 0), new TimeSpan(12, 30, 0)),
+            CreateSeedScheduleTemplate(TemplateLunchId, "lunch", "Lunch", "Midday meal service", "meals", new TimeSpan(12, 30, 0), null),
+            CreateSeedScheduleTemplate(TemplateGamblingAwareId, "gambling_aware", "Gambling Aware", "Gambling Awareness Meeting", "group", new TimeSpan(14, 0, 0), new TimeSpan(14, 45, 0)),
+            CreateSeedScheduleTemplate(TemplateFocusMeetingId, "focus_meeting", "Focus Meeting", "Focus Meeting", "group", new TimeSpan(14, 0, 0), new TimeSpan(14, 45, 0)),
+            CreateSeedScheduleTemplate(TemplateAfternoonOtId, "ot_afternoon", "OT", "Afternoon Occupational Therapy", "therapy", new TimeSpan(14, 45, 0), new TimeSpan(16, 0, 0)),
+            CreateSeedScheduleTemplate(TemplateAfternoonCoffeeId, "coffee_afternoon", "Coffee", "Afternoon coffee break", "refreshments", new TimeSpan(16, 0, 0), null),
+            CreateSeedScheduleTemplate(TemplateOtFocusId, "ot_focus", "OT/Focus", "OT or Focus Meeting session", "therapy", new TimeSpan(16, 30, 0), new TimeSpan(17, 15, 0)),
+            CreateSeedScheduleTemplate(TemplateTeaId, "tea", "Tea", "Evening meal service", "meals", new TimeSpan(17, 30, 0), null),
+            CreateSeedScheduleTemplate(TemplateEveningRollCallId, "roll_call_evening", "Roll Call", "Evening roll call and meditation", "attendance", new TimeSpan(18, 15, 0), null),
+            CreateSeedScheduleTemplate(TemplateGroupAId, "group_a", "Group A", "Evening group therapy session - Cohort A", "group", new TimeSpan(18, 45, 0), new TimeSpan(19, 45, 0)),
+            CreateSeedScheduleTemplate(TemplateGroupBId, "group_b", "Group B", "Evening group therapy session - Cohort B", "group", new TimeSpan(18, 45, 0), new TimeSpan(19, 45, 0)),
+            CreateSeedScheduleTemplate(TemplateGroupCId, "group_c", "Group C", "Evening group therapy session - Cohort C", "group", new TimeSpan(18, 45, 0), new TimeSpan(19, 45, 0)),
+            CreateSeedScheduleTemplate(TemplateRosaryId, "rosary", "Rosary", "Evening prayer service", "spiritual", new TimeSpan(20, 0, 0), null),
+            CreateSeedScheduleTemplate(TemplateSupportMeetingId, "support_meeting", "AA/NA/GA", "Support group meetings", "group", new TimeSpan(20, 30, 0), new TimeSpan(21, 30, 0)),
+            CreateSeedScheduleTemplate(TemplateBedtimeId, "bedtime", "Bedtime", "Lights out - rest time", "routine", new TimeSpan(22, 0, 0), null)
+        );
+    }
+
+    private static ScheduleTemplate CreateSeedScheduleTemplate(
+        Guid id,
+        string code,
+        string name,
+        string description,
+        string category,
+        TimeSpan startTime,
+        TimeSpan? endTime)
+    {
+        return new ScheduleTemplate
+        {
+            Id = id,
+            CentreId = BrureeCentreId,
+            UnitId = null,
+            ProgrammeDefinitionId = null,
+            Code = code,
+            Name = name,
+            Description = description,
+            Category = category,
+            RecurrenceType = ScheduleRecurrenceType.Daily,
+            WeeklyDayOfWeek = null,
+            StartTime = startTime,
+            EndTime = endTime,
+            AudienceType = ScheduleAudienceType.UnitResidents,
+            CohortId = null,
+            ResidentId = null,
+            FacilitatorType = ScheduleFacilitatorType.None,
+            FacilitatorRole = null,
+            ExternalResourceName = null,
+            IsActive = true,
+            CreatedAtUtc = SeedCreatedAt,
+            CreatedByUserId = null,
+            UpdatedAtUtc = SeedCreatedAt,
+            UpdatedByUserId = null
+        };
     }
 
     private static void SeedScreeningLifecycleLookups(ModelBuilder modelBuilder)

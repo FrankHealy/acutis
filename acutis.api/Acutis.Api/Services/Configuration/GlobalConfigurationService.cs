@@ -15,6 +15,18 @@ public interface IGlobalConfigurationService
     Task<UnitConfigurationDto> CreateUnitAsync(UpsertUnitRequest request, CancellationToken cancellationToken = default);
     Task<UnitConfigurationDto> UpdateUnitAsync(Guid unitId, UpsertUnitRequest request, CancellationToken cancellationToken = default);
     Task ArchiveUnitAsync(Guid unitId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ProgrammeDefinitionDto>> GetProgrammeDefinitionsAsync(bool includeInactive, CancellationToken cancellationToken = default);
+    Task<ProgrammeDefinitionDto> CreateProgrammeDefinitionAsync(UpsertProgrammeDefinitionRequest request, CancellationToken cancellationToken = default);
+    Task<ProgrammeDefinitionDto> UpdateProgrammeDefinitionAsync(Guid programmeDefinitionId, UpsertProgrammeDefinitionRequest request, CancellationToken cancellationToken = default);
+    Task ArchiveProgrammeDefinitionAsync(Guid programmeDefinitionId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ScheduleTemplateDto>> GetScheduleTemplatesAsync(bool includeInactive, CancellationToken cancellationToken = default);
+    Task<ScheduleTemplateDto> CreateScheduleTemplateAsync(UpsertScheduleTemplateRequest request, CancellationToken cancellationToken = default);
+    Task<ScheduleTemplateDto> UpdateScheduleTemplateAsync(Guid scheduleTemplateId, UpsertScheduleTemplateRequest request, CancellationToken cancellationToken = default);
+    Task ArchiveScheduleTemplateAsync(Guid scheduleTemplateId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ScheduleOccurrenceDto>> GetScheduleOccurrencesAsync(CancellationToken cancellationToken = default);
+    Task<ScheduleOccurrenceDto> CreateScheduleOccurrenceAsync(UpsertScheduleOccurrenceRequest request, CancellationToken cancellationToken = default);
+    Task<ScheduleOccurrenceDto> UpdateScheduleOccurrenceAsync(Guid scheduleOccurrenceId, UpsertScheduleOccurrenceRequest request, CancellationToken cancellationToken = default);
+    Task ArchiveScheduleOccurrenceAsync(Guid scheduleOccurrenceId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AppPermissionDto>> GetPermissionsAsync(CancellationToken cancellationToken = default);
     Task<AppPermissionDto> CreatePermissionAsync(UpsertAppPermissionRequest request, CancellationToken cancellationToken = default);
     Task<AppPermissionDto> UpdatePermissionAsync(Guid permissionId, UpsertAppPermissionRequest request, CancellationToken cancellationToken = default);
@@ -157,6 +169,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         var query = _dbContext.Units
             .AsNoTracking()
             .Include(x => x.Centre)
+            .Include(x => x.ProgrammeDefinition)
             .AsQueryable();
         if (!includeInactive)
         {
@@ -185,11 +198,14 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         }
 
         var now = DateTime.UtcNow;
+        var programme = await ResolveProgrammeDefinitionAsync(request.ProgrammeDefinitionId, centre.Id, cancellationToken);
         var unit = new Acutis.Domain.Entities.Unit
         {
             Id = Guid.NewGuid(),
             CentreId = centre.Id,
             Centre = centre,
+            ProgrammeDefinitionId = programme?.Id,
+            ProgrammeDefinition = programme,
             Code = code,
             Name = request.DisplayName.Trim(),
             Description = request.Description.Trim(),
@@ -231,6 +247,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         ValidateUnitRequest(request);
         var unit = await _dbContext.Units
             .Include(x => x.Centre)
+            .Include(x => x.ProgrammeDefinition)
             .FirstOrDefaultAsync(x => x.Id == unitId, cancellationToken)
             ?? throw new KeyNotFoundException($"Unit '{unitId}' was not found.");
         var previousCode = unit.Code;
@@ -238,6 +255,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             x => x.Id == request.CentreId && x.IsActive,
             cancellationToken)
             ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
+        var programme = await ResolveProgrammeDefinitionAsync(request.ProgrammeDefinitionId, centre.Id, cancellationToken);
 
         var code = NormalizeKey(request.UnitCode);
         if (await _dbContext.Units.AnyAsync(x => x.Id != unitId && x.Code == code, cancellationToken))
@@ -247,6 +265,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
 
         unit.CentreId = centre.Id;
         unit.Centre = centre;
+        unit.ProgrammeDefinitionId = programme?.Id;
+        unit.ProgrammeDefinition = programme;
         unit.Code = code;
         unit.Name = request.DisplayName.Trim();
         unit.Description = request.Description.Trim();
@@ -304,6 +324,392 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             screeningControl.UpdatedAt = unit.UpdatedAtUtc;
         }
 
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ProgrammeDefinitionDto>> GetProgrammeDefinitionsAsync(
+        bool includeInactive,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.ProgrammeDefinitions
+            .AsNoTracking()
+            .Include(x => x.Centre)
+            .Include(x => x.Units)
+            .AsQueryable();
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.IsActive);
+        }
+
+        var programmes = await query
+            .OrderBy(x => x.Centre!.DisplayOrder)
+            .ThenBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+        return programmes.Select(MapProgrammeDefinition).ToList();
+    }
+
+    public async Task<ProgrammeDefinitionDto> CreateProgrammeDefinitionAsync(
+        UpsertProgrammeDefinitionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateProgrammeDefinitionRequest(request);
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
+
+        var code = NormalizeKey(request.Code);
+        if (await _dbContext.ProgrammeDefinitions.AnyAsync(
+                x => x.CentreId == centre.Id && x.Code == code,
+                cancellationToken))
+        {
+            throw new ArgumentException($"A programme with code '{code}' already exists for this centre.", nameof(request));
+        }
+
+        var now = DateTime.UtcNow;
+        var programme = new ProgrammeDefinition
+        {
+            Id = Guid.NewGuid(),
+            CentreId = centre.Id,
+            Centre = centre,
+            Code = code,
+            Name = request.Name.Trim(),
+            Description = request.Description.Trim(),
+            TotalDurationValue = request.TotalDurationValue,
+            TotalDurationUnit = ParseProgrammeDurationUnit(request.TotalDurationUnit, nameof(request.TotalDurationUnit)),
+            DetoxPhaseDurationValue = request.DetoxPhaseDurationValue,
+            DetoxPhaseDurationUnit = request.DetoxPhaseDurationValue.HasValue
+                ? ParseProgrammeDurationUnit(request.DetoxPhaseDurationUnit, nameof(request.DetoxPhaseDurationUnit))
+                : null,
+            MainPhaseDurationValue = request.MainPhaseDurationValue,
+            MainPhaseDurationUnit = request.MainPhaseDurationValue.HasValue
+                ? ParseProgrammeDurationUnit(request.MainPhaseDurationUnit, nameof(request.MainPhaseDurationUnit))
+                : null,
+            IsActive = request.IsActive,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.ProgrammeDefinitions.Add(programme);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await LoadProgrammeDefinitionAsync(programme.Id, cancellationToken);
+    }
+
+    public async Task<ProgrammeDefinitionDto> UpdateProgrammeDefinitionAsync(
+        Guid programmeDefinitionId,
+        UpsertProgrammeDefinitionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateProgrammeDefinitionRequest(request);
+        var programme = await _dbContext.ProgrammeDefinitions
+            .Include(x => x.Centre)
+            .Include(x => x.Units)
+            .FirstOrDefaultAsync(x => x.Id == programmeDefinitionId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Programme definition '{programmeDefinitionId}' was not found.");
+
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
+
+        var code = NormalizeKey(request.Code);
+        if (await _dbContext.ProgrammeDefinitions.AnyAsync(
+                x => x.Id != programmeDefinitionId && x.CentreId == centre.Id && x.Code == code,
+                cancellationToken))
+        {
+            throw new ArgumentException($"A programme with code '{code}' already exists for this centre.", nameof(request));
+        }
+
+        if (programme.CentreId != centre.Id && programme.Units.Any())
+        {
+            throw new ArgumentException("A programme assigned to units cannot be moved to a different centre.", nameof(request));
+        }
+
+        programme.CentreId = centre.Id;
+        programme.Centre = centre;
+        programme.Code = code;
+        programme.Name = request.Name.Trim();
+        programme.Description = request.Description.Trim();
+        programme.TotalDurationValue = request.TotalDurationValue;
+        programme.TotalDurationUnit = ParseProgrammeDurationUnit(request.TotalDurationUnit, nameof(request.TotalDurationUnit));
+        programme.DetoxPhaseDurationValue = request.DetoxPhaseDurationValue;
+        programme.DetoxPhaseDurationUnit = request.DetoxPhaseDurationValue.HasValue
+            ? ParseProgrammeDurationUnit(request.DetoxPhaseDurationUnit, nameof(request.DetoxPhaseDurationUnit))
+            : null;
+        programme.MainPhaseDurationValue = request.MainPhaseDurationValue;
+        programme.MainPhaseDurationUnit = request.MainPhaseDurationValue.HasValue
+            ? ParseProgrammeDurationUnit(request.MainPhaseDurationUnit, nameof(request.MainPhaseDurationUnit))
+            : null;
+        programme.IsActive = request.IsActive;
+        programme.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await LoadProgrammeDefinitionAsync(programme.Id, cancellationToken);
+    }
+
+    public async Task ArchiveProgrammeDefinitionAsync(Guid programmeDefinitionId, CancellationToken cancellationToken = default)
+    {
+        var programme = await _dbContext.ProgrammeDefinitions.FirstOrDefaultAsync(x => x.Id == programmeDefinitionId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Programme definition '{programmeDefinitionId}' was not found.");
+
+        programme.IsActive = false;
+        programme.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ScheduleTemplateDto>> GetScheduleTemplatesAsync(
+        bool includeInactive,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.ScheduleTemplates
+            .AsNoTracking()
+            .Include(x => x.Centre)
+            .Include(x => x.Unit)
+            .Include(x => x.ProgrammeDefinition)
+            .AsQueryable();
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.IsActive);
+        }
+
+        var templates = await query
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+        return templates.Select(MapScheduleTemplate).ToList();
+    }
+
+    public async Task<ScheduleTemplateDto> CreateScheduleTemplateAsync(
+        UpsertScheduleTemplateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateScheduleTemplateRequest(request);
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
+
+        var unit = await ResolveUnitAsync(request.UnitId, centre.Id, cancellationToken);
+        var programme = await ResolveProgrammeDefinitionAsync(request.ProgrammeDefinitionId, centre.Id, cancellationToken);
+        var code = NormalizeKey(request.Code);
+
+        if (unit is not null && await _dbContext.ScheduleTemplates.AnyAsync(
+                x => x.CentreId == centre.Id && x.UnitId == unit.Id && x.Code == code,
+                cancellationToken))
+        {
+            throw new ArgumentException($"A schedule template with code '{code}' already exists for this unit.", nameof(request));
+        }
+
+        var now = DateTime.UtcNow;
+        var template = new ScheduleTemplate
+        {
+            Id = Guid.NewGuid(),
+            CentreId = centre.Id,
+            Centre = centre,
+            UnitId = unit?.Id,
+            Unit = unit,
+            ProgrammeDefinitionId = programme?.Id,
+            ProgrammeDefinition = programme,
+            Code = code,
+            Name = request.Name.Trim(),
+            Description = request.Description.Trim(),
+            Category = CleanOptional(request.Category),
+            RecurrenceType = ParseScheduleRecurrenceType(request.RecurrenceType, nameof(request.RecurrenceType)),
+            WeeklyDayOfWeek = request.WeeklyDayOfWeek.HasValue ? (DayOfWeek)request.WeeklyDayOfWeek.Value : null,
+            StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime)),
+            EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime)),
+            AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType)),
+            FacilitatorType = ParseScheduleFacilitatorType(request.FacilitatorType, nameof(request.FacilitatorType)),
+            FacilitatorRole = CleanOptional(request.FacilitatorRole),
+            ExternalResourceName = CleanOptional(request.ExternalResourceName),
+            IsActive = request.IsActive,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.ScheduleTemplates.Add(template);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await LoadScheduleTemplateAsync(template.Id, cancellationToken);
+    }
+
+    public async Task<ScheduleTemplateDto> UpdateScheduleTemplateAsync(
+        Guid scheduleTemplateId,
+        UpsertScheduleTemplateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateScheduleTemplateRequest(request);
+        var template = await _dbContext.ScheduleTemplates
+            .Include(x => x.Centre)
+            .Include(x => x.Unit)
+            .Include(x => x.ProgrammeDefinition)
+            .FirstOrDefaultAsync(x => x.Id == scheduleTemplateId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Schedule template '{scheduleTemplateId}' was not found.");
+
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
+        var unit = await ResolveUnitAsync(request.UnitId, centre.Id, cancellationToken);
+        var programme = await ResolveProgrammeDefinitionAsync(request.ProgrammeDefinitionId, centre.Id, cancellationToken);
+        var code = NormalizeKey(request.Code);
+
+        if (unit is not null && await _dbContext.ScheduleTemplates.AnyAsync(
+                x => x.Id != scheduleTemplateId && x.CentreId == centre.Id && x.UnitId == unit.Id && x.Code == code,
+                cancellationToken))
+        {
+            throw new ArgumentException($"A schedule template with code '{code}' already exists for this unit.", nameof(request));
+        }
+
+        template.CentreId = centre.Id;
+        template.Centre = centre;
+        template.UnitId = unit?.Id;
+        template.Unit = unit;
+        template.ProgrammeDefinitionId = programme?.Id;
+        template.ProgrammeDefinition = programme;
+        template.Code = code;
+        template.Name = request.Name.Trim();
+        template.Description = request.Description.Trim();
+        template.Category = CleanOptional(request.Category);
+        template.RecurrenceType = ParseScheduleRecurrenceType(request.RecurrenceType, nameof(request.RecurrenceType));
+        template.WeeklyDayOfWeek = request.WeeklyDayOfWeek.HasValue ? (DayOfWeek)request.WeeklyDayOfWeek.Value : null;
+        template.StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime));
+        template.EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime));
+        template.AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType));
+        template.FacilitatorType = ParseScheduleFacilitatorType(request.FacilitatorType, nameof(request.FacilitatorType));
+        template.FacilitatorRole = CleanOptional(request.FacilitatorRole);
+        template.ExternalResourceName = CleanOptional(request.ExternalResourceName);
+        template.IsActive = request.IsActive;
+        template.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await LoadScheduleTemplateAsync(template.Id, cancellationToken);
+    }
+
+    public async Task ArchiveScheduleTemplateAsync(Guid scheduleTemplateId, CancellationToken cancellationToken = default)
+    {
+        var template = await _dbContext.ScheduleTemplates.FirstOrDefaultAsync(x => x.Id == scheduleTemplateId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Schedule template '{scheduleTemplateId}' was not found.");
+
+        template.IsActive = false;
+        template.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ScheduleOccurrenceDto>> GetScheduleOccurrencesAsync(CancellationToken cancellationToken = default)
+    {
+        var occurrences = await _dbContext.ScheduleOccurrences
+            .AsNoTracking()
+            .Include(x => x.Centre)
+            .Include(x => x.Unit)
+            .Include(x => x.ProgrammeDefinition)
+            .Include(x => x.Template)
+            .OrderByDescending(x => x.ScheduledDate)
+            .ThenBy(x => x.StartTime)
+            .ThenBy(x => x.Title)
+            .ToListAsync(cancellationToken);
+        return occurrences.Select(MapScheduleOccurrence).ToList();
+    }
+
+    public async Task<ScheduleOccurrenceDto> CreateScheduleOccurrenceAsync(
+        UpsertScheduleOccurrenceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateScheduleOccurrenceRequest(request);
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
+        var unit = await ResolveUnitAsync(request.UnitId, centre.Id, cancellationToken);
+        var programme = await ResolveProgrammeDefinitionAsync(request.ProgrammeDefinitionId, centre.Id, cancellationToken);
+        var template = await ResolveScheduleTemplateAsync(request.TemplateId, centre.Id, cancellationToken);
+
+        var now = DateTime.UtcNow;
+        var occurrence = new ScheduleOccurrence
+        {
+            Id = Guid.NewGuid(),
+            CentreId = centre.Id,
+            Centre = centre,
+            UnitId = unit?.Id,
+            Unit = unit,
+            ProgrammeDefinitionId = programme?.Id,
+            ProgrammeDefinition = programme,
+            TemplateId = template?.Id,
+            Template = template,
+            Title = request.Title.Trim(),
+            Description = request.Description.Trim(),
+            Category = CleanOptional(request.Category),
+            ScheduledDate = request.ScheduledDate,
+            StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime)),
+            EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime)),
+            AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType)),
+            FacilitatorType = ParseScheduleFacilitatorType(request.FacilitatorType, nameof(request.FacilitatorType)),
+            FacilitatorRole = CleanOptional(request.FacilitatorRole),
+            ExternalResourceName = CleanOptional(request.ExternalResourceName),
+            Status = ParseScheduleOccurrenceStatus(request.Status, nameof(request.Status)),
+            Notes = CleanOptional(request.Notes),
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.ScheduleOccurrences.Add(occurrence);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await LoadScheduleOccurrenceAsync(occurrence.Id, cancellationToken);
+    }
+
+    public async Task<ScheduleOccurrenceDto> UpdateScheduleOccurrenceAsync(
+        Guid scheduleOccurrenceId,
+        UpsertScheduleOccurrenceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateScheduleOccurrenceRequest(request);
+        var occurrence = await _dbContext.ScheduleOccurrences
+            .Include(x => x.Centre)
+            .Include(x => x.Unit)
+            .Include(x => x.ProgrammeDefinition)
+            .Include(x => x.Template)
+            .FirstOrDefaultAsync(x => x.Id == scheduleOccurrenceId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Schedule occurrence '{scheduleOccurrenceId}' was not found.");
+
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
+        var unit = await ResolveUnitAsync(request.UnitId, centre.Id, cancellationToken);
+        var programme = await ResolveProgrammeDefinitionAsync(request.ProgrammeDefinitionId, centre.Id, cancellationToken);
+        var template = await ResolveScheduleTemplateAsync(request.TemplateId, centre.Id, cancellationToken);
+
+        occurrence.CentreId = centre.Id;
+        occurrence.Centre = centre;
+        occurrence.UnitId = unit?.Id;
+        occurrence.Unit = unit;
+        occurrence.ProgrammeDefinitionId = programme?.Id;
+        occurrence.ProgrammeDefinition = programme;
+        occurrence.TemplateId = template?.Id;
+        occurrence.Template = template;
+        occurrence.Title = request.Title.Trim();
+        occurrence.Description = request.Description.Trim();
+        occurrence.Category = CleanOptional(request.Category);
+        occurrence.ScheduledDate = request.ScheduledDate;
+        occurrence.StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime));
+        occurrence.EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime));
+        occurrence.AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType));
+        occurrence.FacilitatorType = ParseScheduleFacilitatorType(request.FacilitatorType, nameof(request.FacilitatorType));
+        occurrence.FacilitatorRole = CleanOptional(request.FacilitatorRole);
+        occurrence.ExternalResourceName = CleanOptional(request.ExternalResourceName);
+        occurrence.Status = ParseScheduleOccurrenceStatus(request.Status, nameof(request.Status));
+        occurrence.Notes = CleanOptional(request.Notes);
+        occurrence.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await LoadScheduleOccurrenceAsync(occurrence.Id, cancellationToken);
+    }
+
+    public async Task ArchiveScheduleOccurrenceAsync(Guid scheduleOccurrenceId, CancellationToken cancellationToken = default)
+    {
+        var occurrence = await _dbContext.ScheduleOccurrences.FirstOrDefaultAsync(x => x.Id == scheduleOccurrenceId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Schedule occurrence '{scheduleOccurrenceId}' was not found.");
+
+        occurrence.Status = ScheduleOccurrenceStatus.Cancelled;
+        occurrence.UpdatedAtUtc = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
@@ -664,6 +1070,87 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         return permissions.Select(x => x.Id).ToList();
     }
 
+    private async Task<ProgrammeDefinition?> ResolveProgrammeDefinitionAsync(
+        Guid? programmeDefinitionId,
+        Guid centreId,
+        CancellationToken cancellationToken)
+    {
+        if (!programmeDefinitionId.HasValue)
+        {
+            return null;
+        }
+
+        return await _dbContext.ProgrammeDefinitions.FirstOrDefaultAsync(
+                   x => x.Id == programmeDefinitionId.Value && x.CentreId == centreId,
+                   cancellationToken)
+               ?? throw new ArgumentException("The selected programme does not belong to the selected centre.");
+    }
+
+    private async Task<Acutis.Domain.Entities.Unit?> ResolveUnitAsync(
+        Guid? unitId,
+        Guid centreId,
+        CancellationToken cancellationToken)
+    {
+        if (!unitId.HasValue)
+        {
+            return null;
+        }
+
+        return await _dbContext.Units.FirstOrDefaultAsync(
+                   x => x.Id == unitId.Value && x.CentreId == centreId,
+                   cancellationToken)
+               ?? throw new ArgumentException("The selected unit does not belong to the selected centre.");
+    }
+
+    private async Task<ScheduleTemplate?> ResolveScheduleTemplateAsync(
+        Guid? scheduleTemplateId,
+        Guid centreId,
+        CancellationToken cancellationToken)
+    {
+        if (!scheduleTemplateId.HasValue)
+        {
+            return null;
+        }
+
+        return await _dbContext.ScheduleTemplates.FirstOrDefaultAsync(
+                   x => x.Id == scheduleTemplateId.Value && x.CentreId == centreId,
+                   cancellationToken)
+               ?? throw new ArgumentException("The selected schedule template does not belong to the selected centre.");
+    }
+
+    private async Task<ProgrammeDefinitionDto> LoadProgrammeDefinitionAsync(Guid programmeDefinitionId, CancellationToken cancellationToken)
+    {
+        var programme = await _dbContext.ProgrammeDefinitions
+            .AsNoTracking()
+            .Include(x => x.Centre)
+            .Include(x => x.Units)
+            .FirstAsync(x => x.Id == programmeDefinitionId, cancellationToken);
+        return MapProgrammeDefinition(programme);
+    }
+
+    private async Task<ScheduleTemplateDto> LoadScheduleTemplateAsync(Guid scheduleTemplateId, CancellationToken cancellationToken)
+    {
+        var template = await _dbContext.ScheduleTemplates
+            .AsNoTracking()
+            .Include(x => x.Centre)
+            .Include(x => x.Unit)
+            .Include(x => x.ProgrammeDefinition)
+            .FirstAsync(x => x.Id == scheduleTemplateId, cancellationToken);
+        return MapScheduleTemplate(template);
+    }
+
+    private async Task<ScheduleOccurrenceDto> LoadScheduleOccurrenceAsync(Guid scheduleOccurrenceId, CancellationToken cancellationToken)
+    {
+        var occurrence = await _dbContext.ScheduleOccurrences
+            .AsNoTracking()
+            .Include(x => x.Centre)
+            .Include(x => x.Unit)
+            .Include(x => x.ProgrammeDefinition)
+            .Include(x => x.Template)
+            .FirstAsync(x => x.Id == scheduleOccurrenceId, cancellationToken);
+        return MapScheduleOccurrence(occurrence);
+    }
+
     private async Task<AppRoleDto> LoadRoleAsync(Guid roleId, CancellationToken cancellationToken)
     {
         var role = await _dbContext.AppRoles
@@ -724,8 +1211,91 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             FreeBeds = Math.Max(0, unit.Capacity - unit.CurrentOccupancy),
             CapacityWarningThreshold = unit.CapacityWarningThreshold,
             DefaultResidentWeekNumber = unit.DefaultResidentWeekNumber,
+            ProgrammeDefinitionId = unit.ProgrammeDefinitionId,
+            ProgrammeDefinitionName = unit.ProgrammeDefinition?.Name ?? string.Empty,
             DisplayOrder = unit.DisplayOrder,
             IsActive = unit.IsActive
+        };
+    }
+
+    private static ProgrammeDefinitionDto MapProgrammeDefinition(ProgrammeDefinition programme)
+    {
+        return new ProgrammeDefinitionDto
+        {
+            ProgrammeDefinitionId = programme.Id,
+            CentreId = programme.CentreId,
+            CentreName = programme.Centre?.Name ?? string.Empty,
+            Code = programme.Code,
+            Name = programme.Name,
+            Description = programme.Description,
+            TotalDurationValue = programme.TotalDurationValue,
+            TotalDurationUnit = programme.TotalDurationUnit.ToString(),
+            DetoxPhaseDurationValue = programme.DetoxPhaseDurationValue,
+            DetoxPhaseDurationUnit = programme.DetoxPhaseDurationUnit?.ToString() ?? string.Empty,
+            MainPhaseDurationValue = programme.MainPhaseDurationValue,
+            MainPhaseDurationUnit = programme.MainPhaseDurationUnit?.ToString() ?? string.Empty,
+            IsActive = programme.IsActive,
+            AssignedUnitNames = programme.Units
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.DisplayOrder)
+                .ThenBy(x => x.Name)
+                .Select(x => x.Name)
+                .ToList()
+        };
+    }
+
+    private static ScheduleTemplateDto MapScheduleTemplate(ScheduleTemplate template)
+    {
+        return new ScheduleTemplateDto
+        {
+            ScheduleTemplateId = template.Id,
+            CentreId = template.CentreId,
+            CentreName = template.Centre?.Name ?? string.Empty,
+            UnitId = template.UnitId,
+            UnitName = template.Unit?.Name ?? string.Empty,
+            ProgrammeDefinitionId = template.ProgrammeDefinitionId,
+            ProgrammeDefinitionName = template.ProgrammeDefinition?.Name ?? string.Empty,
+            Code = template.Code,
+            Name = template.Name,
+            Description = template.Description,
+            Category = template.Category ?? string.Empty,
+            RecurrenceType = template.RecurrenceType.ToString(),
+            WeeklyDayOfWeek = template.WeeklyDayOfWeek.HasValue ? (int)template.WeeklyDayOfWeek.Value : null,
+            StartTime = template.StartTime?.ToString(@"hh\:mm") ?? string.Empty,
+            EndTime = template.EndTime?.ToString(@"hh\:mm") ?? string.Empty,
+            AudienceType = template.AudienceType.ToString(),
+            FacilitatorType = template.FacilitatorType.ToString(),
+            FacilitatorRole = template.FacilitatorRole ?? string.Empty,
+            ExternalResourceName = template.ExternalResourceName ?? string.Empty,
+            IsActive = template.IsActive
+        };
+    }
+
+    private static ScheduleOccurrenceDto MapScheduleOccurrence(ScheduleOccurrence occurrence)
+    {
+        return new ScheduleOccurrenceDto
+        {
+            ScheduleOccurrenceId = occurrence.Id,
+            CentreId = occurrence.CentreId,
+            CentreName = occurrence.Centre?.Name ?? string.Empty,
+            UnitId = occurrence.UnitId,
+            UnitName = occurrence.Unit?.Name ?? string.Empty,
+            ProgrammeDefinitionId = occurrence.ProgrammeDefinitionId,
+            ProgrammeDefinitionName = occurrence.ProgrammeDefinition?.Name ?? string.Empty,
+            TemplateId = occurrence.TemplateId,
+            TemplateName = occurrence.Template?.Name ?? string.Empty,
+            Title = occurrence.Title,
+            Description = occurrence.Description,
+            Category = occurrence.Category ?? string.Empty,
+            ScheduledDate = occurrence.ScheduledDate,
+            StartTime = occurrence.StartTime?.ToString(@"hh\:mm") ?? string.Empty,
+            EndTime = occurrence.EndTime?.ToString(@"hh\:mm") ?? string.Empty,
+            AudienceType = occurrence.AudienceType.ToString(),
+            FacilitatorType = occurrence.FacilitatorType.ToString(),
+            FacilitatorRole = occurrence.FacilitatorRole ?? string.Empty,
+            ExternalResourceName = occurrence.ExternalResourceName ?? string.Empty,
+            Status = occurrence.Status.ToString(),
+            Notes = occurrence.Notes ?? string.Empty
         };
     }
 
@@ -889,6 +1459,56 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         }
     }
 
+    private static void ValidateProgrammeDefinitionRequest(UpsertProgrammeDefinitionRequest request)
+    {
+        if (request.CentreId == Guid.Empty)
+        {
+            throw new ArgumentException("Centre is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.Name))
+        {
+            throw new ArgumentException("Programme code and name are required.", nameof(request));
+        }
+
+        if (request.TotalDurationValue <= 0)
+        {
+            throw new ArgumentException("Programme duration must be greater than zero.", nameof(request));
+        }
+    }
+
+    private static void ValidateScheduleTemplateRequest(UpsertScheduleTemplateRequest request)
+    {
+        if (request.CentreId == Guid.Empty)
+        {
+            throw new ArgumentException("Centre is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.Name))
+        {
+            throw new ArgumentException("Schedule template code and name are required.", nameof(request));
+        }
+
+        if (string.Equals(request.RecurrenceType?.Trim(), ScheduleRecurrenceType.Weekly.ToString(), StringComparison.OrdinalIgnoreCase)
+            && (!request.WeeklyDayOfWeek.HasValue || request.WeeklyDayOfWeek < 0 || request.WeeklyDayOfWeek > 6))
+        {
+            throw new ArgumentException("Weekly schedules require a valid day of week.", nameof(request));
+        }
+    }
+
+    private static void ValidateScheduleOccurrenceRequest(UpsertScheduleOccurrenceRequest request)
+    {
+        if (request.CentreId == Guid.Empty)
+        {
+            throw new ArgumentException("Centre is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Title))
+        {
+            throw new ArgumentException("Occurrence title is required.", nameof(request));
+        }
+    }
+
     private static void ValidatePermissionRequest(UpsertAppPermissionRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Key) ||
@@ -917,5 +1537,75 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         {
             throw new ArgumentException("User subject, username, and display name are required.", nameof(request));
         }
+    }
+
+    private static ProgrammeDurationUnit ParseProgrammeDurationUnit(string value, string parameterName)
+    {
+        if (Enum.TryParse<ProgrammeDurationUnit>(value?.Trim(), true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported programme duration unit '{value}'.", parameterName);
+    }
+
+    private static ScheduleRecurrenceType ParseScheduleRecurrenceType(string value, string parameterName)
+    {
+        if (Enum.TryParse<ScheduleRecurrenceType>(value?.Trim(), true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported schedule recurrence type '{value}'.", parameterName);
+    }
+
+    private static ScheduleAudienceType ParseScheduleAudienceType(string value, string parameterName)
+    {
+        if (Enum.TryParse<ScheduleAudienceType>(value?.Trim(), true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported schedule audience type '{value}'.", parameterName);
+    }
+
+    private static ScheduleFacilitatorType ParseScheduleFacilitatorType(string value, string parameterName)
+    {
+        if (Enum.TryParse<ScheduleFacilitatorType>(value?.Trim(), true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported facilitator type '{value}'.", parameterName);
+    }
+
+    private static ScheduleOccurrenceStatus ParseScheduleOccurrenceStatus(string value, string parameterName)
+    {
+        if (Enum.TryParse<ScheduleOccurrenceStatus>(value?.Trim(), true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported schedule occurrence status '{value}'.", parameterName);
+    }
+
+    private static TimeSpan? ParseOptionalTime(string value, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (TimeSpan.TryParse(value.Trim(), out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported time value '{value}'.", parameterName);
+    }
+
+    private static string? CleanOptional(string value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }
