@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Building2,
   ShieldAlert,
+  Map,
 } from "lucide-react";
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
 import { hasSuperAdminAccess } from "@/lib/adminAccess";
@@ -54,6 +55,8 @@ const ConfigurationLanding: React.FC = () => {
       "config.dashboard.integrations.coming_soon",
       "config.dashboard.day_planner.title",
       "config.dashboard.day_planner.description",
+      "config.dashboard.map_designer.title",
+      "config.dashboard.map_designer.description",
       "config.dashboard.quotes.title",
       "config.dashboard.quotes.description",
       "config.dashboard.programs.title",
@@ -208,6 +211,19 @@ const ConfigurationLanding: React.FC = () => {
                 <h2 className="text-lg font-semibold text-[var(--app-text)]">{text("config.dashboard.day_planner.title", "Day Planner")}</h2>
               </div>
               <p className="text-sm text-[var(--app-text-muted)]">{text("config.dashboard.day_planner.description", "Plan daily activities, staffing, and schedules.")}</p>
+            </button>
+
+            <button
+              onClick={() => router.push("/units/config/map-designer")}
+              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <Map className="h-6 w-6 text-[var(--app-primary)]" />
+                <h2 className="text-lg font-semibold text-[var(--app-text)]">{text("config.dashboard.map_designer.title", "Map Designer")}</h2>
+              </div>
+              <p className="text-sm text-[var(--app-text-muted)]">
+                {text("config.dashboard.map_designer.description", "Build and inspect internal SVG floor maps from structured spatial artefacts.")}
+              </p>
             </button>
 
             <button
