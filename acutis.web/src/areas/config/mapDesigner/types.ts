@@ -18,6 +18,7 @@ export type MapGeometry =
       y: number;
       width: number;
       height: number;
+      rotation?: number;
     }
   | {
       kind: "line";
@@ -44,7 +45,10 @@ export type MapArtefact = {
   geometry: MapGeometry;
   parentId?: string;
   wallAttachment?: {
-    wallId: string;
+    wallId?: string;
+    hostId?: string;
+    hostType?: "wall" | "room" | "zone" | "stair";
+    edge?: "top" | "right" | "bottom" | "left";
     offset: number;
     width: number;
   };

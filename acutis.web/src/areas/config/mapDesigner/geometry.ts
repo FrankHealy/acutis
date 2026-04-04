@@ -2,8 +2,60 @@ import type { MapArtefact, MapGeometry, ViewportState, WorldBounds } from "@/are
 
 const DEFAULT_PADDING = 48;
 
+function getRectCenter(geometry: Extract<MapGeometry, { kind: "rect" }>) {
+  return {
+    x: geometry.x + geometry.width / 2,
+    y: geometry.y + geometry.height / 2,
+  };
+}
+
+function getRotatedRectPoints(geometry: Extract<MapGeometry, { kind: "rect" }>) {
+  const rotation = geometry.rotation ?? 0;
+  const center = getRectCenter(geometry);
+  const corners = [
+    { x: geometry.x, y: geometry.y },
+    { x: geometry.x + geometry.width, y: geometry.y },
+    { x: geometry.x + geometry.width, y: geometry.y + geometry.height },
+    { x: geometry.x, y: geometry.y + geometry.height },
+  ];
+
+  if (!rotation) {
+    return corners;
+  }
+
+  const radians = (rotation * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  return corners.map((corner) => {
+    const dx = corner.x - center.x;
+    const dy = corner.y - center.y;
+    return {
+      x: center.x + dx * cos - dy * sin,
+      y: center.y + dx * sin + dy * cos,
+    };
+  });
+}
+
 export function getGeometryBounds(geometry: MapGeometry): WorldBounds {
   if (geometry.kind === "rect") {
+    if (geometry.rotation) {
+      const points = getRotatedRectPoints(geometry);
+      const xs = points.map((point) => point.x);
+      const ys = points.map((point) => point.y);
+      const minX = Math.min(...xs);
+      const minY = Math.min(...ys);
+      const maxX = Math.max(...xs);
+      const maxY = Math.max(...ys);
+      return {
+        minX,
+        minY,
+        maxX,
+        maxY,
+        width: maxX - minX,
+        height: maxY - minY,
+      };
+    }
     return {
       minX: geometry.x,
       minY: geometry.y,
@@ -164,6 +216,24 @@ export function createWallPolygonPoints(geometry: Extract<MapGeometry, { kind: "
   ].join(" ");
 }
 
+export function constrainPointToAxis(origin: { x: number; y: number }, point: { x: number; y: number }): { x: number; y: number } {
+  const deltaX = point.x - origin.x;
+  const deltaY = point.y - origin.y;
+  if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+    return { x: point.x, y: origin.y };
+  }
+
+  return { x: origin.x, y: point.y };
+}
+
+export function constrainDeltaToAxis(deltaX: number, deltaY: number): { x: number; y: number } {
+  if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+    return { x: deltaX, y: 0 };
+  }
+
+  return { x: 0, y: deltaY };
+}
+
 function isAxisAlignedLine(geometry: Extract<MapGeometry, { kind: "line" }>): boolean {
   return geometry.x1 === geometry.x2 || geometry.y1 === geometry.y2;
 }
@@ -251,78 +321,167 @@ export function mergeCollinearWallArtefacts(walls: MapArtefact[]): Array<Extract
 
 export function resolveAttachedOpeningLine(
   opening: MapArtefact,
-  wallsById: Map<string, MapArtefact>,
+  artefactsById: Map<string, MapArtefact>,
 ): Extract<MapGeometry, { kind: "line" }> | null {
   if (!opening.wallAttachment) {
     return opening.geometry.kind === "line" ? opening.geometry : null;
   }
 
-  const wall = wallsById.get(opening.wallAttachment.wallId);
-  if (!wall || wall.geometry.kind !== "line") {
+  const hostType = opening.wallAttachment.hostType ?? "wall";
+  const hostId = opening.wallAttachment.hostId ?? opening.wallAttachment.wallId;
+  if (!hostId) {
     return opening.geometry.kind === "line" ? opening.geometry : null;
   }
 
-  const wallLine = wall.geometry;
-  const length = getLineLength(wallLine);
-  if (length === 0) {
-    return null;
+  const host = artefactsById.get(hostId);
+  if (!host) {
+    return opening.geometry.kind === "line" ? opening.geometry : null;
   }
 
-  const doorWidth = opening.wallAttachment.width || 36;
-  const centerRatio = opening.wallAttachment.offset / length;
-  const centerX = wallLine.x1 + (wallLine.x2 - wallLine.x1) * centerRatio;
-  const centerY = wallLine.y1 + (wallLine.y2 - wallLine.y1) * centerRatio;
-  const dx = wallLine.x2 - wallLine.x1;
-  const dy = wallLine.y2 - wallLine.y1;
-  const normalX = -dy / length;
-  const normalY = dx / length;
-  const half = doorWidth / 2;
+  const openingWidth = opening.wallAttachment.width || 36;
+  if (hostType === "wall" && host.geometry.kind === "line") {
+    const wallLine = host.geometry;
+    const length = getLineLength(wallLine);
+    if (length === 0) {
+      return null;
+    }
 
+    const centerRatio = opening.wallAttachment.offset / length;
+    const centerX = wallLine.x1 + (wallLine.x2 - wallLine.x1) * centerRatio;
+    const centerY = wallLine.y1 + (wallLine.y2 - wallLine.y1) * centerRatio;
+    const dx = wallLine.x2 - wallLine.x1;
+    const dy = wallLine.y2 - wallLine.y1;
+    const tangentX = dx / length;
+    const tangentY = dy / length;
+    const half = openingWidth / 2;
+
+    return {
+      kind: "line",
+      x1: Math.round(centerX - tangentX * half),
+      y1: Math.round(centerY - tangentY * half),
+      x2: Math.round(centerX + tangentX * half),
+      y2: Math.round(centerY + tangentY * half),
+      thickness: wallLine.thickness ?? 14,
+    };
+  }
+
+  if (host.geometry.kind !== "rect") {
+    return opening.geometry.kind === "line" ? opening.geometry : null;
+  }
+
+  const rect = host.geometry;
+  const edge = opening.wallAttachment.edge ?? "left";
+  const offset = opening.wallAttachment.offset;
+  const half = openingWidth / 2;
+  if (edge === "top" || edge === "bottom") {
+    const y = edge === "top" ? rect.y : rect.y + rect.height;
+    const centerX = rect.x + offset;
+    return {
+      kind: "line",
+      x1: Math.round(centerX - half),
+      y1: Math.round(y),
+      x2: Math.round(centerX + half),
+      y2: Math.round(y),
+      thickness: 8,
+    };
+  }
+
+  const x = edge === "left" ? rect.x : rect.x + rect.width;
+  const centerY = rect.y + offset;
   return {
     kind: "line",
-    x1: Math.round(centerX - normalX * half),
-    y1: Math.round(centerY - normalY * half),
-    x2: Math.round(centerX + normalX * half),
-    y2: Math.round(centerY + normalY * half),
+    x1: Math.round(x),
+    y1: Math.round(centerY - half),
+    x2: Math.round(x),
+    y2: Math.round(centerY + half),
     thickness: 8,
   };
 }
 
-export function findNearestWallAttachment(point: { x: number; y: number }, walls: MapArtefact[]): { wallId: string; offset: number; width: number } | null {
-  type Candidate = { wallId: string; offset: number; width: number; distance: number };
+export function findNearestWallAttachment(
+  point: { x: number; y: number },
+  walls: MapArtefact[],
+): {
+  wallId?: string;
+  hostId?: string;
+  hostType?: "wall" | "room" | "zone" | "stair";
+  edge?: "top" | "right" | "bottom" | "left";
+  offset: number;
+  width: number;
+} | null {
+  type Candidate = {
+    wallId?: string;
+    hostId?: string;
+    hostType?: "wall" | "room" | "zone" | "stair";
+    edge?: "top" | "right" | "bottom" | "left";
+    offset: number;
+    width: number;
+    distance: number;
+  };
   let best: Candidate | null = null;
 
-  walls.forEach((wall) => {
-    if (wall.geometry.kind !== "line") {
+  walls.forEach((artefact) => {
+    if (artefact.geometry.kind === "line") {
+      const line = artefact.geometry;
+      const length = getLineLength(line);
+      if (length === 0) {
+        return;
+      }
+
+      const dx = line.x2 - line.x1;
+      const dy = line.y2 - line.y1;
+      const projection = ((point.x - line.x1) * dx + (point.y - line.y1) * dy) / (length * length);
+      const clamped = Math.max(0, Math.min(1, projection));
+      const snappedX = line.x1 + dx * clamped;
+      const snappedY = line.y1 + dy * clamped;
+      const distance = Math.hypot(point.x - snappedX, point.y - snappedY);
+
+      if (distance > 20) {
+        return;
+      }
+
+      if (!best || distance < best.distance) {
+        best = {
+          wallId: artefact.id,
+          hostId: artefact.id,
+          hostType: "wall",
+          offset: Math.round(clamped * length),
+          width: 36,
+          distance,
+        };
+      }
       return;
     }
 
-    const line = wall.geometry;
-    const length = getLineLength(line);
-    if (length === 0) {
+    if (artefact.geometry.kind !== "rect" || !(artefact.type === "room" || artefact.type === "zone" || artefact.type === "stair")) {
       return;
     }
 
-    const dx = line.x2 - line.x1;
-    const dy = line.y2 - line.y1;
-    const projection = ((point.x - line.x1) * dx + (point.y - line.y1) * dy) / (length * length);
-    const clamped = Math.max(0, Math.min(1, projection));
-    const snappedX = line.x1 + dx * clamped;
-    const snappedY = line.y1 + dy * clamped;
-    const distance = Math.hypot(point.x - snappedX, point.y - snappedY);
+    const rect = artefact.geometry;
+    const candidates = [
+      { edge: "top" as const, snappedX: Math.min(Math.max(point.x, rect.x), rect.x + rect.width), snappedY: rect.y, offset: Math.min(Math.max(point.x - rect.x, 0), rect.width) },
+      { edge: "bottom" as const, snappedX: Math.min(Math.max(point.x, rect.x), rect.x + rect.width), snappedY: rect.y + rect.height, offset: Math.min(Math.max(point.x - rect.x, 0), rect.width) },
+      { edge: "left" as const, snappedX: rect.x, snappedY: Math.min(Math.max(point.y, rect.y), rect.y + rect.height), offset: Math.min(Math.max(point.y - rect.y, 0), rect.height) },
+      { edge: "right" as const, snappedX: rect.x + rect.width, snappedY: Math.min(Math.max(point.y, rect.y), rect.y + rect.height), offset: Math.min(Math.max(point.y - rect.y, 0), rect.height) },
+    ];
 
-    if (distance > 20) {
-      return;
-    }
+    candidates.forEach((candidate) => {
+      const distance = Math.hypot(point.x - candidate.snappedX, point.y - candidate.snappedY);
+      if (distance > 20) {
+        return;
+      }
 
-    if (!best || distance < best.distance) {
-      best = {
-        wallId: wall.id,
-        offset: Math.round(clamped * length),
-        width: 36,
-        distance,
-      };
-    }
+      if (!best || distance < best.distance) {
+        best = {
+          hostId: artefact.id,
+          hostType: artefact.type as "room" | "zone" | "stair",
+          edge: candidate.edge,
+          offset: Math.round(candidate.offset),
+          width: 36,
+          distance,
+        };
+      }
+    });
   });
 
   if (!best) {
@@ -330,7 +489,82 @@ export function findNearestWallAttachment(point: { x: number; y: number }, walls
   }
 
   const resolved = best as Candidate;
-  return { wallId: resolved.wallId, offset: resolved.offset, width: resolved.width };
+  return {
+    wallId: resolved.wallId,
+    hostId: resolved.hostId,
+    hostType: resolved.hostType,
+    edge: resolved.edge,
+    offset: resolved.offset,
+    width: resolved.width,
+  };
+}
+
+function getSnapCandidates(artefacts: MapArtefact[]): Array<{ x?: number; y?: number }> {
+  const candidates: Array<{ x?: number; y?: number }> = [];
+
+  artefacts.forEach((artefact) => {
+    const geometry = artefact.geometry;
+    if (geometry.kind === "point") {
+      candidates.push({ x: geometry.x, y: geometry.y });
+      return;
+    }
+
+    if (geometry.kind === "line") {
+      candidates.push({ x: geometry.x1, y: geometry.y1 });
+      candidates.push({ x: geometry.x2, y: geometry.y2 });
+      candidates.push({ x: (geometry.x1 + geometry.x2) / 2, y: (geometry.y1 + geometry.y2) / 2 });
+      return;
+    }
+
+    if (geometry.kind === "rect") {
+      candidates.push({ x: geometry.x });
+      candidates.push({ x: geometry.x + geometry.width / 2 });
+      candidates.push({ x: geometry.x + geometry.width });
+      candidates.push({ y: geometry.y });
+      candidates.push({ y: geometry.y + geometry.height / 2 });
+      candidates.push({ y: geometry.y + geometry.height });
+      return;
+    }
+
+    geometry.points.forEach((point) => candidates.push({ x: point.x, y: point.y }));
+  });
+
+  return candidates;
+}
+
+export function alignPointToArtefactAxes(
+  point: { x: number; y: number },
+  artefacts: MapArtefact[],
+  threshold: number = 8,
+): { x: number; y: number } {
+  const candidates = getSnapCandidates(artefacts);
+  let snappedX = point.x;
+  let snappedY = point.y;
+  let bestX = threshold;
+  let bestY = threshold;
+
+  candidates.forEach((candidate) => {
+    if (typeof candidate.x === "number") {
+      const distance = Math.abs(point.x - candidate.x);
+      if (distance <= bestX) {
+        snappedX = candidate.x;
+        bestX = distance;
+      }
+    }
+
+    if (typeof candidate.y === "number") {
+      const distance = Math.abs(point.y - candidate.y);
+      if (distance <= bestY) {
+        snappedY = candidate.y;
+        bestY = distance;
+      }
+    }
+  });
+
+  return {
+    x: Math.round(snappedX),
+    y: Math.round(snappedY),
+  };
 }
 
 export function snapWorldPoint(
@@ -384,4 +618,107 @@ export function isLabelVisible(scale: number, type: MapArtefact["type"]): boolea
   }
 
   return true;
+}
+
+type AxisSegment = {
+  orientation: "horizontal" | "vertical";
+  fixed: number;
+  start: number;
+  end: number;
+  thickness: number;
+};
+
+function getRoomBoundaryThickness(artefact: MapArtefact): number {
+  const candidate = artefact.metadata?.borderThickness;
+  return typeof candidate === "number" && Number.isFinite(candidate) && candidate > 0 ? candidate : 2;
+}
+
+function mergeAxisSegments(segments: AxisSegment[]): AxisSegment[] {
+  const grouped = new Map<string, AxisSegment[]>();
+
+  segments.forEach((segment) => {
+    const key = `${segment.orientation}:${segment.fixed}:${segment.thickness}`;
+    const bucket = grouped.get(key) ?? [];
+    bucket.push(segment);
+    grouped.set(key, bucket);
+  });
+
+  const merged: AxisSegment[] = [];
+
+  grouped.forEach((bucket) => {
+    const sorted = [...bucket].sort((left, right) => left.start - right.start);
+    sorted.forEach((segment) => {
+      const last = merged[merged.length - 1];
+      if (
+        last &&
+        last.orientation === segment.orientation &&
+        last.fixed === segment.fixed &&
+        last.thickness === segment.thickness &&
+        segment.start <= last.end
+      ) {
+        last.end = Math.max(last.end, segment.end);
+        return;
+      }
+
+      merged.push({ ...segment });
+    });
+  });
+
+  return merged;
+}
+
+export function getRoomBoundarySegments(artefacts: MapArtefact[]): Array<Extract<MapGeometry, { kind: "line" }>> {
+  const edgeSegments = new Map<string, AxisSegment>();
+
+  artefacts
+    .filter((artefact) => artefact.visible !== false)
+    .filter((artefact) => artefact.type === "room" || artefact.type === "zone" || artefact.type === "stair")
+    .forEach((artefact) => {
+      if (artefact.geometry.kind !== "rect") {
+        return;
+      }
+
+      if (artefact.geometry.rotation) {
+        return;
+      }
+
+      const { x, y, width, height } = artefact.geometry;
+      const thickness = getRoomBoundaryThickness(artefact);
+      const segments: AxisSegment[] = [
+        { orientation: "horizontal", fixed: y, start: x, end: x + width, thickness },
+        { orientation: "horizontal", fixed: y + height, start: x, end: x + width, thickness },
+        { orientation: "vertical", fixed: x, start: y, end: y + height, thickness },
+        { orientation: "vertical", fixed: x + width, start: y, end: y + height, thickness },
+      ];
+
+      segments.forEach((segment) => {
+        const key = `${segment.orientation}:${segment.fixed}:${segment.start}:${segment.end}`;
+        const existing = edgeSegments.get(key);
+        if (!existing || segment.thickness > existing.thickness) {
+          edgeSegments.set(key, segment);
+        }
+      });
+    });
+
+  const normalizedSegments = [...edgeSegments.values()];
+
+  return mergeAxisSegments(normalizedSegments).map((segment) =>
+    segment.orientation === "horizontal"
+      ? {
+          kind: "line",
+          x1: segment.start,
+          y1: segment.fixed,
+          x2: segment.end,
+          y2: segment.fixed,
+          thickness: segment.thickness,
+        }
+      : {
+          kind: "line",
+          x1: segment.fixed,
+          y1: segment.start,
+          x2: segment.fixed,
+          y2: segment.end,
+          thickness: segment.thickness,
+        },
+  );
 }

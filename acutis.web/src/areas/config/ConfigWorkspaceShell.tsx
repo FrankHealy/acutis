@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import Header from "@/areas/shared/layout/Header";
 
 const primaryNavItems = [
@@ -28,31 +27,7 @@ export default function ConfigWorkspaceShell({ children }: ConfigWorkspaceShellP
   return (
     <div className="app-page-shell min-h-screen">
       <div className="sticky top-0 z-40">
-        <Header showCapacity={false} />
-        <div className="border-b border-[var(--app-border)] bg-[color:color-mix(in_srgb,var(--app-surface)_94%,white)] backdrop-blur">
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div className="space-y-2">
-                <Link
-                  href="/"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--app-primary)] transition-colors hover:text-[var(--app-primary-strong)]"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Back to Startup</span>
-                </Link>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-text-muted)]">
-                    Global Configuration
-                  </p>
-                  <h1 className="mt-1 text-2xl font-semibold text-[var(--app-text)]">Configuration Workspace</h1>
-                  <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                    Shared administration header and fast navigation across forms, quotes, centres, units, and access.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Header showCapacity={false} unitName="Configuration" unitLabel="Current Area" unitIconKey="shield" />
         <nav className="app-surface border-b border-[var(--app-border)]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex min-h-14 items-center py-3">

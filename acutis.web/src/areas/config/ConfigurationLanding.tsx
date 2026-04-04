@@ -13,7 +13,6 @@ import {
   CalendarClock,
   ClipboardCheck,
   Quote,
-  ArrowLeft,
   Building2,
   ShieldAlert,
   Map,
@@ -75,24 +74,7 @@ const ConfigurationLanding: React.FC = () => {
       description={text("config.dashboard.description", "Global administration is restricted to SuperAdmin.")}
     >
       <div className="app-page-shell">
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex items-center gap-3 mb-6">
-            <button
-              onClick={() => router.push("/")}
-              className="flex items-center gap-2 text-sm font-semibold text-[var(--app-primary)] transition-colors hover:text-[var(--app-primary-strong)]"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span>{text("config.dashboard.back", "Back to Startup")}</span>
-            </button>
-            <div className="flex items-center gap-3">
-              <Settings className="h-7 w-7 text-[var(--app-primary)]" />
-              <div>
-                <h1 className="text-2xl font-semibold text-[var(--app-text)]">{text("config.dashboard.title", "Configuration Dashboard")}</h1>
-                <p className="text-[var(--app-text-muted)]">{text("config.dashboard.description", "Manage global units, forms, roles, and system settings.")}</p>
-              </div>
-            </div>
-          </div>
-
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="app-card mb-6 rounded-2xl p-5">
             <div className="flex items-start gap-3">
               <div className="rounded-full bg-[var(--app-primary-soft)] p-3 text-[var(--app-primary)] shadow-sm">
