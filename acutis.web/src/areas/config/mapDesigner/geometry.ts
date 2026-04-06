@@ -404,7 +404,7 @@ export function findNearestWallAttachment(
 ): {
   wallId?: string;
   hostId?: string;
-  hostType?: "wall" | "room" | "zone" | "stair";
+  hostType?: "wall" | "room" | "corridor" | "zone" | "stair";
   edge?: "top" | "right" | "bottom" | "left";
   offset: number;
   width: number;
@@ -412,7 +412,7 @@ export function findNearestWallAttachment(
   type Candidate = {
     wallId?: string;
     hostId?: string;
-    hostType?: "wall" | "room" | "zone" | "stair";
+    hostType?: "wall" | "room" | "corridor" | "zone" | "stair";
     edge?: "top" | "right" | "bottom" | "left";
     offset: number;
     width: number;
@@ -453,7 +453,7 @@ export function findNearestWallAttachment(
       return;
     }
 
-    if (artefact.geometry.kind !== "rect" || !(artefact.type === "room" || artefact.type === "zone" || artefact.type === "stair")) {
+    if (artefact.geometry.kind !== "rect" || !(artefact.type === "room" || artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair")) {
       return;
     }
 
@@ -474,7 +474,7 @@ export function findNearestWallAttachment(
       if (!best || distance < best.distance) {
         best = {
           hostId: artefact.id,
-          hostType: artefact.type as "room" | "zone" | "stair",
+          hostType: artefact.type as "room" | "corridor" | "zone" | "stair",
           edge: candidate.edge,
           offset: Math.round(candidate.offset),
           width: 36,
@@ -626,6 +626,14 @@ type AxisSegment = {
   start: number;
   end: number;
   thickness: number;
+  stroke: string;
+  zOrder: number;
+  sourceArea: number;
+};
+
+export type RoomBoundarySegment = {
+  geometry: Extract<MapGeometry, { kind: "line" }>;
+  stroke: string;
 };
 
 function getRoomBoundaryThickness(artefact: MapArtefact): number {
@@ -633,11 +641,41 @@ function getRoomBoundaryThickness(artefact: MapArtefact): number {
   return typeof candidate === "number" && Number.isFinite(candidate) && candidate > 0 ? candidate : 2;
 }
 
+function getRoomBoundarySideThickness(
+  artefact: MapArtefact,
+  side: "top" | "right" | "bottom" | "left",
+): number {
+  const key =
+    side === "top"
+      ? "borderTopThickness"
+      : side === "right"
+        ? "borderRightThickness"
+        : side === "bottom"
+          ? "borderBottomThickness"
+          : "borderLeftThickness";
+  const candidate = artefact.metadata?.[key];
+  if (typeof candidate === "number" && Number.isFinite(candidate) && candidate >= 0) {
+    return candidate;
+  }
+
+  return getRoomBoundaryThickness(artefact);
+}
+
+function getRoomBoundaryStroke(artefact: MapArtefact): string {
+  const candidate = artefact.metadata?.borderColor;
+  return typeof candidate === "string" && candidate.length > 0 ? candidate : "var(--app-border)";
+}
+
+function getArtefactZOrder(artefact: MapArtefact): number {
+  const candidate = artefact.metadata?.zOrder;
+  return typeof candidate === "number" && Number.isFinite(candidate) ? candidate : 0;
+}
+
 function mergeAxisSegments(segments: AxisSegment[]): AxisSegment[] {
   const grouped = new Map<string, AxisSegment[]>();
 
   segments.forEach((segment) => {
-    const key = `${segment.orientation}:${segment.fixed}:${segment.thickness}`;
+    const key = `${segment.orientation}:${segment.fixed}:${segment.thickness}:${segment.stroke}:${segment.zOrder}:${segment.sourceArea}`;
     const bucket = grouped.get(key) ?? [];
     bucket.push(segment);
     grouped.set(key, bucket);
@@ -654,6 +692,9 @@ function mergeAxisSegments(segments: AxisSegment[]): AxisSegment[] {
         last.orientation === segment.orientation &&
         last.fixed === segment.fixed &&
         last.thickness === segment.thickness &&
+        last.stroke === segment.stroke &&
+        last.zOrder === segment.zOrder &&
+        last.sourceArea === segment.sourceArea &&
         segment.start <= last.end
       ) {
         last.end = Math.max(last.end, segment.end);
@@ -667,12 +708,12 @@ function mergeAxisSegments(segments: AxisSegment[]): AxisSegment[] {
   return merged;
 }
 
-export function getRoomBoundarySegments(artefacts: MapArtefact[]): Array<Extract<MapGeometry, { kind: "line" }>> {
+export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundarySegment[] {
   const edgeSegments = new Map<string, AxisSegment>();
 
   artefacts
     .filter((artefact) => artefact.visible !== false)
-    .filter((artefact) => artefact.type === "room" || artefact.type === "zone" || artefact.type === "stair")
+    .filter((artefact) => artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair")
     .forEach((artefact) => {
       if (artefact.geometry.kind !== "rect") {
         return;
@@ -683,18 +724,28 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): Array<Extract
       }
 
       const { x, y, width, height } = artefact.geometry;
-      const thickness = getRoomBoundaryThickness(artefact);
-      const segments: AxisSegment[] = [
-        { orientation: "horizontal", fixed: y, start: x, end: x + width, thickness },
-        { orientation: "horizontal", fixed: y + height, start: x, end: x + width, thickness },
-        { orientation: "vertical", fixed: x, start: y, end: y + height, thickness },
-        { orientation: "vertical", fixed: x + width, start: y, end: y + height, thickness },
-      ];
+      const stroke = getRoomBoundaryStroke(artefact);
+      const zOrder = getArtefactZOrder(artefact);
+      const sourceArea = width * height;
+      const segments = [
+        { orientation: "horizontal", fixed: y, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "top"), stroke, zOrder, sourceArea },
+        { orientation: "horizontal", fixed: y + height, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "bottom"), stroke, zOrder, sourceArea },
+        { orientation: "vertical", fixed: x, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "left"), stroke, zOrder, sourceArea },
+        { orientation: "vertical", fixed: x + width, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "right"), stroke, zOrder, sourceArea },
+      ] satisfies AxisSegment[];
 
-      segments.forEach((segment) => {
+      segments.filter((segment) => segment.thickness > 0).forEach((segment) => {
         const key = `${segment.orientation}:${segment.fixed}:${segment.start}:${segment.end}`;
         const existing = edgeSegments.get(key);
-        if (!existing || segment.thickness > existing.thickness) {
+        const currentIsDefault = existing?.stroke === "var(--app-border)";
+        const nextIsDefault = segment.stroke === "var(--app-border)";
+        if (
+          !existing ||
+          segment.zOrder > existing.zOrder ||
+          (segment.zOrder === existing.zOrder && segment.sourceArea < existing.sourceArea) ||
+          segment.thickness > existing.thickness ||
+          (segment.thickness === existing.thickness && currentIsDefault && !nextIsDefault)
+        ) {
           edgeSegments.set(key, segment);
         }
       });
@@ -702,23 +753,25 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): Array<Extract
 
   const normalizedSegments = [...edgeSegments.values()];
 
-  return mergeAxisSegments(normalizedSegments).map((segment) =>
-    segment.orientation === "horizontal"
-      ? {
-          kind: "line",
-          x1: segment.start,
-          y1: segment.fixed,
-          x2: segment.end,
-          y2: segment.fixed,
-          thickness: segment.thickness,
-        }
-      : {
-          kind: "line",
-          x1: segment.fixed,
-          y1: segment.start,
-          x2: segment.fixed,
-          y2: segment.end,
-          thickness: segment.thickness,
-        },
-  );
+  return mergeAxisSegments(normalizedSegments).map((segment) => ({
+    geometry:
+      segment.orientation === "horizontal"
+        ? {
+            kind: "line",
+            x1: segment.start,
+            y1: segment.fixed,
+            x2: segment.end,
+            y2: segment.fixed,
+            thickness: segment.thickness,
+          }
+        : {
+            kind: "line",
+            x1: segment.fixed,
+            y1: segment.start,
+            x2: segment.fixed,
+            y2: segment.end,
+            thickness: segment.thickness,
+          },
+    stroke: segment.stroke,
+  }));
 }

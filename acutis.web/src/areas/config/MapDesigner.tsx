@@ -1,7 +1,32 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CircleDot, DoorOpen, Eye, FilePlus2, FolderOpen, Hand, Info, MapPinned, Minus, MousePointer2, PanelRightOpen, Plus, RotateCcw, RotateCw, Save, ShieldAlert, Square, Type, X } from "lucide-react";
+import {
+  Map as MapIcon,
+  BetweenVerticalStart,
+  Blinds,
+  BrickWall,
+  CircleDot,
+  Columns2,
+  DoorOpen,
+  Eye,
+  FilePlus2,
+  FolderOpen,
+  Hand,
+  Info,
+  MapPinned,
+  Minus,
+  MousePointer2,
+  PanelsTopLeft,
+  Plus,
+  RotateCcw,
+  RotateCw,
+  Save,
+  ShieldAlert,
+  Square,
+  Type,
+  X,
+} from "lucide-react";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import {
   alignPointToArtefactAxes,
@@ -24,9 +49,11 @@ import { sampleDetoxReferenceMap } from "@/areas/config/mapDesigner/sampleMap";
 import type { MapArtefact, MapDocument, MapGeometry, MapTool, ViewportState } from "@/areas/config/mapDesigner/types";
 
 type WorldPoint = { x: number; y: number };
+type ResizeHandle = "right" | "bottom" | "bottomRight";
 type PointerDragState =
   | { kind: "pan"; originClientX: number; originClientY: number; originPanX: number; originPanY: number }
   | { kind: "move"; artefactId: string; originWorld: WorldPoint; originalGeometry: MapGeometry; childGeometries: Array<{ id: string; geometry: MapGeometry }> }
+  | { kind: "resize"; artefactId: string; handle: ResizeHandle; originWorld: WorldPoint; originalGeometry: Extract<MapGeometry, { kind: "rect" }> }
   | { kind: "room"; originWorld: WorldPoint; currentWorld: WorldPoint }
   | null;
 
@@ -42,15 +69,25 @@ type MapClipboard = {
   pasteCount: number;
 };
 
+type RoomBatchDraft = {
+  fillColor: string;
+  borderColor: string;
+  textColor: string;
+  textSize: number;
+  borderThickness: number;
+  visible: boolean;
+};
+
 const TOOL_ORDER: Array<{ id: MapTool; icon: React.ComponentType<{ className?: string }>; fallbackLabel: string }> = [
   { id: "select", icon: MousePointer2, fallbackLabel: "Select" },
   { id: "pan", icon: Hand, fallbackLabel: "Pan" },
   { id: "room", icon: Square, fallbackLabel: "Room" },
-  { id: "wall", icon: PanelRightOpen, fallbackLabel: "Wall" },
-  { id: "partition", icon: PanelRightOpen, fallbackLabel: "Partition" },
-  { id: "stair", icon: PanelRightOpen, fallbackLabel: "Stair" },
+  { id: "corridor", icon: MapIcon, fallbackLabel: "Corridor" },
+  { id: "wall", icon: BrickWall, fallbackLabel: "Wall" },
+  { id: "partition", icon: Columns2, fallbackLabel: "Partition" },
+  { id: "stair", icon: BetweenVerticalStart, fallbackLabel: "Stair" },
   { id: "door", icon: DoorOpen, fallbackLabel: "Door" },
-  { id: "window", icon: DoorOpen, fallbackLabel: "Window" },
+  { id: "window", icon: Blinds, fallbackLabel: "Window" },
   { id: "exit", icon: MapPinned, fallbackLabel: "Exit" },
   { id: "fireExit", icon: ShieldAlert, fallbackLabel: "Fire Exit" },
   { id: "roundel", icon: CircleDot, fallbackLabel: "Roundel" },
@@ -61,6 +98,7 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
   select: "config.map_designer.tool.select",
   pan: "config.map_designer.tool.pan",
   room: "config.map_designer.tool.room",
+  corridor: "config.map_designer.tool.corridor",
   wall: "config.map_designer.tool.wall",
   partition: "config.map_designer.tool.partition",
   stair: "config.map_designer.tool.stair",
@@ -74,9 +112,128 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
 
 const createId = (prefix: string) => `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
 const normalizeRect = (a: WorldPoint, b: WorldPoint) => ({ x: Math.round(Math.min(a.x, b.x)), y: Math.round(Math.min(a.y, b.y)), width: Math.round(Math.abs(b.x - a.x)), height: Math.round(Math.abs(b.y - a.y)) });
-const MAP_ARTEFACT_TYPES = new Set(["room", "zone", "wall", "door", "window", "partition", "exit", "fireExit", "roundel", "label", "stair"]);
+const MAP_ARTEFACT_TYPES = new Set(["room", "corridor", "zone", "wall", "door", "window", "partition", "exit", "fireExit", "roundel", "label", "stair"]);
 const DEFAULT_WORLD = { width: 1600, height: 1050 };
 const SNAP_THRESHOLD = 16;
+
+function getArtefactZOrder(artefact: MapArtefact): number {
+  return typeof artefact.metadata?.zOrder === "number" ? artefact.metadata.zOrder : 0;
+}
+
+function getArtefactRenderArea(artefact: MapArtefact): number {
+  if (artefact.geometry.kind === "rect") return artefact.geometry.width * artefact.geometry.height;
+  if (artefact.geometry.kind === "polygon") {
+    const xs = artefact.geometry.points.map((point) => point.x);
+    const ys = artefact.geometry.points.map((point) => point.y);
+    return (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
+  }
+  return 0;
+}
+
+function getRectCornerRadius(artefact: MapArtefact): number {
+  if (artefact.type === "zone") return 0;
+  return artefact.metadata?.cornerStyle === "round" ? 14 : 0;
+}
+
+function getStructuredRectBorderThickness(artefact: MapArtefact, side: "top" | "right" | "bottom" | "left"): number {
+  const specificKey =
+    side === "top"
+      ? "borderTopThickness"
+      : side === "right"
+        ? "borderRightThickness"
+        : side === "bottom"
+          ? "borderBottomThickness"
+          : "borderLeftThickness";
+  const specific = artefact.metadata?.[specificKey];
+  if (typeof specific === "number" && Number.isFinite(specific) && specific >= 0) {
+    return specific;
+  }
+
+  const overall = artefact.metadata?.borderThickness;
+  if (typeof overall === "number" && Number.isFinite(overall) && overall >= 0) {
+    return overall;
+  }
+
+  return 2;
+}
+
+function getArtefactTextSize(artefact: MapArtefact): number {
+  const candidate = artefact.metadata?.textSize;
+  if (typeof candidate === "number" && Number.isFinite(candidate) && candidate > 0) {
+    return candidate;
+  }
+
+  if (artefact.type === "exit" || artefact.type === "fireExit") return 12;
+  if (artefact.type === "label") return 14;
+  return 13;
+}
+
+function getDoorType(artefact: MapArtefact): "internal" | "external" {
+  return artefact.metadata?.doorType === "external" ? "external" : "internal";
+}
+
+function getResizeHandlePositions(geometry: Extract<MapGeometry, { kind: "rect" }>) {
+  return {
+    right: { x: geometry.x + geometry.width, y: geometry.y + geometry.height / 2 },
+    bottom: { x: geometry.x + geometry.width / 2, y: geometry.y + geometry.height },
+    bottomRight: { x: geometry.x + geometry.width, y: geometry.y + geometry.height },
+  } satisfies Record<ResizeHandle, WorldPoint>;
+}
+
+function createRoomBatchDraft(rooms: MapArtefact[]): RoomBatchDraft {
+  return {
+    fillColor: getMetadataColor(rooms[0], "fillColor") ?? "#f8fafc",
+    borderColor: getMetadataColor(rooms[0], "borderColor") ?? "#475569",
+    textColor: getMetadataColor(rooms[0], "textColor") ?? "#111827",
+    textSize: getArtefactTextSize(rooms[0]),
+    borderThickness: typeof rooms[0].metadata?.borderThickness === "number" ? rooms[0].metadata.borderThickness : 2,
+    visible: rooms[0].visible !== false,
+  };
+}
+
+function isContainedStructuredRect(candidate: MapArtefact, allArtefacts: MapArtefact[]): boolean {
+  if (!(candidate.type === "corridor" || candidate.type === "zone" || candidate.type === "stair")) return false;
+  if (candidate.geometry.kind !== "rect" || candidate.geometry.rotation) return false;
+  const candidateRect = candidate.geometry;
+
+  return allArtefacts.some((other) => {
+    if (other.id === candidate.id || other.visible === false) return false;
+    if (!(other.type === "corridor" || other.type === "zone" || other.type === "stair")) return false;
+    if (other.geometry.kind !== "rect" || other.geometry.rotation) return false;
+    const otherRect = other.geometry;
+
+    return (
+      candidateRect.x >= otherRect.x &&
+      candidateRect.y >= otherRect.y &&
+      candidateRect.x + candidateRect.width <= otherRect.x + otherRect.width &&
+      candidateRect.y + candidateRect.height <= otherRect.y + otherRect.height &&
+      (candidateRect.width < otherRect.width || candidateRect.height < otherRect.height)
+    );
+  });
+}
+
+function getStructuredRectContainmentRelation(left: MapArtefact, right: MapArtefact): number {
+  if (left.geometry.kind !== "rect" || right.geometry.kind !== "rect") return 0;
+  if (left.geometry.rotation || right.geometry.rotation) return 0;
+
+  const leftContainsRight =
+    left.geometry.x <= right.geometry.x &&
+    left.geometry.y <= right.geometry.y &&
+    left.geometry.x + left.geometry.width >= right.geometry.x + right.geometry.width &&
+    left.geometry.y + left.geometry.height >= right.geometry.y + right.geometry.height &&
+    (left.geometry.width > right.geometry.width || left.geometry.height > right.geometry.height);
+
+  const rightContainsLeft =
+    right.geometry.x <= left.geometry.x &&
+    right.geometry.y <= left.geometry.y &&
+    right.geometry.x + right.geometry.width >= left.geometry.x + left.geometry.width &&
+    right.geometry.y + right.geometry.height >= left.geometry.y + left.geometry.height &&
+    (right.geometry.width > left.geometry.width || right.geometry.height > left.geometry.height);
+
+  if (leftContainsRight) return -1;
+  if (rightContainsLeft) return 1;
+  return 0;
+}
 
 function createBlankMapDocument(name: string = "Untitled Map"): MapDocument {
   const timestamp = new Date().toISOString();
@@ -161,6 +318,23 @@ function ColorField({
         onChange={(event) => onChange(event.target.value)}
         className="h-8 w-10 cursor-pointer rounded border border-[var(--app-border)] bg-white p-1"
       />
+    </label>
+  );
+}
+
+function BooleanField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-sm text-[var(--app-text)]">
+      <input type="checkbox" checked={value} onChange={(event) => onChange(event.target.checked)} />
+      <span>{label}</span>
     </label>
   );
 }
@@ -286,16 +460,20 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
     const centerX = geometry.x + geometry.width / 2;
     const centerY = geometry.y + geometry.height / 2;
     const rectTransform = rotation ? `rotate(${rotation} ${centerX} ${centerY})` : undefined;
-    const isStructuredArea = artefact.type === "room" || artefact.type === "zone" || artefact.type === "stair";
+    const isStructuredArea = artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair";
     const baseFill =
       fillOverride ??
-      (artefact.type === "zone"
+      (artefact.type === "corridor"
+        ? "color-mix(in srgb, var(--app-primary) 12%, white)"
+        : artefact.type === "zone"
         ? "color-mix(in srgb, var(--app-success) 12%, white)"
         : artefact.type === "stair"
           ? "color-mix(in srgb, var(--app-text-muted) 10%, white)"
           : "color-mix(in srgb, var(--app-surface-muted) 72%, white)");
     const stroke = borderOverride ??
-      (artefact.type === "zone"
+      (artefact.type === "corridor"
+        ? "var(--app-primary)"
+        : artefact.type === "zone"
         ? "color-mix(in srgb, var(--app-success) 55%, var(--app-border))"
         : artefact.type === "stair"
           ? "var(--app-text)"
@@ -317,7 +495,7 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
         </g>
       );
     }
-    return <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={artefact.type === "zone" ? 0 : 4} transform={rectTransform} fill={selected ? selectionFill : baseFill} stroke={selected ? selectionStroke : isStructuredArea ? "transparent" : stroke} strokeWidth={selected ? 4 : isStructuredArea ? 0 : 2} />;
+    return <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={getRectCornerRadius(artefact)} transform={rectTransform} fill={selected ? selectionFill : baseFill} stroke={selected ? selectionStroke : isStructuredArea ? "transparent" : stroke} strokeWidth={selected ? 4 : isStructuredArea ? 0 : 2} />;
   }
   if (geometry.kind === "polygon") {
     return <polygon points={geometry.points.map((point) => `${point.x},${point.y}`).join(" ")} fill={selected ? selectionFill : fillOverride ?? "color-mix(in srgb, var(--app-warning) 12%, white)"} stroke={selected ? selectionStroke : borderOverride ?? "var(--app-border)"} strokeWidth={selected ? 4 : 2} />;
@@ -334,7 +512,78 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
       </>;
     }
     if (artefact.type === "door") {
-      return <line x1={geometry.x1} y1={geometry.y1} x2={geometry.x2} y2={geometry.y2} stroke="color-mix(in srgb, var(--app-canvas,#eef4fb) 100%, white)" strokeWidth={(geometry.thickness ?? 8) + (selected ? 8 : 6)} strokeLinecap="square" />;
+      const doorType = getDoorType(artefact);
+      const centerX = (geometry.x1 + geometry.x2) / 2;
+      const centerY = (geometry.y1 + geometry.y2) / 2;
+      const isVertical = geometry.x1 === geometry.x2;
+      const accentStroke = borderOverride ?? "var(--app-text)";
+      const tickSize = 5;
+      const thresholdSize = 7;
+      return (
+        <>
+          <line
+            x1={geometry.x1}
+            y1={geometry.y1}
+            x2={geometry.x2}
+            y2={geometry.y2}
+            stroke="color-mix(in srgb, var(--app-canvas,#eef4fb) 100%, white)"
+            strokeWidth={(geometry.thickness ?? 8) + (selected ? 8 : 6)}
+            strokeLinecap="butt"
+          />
+          {doorType === "external" ? (
+            <>
+              <line
+                x1={isVertical ? geometry.x1 - tickSize : geometry.x1}
+                y1={isVertical ? geometry.y1 : geometry.y1 - tickSize}
+                x2={isVertical ? geometry.x1 + tickSize : geometry.x1}
+                y2={isVertical ? geometry.y1 : geometry.y1 + tickSize}
+                stroke={accentStroke}
+                strokeWidth={2}
+                strokeLinecap="square"
+              />
+              <line
+                x1={isVertical ? geometry.x2 - tickSize : geometry.x2}
+                y1={isVertical ? geometry.y2 : geometry.y2 - tickSize}
+                x2={isVertical ? geometry.x2 + tickSize : geometry.x2}
+                y2={isVertical ? geometry.y2 : geometry.y2 + tickSize}
+                stroke={accentStroke}
+                strokeWidth={2}
+                strokeLinecap="square"
+              />
+              <line
+                x1={isVertical ? centerX - thresholdSize : centerX}
+                y1={isVertical ? centerY : centerY - thresholdSize}
+                x2={isVertical ? centerX + thresholdSize : centerX}
+                y2={isVertical ? centerY : centerY + thresholdSize}
+                stroke={accentStroke}
+                strokeWidth={3}
+                strokeLinecap="square"
+              />
+            </>
+          ) : (
+            <>
+              <line
+                x1={isVertical ? geometry.x1 - tickSize : geometry.x1}
+                y1={isVertical ? geometry.y1 : geometry.y1 - tickSize}
+                x2={isVertical ? geometry.x1 + tickSize : geometry.x1}
+                y2={isVertical ? geometry.y1 : geometry.y1 + tickSize}
+                stroke={accentStroke}
+                strokeWidth={2}
+                strokeLinecap="square"
+              />
+              <line
+                x1={isVertical ? geometry.x2 - tickSize : geometry.x2}
+                y1={isVertical ? geometry.y2 : geometry.y2 - tickSize}
+                x2={isVertical ? geometry.x2 + tickSize : geometry.x2}
+                y2={isVertical ? geometry.y2 : geometry.y2 + tickSize}
+                stroke={accentStroke}
+                strokeWidth={2}
+                strokeLinecap="square"
+              />
+            </>
+          )}
+        </>
+      );
     }
     if (artefact.type === "exit" || artefact.type === "fireExit") {
       const accent = borderOverride ?? (artefact.type === "fireExit" ? "var(--app-danger)" : "var(--app-success)");
@@ -364,9 +613,12 @@ const MapDesigner: React.FC = () => {
   const [ioError, setIoError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<MapTool>("select");
   const [labelsVisible, setLabelsVisible] = useState(true);
-  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [snapEnabled, setSnapEnabled] = useState(false);
   const [selectedArtefactId, setSelectedArtefactId] = useState<string | null>(null);
+  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
+  const [draftArtefact, setDraftArtefact] = useState<MapArtefact | null>(null);
+  const [draftRoomBatch, setDraftRoomBatch] = useState<RoomBatchDraft | null>(null);
   const [viewport, setViewport] = useState<ViewportState>({ scale: 1, panX: 32, panY: 32 });
   const [hasInitializedViewport, setHasInitializedViewport] = useState(false);
   const [surfaceSize, setSurfaceSize] = useState({ width: 0, height: 0 });
@@ -418,15 +670,78 @@ const MapDesigner: React.FC = () => {
 
   const documentBounds = useMemo(() => getDocumentBounds(documentModel.artefacts, documentModel.world.width, documentModel.world.height), [documentModel]);
   const selectedArtefact = useMemo(() => documentModel.artefacts.find((artefact) => artefact.id === selectedArtefactId) ?? null, [documentModel.artefacts, selectedArtefactId]);
+  const editingArtefact = draftArtefact as MapArtefact;
+  const selectedRooms = useMemo(
+    () => documentModel.artefacts.filter((artefact) => artefact.type === "room" && selectedRoomIds.includes(artefact.id)),
+    [documentModel.artefacts, selectedRoomIds],
+  );
+  const isRoomBatchSelection = selectedRooms.length > 1;
   const renderOrderedArtefacts = useMemo(() => {
-    const groups: Record<MapArtefact["type"], MapArtefact[]> = { zone: [], room: [], wall: [], partition: [], stair: [], door: [], window: [], exit: [], fireExit: [], roundel: [], label: [] };
-    documentModel.artefacts.forEach((artefact) => { if (artefact.visible !== false) groups[artefact.type].push(artefact); });
-    return [...groups.zone, ...groups.room, ...groups.stair, ...groups.wall, ...groups.partition, ...groups.door, ...groups.window, ...groups.exit, ...groups.fireExit, ...groups.roundel, ...groups.label];
+    const groups: Record<MapArtefact["type"], Array<{ artefact: MapArtefact; index: number }>> = { zone: [], corridor: [], room: [], wall: [], partition: [], stair: [], door: [], window: [], exit: [], fireExit: [], roundel: [], label: [] };
+    documentModel.artefacts.forEach((artefact, index) => {
+      if (artefact.visible !== false) groups[artefact.type].push({ artefact, index });
+    });
+
+    const sortGroup = (group: Array<{ artefact: MapArtefact; index: number }>) =>
+      group
+        .slice()
+        .sort((left, right) => {
+          const leftIsStructuredRect =
+            (left.artefact.type === "corridor" || left.artefact.type === "room" || left.artefact.type === "zone" || left.artefact.type === "stair") &&
+            left.artefact.geometry.kind === "rect";
+          const rightIsStructuredRect =
+            (right.artefact.type === "corridor" || right.artefact.type === "room" || right.artefact.type === "zone" || right.artefact.type === "stair") &&
+            right.artefact.geometry.kind === "rect";
+
+          if (leftIsStructuredRect && rightIsStructuredRect) {
+            const containmentDiff = getStructuredRectContainmentRelation(left.artefact, right.artefact);
+            if (containmentDiff !== 0) return containmentDiff;
+
+            const areaDiff = getArtefactRenderArea(right.artefact) - getArtefactRenderArea(left.artefact);
+            if (areaDiff !== 0) return areaDiff;
+
+            const zDiff = getArtefactZOrder(left.artefact) - getArtefactZOrder(right.artefact);
+            if (zDiff !== 0) return zDiff;
+          } else {
+            const zDiff = getArtefactZOrder(left.artefact) - getArtefactZOrder(right.artefact);
+            if (zDiff !== 0) return zDiff;
+          }
+
+          return left.index - right.index;
+        })
+        .map((entry) => entry.artefact);
+
+    return [
+      ...sortGroup(groups.zone),
+      ...sortGroup(groups.corridor),
+      ...sortGroup(groups.room),
+      ...sortGroup(groups.stair),
+      ...sortGroup(groups.wall),
+      ...sortGroup(groups.partition),
+      ...sortGroup(groups.door),
+      ...sortGroup(groups.window),
+      ...sortGroup(groups.exit),
+      ...sortGroup(groups.fireExit),
+      ...sortGroup(groups.roundel),
+      ...sortGroup(groups.label),
+    ];
   }, [documentModel.artefacts]);
   const walls = useMemo(() => documentModel.artefacts.filter((artefact) => artefact.type === "wall"), [documentModel.artefacts]);
   const artefactsById = useMemo(() => new Map(documentModel.artefacts.map((artefact) => [artefact.id, artefact])), [documentModel.artefacts]);
   const mergedWallGeometries = useMemo(() => mergeCollinearWallArtefacts(walls), [walls]);
   const roomBoundaryGeometries = useMemo(() => getRoomBoundarySegments(documentModel.artefacts), [documentModel.artefacts]);
+  const containedStructuredRects = useMemo(
+    () =>
+      renderOrderedArtefacts.filter(
+        (artefact) =>
+          artefact.visible !== false &&
+          (artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair") &&
+          artefact.geometry.kind === "rect" &&
+          !artefact.geometry.rotation &&
+          isContainedStructuredRect(artefact, documentModel.artefacts),
+      ),
+    [documentModel.artefacts, renderOrderedArtefacts],
+  );
   const nonWallArtefacts = useMemo(() => renderOrderedArtefacts.filter((artefact) => artefact.type !== "wall"), [renderOrderedArtefacts]);
   const selectedClusterIds = useMemo(() => {
     if (!selectedArtefactId) return new Set<string>();
@@ -466,6 +781,18 @@ const MapDesigner: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return;
+
+      if (event.key === "F4") {
+        event.preventDefault();
+        if (selectedArtefactId) {
+          if (propertiesOpen) {
+            closeProperties();
+          } else {
+            openProperties();
+          }
+        }
+        return;
+      }
 
       const metaPressed = event.ctrlKey || event.metaKey;
       if (metaPressed && selectedArtefact && event.key.toLowerCase() === "c") {
@@ -530,17 +857,19 @@ const MapDesigner: React.FC = () => {
         return;
       }
 
-      if (event.key !== "Delete" || !selectedArtefactId) return;
+      if (event.key !== "Delete" || (!selectedArtefactId && selectedRoomIds.length === 0)) return;
       event.preventDefault();
+      const roomIds = new Set(selectedRoomIds);
       setDocumentModel((current) => ({
         ...current,
-        artefacts: current.artefacts.filter((artefact) => !selectedClusterIds.has(artefact.id)),
+        artefacts: current.artefacts.filter((artefact) => !selectedClusterIds.has(artefact.id) && !(artefact.type === "room" && roomIds.has(artefact.id))),
       }));
       setSelectedArtefactId(null);
+      setSelectedRoomIds([]);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [clipboard, documentModel.artefacts, selectedArtefact, selectedArtefactId, selectedClusterIds]);
+  }, [clipboard, documentModel.artefacts, selectedArtefact, selectedArtefactId, selectedClusterIds, selectedRoomIds]);
 
   const resetView = () => setViewport(createFitViewport(documentBounds, surfaceSize.width, surfaceSize.height));
   const zoomByFactor = (factor: number) => {
@@ -614,6 +943,24 @@ const MapDesigner: React.FC = () => {
       setDragState(nextDragState);
       return;
     }
+    if (currentDragState.kind === "resize") {
+      const alignedPoint = getAlignedPoint(worldPoint, { referencePoint: currentDragState.originWorld, shiftLock: shiftKey, ignoreArtefactId: currentDragState.artefactId });
+      const original = currentDragState.originalGeometry;
+      const nextGeometry: Extract<MapGeometry, { kind: "rect" }> = { ...original };
+
+      if (currentDragState.handle === "right" || currentDragState.handle === "bottomRight") {
+        nextGeometry.width = Math.max(12, Math.round(alignedPoint.x - original.x));
+      }
+      if (currentDragState.handle === "bottom" || currentDragState.handle === "bottomRight") {
+        nextGeometry.height = Math.max(12, Math.round(alignedPoint.y - original.y));
+      }
+
+      setDocumentModel((current) => ({
+        ...current,
+        artefacts: current.artefacts.map((artefact) => (artefact.id === currentDragState.artefactId ? { ...artefact, geometry: nextGeometry } : artefact)),
+      }));
+      return;
+    }
     const alignedPoint = getAlignedPoint(worldPoint, { referencePoint: currentDragState.originWorld, shiftLock: shiftKey, ignoreArtefactId: currentDragState.artefactId });
     let deltaX = Math.round(alignedPoint.x - currentDragState.originWorld.x);
     let deltaY = Math.round(alignedPoint.y - currentDragState.originWorld.y);
@@ -657,10 +1004,16 @@ const MapDesigner: React.FC = () => {
       const draftRect = normalizeRect(currentDragState.originWorld, currentDragState.currentWorld);
       if (draftRect.width >= 12 && draftRect.height >= 12) {
         const nextArtefact: MapArtefact = {
-          id: createId(activeTool === "stair" ? "stair" : "room"),
-          type: activeTool === "stair" ? "stair" : "room",
+          id: createId(activeTool === "stair" ? "stair" : activeTool === "corridor" ? "corridor" : "room"),
+          type: activeTool === "stair" ? "stair" : activeTool === "corridor" ? "corridor" : "room",
           geometry: { kind: "rect", ...draftRect },
-          labelOverride: activeTool === "stair" ? "Stairs" : "Room",
+          labelOverride: activeTool === "stair" ? "Stairs" : activeTool === "corridor" ? "Corridor" : "Room",
+          metadata: {
+            cornerStyle: "square",
+            fillColor: activeTool === "stair" ? "#e7eefb" : activeTool === "corridor" ? "#dbe7f8" : "#f8fafc",
+            borderColor: activeTool === "corridor" ? "#2563eb" : "#475569",
+            textColor: "#0f172a",
+          },
         };
         setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
         setSelectedArtefactId(nextArtefact.id);
@@ -675,7 +1028,7 @@ const MapDesigner: React.FC = () => {
   }
 
   const placePointArtefact = (type: "roundel" | "label", point: WorldPoint) => {
-    const snappedPoint = getAlignedPoint(point, { referencePoint: selectedArtefact?.type === "room" ? getAnchor(selectedArtefact) : null });
+    const snappedPoint = getAlignedPoint(point, { referencePoint: selectedArtefact?.type === "room" || selectedArtefact?.type === "corridor" ? getAnchor(selectedArtefact) : null });
     const nextArtefact: MapArtefact = {
       id: createId(type),
       type,
@@ -683,19 +1036,31 @@ const MapDesigner: React.FC = () => {
       labelOverride: type === "label" ? "Label" : undefined,
       parentId:
         type === "roundel"
-          ? selectedArtefact?.type === "room"
+          ? selectedArtefact?.type === "room" || selectedArtefact?.type === "corridor"
             ? selectedArtefact.id
             : undefined
           : selectedArtefact?.id,
     };
     setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
+    setPropertiesOpen(false);
     setSelectedArtefactId(nextArtefact.id);
   };
 
   const handleArtefactPointerDown = (event: React.PointerEvent<SVGGElement>, artefact: MapArtefact) => {
     event.preventDefault();
     event.stopPropagation();
-    setSelectedArtefactId(artefact.id);
+    closeProperties();
+    if (event.shiftKey && artefact.type === "room") {
+      setSelectedRoomIds((current) => {
+        const exists = current.includes(artefact.id);
+        const next = exists ? current.filter((id) => id !== artefact.id) : [...current, artefact.id];
+        setSelectedArtefactId(next.length > 0 ? next[next.length - 1] : null);
+        return next;
+      });
+    } else {
+      setSelectedRoomIds(artefact.type === "room" ? [artefact.id] : []);
+      setSelectedArtefactId(artefact.id);
+    }
     if (activeTool !== "select" || event.button !== 0 || !surfaceRef.current) return;
     const worldPoint = getWorldPointFromEvent(event);
     if (!worldPoint) return;
@@ -707,6 +1072,26 @@ const MapDesigner: React.FC = () => {
       childGeometries: documentModel.artefacts
         .filter((candidate) => candidate.parentId === artefact.id || candidate.wallAttachment?.hostId === artefact.id || candidate.wallAttachment?.wallId === artefact.id)
         .map((candidate) => ({ id: candidate.id, geometry: candidate.geometry })),
+    };
+    dragStateRef.current = nextDragState;
+    setDragState(nextDragState);
+    surfaceRef.current.setPointerCapture(event.pointerId);
+  };
+
+  const handleResizeHandlePointerDown = (event: React.PointerEvent<SVGCircleElement>, artefact: MapArtefact, handle: ResizeHandle) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (activeTool !== "select" || event.button !== 0 || !surfaceRef.current || artefact.geometry.kind !== "rect") return;
+    setPropertiesOpen(false);
+    setSelectedArtefactId(artefact.id);
+    const worldPoint = getWorldPointFromEvent(event);
+    if (!worldPoint) return;
+    const nextDragState: PointerDragState = {
+      kind: "resize",
+      artefactId: artefact.id,
+      handle,
+      originWorld: worldPoint,
+      originalGeometry: artefact.geometry,
     };
     dragStateRef.current = nextDragState;
     setDragState(nextDragState);
@@ -726,7 +1111,8 @@ const MapDesigner: React.FC = () => {
       surfaceRef.current.setPointerCapture(event.pointerId);
       return;
     }
-    if ((activeTool === "room" || activeTool === "stair") && event.button === 0) {
+    if ((activeTool === "room" || activeTool === "corridor" || activeTool === "stair") && event.button === 0) {
+      setPropertiesOpen(false);
       setSelectedArtefactId(null);
       const snappedPoint = getAlignedPoint(worldPoint);
       const nextDragState: PointerDragState = { kind: "room", originWorld: snappedPoint, currentWorld: snappedPoint };
@@ -738,6 +1124,7 @@ const MapDesigner: React.FC = () => {
     if ((activeTool === "wall" || activeTool === "partition") && event.button === 0) {
       const snappedPoint = getAlignedPoint(worldPoint, { referencePoint: pendingWallStart, shiftLock: event.shiftKey });
       if (!pendingWallStart) {
+        setPropertiesOpen(false);
         setPendingWallStart(snappedPoint);
         setWallPreviewPoint(null);
         setSelectedArtefactId(null);
@@ -763,13 +1150,21 @@ const MapDesigner: React.FC = () => {
         type: activeTool,
         geometry: { kind: "point", x: Math.round(preview.point.x), y: Math.round(preview.point.y), size: 18 },
         wallAttachment: preview.artefact.wallAttachment,
+        metadata:
+          activeTool === "door"
+            ? {
+                doorType: preview.artefact.wallAttachment?.hostType === "wall" ? "external" : "internal",
+              }
+            : undefined,
       };
       setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
+      setPropertiesOpen(false);
       setSelectedArtefactId(nextArtefact.id);
       return;
     }
     if (activeTool === "roundel" && event.button === 0) return void placePointArtefact("roundel", worldPoint);
     if (activeTool === "label" && event.button === 0) return void placePointArtefact("label", worldPoint);
+    setPropertiesOpen(false);
     setSelectedArtefactId(null);
   };
 
@@ -800,10 +1195,77 @@ const MapDesigner: React.FC = () => {
     if (!selectedArtefact) return;
     updateArtefact(selectedArtefact.id, (artefact) => ({ ...artefact, geometry: updater(artefact.geometry) }));
   };
+  const updateDraftGeometry = (updater: (geometry: MapGeometry) => MapGeometry) => {
+    setDraftArtefact((current) => (current ? { ...current, geometry: updater(current.geometry) } : current));
+  };
+  const openProperties = () => {
+    if (selectedRooms.length > 1) {
+      setDraftRoomBatch(createRoomBatchDraft(selectedRooms));
+      setDraftArtefact(null);
+      setPropertiesOpen(true);
+      return;
+    }
+    if (!selectedArtefact) return;
+    setDraftArtefact(cloneArtefact(selectedArtefact));
+    setDraftRoomBatch(null);
+    setPropertiesOpen(true);
+  };
+  const closeProperties = () => {
+    setPropertiesOpen(false);
+    setDraftArtefact(null);
+    setDraftRoomBatch(null);
+  };
+  const saveProperties = () => {
+    if (selectedRooms.length > 1 && draftRoomBatch) {
+      const roomIds = new Set(selectedRoomIds);
+      setDocumentModel((current) => ({
+        ...current,
+        artefacts: current.artefacts.map((artefact) =>
+          artefact.type === "room" && roomIds.has(artefact.id)
+            ? {
+                ...artefact,
+                visible: draftRoomBatch.visible,
+                metadata: {
+                  ...(artefact.metadata ?? {}),
+                  fillColor: draftRoomBatch.fillColor,
+                  borderColor: draftRoomBatch.borderColor,
+                  textColor: draftRoomBatch.textColor,
+                  textSize: draftRoomBatch.textSize,
+                  borderThickness: draftRoomBatch.borderThickness,
+                },
+              }
+            : artefact,
+        ),
+      }));
+      closeProperties();
+      return;
+    }
+    if (!selectedArtefactId || !draftArtefact) return;
+    setDocumentModel((current) => ({
+      ...current,
+      artefacts: current.artefacts.map((artefact) => (artefact.id === selectedArtefactId ? draftArtefact : artefact)),
+    }));
+    closeProperties();
+  };
+  const adjustSelectedArtefactZOrder = (direction: "forward" | "backward") => {
+    if (!draftArtefact) return;
+    setDraftArtefact((current) =>
+      current
+        ? {
+            ...current,
+            metadata: {
+              ...(current.metadata ?? {}),
+              zOrder: getArtefactZOrder(current) + (direction === "forward" ? 1 : -1),
+            },
+          }
+        : current,
+    );
+  };
   const handleNewMap = () => {
     setDocumentModel(createBlankMapDocument());
     setActiveTool("select");
     setSelectedArtefactId(null);
+    setSelectedRoomIds([]);
     setPropertiesOpen(false);
     setPendingWallStart(null);
     setWallPreviewPoint(null);
@@ -837,6 +1299,7 @@ const MapDesigner: React.FC = () => {
       setDocumentModel(normalized);
       setActiveTool("select");
       setSelectedArtefactId(null);
+      setSelectedRoomIds([]);
       setPropertiesOpen(false);
       setPendingWallStart(null);
       setWallPreviewPoint(null);
@@ -854,6 +1317,93 @@ const MapDesigner: React.FC = () => {
     <div className="app-page-shell">
       <main className="px-4 py-6 sm:px-6 lg:px-8">
         <div className="relative">
+          <div className="sticky top-[148px] z-30 mb-3">
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-white/95 px-3 py-3 shadow-xl backdrop-blur">
+              <input
+                type="text"
+                value={documentModel.name}
+                onChange={(event) => setDocumentModel((current) => ({ ...current, name: event.target.value || "Untitled Map" }))}
+                className="w-[16rem] rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]"
+                aria-label={text("config.map_designer.io.name", "Map Name")}
+              />
+              <button type="button" onClick={handleNewMap} title={text("config.map_designer.io.new", "New Map")} aria-label={text("config.map_designer.io.new", "New Map")} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+                <FilePlus2 className="h-4 w-4" />
+              </button>
+              <button type="button" onClick={handleSave} title={text("config.map_designer.io.save", "Save")} aria-label={text("config.map_designer.io.save", "Save")} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+                <Save className="h-4 w-4" />
+              </button>
+              <button type="button" onClick={handleLoadClick} title={text("config.map_designer.io.load", "Load")} aria-label={text("config.map_designer.io.load", "Load")} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+                <FolderOpen className="h-4 w-4" />
+              </button>
+              <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleLoadFile} className="hidden" />
+              <div className="mx-1 hidden h-8 w-px bg-[var(--app-border)] md:block" />
+              {TOOL_ORDER.map((tool) => {
+                const Icon = tool.icon;
+                const isActive = activeTool === tool.id;
+                return (
+                  <button
+                    key={tool.id}
+                    type="button"
+                    title={text(TOOL_LABEL_KEYS[tool.id], tool.fallbackLabel)}
+                    aria-label={text(TOOL_LABEL_KEYS[tool.id], tool.fallbackLabel)}
+                    onClick={() => {
+                      setActiveTool(tool.id);
+                      if (tool.id !== "wall" && tool.id !== "partition") {
+                        setPendingWallStart(null);
+                        setWallPreviewPoint(null);
+                      }
+                      if (tool.id !== "door" && tool.id !== "window" && tool.id !== "exit" && tool.id !== "fireExit") {
+                        setOpeningPreview(null);
+                      }
+                    }}
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+                      isActive ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </button>
+                );
+              })}
+              <div className="mx-1 hidden h-8 w-px bg-[var(--app-border)] md:block" />
+              <button type="button" title={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} aria-label={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} onClick={() => setLabelsVisible((current) => !current)} className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${labelsVisible ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
+                <Type className="h-4 w-4" />
+              </button>
+              <button type="button" title={snapEnabled ? "Snap On" : "Snap Off"} aria-label={snapEnabled ? "Snap On" : "Snap Off"} onClick={() => setSnapEnabled((current) => !current)} className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${snapEnabled ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
+                <Square className="h-4 w-4" />
+              </button>
+              <button type="button" title="Zoom Out" aria-label="Zoom Out" onClick={() => zoomByFactor(0.9)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+                <Minus className="h-4 w-4" />
+              </button>
+              <button type="button" title="Zoom In" aria-label="Zoom In" onClick={() => zoomByFactor(1.1)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+                <Plus className="h-4 w-4" />
+              </button>
+              <button type="button" title={text("config.map_designer.zoom.fit", "Fit")} aria-label={text("config.map_designer.zoom.fit", "Fit")} onClick={resetView} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+                <Eye className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                title={text("config.map_designer.properties.title", "Properties")}
+                aria-label={text("config.map_designer.properties.title", "Properties")}
+                onClick={() => {
+                  if (propertiesOpen) {
+                    closeProperties();
+                  } else {
+                    openProperties();
+                  }
+                }}
+                className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+                  propertiesOpen ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
+                }`}
+              >
+                <PanelsTopLeft className="h-4 w-4" />
+              </button>
+              <div title={pendingWallStart ? text("config.map_designer.pending.wall", "Wall tool: click a second point to finish the segment.") : `${text("config.map_designer.field.active_tool", "Active tool")}: ${text(TOOL_LABEL_KEYS[activeTool], activeTool)}`} className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
+                <Info className="h-4 w-4" />
+              </div>
+            </div>
+            {ioError && <div className="mt-2 max-w-sm rounded-2xl border border-[var(--app-danger)] bg-[color:color-mix(in_srgb,var(--app-danger)_8%,white)] px-4 py-3 text-sm text-[var(--app-danger)] shadow-lg">{ioError}</div>}
+          </div>
+
           <section className="app-card rounded-2xl p-3 sm:p-4">
             <div className="mb-3">
               <p className="text-sm font-semibold text-[var(--app-text)]">{documentModel.name}</p>
@@ -861,89 +1411,9 @@ const MapDesigner: React.FC = () => {
             </div>
 
             <div ref={containerRef} className="relative h-[82vh] min-h-[760px] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-canvas,#eef4fb)]">
-              <div className="pointer-events-none absolute left-5 right-5 top-5 z-10">
-                <div className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-white/95 px-3 py-3 shadow-xl backdrop-blur">
-                  <input
-                    type="text"
-                    value={documentModel.name}
-                    onChange={(event) => setDocumentModel((current) => ({ ...current, name: event.target.value || "Untitled Map" }))}
-                    className="w-[16rem] rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]"
-                    aria-label={text("config.map_designer.io.name", "Map Name")}
-                  />
-                  <button type="button" onClick={handleNewMap} title={text("config.map_designer.io.new", "New Map")} aria-label={text("config.map_designer.io.new", "New Map")} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
-                    <FilePlus2 className="h-4 w-4" />
-                  </button>
-                  <button type="button" onClick={handleSave} title={text("config.map_designer.io.save", "Save")} aria-label={text("config.map_designer.io.save", "Save")} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
-                    <Save className="h-4 w-4" />
-                  </button>
-                  <button type="button" onClick={handleLoadClick} title={text("config.map_designer.io.load", "Load")} aria-label={text("config.map_designer.io.load", "Load")} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
-                    <FolderOpen className="h-4 w-4" />
-                  </button>
-                  <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleLoadFile} className="hidden" />
-                  <div className="mx-1 hidden h-8 w-px bg-[var(--app-border)] md:block" />
-                  {TOOL_ORDER.map((tool) => {
-                    const Icon = tool.icon;
-                    const isActive = activeTool === tool.id;
-                    return (
-                      <button
-                        key={tool.id}
-                        type="button"
-                        title={text(TOOL_LABEL_KEYS[tool.id], tool.fallbackLabel)}
-                        aria-label={text(TOOL_LABEL_KEYS[tool.id], tool.fallbackLabel)}
-                        onClick={() => {
-                          setActiveTool(tool.id);
-                          if (tool.id !== "wall" && tool.id !== "partition") {
-                            setPendingWallStart(null);
-                            setWallPreviewPoint(null);
-                          }
-                          if (tool.id !== "door" && tool.id !== "window") {
-                            setOpeningPreview(null);
-                          }
-                        }}
-                        className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-                          isActive ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </button>
-                    );
-                  })}
-                  <div className="mx-1 hidden h-8 w-px bg-[var(--app-border)] md:block" />
-                  <button type="button" title={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} aria-label={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} onClick={() => setLabelsVisible((current) => !current)} className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${labelsVisible ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
-                    <Type className="h-4 w-4" />
-                  </button>
-                  <button type="button" title={snapEnabled ? "Snap On" : "Snap Off"} aria-label={snapEnabled ? "Snap On" : "Snap Off"} onClick={() => setSnapEnabled((current) => !current)} className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${snapEnabled ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
-                    <Square className="h-4 w-4" />
-                  </button>
-                  <button type="button" title="Zoom Out" aria-label="Zoom Out" onClick={() => zoomByFactor(0.9)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <button type="button" title="Zoom In" aria-label="Zoom In" onClick={() => zoomByFactor(1.1)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  <button type="button" title={text("config.map_designer.zoom.fit", "Fit")} aria-label={text("config.map_designer.zoom.fit", "Fit")} onClick={resetView} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
-                    <Eye className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    title={text("config.map_designer.properties.title", "Properties")}
-                    aria-label={text("config.map_designer.properties.title", "Properties")}
-                    onClick={() => setPropertiesOpen((current) => !current)}
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-                      propertiesOpen ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
-                    }`}
-                  >
-                    <PanelRightOpen className="h-4 w-4" />
-                  </button>
-                  <div title={pendingWallStart ? text("config.map_designer.pending.wall", "Wall tool: click a second point to finish the segment.") : `${text("config.map_designer.field.active_tool", "Active tool")}: ${text(TOOL_LABEL_KEYS[activeTool], activeTool)}`} className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
-                    <Info className="h-4 w-4" />
-                  </div>
-                </div>
-                {ioError && <div className="pointer-events-auto mt-2 max-w-sm rounded-2xl border border-[var(--app-danger)] bg-[color:color-mix(in_srgb,var(--app-danger)_8%,white)] px-4 py-3 text-sm text-[var(--app-danger)] shadow-lg">{ioError}</div>}
-              </div>
               <svg
                 ref={surfaceRef}
-                className={`h-full w-full ${activeTool === "pan" ? "cursor-grab" : activeTool === "room" ? "cursor-crosshair" : "cursor-default"}`}
+                className={`h-full w-full ${activeTool === "pan" ? "cursor-grab" : activeTool === "room" || activeTool === "corridor" ? "cursor-crosshair" : "cursor-default"}`}
                 style={{ touchAction: "none", userSelect: "none" }}
                 onPointerDown={handleSurfacePointerDown}
                 onPointerMove={handleSurfacePointerMove}
@@ -966,18 +1436,35 @@ const MapDesigner: React.FC = () => {
                       strokeLinecap="square"
                     />
                   ))}
-                  {roomBoundaryGeometries.map((geometry, index) => (
+                  {roomBoundaryGeometries.map((segment, index) => (
                     <line
                       key={`room_boundary_${index}`}
-                      x1={geometry.x1}
-                      y1={geometry.y1}
-                      x2={geometry.x2}
-                      y2={geometry.y2}
-                      stroke="var(--app-border)"
-                      strokeWidth={geometry.thickness ?? 2}
+                      x1={segment.geometry.x1}
+                      y1={segment.geometry.y1}
+                      x2={segment.geometry.x2}
+                      y2={segment.geometry.y2}
+                      stroke={segment.stroke}
+                      strokeWidth={segment.geometry.thickness ?? 2}
                       strokeLinecap="square"
                     />
                   ))}
+                  {containedStructuredRects.map((artefact) => {
+                    const geometry = artefact.geometry as Extract<MapGeometry, { kind: "rect" }>;
+                    const stroke = getMetadataColor(artefact, "borderColor") ?? "var(--app-border)";
+                    const top = getStructuredRectBorderThickness(artefact, "top");
+                    const right = getStructuredRectBorderThickness(artefact, "right");
+                    const bottom = getStructuredRectBorderThickness(artefact, "bottom");
+                    const left = getStructuredRectBorderThickness(artefact, "left");
+
+                    return (
+                      <g key={`contained_border_${artefact.id}`}>
+                        {top > 0 && <line x1={geometry.x} y1={geometry.y} x2={geometry.x + geometry.width} y2={geometry.y} stroke={stroke} strokeWidth={top} strokeLinecap="square" />}
+                        {right > 0 && <line x1={geometry.x + geometry.width} y1={geometry.y} x2={geometry.x + geometry.width} y2={geometry.y + geometry.height} stroke={stroke} strokeWidth={right} strokeLinecap="square" />}
+                        {bottom > 0 && <line x1={geometry.x} y1={geometry.y + geometry.height} x2={geometry.x + geometry.width} y2={geometry.y + geometry.height} stroke={stroke} strokeWidth={bottom} strokeLinecap="square" />}
+                        {left > 0 && <line x1={geometry.x} y1={geometry.y} x2={geometry.x} y2={geometry.y + geometry.height} stroke={stroke} strokeWidth={left} strokeLinecap="square" />}
+                      </g>
+                    );
+                  })}
                   {walls.map((artefact) => (
                     <g key={artefact.id} data-artefact-id={artefact.id} className="cursor-pointer" onPointerDown={(event) => handleArtefactPointerDown(event, artefact)}>
                       <line
@@ -1002,15 +1489,40 @@ const MapDesigner: React.FC = () => {
                   ))}
                   {nonWallArtefacts.map((artefact) => {
                     const displayGeometry = artefact.type === "door" || artefact.type === "window" || artefact.type === "exit" || artefact.type === "fireExit" ? resolveAttachedOpeningLine(artefact, artefactsById) ?? artefact.geometry : artefact.geometry;
+                    const isSelected = artefact.id === selectedArtefactId || (artefact.type === "room" && selectedRoomIds.includes(artefact.id));
                     return (
                       <g key={artefact.id} data-artefact-id={artefact.id} className="cursor-pointer" onPointerDown={(event) => handleArtefactPointerDown(event, artefact)}>
                         {displayGeometry.kind === "line" && (artefact.type === "door" || artefact.type === "window" || artefact.type === "partition") && (
                           <line x1={displayGeometry.x1} y1={displayGeometry.y1} x2={displayGeometry.x2} y2={displayGeometry.y2} stroke="transparent" strokeWidth={18} strokeLinecap="round" />
                         )}
-                        {renderArtefactShape(artefact, artefact.id === selectedArtefactId, displayGeometry)}
+                        {renderArtefactShape(artefact, isSelected, displayGeometry)}
                       </g>
                     );
                   })}
+                  {activeTool === "select" && selectedArtefact?.geometry.kind === "rect" && (() => {
+                    const handles = getResizeHandlePositions(selectedArtefact.geometry);
+                    return (
+                      <g>
+                        {(["right", "bottom", "bottomRight"] as ResizeHandle[]).map((handle) => {
+                          const point = handles[handle];
+                          const cursor = handle === "right" ? "ew-resize" : handle === "bottom" ? "ns-resize" : "nwse-resize";
+                          return (
+                            <circle
+                              key={`resize_${handle}`}
+                              cx={point.x}
+                              cy={point.y}
+                              r={7}
+                              fill="white"
+                              stroke="var(--app-primary)"
+                              strokeWidth={2}
+                              style={{ cursor }}
+                              onPointerDown={(event) => handleResizeHandlePointerDown(event, selectedArtefact, handle)}
+                            />
+                          );
+                        })}
+                      </g>
+                    );
+                  })()}
                   {roomDraft && <rect x={roomDraft.x} y={roomDraft.y} width={roomDraft.width} height={roomDraft.height} fill="color-mix(in srgb, var(--app-primary) 12%, white)" stroke="var(--app-primary)" strokeWidth={2} strokeDasharray="10 8" />}
                   {pendingWallStart && <circle cx={pendingWallStart.x} cy={pendingWallStart.y} r={10} fill="var(--app-primary)" opacity={0.85} />}
                   {pendingWallStart && wallPreviewPoint && (
@@ -1057,57 +1569,122 @@ const MapDesigner: React.FC = () => {
                   {labelsVisible && renderOrderedArtefacts.filter((artefact) => isLabelVisible(viewport.scale, artefact.type)).map((artefact) => {
                     if (!artefact.labelKey && !artefact.labelOverride) return null;
                     const anchor = artefact.type === "door" || artefact.type === "window" || artefact.type === "exit" || artefact.type === "fireExit" ? getAnchor({ ...artefact, geometry: resolveAttachedOpeningLine(artefact, artefactsById) ?? artefact.geometry }) : getAnchor(artefact);
-                    return <text key={`${artefact.id}_label`} x={anchor.x} y={anchor.y} textAnchor="middle" dominantBaseline="middle" fill={getMetadataColor(artefact, "textColor") ?? "var(--app-text)"} fontSize={artefact.type === "exit" || artefact.type === "fireExit" ? 15 : 17} fontWeight={artefact.type === "label" ? 700 : 600} pointerEvents="none">{getArtefactLabel(artefact, t)}</text>;
+                    return <text key={`${artefact.id}_label`} x={anchor.x} y={anchor.y} textAnchor="middle" dominantBaseline="middle" fill={getMetadataColor(artefact, "textColor") ?? "var(--app-text)"} fontSize={getArtefactTextSize(artefact)} fontWeight={artefact.type === "label" ? 700 : 600} pointerEvents="none">{getArtefactLabel(artefact, t)}</text>;
                   })}
                 </g>
               </svg>
             </div>
           </section>
 
-          {selectedArtefact && propertiesOpen && (
-            <aside className="pointer-events-none absolute right-5 top-5 z-10 w-[24rem] max-w-[calc(100%-7.5rem)]">
-              <div className="pointer-events-auto max-h-[calc(82vh-2rem)] overflow-y-auto rounded-2xl border border-[var(--app-border)] bg-white/95 p-4 shadow-xl backdrop-blur">
-                <div className="mb-4 flex items-center justify-between">
+          {(editingArtefact || (draftRoomBatch && isRoomBatchSelection)) && propertiesOpen && (
+            <aside className="pointer-events-none absolute right-5 top-5 z-10 w-[20rem] max-w-[calc(100%-7.5rem)]">
+              <div className="pointer-events-auto max-h-[calc(82vh-2rem)] overflow-y-auto rounded-2xl border border-[var(--app-border)] bg-white/95 p-3 shadow-xl backdrop-blur">
+                <div className="mb-3 flex items-center justify-between">
                   <div>
                     <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--app-text-muted)]">{text("config.map_designer.properties.title", "Properties")}</h2>
-                    <p className="mt-1 text-xs text-[var(--app-text-muted)]">{selectedArtefact.id}</p>
+                    <p className="mt-1 text-xs text-[var(--app-text-muted)]">{isRoomBatchSelection ? `${selectedRooms.length} rooms` : editingArtefact?.id}</p>
                   </div>
-                  <button type="button" onClick={() => setPropertiesOpen(false)} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]" aria-label="Close properties" title="Close properties">
+                  <button type="button" onClick={closeProperties} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]" aria-label="Close properties" title="Close properties">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
 
-                <div className="space-y-4 text-sm">
-                  <div className="rounded-xl border border-[var(--app-border)] bg-white p-4">
-                    <div className="grid gap-3">
-                      <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.type", "Type")}</p><p className="mt-1 text-[var(--app-text)]">{selectedArtefact.type}</p></div>
+                <div className="space-y-3 text-sm">
+                  <div className="rounded-xl border border-[var(--app-border)] bg-white p-3">
+                    <div className="grid gap-2">
+                      {isRoomBatchSelection && draftRoomBatch ? (
+                        <>
+                          <div><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.type", "Type")}</p><p className="mt-1 text-[var(--app-text)]">room batch</p></div>
+                          <NumberField label="Text Size" value={draftRoomBatch.textSize} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, textSize: value } : current))} />
+                          <BooleanField label={text("config.map_designer.field.visible_toggle", "Visible")} value={draftRoomBatch.visible} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, visible: value } : current))} />
+                          <NumberField label="Border Thickness" value={draftRoomBatch.borderThickness} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, borderThickness: value } : current))} />
+                          <div className="grid gap-2">
+                            <ColorField label="Fill" value={draftRoomBatch.fillColor} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, fillColor: value } : current))} />
+                            <ColorField label="Border" value={draftRoomBatch.borderColor} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, borderColor: value } : current))} />
+                            <ColorField label="Text" value={draftRoomBatch.textColor} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, textColor: value } : current))} />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                      <div><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.type", "Type")}</p><p className="mt-1 text-[var(--app-text)]">{editingArtefact.type}</p></div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.parent_id", "Parent ID")}</p>
-                        <input type="text" value={selectedArtefact.parentId ?? ""} onChange={(event) => updateArtefact(selectedArtefact.id, (artefact) => ({ ...artefact, parentId: event.target.value || undefined }))} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]" />
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.parent_id", "Parent ID")}</p>
+                        <input type="text" value={editingArtefact.parentId ?? ""} onChange={(event) => setDraftArtefact((current) => (current ? { ...current, parentId: event.target.value || undefined } : current))} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-2 py-1.5 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]" />
                       </div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.label_override", "Label Override")}</p>
-                        <input type="text" value={selectedArtefact.labelOverride ?? ""} onChange={(event) => updateArtefact(selectedArtefact.id, (artefact) => ({ ...artefact, labelOverride: event.target.value || undefined }))} placeholder={text("config.map_designer.field.label_override_placeholder", "Enter visible label")} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]" />
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.label_override", "Label Override")}</p>
+                        <input type="text" value={editingArtefact.labelOverride ?? ""} onChange={(event) => setDraftArtefact((current) => (current ? { ...current, labelOverride: event.target.value || undefined } : current))} placeholder={text("config.map_designer.field.label_override_placeholder", "Enter visible label")} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-2 py-1.5 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]" />
                       </div>
-                      <label className="flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-sm text-[var(--app-text)]">
-                        <input type="checkbox" checked={selectedArtefact.visible !== false} onChange={(event) => updateArtefact(selectedArtefact.id, (artefact) => ({ ...artefact, visible: event.target.checked }))} />
-                        <span>{text("config.map_designer.field.visible_toggle", "Visible")}</span>
-                      </label>
+                      <NumberField
+                        label="Text Size"
+                        value={getArtefactTextSize(editingArtefact)}
+                        onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), textSize: value } } : current))}
+                      />
+                      <BooleanField label={text("config.map_designer.field.visible_toggle", "Visible")} value={editingArtefact.visible !== false} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, visible: value } : current))} />
+                      <NumberField
+                        label="Z Order"
+                        value={getArtefactZOrder(editingArtefact)}
+                        onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), zOrder: value } } : current))}
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => adjustSelectedArtefactZOrder("backward")}
+                          className="rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]"
+                        >
+                          Send Back
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => adjustSelectedArtefactZOrder("forward")}
+                          className="rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]"
+                        >
+                          Bring Forward
+                        </button>
+                      </div>
 
-                      {(selectedArtefact.type === "room" || selectedArtefact.type === "zone" || selectedArtefact.type === "stair") && selectedArtefact.geometry.kind === "rect" && (
+                      {(editingArtefact.type === "room" || editingArtefact.type === "corridor" || editingArtefact.type === "zone" || editingArtefact.type === "stair") && editingArtefact.geometry.kind === "rect" && (
                         <div className="grid gap-2">
                           <div className="grid grid-cols-2 gap-2">
-                            <NumberField label={text("config.map_designer.field.x", "X")} value={selectedArtefact.geometry.x} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, x: value } : geometry)} />
-                            <NumberField label={text("config.map_designer.field.y", "Y")} value={selectedArtefact.geometry.y} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, y: value } : geometry)} />
-                            <NumberField label={text("config.map_designer.field.width", "Width")} value={selectedArtefact.geometry.width} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, width: value } : geometry)} />
-                            <NumberField label={text("config.map_designer.field.height", "Height")} value={selectedArtefact.geometry.height} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, height: value } : geometry)} />
-                            <NumberField label="Rotation" value={selectedArtefact.geometry.rotation ?? 0} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, rotation: value } : geometry)} />
-                            <NumberField label="Border Thickness" value={typeof selectedArtefact.metadata?.borderThickness === "number" ? selectedArtefact.metadata.borderThickness : 2} onChange={(value) => updateArtefact(selectedArtefact.id, (artefact) => ({ ...artefact, metadata: { ...(artefact.metadata ?? {}), borderThickness: value } }))} />
+                            <NumberField label={text("config.map_designer.field.x", "X")} value={editingArtefact.geometry.x} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, x: value } : geometry)} />
+                            <NumberField label={text("config.map_designer.field.y", "Y")} value={editingArtefact.geometry.y} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, y: value } : geometry)} />
+                            <NumberField label={text("config.map_designer.field.width", "Width")} value={editingArtefact.geometry.width} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, width: value } : geometry)} />
+                            <NumberField label={text("config.map_designer.field.height", "Height")} value={editingArtefact.geometry.height} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, height: value } : geometry)} />
+                            <NumberField label="Rotation" value={editingArtefact.geometry.rotation ?? 0} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, rotation: value } : geometry)} />
+                            <NumberField label="Border Thickness" value={typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderThickness: value } } : current))} />
+                            <NumberField label="Top Border" value={typeof editingArtefact.metadata?.borderTopThickness === "number" ? editingArtefact.metadata.borderTopThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderTopThickness: value } } : current))} />
+                            <NumberField label="Right Border" value={typeof editingArtefact.metadata?.borderRightThickness === "number" ? editingArtefact.metadata.borderRightThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderRightThickness: value } } : current))} />
+                            <NumberField label="Bottom Border" value={typeof editingArtefact.metadata?.borderBottomThickness === "number" ? editingArtefact.metadata.borderBottomThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderBottomThickness: value } } : current))} />
+                            <NumberField label="Left Border" value={typeof editingArtefact.metadata?.borderLeftThickness === "number" ? editingArtefact.metadata.borderLeftThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderLeftThickness: value } } : current))} />
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <button
                               type="button"
-                              onClick={() => updateSelectedGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, rotation: (geometry.rotation ?? 0) - 90 } : geometry)}
+                              onClick={() => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), cornerStyle: "square" } } : current))}
+                              className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                                (editingArtefact.metadata?.cornerStyle ?? "square") === "square"
+                                  ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]"
+                                  : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
+                              }`}
+                            >
+                              Square Corners
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), cornerStyle: "round" } } : current))}
+                              className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                                editingArtefact.metadata?.cornerStyle === "round"
+                                  ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]"
+                                  : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
+                              }`}
+                            >
+                              Round Corners
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, rotation: (geometry.rotation ?? 0) - 90 } : geometry)}
                               className="flex items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]"
                             >
                               <RotateCcw className="h-4 w-4" />
@@ -1115,7 +1692,7 @@ const MapDesigner: React.FC = () => {
                             </button>
                             <button
                               type="button"
-                              onClick={() => updateSelectedGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, rotation: (geometry.rotation ?? 0) + 90 } : geometry)}
+                              onClick={() => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, rotation: (geometry.rotation ?? 0) + 90 } : geometry)}
                               className="flex items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]"
                             >
                               <RotateCw className="h-4 w-4" />
@@ -1125,57 +1702,93 @@ const MapDesigner: React.FC = () => {
                         </div>
                       )}
 
-                      {(selectedArtefact.type === "wall" || selectedArtefact.type === "partition") && selectedArtefact.geometry.kind === "line" && (
+                      {(editingArtefact.type === "wall" || editingArtefact.type === "partition") && editingArtefact.geometry.kind === "line" && (
                         <div className="grid grid-cols-2 gap-2">
-                          <NumberField label={text("config.map_designer.field.start_x", "Start X")} value={selectedArtefact.geometry.x1} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "line" ? { ...geometry, x1: value } : geometry)} />
-                          <NumberField label={text("config.map_designer.field.start_y", "Start Y")} value={selectedArtefact.geometry.y1} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "line" ? { ...geometry, y1: value } : geometry)} />
-                          <NumberField label={text("config.map_designer.field.end_x", "End X")} value={selectedArtefact.geometry.x2} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "line" ? { ...geometry, x2: value } : geometry)} />
-                          <NumberField label={text("config.map_designer.field.end_y", "End Y")} value={selectedArtefact.geometry.y2} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "line" ? { ...geometry, y2: value } : geometry)} />
-                          <NumberField label={text("config.map_designer.field.thickness", "Thickness")} value={selectedArtefact.geometry.thickness ?? 14} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "line" ? { ...geometry, thickness: value } : geometry)} />
+                          <NumberField label={text("config.map_designer.field.start_x", "Start X")} value={editingArtefact.geometry.x1} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, x1: value } : geometry)} />
+                          <NumberField label={text("config.map_designer.field.start_y", "Start Y")} value={editingArtefact.geometry.y1} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, y1: value } : geometry)} />
+                          <NumberField label={text("config.map_designer.field.end_x", "End X")} value={editingArtefact.geometry.x2} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, x2: value } : geometry)} />
+                          <NumberField label={text("config.map_designer.field.end_y", "End Y")} value={editingArtefact.geometry.y2} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, y2: value } : geometry)} />
+                          <NumberField label={text("config.map_designer.field.thickness", "Thickness")} value={editingArtefact.geometry.thickness ?? 14} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, thickness: value } : geometry)} />
                         </div>
                       )}
 
-                      {(selectedArtefact.type === "exit" || selectedArtefact.type === "fireExit" || selectedArtefact.type === "roundel" || selectedArtefact.type === "label" || selectedArtefact.type === "door" || selectedArtefact.type === "window") && selectedArtefact.geometry.kind === "point" && (
+                      {(editingArtefact.type === "exit" || editingArtefact.type === "fireExit" || editingArtefact.type === "roundel" || editingArtefact.type === "label" || editingArtefact.type === "door" || editingArtefact.type === "window") && editingArtefact.geometry.kind === "point" && (
                         <div className="grid grid-cols-2 gap-2">
-                          <NumberField label={text("config.map_designer.field.x", "X")} value={selectedArtefact.geometry.x} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "point" ? { ...geometry, x: value } : geometry)} />
-                          <NumberField label={text("config.map_designer.field.y", "Y")} value={selectedArtefact.geometry.y} onChange={(value) => updateSelectedGeometry((geometry) => geometry.kind === "point" ? { ...geometry, y: value } : geometry)} />
+                          <NumberField label={text("config.map_designer.field.x", "X")} value={editingArtefact.geometry.x} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "point" ? { ...geometry, x: value } : geometry)} />
+                          <NumberField label={text("config.map_designer.field.y", "Y")} value={editingArtefact.geometry.y} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "point" ? { ...geometry, y: value } : geometry)} />
                         </div>
                       )}
 
-                      {(selectedArtefact.type === "door" || selectedArtefact.type === "window" || selectedArtefact.type === "exit" || selectedArtefact.type === "fireExit") && (
+                      {(editingArtefact.type === "door" || editingArtefact.type === "window" || editingArtefact.type === "exit" || editingArtefact.type === "fireExit") && (
                         <div className="grid gap-2">
+                          {editingArtefact.type === "door" && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), doorType: "internal" } } : current))}
+                                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                                  getDoorType(editingArtefact) === "internal"
+                                    ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]"
+                                    : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
+                                }`}
+                              >
+                                Internal Door
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), doorType: "external" } } : current))}
+                                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                                  getDoorType(editingArtefact) === "external"
+                                    ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]"
+                                    : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
+                                }`}
+                              >
+                                External Door
+                              </button>
+                            </div>
+                          )}
                           <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">Host ID</p>
-                            <input type="text" value={selectedArtefact.wallAttachment?.hostId ?? selectedArtefact.wallAttachment?.wallId ?? ""} onChange={(event) => updateArtefact(selectedArtefact.id, (artefact) => ({ ...artefact, wallAttachment: { wallId: artefact.wallAttachment?.wallId, hostType: artefact.wallAttachment?.hostType, edge: artefact.wallAttachment?.edge, hostId: event.target.value, offset: artefact.wallAttachment?.offset ?? 0, width: artefact.wallAttachment?.width ?? 36 } }))} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm text-[var(--app-text)]" />
+                            <input type="text" value={editingArtefact.wallAttachment?.hostId ?? editingArtefact.wallAttachment?.wallId ?? ""} onChange={(event) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, hostId: event.target.value, offset: current.wallAttachment?.offset ?? 0, width: current.wallAttachment?.width ?? 36 } } : current))} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-2 py-1.5 text-sm text-[var(--app-text)]" />
                           </div>
                           <div className="grid grid-cols-2 gap-2">
-                            <NumberField label={text("config.map_designer.field.offset", "Offset")} value={selectedArtefact.wallAttachment?.offset ?? 0} onChange={(value) => updateArtefact(selectedArtefact.id, (artefact) => ({ ...artefact, wallAttachment: { wallId: artefact.wallAttachment?.wallId, hostId: artefact.wallAttachment?.hostId, hostType: artefact.wallAttachment?.hostType, edge: artefact.wallAttachment?.edge, offset: value, width: artefact.wallAttachment?.width ?? 36 } }))} />
-                            <NumberField label={text("config.map_designer.field.width", "Width")} value={selectedArtefact.wallAttachment?.width ?? 36} onChange={(value) => updateArtefact(selectedArtefact.id, (artefact) => ({ ...artefact, wallAttachment: { wallId: artefact.wallAttachment?.wallId, hostId: artefact.wallAttachment?.hostId, hostType: artefact.wallAttachment?.hostType, edge: artefact.wallAttachment?.edge, offset: artefact.wallAttachment?.offset ?? 0, width: value } }))} />
+                            <NumberField label={text("config.map_designer.field.offset", "Offset")} value={editingArtefact.wallAttachment?.offset ?? 0} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostId: current.wallAttachment?.hostId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, offset: value, width: current.wallAttachment?.width ?? 36 } } : current))} />
+                            <NumberField label={text("config.map_designer.field.width", "Width")} value={editingArtefact.wallAttachment?.width ?? 36} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostId: current.wallAttachment?.hostId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, offset: current.wallAttachment?.offset ?? 0, width: value } } : current))} />
                           </div>
                         </div>
                       )}
 
                       <div className="grid gap-2">
-                        <ColorField label="Fill" value={getMetadataColor(selectedArtefact, "fillColor") ?? "#d9d9d9"} onChange={(value) => updateArtefact(selectedArtefact.id, (artefact) => setArtefactColorMetadata(artefact, "fillColor", value))} />
-                        <ColorField label="Border" value={getMetadataColor(selectedArtefact, "borderColor") ?? "#6b7280"} onChange={(value) => updateArtefact(selectedArtefact.id, (artefact) => setArtefactColorMetadata(artefact, "borderColor", value))} />
-                        <ColorField label="Text" value={getMetadataColor(selectedArtefact, "textColor") ?? "#111827"} onChange={(value) => updateArtefact(selectedArtefact.id, (artefact) => setArtefactColorMetadata(artefact, "textColor", value))} />
+                        <ColorField label="Fill" value={getMetadataColor(editingArtefact, "fillColor") ?? "#d9d9d9"} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactColorMetadata(current, "fillColor", value) : current))} />
+                        <ColorField label="Border" value={getMetadataColor(editingArtefact, "borderColor") ?? "#6b7280"} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactColorMetadata(current, "borderColor", value) : current))} />
+                        <ColorField label="Text" value={getMetadataColor(editingArtefact, "textColor") ?? "#111827"} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactColorMetadata(current, "textColor", value) : current))} />
                       </div>
 
-                      {selectedArtefact.geometry.kind === "polygon" && (
+                      {editingArtefact.geometry.kind === "polygon" && (
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.points", "Points")}</p>
-                          <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--app-surface-muted)] p-3 text-xs text-[var(--app-text)]">{JSON.stringify(selectedArtefact.geometry.points, null, 2)}</pre>
+                          <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--app-surface-muted)] p-2 text-xs text-[var(--app-text)]">{JSON.stringify(editingArtefact.geometry.points, null, 2)}</pre>
                         </div>
                       )}
 
                       <details>
                         <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.raw", "Raw")}</summary>
-                        <pre className="mt-2 overflow-x-auto rounded-lg bg-[var(--app-surface-muted)] p-3 text-xs text-[var(--app-text)]">{JSON.stringify(selectedArtefact.geometry, null, 2)}</pre>
+                        <pre className="mt-2 overflow-x-auto rounded-lg bg-[var(--app-surface-muted)] p-2 text-xs text-[var(--app-text)]">{JSON.stringify(editingArtefact.geometry, null, 2)}</pre>
                       </details>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  <button type="button" onClick={() => { setDocumentModel((current) => ({ ...current, artefacts: current.artefacts.filter((artefact) => artefact.id !== selectedArtefact.id) })); setSelectedArtefactId(null); }} className="w-full rounded-xl border border-[var(--app-danger)] px-4 py-2 text-sm font-semibold text-[var(--app-danger)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)]">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={closeProperties} className="w-full rounded-xl border border-[var(--app-border)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+                      Cancel
+                    </button>
+                    <button type="button" onClick={saveProperties} className="w-full rounded-xl border border-[var(--app-primary)] bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90">
+                      Save
+                    </button>
+                  </div>
+                  <button type="button" onClick={() => { setDocumentModel((current) => ({ ...current, artefacts: current.artefacts.filter((artefact) => isRoomBatchSelection ? !(artefact.type === "room" && selectedRoomIds.includes(artefact.id)) : artefact.id !== editingArtefact?.id) })); setSelectedArtefactId(null); setSelectedRoomIds([]); closeProperties(); }} className="w-full rounded-xl border border-[var(--app-danger)] px-4 py-2 text-sm font-semibold text-[var(--app-danger)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)]">
                     {text("config.map_designer.properties.delete", "Delete Selected")}
                   </button>
                 </div>

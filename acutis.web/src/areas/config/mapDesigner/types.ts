@@ -1,5 +1,6 @@
 export type MapArtefactType =
   | "room"
+  | "corridor"
   | "wall"
   | "window"
   | "partition"
@@ -47,7 +48,7 @@ export type MapArtefact = {
   wallAttachment?: {
     wallId?: string;
     hostId?: string;
-    hostType?: "wall" | "room" | "zone" | "stair";
+    hostType?: "wall" | "room" | "corridor" | "zone" | "stair";
     edge?: "top" | "right" | "bottom" | "left";
     offset: number;
     width: number;
@@ -76,6 +77,7 @@ export type MapTool =
   | "select"
   | "pan"
   | "room"
+  | "corridor"
   | "wall"
   | "window"
   | "partition"
