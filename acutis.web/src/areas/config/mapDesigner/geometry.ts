@@ -709,7 +709,7 @@ function mergeAxisSegments(segments: AxisSegment[]): AxisSegment[] {
 }
 
 export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundarySegment[] {
-  const edgeSegments = new Map<string, AxisSegment>();
+  const edgeSegments = new Map<string, (AxisSegment & { artefactType: MapArtefact["type"] })[]>();
 
   artefacts
     .filter((artefact) => artefact.visible !== false)
@@ -728,30 +728,44 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundaryS
       const zOrder = getArtefactZOrder(artefact);
       const sourceArea = width * height;
       const segments = [
-        { orientation: "horizontal", fixed: y, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "top"), stroke, zOrder, sourceArea },
-        { orientation: "horizontal", fixed: y + height, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "bottom"), stroke, zOrder, sourceArea },
-        { orientation: "vertical", fixed: x, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "left"), stroke, zOrder, sourceArea },
-        { orientation: "vertical", fixed: x + width, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "right"), stroke, zOrder, sourceArea },
-      ] satisfies AxisSegment[];
+        { orientation: "horizontal", fixed: y, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "top"), stroke, zOrder, sourceArea, artefactType: artefact.type },
+        { orientation: "horizontal", fixed: y + height, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "bottom"), stroke, zOrder, sourceArea, artefactType: artefact.type },
+        { orientation: "vertical", fixed: x, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "left"), stroke, zOrder, sourceArea, artefactType: artefact.type },
+        { orientation: "vertical", fixed: x + width, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "right"), stroke, zOrder, sourceArea, artefactType: artefact.type },
+      ] satisfies (AxisSegment & { artefactType: MapArtefact["type"] })[];
 
       segments.filter((segment) => segment.thickness > 0).forEach((segment) => {
         const key = `${segment.orientation}:${segment.fixed}:${segment.start}:${segment.end}`;
-        const existing = edgeSegments.get(key);
-        const currentIsDefault = existing?.stroke === "var(--app-border)";
-        const nextIsDefault = segment.stroke === "var(--app-border)";
-        if (
-          !existing ||
-          segment.zOrder > existing.zOrder ||
-          (segment.zOrder === existing.zOrder && segment.sourceArea < existing.sourceArea) ||
-          segment.thickness > existing.thickness ||
-          (segment.thickness === existing.thickness && currentIsDefault && !nextIsDefault)
-        ) {
-          edgeSegments.set(key, segment);
-        }
+        const existing = edgeSegments.get(key) ?? [];
+        existing.push(segment);
+        edgeSegments.set(key, existing);
       });
     });
 
-  const normalizedSegments = [...edgeSegments.values()];
+  const normalizedSegments = [...edgeSegments.values()]
+    .flatMap((segments) => {
+      const allCorridors = segments.every((segment) => segment.artefactType === "corridor");
+      if (allCorridors && segments.length >= 2) {
+        return [];
+      }
+
+      return [
+        segments.reduce((best, candidate) => {
+          const bestIsDefault = best.stroke === "var(--app-border)";
+          const candidateIsDefault = candidate.stroke === "var(--app-border)";
+          if (
+            candidate.zOrder > best.zOrder ||
+            (candidate.zOrder === best.zOrder && candidate.sourceArea < best.sourceArea) ||
+            candidate.thickness > best.thickness ||
+            (candidate.thickness === best.thickness && bestIsDefault && !candidateIsDefault)
+          ) {
+            return candidate;
+          }
+
+          return best;
+        }),
+      ];
+    });
 
   return mergeAxisSegments(normalizedSegments).map((segment) => ({
     geometry:

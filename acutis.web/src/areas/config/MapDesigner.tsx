@@ -52,7 +52,14 @@ type WorldPoint = { x: number; y: number };
 type ResizeHandle = "right" | "bottom" | "bottomRight";
 type PointerDragState =
   | { kind: "pan"; originClientX: number; originClientY: number; originPanX: number; originPanY: number }
-  | { kind: "move"; artefactId: string; originWorld: WorldPoint; originalGeometry: MapGeometry; childGeometries: Array<{ id: string; geometry: MapGeometry }> }
+  | {
+      kind: "move";
+      artefactId: string;
+      originWorld: WorldPoint;
+      originalGeometry: MapGeometry;
+      movingGeometries: Array<{ id: string; geometry: MapGeometry }>;
+      childGeometries: Array<{ id: string; geometry: MapGeometry }>;
+    }
   | { kind: "resize"; artefactId: string; handle: ResizeHandle; originWorld: WorldPoint; originalGeometry: Extract<MapGeometry, { kind: "rect" }> }
   | { kind: "room"; originWorld: WorldPoint; currentWorld: WorldPoint }
   | null;
@@ -70,11 +77,13 @@ type MapClipboard = {
 };
 
 type RoomBatchDraft = {
+  parentId: string;
+  offsetX: number;
+  offsetY: number;
   fillColor: string;
   borderColor: string;
   textColor: string;
   textSize: number;
-  borderThickness: number;
   visible: boolean;
 };
 
@@ -172,6 +181,24 @@ function getDoorType(artefact: MapArtefact): "internal" | "external" {
   return artefact.metadata?.doorType === "external" ? "external" : "internal";
 }
 
+function getDoorTickSize(artefact: MapArtefact): number {
+  const candidate = artefact.metadata?.doorTickSize;
+  if (typeof candidate === "number" && Number.isFinite(candidate) && candidate > 0) {
+    return candidate;
+  }
+
+  return getDoorType(artefact) === "external" ? 8 : 5;
+}
+
+function getDoorTickThickness(artefact: MapArtefact): number {
+  const candidate = artefact.metadata?.doorTickThickness;
+  if (typeof candidate === "number" && Number.isFinite(candidate) && candidate > 0) {
+    return candidate;
+  }
+
+  return getDoorType(artefact) === "external" ? 4 : 2;
+}
+
 function getResizeHandlePositions(geometry: Extract<MapGeometry, { kind: "rect" }>) {
   return {
     right: { x: geometry.x + geometry.width, y: geometry.y + geometry.height / 2 },
@@ -182,11 +209,13 @@ function getResizeHandlePositions(geometry: Extract<MapGeometry, { kind: "rect" 
 
 function createRoomBatchDraft(rooms: MapArtefact[]): RoomBatchDraft {
   return {
-    fillColor: getMetadataColor(rooms[0], "fillColor") ?? "#f8fafc",
+    parentId: rooms[0].parentId ?? "",
+    offsetX: 0,
+    offsetY: 0,
+    fillColor: getMetadataColor(rooms[0], "fillColor") ?? (rooms[0].type === "corridor" ? "rgb(250,240,175)" : "rgb(215,215,215)"),
     borderColor: getMetadataColor(rooms[0], "borderColor") ?? "#475569",
     textColor: getMetadataColor(rooms[0], "textColor") ?? "#111827",
     textSize: getArtefactTextSize(rooms[0]),
-    borderThickness: typeof rooms[0].metadata?.borderThickness === "number" ? rooms[0].metadata.borderThickness : 2,
     visible: rooms[0].visible !== false,
   };
 }
@@ -435,6 +464,25 @@ function setArtefactColorMetadata(artefact: MapArtefact, key: "fillColor" | "bor
   };
 }
 
+function getDefaultRectFill(artefact: MapArtefact): string {
+  if (artefact.type === "corridor") return "rgb(250,240,175)";
+  if (artefact.type === "zone") return "color-mix(in srgb, var(--app-success) 12%, white)";
+  if (artefact.type === "stair") return "color-mix(in srgb, var(--app-text-muted) 10%, white)";
+  return "rgb(215,215,215)";
+}
+
+function getOpeningMaskStroke(artefact: MapArtefact, artefactsById?: Map<string, MapArtefact>): string {
+  const hostId = artefact.wallAttachment?.hostId;
+  if (hostId && artefactsById) {
+    const hostArtefact = artefactsById.get(hostId);
+    if (hostArtefact?.geometry.kind === "rect") {
+      return getMetadataColor(hostArtefact, "fillColor") ?? getDefaultRectFill(hostArtefact);
+    }
+  }
+
+  return "color-mix(in srgb, var(--app-surface-muted) 35%, white)";
+}
+
 function getAnchor(artefact: MapArtefact): WorldPoint {
   if (artefact.geometry.kind === "point") return { x: artefact.geometry.x, y: artefact.geometry.y };
   if (artefact.geometry.kind === "line") return { x: (artefact.geometry.x1 + artefact.geometry.x2) / 2, y: (artefact.geometry.y1 + artefact.geometry.y2) / 2 };
@@ -449,7 +497,7 @@ function getRectRotation(geometry: Extract<MapGeometry, { kind: "rect" }>) {
   return geometry.rotation ?? 0;
 }
 
-function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGeometry?: MapGeometry) {
+function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGeometry?: MapGeometry, artefactsById?: Map<string, MapArtefact>) {
   const selectionStroke = "var(--app-primary)";
   const selectionFill = "color-mix(in srgb, var(--app-primary) 14%, transparent)";
   const geometry = displayGeometry ?? artefact.geometry;
@@ -461,15 +509,7 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
     const centerY = geometry.y + geometry.height / 2;
     const rectTransform = rotation ? `rotate(${rotation} ${centerX} ${centerY})` : undefined;
     const isStructuredArea = artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair";
-    const baseFill =
-      fillOverride ??
-      (artefact.type === "corridor"
-        ? "color-mix(in srgb, var(--app-primary) 12%, white)"
-        : artefact.type === "zone"
-        ? "color-mix(in srgb, var(--app-success) 12%, white)"
-        : artefact.type === "stair"
-          ? "color-mix(in srgb, var(--app-text-muted) 10%, white)"
-          : "color-mix(in srgb, var(--app-surface-muted) 72%, white)");
+    const baseFill = fillOverride ?? getDefaultRectFill(artefact);
     const stroke = borderOverride ??
       (artefact.type === "corridor"
         ? "var(--app-primary)"
@@ -506,19 +546,18 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
       return <line x1={geometry.x1} y1={geometry.y1} x2={geometry.x2} y2={geometry.y2} stroke={selected ? selectionStroke : borderOverride ?? "var(--app-text-muted)"} strokeWidth={selected ? 8 : geometry.thickness ?? 6} strokeDasharray="10 6" strokeLinecap="round" />;
     }
     if (artefact.type === "window") {
+      const openingMaskStroke = getOpeningMaskStroke(artefact, artefactsById);
       return <>
-        <line x1={geometry.x1} y1={geometry.y1} x2={geometry.x2} y2={geometry.y2} stroke="color-mix(in srgb, var(--app-canvas,#eef4fb) 100%, white)" strokeWidth={(geometry.thickness ?? 8) + 6} strokeLinecap="round" />
+        <line x1={geometry.x1} y1={geometry.y1} x2={geometry.x2} y2={geometry.y2} stroke={openingMaskStroke} strokeWidth={(geometry.thickness ?? 8) + 6} strokeLinecap="round" />
         <line x1={geometry.x1} y1={geometry.y1} x2={geometry.x2} y2={geometry.y2} stroke={selected ? selectionStroke : borderOverride ?? "var(--app-primary)"} strokeWidth={selected ? 8 : 4} strokeLinecap="square" />
       </>;
     }
     if (artefact.type === "door") {
-      const doorType = getDoorType(artefact);
-      const centerX = (geometry.x1 + geometry.x2) / 2;
-      const centerY = (geometry.y1 + geometry.y2) / 2;
       const isVertical = geometry.x1 === geometry.x2;
       const accentStroke = borderOverride ?? "var(--app-text)";
-      const tickSize = 5;
-      const thresholdSize = 7;
+      const tickSize = getDoorTickSize(artefact);
+      const tickThickness = getDoorTickThickness(artefact);
+      const openingMaskStroke = getOpeningMaskStroke(artefact, artefactsById);
       return (
         <>
           <line
@@ -526,69 +565,36 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
             y1={geometry.y1}
             x2={geometry.x2}
             y2={geometry.y2}
-            stroke="color-mix(in srgb, var(--app-canvas,#eef4fb) 100%, white)"
+            stroke={openingMaskStroke}
             strokeWidth={(geometry.thickness ?? 8) + (selected ? 8 : 6)}
             strokeLinecap="butt"
           />
-          {doorType === "external" ? (
-            <>
-              <line
-                x1={isVertical ? geometry.x1 - tickSize : geometry.x1}
-                y1={isVertical ? geometry.y1 : geometry.y1 - tickSize}
-                x2={isVertical ? geometry.x1 + tickSize : geometry.x1}
-                y2={isVertical ? geometry.y1 : geometry.y1 + tickSize}
-                stroke={accentStroke}
-                strokeWidth={2}
-                strokeLinecap="square"
-              />
-              <line
-                x1={isVertical ? geometry.x2 - tickSize : geometry.x2}
-                y1={isVertical ? geometry.y2 : geometry.y2 - tickSize}
-                x2={isVertical ? geometry.x2 + tickSize : geometry.x2}
-                y2={isVertical ? geometry.y2 : geometry.y2 + tickSize}
-                stroke={accentStroke}
-                strokeWidth={2}
-                strokeLinecap="square"
-              />
-              <line
-                x1={isVertical ? centerX - thresholdSize : centerX}
-                y1={isVertical ? centerY : centerY - thresholdSize}
-                x2={isVertical ? centerX + thresholdSize : centerX}
-                y2={isVertical ? centerY : centerY + thresholdSize}
-                stroke={accentStroke}
-                strokeWidth={3}
-                strokeLinecap="square"
-              />
-            </>
-          ) : (
-            <>
-              <line
-                x1={isVertical ? geometry.x1 - tickSize : geometry.x1}
-                y1={isVertical ? geometry.y1 : geometry.y1 - tickSize}
-                x2={isVertical ? geometry.x1 + tickSize : geometry.x1}
-                y2={isVertical ? geometry.y1 : geometry.y1 + tickSize}
-                stroke={accentStroke}
-                strokeWidth={2}
-                strokeLinecap="square"
-              />
-              <line
-                x1={isVertical ? geometry.x2 - tickSize : geometry.x2}
-                y1={isVertical ? geometry.y2 : geometry.y2 - tickSize}
-                x2={isVertical ? geometry.x2 + tickSize : geometry.x2}
-                y2={isVertical ? geometry.y2 : geometry.y2 + tickSize}
-                stroke={accentStroke}
-                strokeWidth={2}
-                strokeLinecap="square"
-              />
-            </>
-          )}
+          <line
+            x1={isVertical ? geometry.x1 - tickSize : geometry.x1}
+            y1={isVertical ? geometry.y1 : geometry.y1 - tickSize}
+            x2={isVertical ? geometry.x1 + tickSize : geometry.x1}
+            y2={isVertical ? geometry.y1 : geometry.y1 + tickSize}
+            stroke={accentStroke}
+            strokeWidth={tickThickness}
+            strokeLinecap="square"
+          />
+          <line
+            x1={isVertical ? geometry.x2 - tickSize : geometry.x2}
+            y1={isVertical ? geometry.y2 : geometry.y2 - tickSize}
+            x2={isVertical ? geometry.x2 + tickSize : geometry.x2}
+            y2={isVertical ? geometry.y2 : geometry.y2 + tickSize}
+            stroke={accentStroke}
+            strokeWidth={tickThickness}
+            strokeLinecap="square"
+          />
         </>
       );
     }
     if (artefact.type === "exit" || artefact.type === "fireExit") {
       const accent = borderOverride ?? (artefact.type === "fireExit" ? "var(--app-danger)" : "var(--app-success)");
+      const openingMaskStroke = getOpeningMaskStroke(artefact, artefactsById);
       return <>
-        <line x1={geometry.x1} y1={geometry.y1} x2={geometry.x2} y2={geometry.y2} stroke="color-mix(in srgb, var(--app-canvas,#eef4fb) 100%, white)" strokeWidth={(geometry.thickness ?? 8) + 8} strokeLinecap="square" />
+        <line x1={geometry.x1} y1={geometry.y1} x2={geometry.x2} y2={geometry.y2} stroke={openingMaskStroke} strokeWidth={(geometry.thickness ?? 8) + 8} strokeLinecap="square" />
         <line x1={geometry.x1} y1={geometry.y1} x2={geometry.x2} y2={geometry.y2} stroke={selected ? selectionStroke : accent} strokeWidth={selected ? 8 : 4} strokeLinecap="square" />
       </>;
     }
@@ -672,7 +678,7 @@ const MapDesigner: React.FC = () => {
   const selectedArtefact = useMemo(() => documentModel.artefacts.find((artefact) => artefact.id === selectedArtefactId) ?? null, [documentModel.artefacts, selectedArtefactId]);
   const editingArtefact = draftArtefact as MapArtefact;
   const selectedRooms = useMemo(
-    () => documentModel.artefacts.filter((artefact) => artefact.type === "room" && selectedRoomIds.includes(artefact.id)),
+    () => documentModel.artefacts.filter((artefact) => (artefact.type === "room" || artefact.type === "corridor") && selectedRoomIds.includes(artefact.id)),
     [documentModel.artefacts, selectedRoomIds],
   );
   const isRoomBatchSelection = selectedRooms.length > 1;
@@ -742,7 +748,14 @@ const MapDesigner: React.FC = () => {
       ),
     [documentModel.artefacts, renderOrderedArtefacts],
   );
-  const nonWallArtefacts = useMemo(() => renderOrderedArtefacts.filter((artefact) => artefact.type !== "wall"), [renderOrderedArtefacts]);
+  const backgroundArtefacts = useMemo(
+    () => renderOrderedArtefacts.filter((artefact) => artefact.type === "room" || artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair"),
+    [renderOrderedArtefacts],
+  );
+  const foregroundArtefacts = useMemo(
+    () => renderOrderedArtefacts.filter((artefact) => artefact.type !== "wall" && artefact.type !== "room" && artefact.type !== "corridor" && artefact.type !== "zone" && artefact.type !== "stair"),
+    [renderOrderedArtefacts],
+  );
   const selectedClusterIds = useMemo(() => {
     if (!selectedArtefactId) return new Set<string>();
     return new Set(
@@ -862,7 +875,7 @@ const MapDesigner: React.FC = () => {
       const roomIds = new Set(selectedRoomIds);
       setDocumentModel((current) => ({
         ...current,
-        artefacts: current.artefacts.filter((artefact) => !selectedClusterIds.has(artefact.id) && !(artefact.type === "room" && roomIds.has(artefact.id))),
+        artefacts: current.artefacts.filter((artefact) => !selectedClusterIds.has(artefact.id) && !((artefact.type === "room" || artefact.type === "corridor") && roomIds.has(artefact.id))),
       }));
       setSelectedArtefactId(null);
       setSelectedRoomIds([]);
@@ -977,6 +990,10 @@ const MapDesigner: React.FC = () => {
     setDocumentModel((current) => ({
       ...current,
       artefacts: current.artefacts.map((artefact) => {
+        const movingGeometry = currentDragState.movingGeometries.find((item) => item.id === artefact.id)?.geometry;
+        if (movingGeometry) {
+          return { ...artefact, geometry: moveGeometry(movingGeometry, deltaX, deltaY) };
+        }
         if (artefact.id === currentDragState.artefactId) {
           return movingOpeningAttachment && (artefact.type === "door" || artefact.type === "window" || artefact.type === "exit" || artefact.type === "fireExit")
             ? {
@@ -1000,6 +1017,7 @@ const MapDesigner: React.FC = () => {
 
   function finishDrag(pointerId?: number) {
     const currentDragState = dragStateRef.current;
+    let shouldReturnToSelect = false;
     if (currentDragState?.kind === "room") {
       const draftRect = normalizeRect(currentDragState.originWorld, currentDragState.currentWorld);
       if (draftRect.width >= 12 && draftRect.height >= 12) {
@@ -1010,14 +1028,18 @@ const MapDesigner: React.FC = () => {
           labelOverride: activeTool === "stair" ? "Stairs" : activeTool === "corridor" ? "Corridor" : "Room",
           metadata: {
             cornerStyle: "square",
-            fillColor: activeTool === "stair" ? "#e7eefb" : activeTool === "corridor" ? "#dbe7f8" : "#f8fafc",
+            fillColor: activeTool === "stair" ? "#e7eefb" : activeTool === "corridor" ? "rgb(250,240,175)" : "rgb(215,215,215)",
             borderColor: activeTool === "corridor" ? "#2563eb" : "#475569",
             textColor: "#0f172a",
           },
         };
         setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
         setSelectedArtefactId(nextArtefact.id);
+        shouldReturnToSelect = true;
       }
+    }
+    if (currentDragState?.kind === "move" || currentDragState?.kind === "resize") {
+      shouldReturnToSelect = true;
     }
     if (typeof pointerId === "number" && surfaceRef.current?.hasPointerCapture(pointerId)) {
       surfaceRef.current.releasePointerCapture(pointerId);
@@ -1025,6 +1047,9 @@ const MapDesigner: React.FC = () => {
     dragStateRef.current = null;
     setDragState(null);
     setOpeningPreview(null);
+    if (shouldReturnToSelect) {
+      setActiveTool("select");
+    }
   }
 
   const placePointArtefact = (type: "roundel" | "label", point: WorldPoint) => {
@@ -1044,13 +1069,14 @@ const MapDesigner: React.FC = () => {
     setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
     setPropertiesOpen(false);
     setSelectedArtefactId(nextArtefact.id);
+    setActiveTool("select");
   };
 
   const handleArtefactPointerDown = (event: React.PointerEvent<SVGGElement>, artefact: MapArtefact) => {
     event.preventDefault();
     event.stopPropagation();
     closeProperties();
-    if (event.shiftKey && artefact.type === "room") {
+    if (event.shiftKey && (artefact.type === "room" || artefact.type === "corridor")) {
       setSelectedRoomIds((current) => {
         const exists = current.includes(artefact.id);
         const next = exists ? current.filter((id) => id !== artefact.id) : [...current, artefact.id];
@@ -1058,17 +1084,27 @@ const MapDesigner: React.FC = () => {
         return next;
       });
     } else {
-      setSelectedRoomIds(artefact.type === "room" ? [artefact.id] : []);
+      setSelectedRoomIds(artefact.type === "room" || artefact.type === "corridor" ? [artefact.id] : []);
       setSelectedArtefactId(artefact.id);
     }
     if (activeTool !== "select" || event.button !== 0 || !surfaceRef.current) return;
     const worldPoint = getWorldPointFromEvent(event);
     if (!worldPoint) return;
+    const movingSelectionIds =
+      (artefact.type === "room" || artefact.type === "corridor") && selectedRoomIds.includes(artefact.id) && selectedRoomIds.length > 1
+        ? selectedRoomIds
+        : artefact.type === "room" || artefact.type === "corridor"
+          ? [artefact.id]
+          : [];
+
     const nextDragState: PointerDragState = {
       kind: "move",
       artefactId: artefact.id,
       originWorld: worldPoint,
       originalGeometry: artefact.geometry,
+      movingGeometries: documentModel.artefacts
+        .filter((candidate) => (candidate.type === "room" || candidate.type === "corridor") && movingSelectionIds.includes(candidate.id))
+        .map((candidate) => ({ id: candidate.id, geometry: candidate.geometry })),
       childGeometries: documentModel.artefacts
         .filter((candidate) => candidate.parentId === artefact.id || candidate.wallAttachment?.hostId === artefact.id || candidate.wallAttachment?.wallId === artefact.id)
         .map((candidate) => ({ id: candidate.id, geometry: candidate.geometry })),
@@ -1139,6 +1175,7 @@ const MapDesigner: React.FC = () => {
         setSelectedArtefactId(nextArtefact.id);
         setPendingWallStart(null);
         setWallPreviewPoint(null);
+        setActiveTool("select");
       }
       return;
     }
@@ -1160,6 +1197,7 @@ const MapDesigner: React.FC = () => {
       setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
       setPropertiesOpen(false);
       setSelectedArtefactId(nextArtefact.id);
+      setActiveTool("select");
       return;
     }
     if (activeTool === "roundel" && event.button === 0) return void placePointArtefact("roundel", worldPoint);
@@ -1221,17 +1259,25 @@ const MapDesigner: React.FC = () => {
       setDocumentModel((current) => ({
         ...current,
         artefacts: current.artefacts.map((artefact) =>
-          artefact.type === "room" && roomIds.has(artefact.id)
+          (artefact.type === "room" || artefact.type === "corridor") && roomIds.has(artefact.id)
             ? {
                 ...artefact,
+                parentId: draftRoomBatch.parentId || undefined,
                 visible: draftRoomBatch.visible,
+                geometry:
+                  artefact.geometry.kind === "rect"
+                    ? {
+                        ...artefact.geometry,
+                        x: artefact.geometry.x + draftRoomBatch.offsetX,
+                        y: artefact.geometry.y + draftRoomBatch.offsetY,
+                      }
+                    : artefact.geometry,
                 metadata: {
                   ...(artefact.metadata ?? {}),
                   fillColor: draftRoomBatch.fillColor,
                   borderColor: draftRoomBatch.borderColor,
                   textColor: draftRoomBatch.textColor,
                   textSize: draftRoomBatch.textSize,
-                  borderThickness: draftRoomBatch.borderThickness,
                 },
               }
             : artefact,
@@ -1423,19 +1469,15 @@ const MapDesigner: React.FC = () => {
               >
                 <rect x={0} y={0} width="100%" height="100%" fill="transparent" />
                 <g transform={`translate(${viewport.panX} ${viewport.panY}) scale(${viewport.scale})`}>
-                  <rect x={0} y={0} width={documentModel.world.width} height={documentModel.world.height} fill="color-mix(in srgb, var(--app-surface-muted) 35%, white)" />
-                  {mergedWallGeometries.map((geometry, index) => (
-                    <line
-                      key={`merged_wall_${index}`}
-                      x1={geometry.x1}
-                      y1={geometry.y1}
-                      x2={geometry.x2}
-                      y2={geometry.y2}
-                      stroke="var(--app-text)"
-                      strokeWidth={geometry.thickness ?? 14}
-                      strokeLinecap="square"
-                    />
-                  ))}
+                <rect x={0} y={0} width={documentModel.world.width} height={documentModel.world.height} fill="color-mix(in srgb, var(--app-surface-muted) 35%, white)" />
+                  {backgroundArtefacts.map((artefact) => {
+                    const isSelected = artefact.id === selectedArtefactId || ((artefact.type === "room" || artefact.type === "corridor") && selectedRoomIds.includes(artefact.id));
+                    return (
+                      <g key={artefact.id} data-artefact-id={artefact.id} className="cursor-pointer" onPointerDown={(event) => handleArtefactPointerDown(event, artefact)}>
+                        {renderArtefactShape(artefact, isSelected, artefact.geometry, artefactsById)}
+                      </g>
+                    );
+                  })}
                   {roomBoundaryGeometries.map((segment, index) => (
                     <line
                       key={`room_boundary_${index}`}
@@ -1465,6 +1507,18 @@ const MapDesigner: React.FC = () => {
                       </g>
                     );
                   })}
+                  {mergedWallGeometries.map((geometry, index) => (
+                    <line
+                      key={`merged_wall_${index}`}
+                      x1={geometry.x1}
+                      y1={geometry.y1}
+                      x2={geometry.x2}
+                      y2={geometry.y2}
+                      stroke="var(--app-text)"
+                      strokeWidth={geometry.thickness ?? 14}
+                      strokeLinecap="square"
+                    />
+                  ))}
                   {walls.map((artefact) => (
                     <g key={artefact.id} data-artefact-id={artefact.id} className="cursor-pointer" onPointerDown={(event) => handleArtefactPointerDown(event, artefact)}>
                       <line
@@ -1487,15 +1541,15 @@ const MapDesigner: React.FC = () => {
                       />
                     </g>
                   ))}
-                  {nonWallArtefacts.map((artefact) => {
+                  {foregroundArtefacts.map((artefact) => {
                     const displayGeometry = artefact.type === "door" || artefact.type === "window" || artefact.type === "exit" || artefact.type === "fireExit" ? resolveAttachedOpeningLine(artefact, artefactsById) ?? artefact.geometry : artefact.geometry;
-                    const isSelected = artefact.id === selectedArtefactId || (artefact.type === "room" && selectedRoomIds.includes(artefact.id));
+                    const isSelected = artefact.id === selectedArtefactId || ((artefact.type === "room" || artefact.type === "corridor") && selectedRoomIds.includes(artefact.id));
                     return (
                       <g key={artefact.id} data-artefact-id={artefact.id} className="cursor-pointer" onPointerDown={(event) => handleArtefactPointerDown(event, artefact)}>
                         {displayGeometry.kind === "line" && (artefact.type === "door" || artefact.type === "window" || artefact.type === "partition") && (
                           <line x1={displayGeometry.x1} y1={displayGeometry.y1} x2={displayGeometry.x2} y2={displayGeometry.y2} stroke="transparent" strokeWidth={18} strokeLinecap="round" />
                         )}
-                        {renderArtefactShape(artefact, isSelected, displayGeometry)}
+                        {renderArtefactShape(artefact, isSelected, displayGeometry, artefactsById)}
                       </g>
                     );
                   })}
@@ -1541,6 +1595,7 @@ const MapDesigner: React.FC = () => {
                   {openingPreview && (() => {
                     const previewGeometry = resolveAttachedOpeningLine(openingPreview.artefact, artefactsById);
                     if (!previewGeometry) return null;
+                    const openingMaskStroke = getOpeningMaskStroke(openingPreview.artefact, artefactsById);
                     return (
                       <g opacity={0.9}>
                         <line
@@ -1548,7 +1603,7 @@ const MapDesigner: React.FC = () => {
                           y1={previewGeometry.y1}
                           x2={previewGeometry.x2}
                           y2={previewGeometry.y2}
-                          stroke="color-mix(in srgb, var(--app-canvas,#eef4fb) 100%, white)"
+                          stroke={openingMaskStroke}
                           strokeWidth={(previewGeometry.thickness ?? 8) + 8}
                           strokeLinecap="square"
                         />
@@ -1582,7 +1637,7 @@ const MapDesigner: React.FC = () => {
                 <div className="mb-3 flex items-center justify-between">
                   <div>
                     <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--app-text-muted)]">{text("config.map_designer.properties.title", "Properties")}</h2>
-                    <p className="mt-1 text-xs text-[var(--app-text-muted)]">{isRoomBatchSelection ? `${selectedRooms.length} rooms` : editingArtefact?.id}</p>
+                    <p className="mt-1 text-xs text-[var(--app-text-muted)]">{isRoomBatchSelection ? `${selectedRooms.length} selected` : editingArtefact?.id}</p>
                   </div>
                   <button type="button" onClick={closeProperties} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]" aria-label="Close properties" title="Close properties">
                     <X className="h-4 w-4" />
@@ -1595,9 +1650,16 @@ const MapDesigner: React.FC = () => {
                       {isRoomBatchSelection && draftRoomBatch ? (
                         <>
                           <div><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.type", "Type")}</p><p className="mt-1 text-[var(--app-text)]">room batch</p></div>
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.parent_id", "Parent ID")}</p>
+                            <input type="text" value={draftRoomBatch.parentId} onChange={(event) => setDraftRoomBatch((current) => (current ? { ...current, parentId: event.target.value } : current))} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-2 py-1.5 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <NumberField label="Offset X" value={draftRoomBatch.offsetX} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, offsetX: value } : current))} />
+                            <NumberField label="Offset Y" value={draftRoomBatch.offsetY} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, offsetY: value } : current))} />
+                          </div>
                           <NumberField label="Text Size" value={draftRoomBatch.textSize} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, textSize: value } : current))} />
                           <BooleanField label={text("config.map_designer.field.visible_toggle", "Visible")} value={draftRoomBatch.visible} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, visible: value } : current))} />
-                          <NumberField label="Border Thickness" value={draftRoomBatch.borderThickness} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, borderThickness: value } : current))} />
                           <div className="grid gap-2">
                             <ColorField label="Fill" value={draftRoomBatch.fillColor} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, fillColor: value } : current))} />
                             <ColorField label="Border" value={draftRoomBatch.borderColor} onChange={(value) => setDraftRoomBatch((current) => (current ? { ...current, borderColor: value } : current))} />
@@ -1651,11 +1713,15 @@ const MapDesigner: React.FC = () => {
                             <NumberField label={text("config.map_designer.field.width", "Width")} value={editingArtefact.geometry.width} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, width: value } : geometry)} />
                             <NumberField label={text("config.map_designer.field.height", "Height")} value={editingArtefact.geometry.height} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, height: value } : geometry)} />
                             <NumberField label="Rotation" value={editingArtefact.geometry.rotation ?? 0} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, rotation: value } : geometry)} />
-                            <NumberField label="Border Thickness" value={typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderThickness: value } } : current))} />
-                            <NumberField label="Top Border" value={typeof editingArtefact.metadata?.borderTopThickness === "number" ? editingArtefact.metadata.borderTopThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderTopThickness: value } } : current))} />
-                            <NumberField label="Right Border" value={typeof editingArtefact.metadata?.borderRightThickness === "number" ? editingArtefact.metadata.borderRightThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderRightThickness: value } } : current))} />
-                            <NumberField label="Bottom Border" value={typeof editingArtefact.metadata?.borderBottomThickness === "number" ? editingArtefact.metadata.borderBottomThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderBottomThickness: value } } : current))} />
-                            <NumberField label="Left Border" value={typeof editingArtefact.metadata?.borderLeftThickness === "number" ? editingArtefact.metadata.borderLeftThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderLeftThickness: value } } : current))} />
+                            {(editingArtefact.type === "corridor" || editingArtefact.type === "zone" || editingArtefact.type === "stair") && (
+                              <>
+                                <NumberField label="Border Thickness" value={typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderThickness: value } } : current))} />
+                                <NumberField label="Top Border" value={typeof editingArtefact.metadata?.borderTopThickness === "number" ? editingArtefact.metadata.borderTopThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderTopThickness: value } } : current))} />
+                                <NumberField label="Right Border" value={typeof editingArtefact.metadata?.borderRightThickness === "number" ? editingArtefact.metadata.borderRightThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderRightThickness: value } } : current))} />
+                                <NumberField label="Bottom Border" value={typeof editingArtefact.metadata?.borderBottomThickness === "number" ? editingArtefact.metadata.borderBottomThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderBottomThickness: value } } : current))} />
+                                <NumberField label="Left Border" value={typeof editingArtefact.metadata?.borderLeftThickness === "number" ? editingArtefact.metadata.borderLeftThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderLeftThickness: value } } : current))} />
+                              </>
+                            )}
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <button
@@ -1753,8 +1819,14 @@ const MapDesigner: React.FC = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <NumberField label={text("config.map_designer.field.offset", "Offset")} value={editingArtefact.wallAttachment?.offset ?? 0} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostId: current.wallAttachment?.hostId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, offset: value, width: current.wallAttachment?.width ?? 36 } } : current))} />
-                            <NumberField label={text("config.map_designer.field.width", "Width")} value={editingArtefact.wallAttachment?.width ?? 36} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostId: current.wallAttachment?.hostId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, offset: current.wallAttachment?.offset ?? 0, width: value } } : current))} />
+                            <NumberField label={editingArtefact.type === "door" ? text("config.map_designer.field.door_height", "Door Height") : text("config.map_designer.field.width", "Width")} value={editingArtefact.wallAttachment?.width ?? 36} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostId: current.wallAttachment?.hostId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, offset: current.wallAttachment?.offset ?? 0, width: value } } : current))} />
                           </div>
+                          {editingArtefact.type === "door" && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <NumberField label={text("config.map_designer.field.tick_size", "Tick Size")} value={getDoorTickSize(editingArtefact)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), doorTickSize: value } } : current))} />
+                              <NumberField label={text("config.map_designer.field.tick_thickness", "Tick Thickness")} value={getDoorTickThickness(editingArtefact)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), doorTickThickness: value } } : current))} />
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -1788,7 +1860,7 @@ const MapDesigner: React.FC = () => {
                       Save
                     </button>
                   </div>
-                  <button type="button" onClick={() => { setDocumentModel((current) => ({ ...current, artefacts: current.artefacts.filter((artefact) => isRoomBatchSelection ? !(artefact.type === "room" && selectedRoomIds.includes(artefact.id)) : artefact.id !== editingArtefact?.id) })); setSelectedArtefactId(null); setSelectedRoomIds([]); closeProperties(); }} className="w-full rounded-xl border border-[var(--app-danger)] px-4 py-2 text-sm font-semibold text-[var(--app-danger)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)]">
+                  <button type="button" onClick={() => { setDocumentModel((current) => ({ ...current, artefacts: current.artefacts.filter((artefact) => isRoomBatchSelection ? !((artefact.type === "room" || artefact.type === "corridor") && selectedRoomIds.includes(artefact.id)) : artefact.id !== editingArtefact?.id) })); setSelectedArtefactId(null); setSelectedRoomIds([]); closeProperties(); }} className="w-full rounded-xl border border-[var(--app-danger)] px-4 py-2 text-sm font-semibold text-[var(--app-danger)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)]">
                     {text("config.map_designer.properties.delete", "Delete Selected")}
                   </button>
                 </div>
