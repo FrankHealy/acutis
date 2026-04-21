@@ -121,10 +121,10 @@ export default function DetoxFloorPlan() {
   const { loadKeys, t } = useLocalization();
   const [labelsVisible, setLabelsVisible] = useState(true);
   const [viewport, setViewport] = useState<ViewportState>({ scale: 1, panX: 32, panY: 32 });
-  const [hasInitializedViewport, setHasInitializedViewport] = useState(false);
   const [surfaceSize, setSurfaceSize] = useState({ width: 0, height: 0 });
   const surfaceRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const hasInitializedViewportRef = useRef(false);
 
   useEffect(() => {
     void loadKeys([
@@ -137,36 +137,36 @@ export default function DetoxFloorPlan() {
     ]);
   }, [loadKeys]);
 
+  const documentBounds = useMemo(
+    () => getDocumentBounds(sampleDetoxReferenceMap.artefacts, sampleDetoxReferenceMap.world.width, sampleDetoxReferenceMap.world.height),
+    [],
+  );
+
   useEffect(() => {
     if (!containerRef.current) return;
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
-      setSurfaceSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+      const nextSurfaceSize = { width: entry.contentRect.width, height: entry.contentRect.height };
+      setSurfaceSize(nextSurfaceSize);
+      if (!hasInitializedViewportRef.current && nextSurfaceSize.width > 0 && nextSurfaceSize.height > 0) {
+        setViewport(createFitViewport(documentBounds, nextSurfaceSize.width, nextSurfaceSize.height));
+        hasInitializedViewportRef.current = true;
+      }
     });
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
-  }, []);
+  }, [documentBounds]);
 
   const text = (key: string, fallback: string) => {
     const resolved = t(key);
     return resolved === key ? fallback : resolved;
   };
 
-  const documentBounds = useMemo(
-    () => getDocumentBounds(sampleDetoxReferenceMap.artefacts, sampleDetoxReferenceMap.world.width, sampleDetoxReferenceMap.world.height),
-    [],
-  );
   const walls = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type === "wall"), []);
   const wallsById = useMemo(() => new Map(walls.map((wall) => [wall.id, wall])), [walls]);
   const mergedWallGeometries = useMemo(() => mergeCollinearWallArtefacts(walls), [walls]);
   const nonWallArtefacts = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type !== "wall" && artefact.visible !== false), []);
-
-  useEffect(() => {
-    if (surfaceSize.width <= 0 || surfaceSize.height <= 0 || hasInitializedViewport) return;
-    setViewport(createFitViewport(documentBounds, surfaceSize.width, surfaceSize.height));
-    setHasInitializedViewport(true);
-  }, [documentBounds, hasInitializedViewport, surfaceSize.height, surfaceSize.width]);
 
   const resetView = () => setViewport(createFitViewport(documentBounds, surfaceSize.width, surfaceSize.height));
   const zoomByFactor = (factor: number) => {

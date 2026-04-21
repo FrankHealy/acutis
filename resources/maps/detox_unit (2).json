@@ -1,0 +1,700 @@
+{
+  "id": "map_136d9224-84cc-4e45-8e0a-114d9a4b7b59",
+  "name": "Detox Unit",
+  "descriptor": {
+    "name": "Detox Unit",
+    "description": "",
+    "version": 2,
+    "dateCreated": "2026-04-07T08:52:14.751Z",
+    "createdBy": "Unknown",
+    "updatedAt": "2026-04-21T07:02:31.931Z",
+    "updatedBy": "reception"
+  },
+  "metadata": {
+    "createdAt": "2026-04-07T08:52:14.751Z",
+    "updatedAt": "2026-04-21T07:02:31.931Z",
+    "createdBy": "Unknown",
+    "updatedBy": "reception"
+  },
+  "world": {
+    "width": 1600,
+    "height": 1050
+  },
+  "artefacts": [
+    {
+      "id": "corridor_10921d80",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 1222,
+        "y": 189,
+        "width": 100,
+        "height": 630
+      },
+      "labelOverride": "Detoxwing",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#faf0af",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": false
+    },
+    {
+      "id": "corridor_addaaa0c",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 344,
+        "y": 729,
+        "width": 978,
+        "height": 126
+      },
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#faf0af",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "corridor_b84feaec",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 1223,
+        "y": 187,
+        "width": 100,
+        "height": 546
+      },
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#faf0af",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "room_5fc3e2e7",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1254,
+        "y": 189,
+        "width": 66,
+        "height": 64
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#d7d7d7",
+        "borderColor": "#475569",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "parentId": "Detoxwing",
+      "visible": true
+    },
+    {
+      "id": "room_fd034d60",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1224,
+        "y": 414,
+        "width": 62,
+        "height": 61
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#d7d7d7",
+        "borderColor": "#475569",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "room_1499aaad",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1224,
+        "y": 289,
+        "width": 62,
+        "height": 61
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#d7d7d7",
+        "borderColor": "#475569",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "room_12f0be4e",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1224,
+        "y": 350,
+        "width": 62,
+        "height": 61
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#d7d7d7",
+        "borderColor": "#475569",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "room_f1b6c803",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1224,
+        "y": 475,
+        "width": 62,
+        "height": 61
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#d7d7d7",
+        "borderColor": "#475569",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "room_061d092b",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1224,
+        "y": 538,
+        "width": 62,
+        "height": 61
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#d7d7d7",
+        "borderColor": "#475569",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "room_5ca08595",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1224,
+        "y": 600,
+        "width": 62,
+        "height": 61
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#d7d7d7",
+        "borderColor": "#475569",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "room_30fee542",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1224,
+        "y": 663,
+        "width": 62,
+        "height": 61
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#d7d7d7",
+        "borderColor": "#475569",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "door_ad83c9d4",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1279,
+        "y": 322,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "room_1499aaad",
+        "hostType": "room",
+        "edge": "right",
+        "offset": 33,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "door_673a8361",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1282.08559660957,
+        "y": 379.23729504699656,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "room_12f0be4e",
+        "hostType": "room",
+        "edge": "right",
+        "offset": 29,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "door_9dc97d33",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1282.08559660957,
+        "y": 446.616102703021,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "room_fd034d60",
+        "hostType": "room",
+        "edge": "right",
+        "offset": 33,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "corridor_ce06a76d",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 345,
+        "y": 309,
+        "width": 100,
+        "height": 423
+      },
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#faf0af",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a",
+        "textSize": 13
+      },
+      "visible": true
+    },
+    {
+      "id": "door_9a0b6b37",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1287,
+        "y": 258,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "room_5fc3e2e7",
+        "hostType": "room",
+        "edge": "bottom",
+        "offset": 33,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "door_570f01b2",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1210.8036401110674,
+        "y": 266.73692445928486,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "corridor_10921d80",
+        "hostType": "corridor",
+        "edge": "left",
+        "offset": 78,
+        "width": 36
+      },
+      "metadata": {
+        "doorType": "external"
+      }
+    },
+    {
+      "id": "corridor_43bc92bb",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 460,
+        "y": 594,
+        "width": 80,
+        "height": 137
+      },
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(250,240,175)",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "corridor_34e5a21a",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 476,
+        "y": 545,
+        "width": 97,
+        "height": 100,
+        "rotation": 45
+      },
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(250,240,175)",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "corridor_b7b652e6",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 627,
+        "y": 384,
+        "width": 449,
+        "height": 286
+      },
+      "labelOverride": "Lawn",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#b7f9ae",
+        "borderColor": "#dee1e8",
+        "textColor": "#0f172a",
+        "borderThickness": 1
+      }
+    },
+    {
+      "id": "room_83072fc9",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 692,
+        "y": 783,
+        "width": 57,
+        "height": 72
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "door_8bd33587",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 850,
+        "y": 725,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "corridor_addaaa0c",
+        "hostType": "corridor",
+        "edge": "top",
+        "offset": 506,
+        "width": 36
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "room_680b48c7",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 633,
+        "y": 783,
+        "width": 57,
+        "height": 72
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_7d625f9d",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 574,
+        "y": 783,
+        "width": 57,
+        "height": 72
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_9e1a6a1d",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 516,
+        "y": 783,
+        "width": 57,
+        "height": 72
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_3a219e50",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 458,
+        "y": 783,
+        "width": 57,
+        "height": 72
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_a92fe8cd",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 814,
+        "y": 784,
+        "width": 112,
+        "height": 72
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_e80b0ea9",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 928,
+        "y": 784,
+        "width": 112,
+        "height": 71
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_3d02eb18",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1109,
+        "y": 784,
+        "width": 57,
+        "height": 72
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_844c86f7",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1167,
+        "y": 784,
+        "width": 57,
+        "height": 72
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "corridor_cf835a0e",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 1225,
+        "y": 829,
+        "width": 98,
+        "height": 65
+      },
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(250,240,175)",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_cd23da5a",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1241,
+        "y": 784,
+        "width": 81,
+        "height": 72
+      },
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "door_e814790e",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1195.815764316386,
+        "y": 785.7717730019535,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "room_844c86f7",
+        "hostType": "room",
+        "edge": "top",
+        "offset": 29,
+        "width": 36
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "door_2c385632",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1142.3459028421767,
+        "y": 784.512689314227,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "room_3d02eb18",
+        "hostType": "room",
+        "edge": "top",
+        "offset": 33,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "door_384612b9",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 845,
+        "y": 785,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "room_a92fe8cd",
+        "hostType": "room",
+        "edge": "top",
+        "offset": 31,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    }
+  ]
+}

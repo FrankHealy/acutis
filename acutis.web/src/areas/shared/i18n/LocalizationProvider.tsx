@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 type TranslationsMap = Record<string, string>;
@@ -69,20 +69,27 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
   const [localeOverride, setLocaleOverride] = useState<string | null>(null);
   const locale = localeOverride ?? storedLocale;
   const [translations, setTranslations] = useState<TranslationsMap>({});
+  const translationsRef = useRef<TranslationsMap>({});
 
   useEffect(() => {
     document.documentElement.lang = locale;
     document.documentElement.dir = locale.startsWith("ar") ? "rtl" : "ltr";
   }, [locale]);
 
+  useEffect(() => {
+    translationsRef.current = translations;
+  }, [translations]);
+
   const setLocale = useCallback((nextLocale: string) => {
     const localeToUse = nextLocale || "en-IE";
     setLocaleOverride(localeToUse);
+    translationsRef.current = {};
     setTranslations({});
     window.localStorage.setItem(LOCALE_STORAGE_KEY, localeToUse);
   }, []);
 
   const mergeTranslations = useCallback((next: TranslationsMap) => {
+    translationsRef.current = { ...translationsRef.current, ...next };
     setTranslations((current) => ({ ...current, ...next }));
   }, []);
 
@@ -91,14 +98,19 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
       const normalized = Array.from(
         new Set(keys.map((key) => key?.trim()).filter((key): key is string => Boolean(key)))
       );
-      const missing = normalized.filter((key) => !translations[key]);
+      const missing = normalized.filter((key) => !translationsRef.current[key]);
       if (missing.length === 0) {
         return;
       }
-      const fetched = await fetchTranslations(locale, missing);
-      setTranslations((current) => ({ ...current, ...fetched }));
+      try {
+        const fetched = await fetchTranslations(locale, missing);
+        translationsRef.current = { ...translationsRef.current, ...fetched };
+        setTranslations((current) => ({ ...current, ...fetched }));
+      } catch {
+        return;
+      }
     },
-    [locale, translations]
+    [locale]
   );
 
   const t = useCallback(

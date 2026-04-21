@@ -62,9 +62,20 @@ export type MapArtefact = {
 export type MapDocument = {
   id: string;
   name: string;
+  descriptor?: {
+    name: string;
+    description?: string;
+    version: number;
+    dateCreated: string;
+    createdBy: string;
+    updatedAt?: string;
+    updatedBy?: string;
+  };
   metadata?: {
     createdAt?: string;
     updatedAt?: string;
+    createdBy?: string;
+    updatedBy?: string;
   };
   world: {
     width: number;

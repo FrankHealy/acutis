@@ -11,7 +11,7 @@ import {
   DoorOpen,
   Eye,
   FilePlus2,
-  FolderOpen,
+  GripVertical,
   Hand,
   Info,
   MapPinned,
@@ -27,6 +27,7 @@ import {
   Type,
   X,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import {
   alignPointToArtefactAxes,
@@ -47,6 +48,15 @@ import {
 } from "@/areas/config/mapDesigner/geometry";
 import { sampleDetoxReferenceMap } from "@/areas/config/mapDesigner/sampleMap";
 import type { MapArtefact, MapDocument, MapGeometry, MapTool, ViewportState } from "@/areas/config/mapDesigner/types";
+
+type MapDesignerProps = {
+  initialDocument?: MapDocument;
+  initialFileName?: string | null;
+  mode?: "page" | "modal";
+  onRequestClose?: () => void;
+  onRequestBrowseMaps?: () => void;
+  onSaved?: (payload: { fileName: string; document: MapDocument }) => void;
+};
 
 type WorldPoint = { x: number; y: number };
 type ResizeHandle = "right" | "bottom" | "bottomRight";
@@ -75,6 +85,9 @@ type MapClipboard = {
   rootId: string;
   pasteCount: number;
 };
+
+type ToolbarPlacement = "top" | "right" | "bottom" | "left" | "floating";
+type SaveDialogMode = "save" | "saveAs";
 
 type RoomBatchDraft = {
   parentId: string;
@@ -121,7 +134,6 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
 
 const createId = (prefix: string) => `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
 const normalizeRect = (a: WorldPoint, b: WorldPoint) => ({ x: Math.round(Math.min(a.x, b.x)), y: Math.round(Math.min(a.y, b.y)), width: Math.round(Math.abs(b.x - a.x)), height: Math.round(Math.abs(b.y - a.y)) });
-const MAP_ARTEFACT_TYPES = new Set(["room", "corridor", "zone", "wall", "door", "window", "partition", "exit", "fireExit", "roundel", "label", "stair"]);
 const DEFAULT_WORLD = { width: 1600, height: 1050 };
 const SNAP_THRESHOLD = 16;
 
@@ -264,14 +276,25 @@ function getStructuredRectContainmentRelation(left: MapArtefact, right: MapArtef
   return 0;
 }
 
-function createBlankMapDocument(name: string = "Untitled Map"): MapDocument {
+function createBlankMapDocument(name: string = "Untitled Map", createdBy: string = "Unknown"): MapDocument {
   const timestamp = new Date().toISOString();
   return {
     id: `map_${crypto.randomUUID()}`,
     name,
+    descriptor: {
+      name,
+      description: "",
+      version: 1,
+      dateCreated: timestamp,
+      createdBy,
+      updatedAt: timestamp,
+      updatedBy: createdBy,
+    },
     metadata: {
       createdAt: timestamp,
       updatedAt: timestamp,
+      createdBy,
+      updatedBy: createdBy,
     },
     world: { ...DEFAULT_WORLD },
     artefacts: [],
@@ -368,47 +391,31 @@ function BooleanField({
   );
 }
 
-function isValidMapDocument(candidate: unknown): candidate is MapDocument {
-  if (!candidate || typeof candidate !== "object") return false;
-  const documentCandidate = candidate as Record<string, unknown>;
-  if (typeof documentCandidate.id !== "string" || typeof documentCandidate.name !== "string") return false;
-  if (!documentCandidate.world || typeof documentCandidate.world !== "object") return false;
-  const world = documentCandidate.world as Record<string, unknown>;
-  if (typeof world.width !== "number" || typeof world.height !== "number") return false;
-  if (!Array.isArray(documentCandidate.artefacts)) return false;
-
-  return documentCandidate.artefacts.every((artefact) => {
-    if (!artefact || typeof artefact !== "object") return false;
-    const artefactCandidate = artefact as Record<string, unknown>;
-    if (typeof artefactCandidate.id !== "string" || typeof artefactCandidate.type !== "string") return false;
-    if (!MAP_ARTEFACT_TYPES.has(artefactCandidate.type)) return false;
-    if (!artefactCandidate.geometry || typeof artefactCandidate.geometry !== "object") return false;
-    const geometry = artefactCandidate.geometry as Record<string, unknown>;
-    return typeof geometry.kind === "string";
-  });
-}
-
-function sanitizeFilename(value: string): string {
-  const cleaned = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-
-  return cleaned || "map_document";
-}
-
-function toPortableMapDocument(documentModel: MapDocument): MapDocument {
+function toPortableMapDocument(documentModel: MapDocument, actor: string): MapDocument {
   const now = new Date().toISOString();
-  const createdAt = documentModel.metadata?.createdAt ?? now;
+  const createdAt = documentModel.descriptor?.dateCreated ?? documentModel.metadata?.createdAt ?? now;
+  const createdBy = documentModel.descriptor?.createdBy ?? documentModel.metadata?.createdBy ?? actor;
   const updatedAt = now;
+  const updatedBy = actor;
+  const descriptorVersion = documentModel.descriptor?.version ?? 1;
 
   return {
     id: documentModel.id,
     name: documentModel.name,
+    descriptor: {
+      name: documentModel.name,
+      description: documentModel.descriptor?.description?.trim() ?? "",
+      version: descriptorVersion,
+      dateCreated: createdAt,
+      createdBy,
+      updatedAt,
+      updatedBy,
+    },
     metadata: {
       createdAt,
       updatedAt,
+      createdBy,
+      updatedBy,
     },
     world: {
       width: documentModel.world.width,
@@ -421,12 +428,28 @@ function toPortableMapDocument(documentModel: MapDocument): MapDocument {
 }
 
 function normalizeImportedMapDocument(documentCandidate: MapDocument & Record<string, unknown>): MapDocument {
+  const createdAt = documentCandidate.descriptor?.dateCreated ?? documentCandidate.metadata?.createdAt;
+  const createdBy = documentCandidate.descriptor?.createdBy ?? documentCandidate.metadata?.createdBy;
+  const updatedAt = documentCandidate.descriptor?.updatedAt ?? documentCandidate.metadata?.updatedAt;
+  const updatedBy = documentCandidate.descriptor?.updatedBy ?? documentCandidate.metadata?.updatedBy;
+
   return {
     id: documentCandidate.id,
     name: documentCandidate.name,
+    descriptor: {
+      name: documentCandidate.descriptor?.name ?? documentCandidate.name,
+      description: documentCandidate.descriptor?.description ?? "",
+      version: documentCandidate.descriptor?.version ?? 1,
+      dateCreated: createdAt ?? new Date().toISOString(),
+      createdBy: createdBy ?? "Unknown",
+      updatedAt,
+      updatedBy,
+    },
     metadata: {
-      createdAt: documentCandidate.metadata?.createdAt,
-      updatedAt: documentCandidate.metadata?.updatedAt,
+      createdAt,
+      updatedAt,
+      createdBy,
+      updatedBy,
     },
     world: {
       width: documentCandidate.world.width,
@@ -491,6 +514,33 @@ function getAnchor(artefact: MapArtefact): WorldPoint {
     y: artefact.geometry.points.reduce((sum, point) => sum + point.y, 0) / artefact.geometry.points.length,
   };
   return { x: artefact.geometry.x + artefact.geometry.width / 2, y: artefact.geometry.y + artefact.geometry.height / 2 };
+}
+
+function getLabelPlacement(artefact: MapArtefact, artefactsById: Map<string, MapArtefact>) {
+  const displayArtefact =
+    artefact.type === "door" || artefact.type === "window" || artefact.type === "exit" || artefact.type === "fireExit"
+      ? { ...artefact, geometry: resolveAttachedOpeningLine(artefact, artefactsById) ?? artefact.geometry }
+      : artefact;
+
+  if (
+    (displayArtefact.type === "room" || displayArtefact.type === "corridor") &&
+    displayArtefact.geometry.kind === "rect"
+  ) {
+    return {
+      x: displayArtefact.geometry.x + displayArtefact.geometry.width - 8,
+      y: displayArtefact.geometry.y + displayArtefact.geometry.height - 8,
+      textAnchor: "end" as const,
+      dominantBaseline: "auto" as const,
+    };
+  }
+
+  const anchor = getAnchor(displayArtefact);
+  return {
+    x: anchor.x,
+    y: anchor.y,
+    textAnchor: "middle" as const,
+    dominantBaseline: "middle" as const,
+  };
 }
 
 function getRectRotation(geometry: Extract<MapGeometry, { kind: "rect" }>) {
@@ -613,10 +663,28 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
   return <circle cx={geometry.x} cy={geometry.y} r={selected ? radius + 2 : radius} fill={selected ? selectionStroke : fillOverride ?? "var(--app-primary)"} stroke={borderOverride ?? "transparent"} strokeWidth={borderOverride ? 2 : 0} />;
 }
 
-const MapDesigner: React.FC = () => {
+const MapDesigner: React.FC<MapDesignerProps> = ({
+  initialDocument,
+  initialFileName = null,
+  mode = "page",
+  onRequestClose,
+  onRequestBrowseMaps,
+  onSaved,
+}) => {
   const { loadKeys, t } = useLocalization();
-  const [documentModel, setDocumentModel] = useState<MapDocument>(sampleDetoxReferenceMap);
+  const { data: session } = useSession();
+  const currentActor = session?.username ?? session?.user?.name ?? session?.user?.email ?? "Unknown";
+  const [documentModel, setDocumentModel] = useState<MapDocument>(() =>
+    initialDocument
+      ? normalizeImportedMapDocument(initialDocument as MapDocument & Record<string, unknown>)
+      : mode === "modal"
+        ? createBlankMapDocument("Untitled Map", currentActor)
+        : sampleDetoxReferenceMap,
+  );
+  const [currentFileName, setCurrentFileName] = useState<string | null>(initialFileName);
   const [ioError, setIoError] = useState<string | null>(null);
+  const [ioNotice, setIoNotice] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTool, setActiveTool] = useState<MapTool>("select");
   const [labelsVisible, setLabelsVisible] = useState(true);
   const [snapEnabled, setSnapEnabled] = useState(false);
@@ -633,10 +701,97 @@ const MapDesigner: React.FC = () => {
   const [wallPreviewPoint, setWallPreviewPoint] = useState<WorldPoint | null>(null);
   const [openingPreview, setOpeningPreview] = useState<OpeningPreview | null>(null);
   const [clipboard, setClipboard] = useState<MapClipboard | null>(null);
+  const [toolbarPlacement, setToolbarPlacement] = useState<ToolbarPlacement>("top");
+  const [floatingToolbarPosition, setFloatingToolbarPosition] = useState({ x: 24, y: 88 });
+  const [saveDialogMode, setSaveDialogMode] = useState<SaveDialogMode | null>(null);
+  const [saveDraftName, setSaveDraftName] = useState("");
+  const [saveDraftDescription, setSaveDraftDescription] = useState("");
   const dragStateRef = useRef<PointerDragState>(null);
   const surfaceRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const toolbarFrameRef = useRef<HTMLDivElement | null>(null);
+  const toolbarBodyRef = useRef<HTMLDivElement | null>(null);
+
+  const createDocumentWithDescriptorDraft = (nameValue: string, descriptionValue: string) => {
+    const name = nameValue.trim() || "Untitled Map";
+    return {
+      ...documentModel,
+      name,
+      descriptor: {
+        name,
+        description: descriptionValue.trim(),
+        version: documentModel.descriptor?.version ?? 1,
+        dateCreated: documentModel.descriptor?.dateCreated ?? documentModel.metadata?.createdAt ?? new Date().toISOString(),
+        createdBy: documentModel.descriptor?.createdBy ?? documentModel.metadata?.createdBy ?? currentActor,
+        updatedAt: documentModel.descriptor?.updatedAt,
+        updatedBy: documentModel.descriptor?.updatedBy,
+      },
+    };
+  };
+
+  const openSaveDialog = (modeValue: SaveDialogMode) => {
+    setSaveDialogMode(modeValue);
+    setSaveDraftName(modeValue === "saveAs" ? `${documentModel.name} Copy` : documentModel.name);
+    setSaveDraftDescription(documentModel.descriptor?.description ?? "");
+    setIoError(null);
+  };
+
+  const handleFloatingToolbarPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    const workspaceElement = event.currentTarget.closest("[data-map-designer-workspace]") as HTMLElement | null;
+    const parentRect = workspaceElement?.getBoundingClientRect();
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+    const toolbarRect = toolbarBodyRef.current?.getBoundingClientRect() ?? toolbarFrameRef.current?.getBoundingClientRect();
+    const originClientX = event.clientX;
+    const originClientY = event.clientY;
+    const originPosition =
+      toolbarPlacement === "floating"
+        ? floatingToolbarPosition
+        : {
+            x: buttonRect.left - (parentRect?.left ?? 0),
+            y: buttonRect.top - (parentRect?.top ?? 0),
+          };
+    let currentPosition = originPosition;
+
+    setToolbarPlacement("floating");
+    setFloatingToolbarPosition(originPosition);
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      currentPosition = {
+        x: Math.max(8, originPosition.x + moveEvent.clientX - originClientX),
+        y: Math.max(8, originPosition.y + moveEvent.clientY - originClientY),
+      };
+      setFloatingToolbarPosition(currentPosition);
+    };
+
+    const handlePointerUp = () => {
+      const dockThreshold = 80;
+      const workspaceRect = workspaceElement?.getBoundingClientRect();
+      const toolbarWidth = toolbarRect?.width ?? 48;
+      const toolbarHeight = toolbarRect?.height ?? 48;
+      const workspaceWidth = workspaceRect?.width ?? window.innerWidth;
+      const workspaceHeight = workspaceRect?.height ?? window.innerHeight;
+      const distances: Array<{ placement: Exclude<ToolbarPlacement, "floating">; distance: number }> = [
+        { placement: "top", distance: Math.max(0, currentPosition.y) },
+        { placement: "right", distance: Math.max(0, workspaceWidth - (currentPosition.x + toolbarWidth)) },
+        { placement: "bottom", distance: Math.max(0, workspaceHeight - (currentPosition.y + toolbarHeight)) },
+        { placement: "left", distance: Math.max(0, currentPosition.x) },
+      ];
+      const nearestDock = distances
+        .filter((candidate) => candidate.distance <= dockThreshold)
+        .sort((left, right) => left.distance - right.distance)[0];
+
+      if (nearestDock) {
+        setToolbarPlacement(nearestDock.placement);
+        setFloatingToolbarPosition({ x: 24, y: 88 });
+      }
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  };
 
   useEffect(() => {
     void loadKeys([
@@ -657,6 +812,15 @@ const MapDesigner: React.FC = () => {
       ...Object.values(TOOL_LABEL_KEYS),
     ]);
   }, [loadKeys]);
+
+  useEffect(() => {
+    if (!initialDocument) return;
+    setDocumentModel(normalizeImportedMapDocument(initialDocument as MapDocument & Record<string, unknown>));
+    setCurrentFileName(initialFileName);
+    setIoError(null);
+    setIoNotice(null);
+    setHasInitializedViewport(false);
+  }, [initialDocument, initialFileName]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -741,7 +905,7 @@ const MapDesigner: React.FC = () => {
       renderOrderedArtefacts.filter(
         (artefact) =>
           artefact.visible !== false &&
-          (artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair") &&
+          (artefact.type === "zone" || artefact.type === "stair") &&
           artefact.geometry.kind === "rect" &&
           !artefact.geometry.rotation &&
           isContainedStructuredRect(artefact, documentModel.artefacts),
@@ -915,11 +1079,12 @@ const MapDesigner: React.FC = () => {
   const createAttachedOpeningPreview = (type: "door" | "window" | "exit" | "fireExit", point: WorldPoint): OpeningPreview | null => {
     const attachment = findNearestWallAttachment(point, documentModel.artefacts);
     if (!attachment) return null;
+    const normalizedAttachment = type === "door" && attachment.hostType !== "wall" ? { ...attachment, width: 20 } : attachment;
     const previewArtefact: MapArtefact = {
       id: `${type}_preview`,
       type,
       geometry: { kind: "point", x: point.x, y: point.y, size: 18 },
-      wallAttachment: attachment,
+      wallAttachment: normalizedAttachment,
       visible: true,
     };
 
@@ -1308,7 +1473,8 @@ const MapDesigner: React.FC = () => {
     );
   };
   const handleNewMap = () => {
-    setDocumentModel(createBlankMapDocument());
+    setDocumentModel(createBlankMapDocument("Untitled Map", currentActor));
+    setCurrentFileName(null);
     setActiveTool("select");
     setSelectedArtefactId(null);
     setSelectedRoomIds([]);
@@ -1317,72 +1483,130 @@ const MapDesigner: React.FC = () => {
     setWallPreviewPoint(null);
     setOpeningPreview(null);
     setIoError(null);
+    setIoNotice(null);
     setHasInitializedViewport(false);
   };
-  const handleSave = () => {
-    const payload = toPortableMapDocument(documentModel);
-    setDocumentModel(payload);
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${sanitizeFilename(payload.name)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-  const handleLoadClick = () => fileInputRef.current?.click();
-  const handleLoadFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleSave = async (options?: { document?: MapDocument; saveAs?: boolean }) => {
+    const payload = toPortableMapDocument(options?.document ?? documentModel, currentActor);
+    setIsSaving(true);
+    setIoError(null);
+    setIoNotice(null);
     try {
-      const textContent = await file.text();
-      const parsed = JSON.parse(textContent) as unknown;
-      if (!isValidMapDocument(parsed)) {
-        setIoError(text("config.map_designer.io.invalid", "Invalid map file."));
-        return;
+      const response = await fetch("/api/config/maps", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fileName: options?.saveAs ? null : currentFileName,
+          actor: currentActor,
+          document: payload,
+        }),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Unable to save map.");
       }
-      const normalized = normalizeImportedMapDocument(parsed as MapDocument & Record<string, unknown>);
+
+      const saved = (await response.json()) as { fileName: string; document: MapDocument };
+      const normalized = normalizeImportedMapDocument(saved.document as MapDocument & Record<string, unknown>);
+      setCurrentFileName(saved.fileName);
       setDocumentModel(normalized);
-      setActiveTool("select");
-      setSelectedArtefactId(null);
-      setSelectedRoomIds([]);
-      setPropertiesOpen(false);
-      setPendingWallStart(null);
-      setWallPreviewPoint(null);
-      setOpeningPreview(null);
-      setIoError(null);
-      setHasInitializedViewport(false);
-    } catch {
-      setIoError(text("config.map_designer.io.invalid", "Invalid map file."));
+      setIoNotice(`Saved ${saved.fileName}`);
+      onSaved?.({ fileName: saved.fileName, document: normalized });
+    } catch (error) {
+      setIoError(error instanceof Error ? error.message : "Unable to save map.");
     } finally {
-      event.target.value = "";
+      setIsSaving(false);
     }
   };
 
+  const handleSaveDialogSubmit = async () => {
+    if (!saveDialogMode) return;
+    const nextDocument = createDocumentWithDescriptorDraft(saveDraftName, saveDraftDescription);
+    setDocumentModel(nextDocument);
+    setSaveDialogMode(null);
+    await handleSave({ document: nextDocument, saveAs: saveDialogMode === "saveAs" });
+  };
+
+  const descriptor = documentModel.descriptor;
+  const createdLabel = descriptor?.dateCreated ? new Date(descriptor.dateCreated).toLocaleString() : "Not saved yet";
+  const authorLabel = descriptor?.createdBy ?? currentActor;
+  const toolbarIsVertical = toolbarPlacement === "left" || toolbarPlacement === "right" || toolbarPlacement === "floating";
+  const toolbarFrameClass =
+    toolbarPlacement === "top"
+      ? `sticky ${mode === "modal" ? "top-0" : "top-[148px]"} z-30 mb-3`
+      : toolbarPlacement === "bottom"
+        ? "sticky bottom-0 z-30 mt-3"
+        : toolbarPlacement === "left"
+          ? "absolute left-4 top-4 z-30"
+          : toolbarPlacement === "right"
+            ? "absolute right-4 top-4 z-30"
+            : "absolute z-40";
+  const toolbarFrameStyle =
+    toolbarPlacement === "floating"
+      ? {
+          left: floatingToolbarPosition.x,
+          top: floatingToolbarPosition.y,
+        }
+      : undefined;
+
   return (
-    <div className="app-page-shell">
-      <main className="px-4 py-6 sm:px-6 lg:px-8">
-        <div className="relative">
-          <div className="sticky top-[148px] z-30 mb-3">
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-white/95 px-3 py-3 shadow-xl backdrop-blur">
-              <input
-                type="text"
-                value={documentModel.name}
-                onChange={(event) => setDocumentModel((current) => ({ ...current, name: event.target.value || "Untitled Map" }))}
-                className="w-[16rem] rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]"
-                aria-label={text("config.map_designer.io.name", "Map Name")}
-              />
-              <button type="button" onClick={handleNewMap} title={text("config.map_designer.io.new", "New Map")} aria-label={text("config.map_designer.io.new", "New Map")} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+    <div className={mode === "modal" ? "fixed inset-0 z-[90] bg-black/35 p-4" : "app-page-shell"}>
+      <main className={mode === "modal" ? "flex h-full flex-col overflow-hidden rounded-lg bg-[var(--app-surface)] shadow-2xl" : "px-4 py-6 sm:px-6 lg:px-8"}>
+        {mode === "modal" && (
+          <div className="flex items-center justify-between gap-3 border-b border-[var(--app-border)] px-4 py-2">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-[var(--app-text)]">{documentModel.name}</p>
+              <p className="truncate text-xs text-[var(--app-text-muted)]">{currentFileName ?? "Unsaved map"}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {onRequestBrowseMaps && (
+                <button
+                  type="button"
+                  onClick={onRequestBrowseMaps}
+                  className="rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]"
+                >
+                  Maps
+                </button>
+              )}
+              {onRequestClose && (
+                <button
+                  type="button"
+                  onClick={onRequestClose}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]"
+                  aria-label="Close map designer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        <div data-map-designer-workspace className={`relative ${mode === "modal" ? "flex-1 overflow-auto p-4" : ""}`}>
+          <div ref={toolbarFrameRef} className={toolbarFrameClass} style={toolbarFrameStyle}>
+            <div ref={toolbarBodyRef} className={`${toolbarIsVertical ? "inline-flex max-h-[calc(100vh-12rem)] flex-col overflow-y-auto" : "inline-flex flex-wrap"} items-center gap-1 rounded-2xl border border-[var(--app-border)] bg-white/95 p-1.5 shadow-xl backdrop-blur`}>
+              <button
+                type="button"
+                onPointerDown={handleFloatingToolbarPointerDown}
+                title="Drag toolbar. Drop near an edge to dock."
+                aria-label="Drag toolbar. Drop near an edge to dock."
+                className="flex h-9 w-9 cursor-grab items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] active:cursor-grabbing"
+              >
+                <GripVertical className="h-4 w-4" />
+              </button>
+              <div className={`${toolbarIsVertical ? "my-1 h-px w-8" : "mx-1 h-8 w-px"} bg-[var(--app-border)]`} />
+              <button type="button" onClick={handleNewMap} title={text("config.map_designer.io.new", "New Map")} aria-label={text("config.map_designer.io.new", "New Map")} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
                 <FilePlus2 className="h-4 w-4" />
               </button>
-              <button type="button" onClick={handleSave} title={text("config.map_designer.io.save", "Save")} aria-label={text("config.map_designer.io.save", "Save")} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+              <button type="button" onClick={() => openSaveDialog("save")} disabled={isSaving} title={text("config.map_designer.io.save", "Save")} aria-label={text("config.map_designer.io.save", "Save")} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)] disabled:cursor-wait disabled:opacity-60">
                 <Save className="h-4 w-4" />
               </button>
-              <button type="button" onClick={handleLoadClick} title={text("config.map_designer.io.load", "Load")} aria-label={text("config.map_designer.io.load", "Load")} className="rounded-xl border border-[var(--app-border)] bg-white p-2 text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
-                <FolderOpen className="h-4 w-4" />
+              <button type="button" onClick={() => openSaveDialog("saveAs")} disabled={isSaving} title="Save As" aria-label="Save As" className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[10px] font-bold text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)] disabled:cursor-wait disabled:opacity-60">
+                As
               </button>
-              <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleLoadFile} className="hidden" />
-              <div className="mx-1 hidden h-8 w-px bg-[var(--app-border)] md:block" />
+              <div className={`${toolbarIsVertical ? "my-1 h-px w-8" : "mx-1 h-8 w-px"} bg-[var(--app-border)]`} />
               {TOOL_ORDER.map((tool) => {
                 const Icon = tool.icon;
                 const isActive = activeTool === tool.id;
@@ -1402,7 +1626,7 @@ const MapDesigner: React.FC = () => {
                         setOpeningPreview(null);
                       }
                     }}
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
                       isActive ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
                     }`}
                   >
@@ -1410,20 +1634,20 @@ const MapDesigner: React.FC = () => {
                   </button>
                 );
               })}
-              <div className="mx-1 hidden h-8 w-px bg-[var(--app-border)] md:block" />
-              <button type="button" title={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} aria-label={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} onClick={() => setLabelsVisible((current) => !current)} className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${labelsVisible ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
+              <div className={`${toolbarIsVertical ? "my-1 h-px w-8" : "mx-1 h-8 w-px"} bg-[var(--app-border)]`} />
+              <button type="button" title={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} aria-label={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} onClick={() => setLabelsVisible((current) => !current)} className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${labelsVisible ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
                 <Type className="h-4 w-4" />
               </button>
-              <button type="button" title={snapEnabled ? "Snap On" : "Snap Off"} aria-label={snapEnabled ? "Snap On" : "Snap Off"} onClick={() => setSnapEnabled((current) => !current)} className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${snapEnabled ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
+              <button type="button" title={snapEnabled ? "Snap On" : "Snap Off"} aria-label={snapEnabled ? "Snap On" : "Snap Off"} onClick={() => setSnapEnabled((current) => !current)} className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${snapEnabled ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
                 <Square className="h-4 w-4" />
               </button>
-              <button type="button" title="Zoom Out" aria-label="Zoom Out" onClick={() => zoomByFactor(0.9)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+              <button type="button" title="Zoom Out" aria-label="Zoom Out" onClick={() => zoomByFactor(0.9)} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
                 <Minus className="h-4 w-4" />
               </button>
-              <button type="button" title="Zoom In" aria-label="Zoom In" onClick={() => zoomByFactor(1.1)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+              <button type="button" title="Zoom In" aria-label="Zoom In" onClick={() => zoomByFactor(1.1)} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
                 <Plus className="h-4 w-4" />
               </button>
-              <button type="button" title={text("config.map_designer.zoom.fit", "Fit")} aria-label={text("config.map_designer.zoom.fit", "Fit")} onClick={resetView} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+              <button type="button" title={text("config.map_designer.zoom.fit", "Fit")} aria-label={text("config.map_designer.zoom.fit", "Fit")} onClick={resetView} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
                 <Eye className="h-4 w-4" />
               </button>
               <button
@@ -1437,17 +1661,18 @@ const MapDesigner: React.FC = () => {
                     openProperties();
                   }
                 }}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+                className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
                   propertiesOpen ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
                 }`}
               >
                 <PanelsTopLeft className="h-4 w-4" />
               </button>
-              <div title={pendingWallStart ? text("config.map_designer.pending.wall", "Wall tool: click a second point to finish the segment.") : `${text("config.map_designer.field.active_tool", "Active tool")}: ${text(TOOL_LABEL_KEYS[activeTool], activeTool)}`} className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
+              <div title={pendingWallStart ? text("config.map_designer.pending.wall", "Wall tool: click a second point to finish the segment.") : `${text("config.map_designer.field.active_tool", "Active tool")}: ${text(TOOL_LABEL_KEYS[activeTool], activeTool)}`} className={`${toolbarIsVertical ? "" : "ml-auto"} flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]`}>
                 <Info className="h-4 w-4" />
               </div>
             </div>
             {ioError && <div className="mt-2 max-w-sm rounded-2xl border border-[var(--app-danger)] bg-[color:color-mix(in_srgb,var(--app-danger)_8%,white)] px-4 py-3 text-sm text-[var(--app-danger)] shadow-lg">{ioError}</div>}
+            {ioNotice && <div className="mt-2 max-w-sm rounded-2xl border border-[var(--app-primary)] bg-[color:color-mix(in_srgb,var(--app-primary)_8%,white)] px-4 py-3 text-sm text-[var(--app-primary)] shadow-lg">{ioNotice}</div>}
           </div>
 
           <section className="app-card rounded-2xl p-3 sm:p-4">
@@ -1456,7 +1681,7 @@ const MapDesigner: React.FC = () => {
               <p className="text-xs text-[var(--app-text-muted)]">{text("config.map_designer.surface_hint", "Phase 1/2: render, pan, zoom, select, delete, and global label visibility.")}</p>
             </div>
 
-            <div ref={containerRef} className="relative h-[82vh] min-h-[760px] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-canvas,#eef4fb)]">
+            <div ref={containerRef} className={`relative overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-canvas,#eef4fb)] ${mode === "modal" ? "h-[72vh] min-h-[640px]" : "h-[82vh] min-h-[760px]"}`}>
               <svg
                 ref={surfaceRef}
                 className={`h-full w-full ${activeTool === "pan" ? "cursor-grab" : activeTool === "room" || activeTool === "corridor" ? "cursor-crosshair" : "cursor-default"}`}
@@ -1623,8 +1848,8 @@ const MapDesigner: React.FC = () => {
                   })()}
                   {labelsVisible && renderOrderedArtefacts.filter((artefact) => isLabelVisible(viewport.scale, artefact.type)).map((artefact) => {
                     if (!artefact.labelKey && !artefact.labelOverride) return null;
-                    const anchor = artefact.type === "door" || artefact.type === "window" || artefact.type === "exit" || artefact.type === "fireExit" ? getAnchor({ ...artefact, geometry: resolveAttachedOpeningLine(artefact, artefactsById) ?? artefact.geometry }) : getAnchor(artefact);
-                    return <text key={`${artefact.id}_label`} x={anchor.x} y={anchor.y} textAnchor="middle" dominantBaseline="middle" fill={getMetadataColor(artefact, "textColor") ?? "var(--app-text)"} fontSize={getArtefactTextSize(artefact)} fontWeight={artefact.type === "label" ? 700 : 600} pointerEvents="none">{getArtefactLabel(artefact, t)}</text>;
+                    const placement = getLabelPlacement(artefact, artefactsById);
+                    return <text key={`${artefact.id}_label`} x={placement.x} y={placement.y} textAnchor={placement.textAnchor} dominantBaseline={placement.dominantBaseline} fill={getMetadataColor(artefact, "textColor") ?? "var(--app-text)"} fontSize={getArtefactTextSize(artefact)} fontWeight={artefact.type === "label" ? 700 : 600} pointerEvents="none">{getArtefactLabel(artefact, t)}</text>;
                   })}
                 </g>
               </svg>
@@ -1815,11 +2040,11 @@ const MapDesigner: React.FC = () => {
                           )}
                           <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">Host ID</p>
-                            <input type="text" value={editingArtefact.wallAttachment?.hostId ?? editingArtefact.wallAttachment?.wallId ?? ""} onChange={(event) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, hostId: event.target.value, offset: current.wallAttachment?.offset ?? 0, width: current.wallAttachment?.width ?? 36 } } : current))} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-2 py-1.5 text-sm text-[var(--app-text)]" />
+                            <input type="text" value={editingArtefact.wallAttachment?.hostId ?? editingArtefact.wallAttachment?.wallId ?? ""} onChange={(event) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, hostId: event.target.value, offset: current.wallAttachment?.offset ?? 0, width: current.wallAttachment?.width ?? 20 } } : current))} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-2 py-1.5 text-sm text-[var(--app-text)]" />
                           </div>
                           <div className="grid grid-cols-2 gap-2">
-                            <NumberField label={text("config.map_designer.field.offset", "Offset")} value={editingArtefact.wallAttachment?.offset ?? 0} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostId: current.wallAttachment?.hostId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, offset: value, width: current.wallAttachment?.width ?? 36 } } : current))} />
-                            <NumberField label={editingArtefact.type === "door" ? text("config.map_designer.field.door_height", "Door Height") : text("config.map_designer.field.width", "Width")} value={editingArtefact.wallAttachment?.width ?? 36} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostId: current.wallAttachment?.hostId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, offset: current.wallAttachment?.offset ?? 0, width: value } } : current))} />
+                            <NumberField label={text("config.map_designer.field.offset", "Offset")} value={editingArtefact.wallAttachment?.offset ?? 0} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostId: current.wallAttachment?.hostId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, offset: value, width: current.wallAttachment?.width ?? 20 } } : current))} />
+                            <NumberField label={editingArtefact.type === "door" ? text("config.map_designer.field.door_height", "Door Height") : text("config.map_designer.field.width", "Width")} value={editingArtefact.wallAttachment?.width ?? 20} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, wallAttachment: { wallId: current.wallAttachment?.wallId, hostId: current.wallAttachment?.hostId, hostType: current.wallAttachment?.hostType, edge: current.wallAttachment?.edge, offset: current.wallAttachment?.offset ?? 0, width: value } } : current))} />
                           </div>
                           {editingArtefact.type === "door" && (
                             <div className="grid grid-cols-2 gap-2">
@@ -1866,6 +2091,68 @@ const MapDesigner: React.FC = () => {
                 </div>
               </div>
             </aside>
+          )}
+
+          {saveDialogMode && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/35 p-4">
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void handleSaveDialogSubmit();
+                }}
+                className="w-full max-w-lg rounded-2xl border border-[var(--app-border)] bg-white p-4 shadow-2xl"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-[var(--app-text)]">{saveDialogMode === "saveAs" ? "Save Map As" : "Save Map"}</h2>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--app-text-muted)]">
+                      <span>{saveDialogMode === "saveAs" ? "New file" : currentFileName ?? "Unsaved map"}</span>
+                      <span>Version {descriptor?.version ?? 1}</span>
+                      <span>Created {createdLabel}</span>
+                      <span>Author {authorLabel}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSaveDialogMode(null)}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]"
+                    aria-label="Close save dialog"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="grid gap-3">
+                  <label className="grid gap-1">
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">Map Name</span>
+                    <input
+                      type="text"
+                      value={saveDraftName}
+                      onChange={(event) => setSaveDraftName(event.target.value)}
+                      className="w-full rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]"
+                      autoFocus
+                    />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">Description</span>
+                    <textarea
+                      value={saveDraftDescription}
+                      onChange={(event) => setSaveDraftDescription(event.target.value)}
+                      className="min-h-24 w-full resize-y rounded-lg border border-[var(--app-border)] bg-white px-3 py-2 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]"
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-4 flex justify-end gap-2">
+                  <button type="button" onClick={() => setSaveDialogMode(null)} className="rounded-xl border border-[var(--app-border)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={isSaving} className="rounded-xl border border-[var(--app-primary)] bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-wait disabled:opacity-60">
+                    {isSaving ? "Saving..." : saveDialogMode === "saveAs" ? "Save As" : "Save"}
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
         </div>
       </main>

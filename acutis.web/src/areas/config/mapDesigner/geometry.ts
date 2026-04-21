@@ -708,8 +708,127 @@ function mergeAxisSegments(segments: AxisSegment[]): AxisSegment[] {
   return merged;
 }
 
+function subtractInterval(
+  intervals: Array<{ start: number; end: number }>,
+  removalStart: number,
+  removalEnd: number,
+): Array<{ start: number; end: number }> {
+  return intervals.flatMap((interval) => {
+    if (removalEnd <= interval.start || removalStart >= interval.end) {
+      return [interval];
+    }
+
+    const next: Array<{ start: number; end: number }> = [];
+    if (removalStart > interval.start) {
+      next.push({ start: interval.start, end: removalStart });
+    }
+    if (removalEnd < interval.end) {
+      next.push({ start: removalEnd, end: interval.end });
+    }
+    return next;
+  });
+}
+
+function getPolygonLineOverlapIntervals(
+  points: Array<{ x: number; y: number }>,
+  orientation: "horizontal" | "vertical",
+  fixed: number,
+): Array<{ start: number; end: number }> {
+  const intersections: number[] = [];
+  const overlaps: Array<{ start: number; end: number }> = [];
+
+  for (let index = 0; index < points.length; index += 1) {
+    const current = points[index];
+    const next = points[(index + 1) % points.length];
+
+    if (orientation === "horizontal") {
+      if (current.y === next.y && current.y === fixed) {
+        overlaps.push({
+          start: Math.min(current.x, next.x),
+          end: Math.max(current.x, next.x),
+        });
+        continue;
+      }
+
+      const minY = Math.min(current.y, next.y);
+      const maxY = Math.max(current.y, next.y);
+      if (fixed < minY || fixed >= maxY || current.y === next.y) {
+        continue;
+      }
+
+      const ratio = (fixed - current.y) / (next.y - current.y);
+      intersections.push(current.x + ratio * (next.x - current.x));
+      continue;
+    }
+
+    if (current.x === next.x && current.x === fixed) {
+      overlaps.push({
+        start: Math.min(current.y, next.y),
+        end: Math.max(current.y, next.y),
+      });
+      continue;
+    }
+
+    const minX = Math.min(current.x, next.x);
+    const maxX = Math.max(current.x, next.x);
+    if (fixed < minX || fixed >= maxX || current.x === next.x) {
+      continue;
+    }
+
+    const ratio = (fixed - current.x) / (next.x - current.x);
+    intersections.push(current.y + ratio * (next.y - current.y));
+  }
+
+  intersections.sort((left, right) => left - right);
+  for (let index = 0; index + 1 < intersections.length; index += 2) {
+    overlaps.push({
+      start: intersections[index],
+      end: intersections[index + 1],
+    });
+  }
+
+  return overlaps.filter((interval) => interval.end > interval.start);
+}
+
+function clipCorridorSegment(
+  segment: AxisSegment & { artefactType: MapArtefact["type"] },
+  sourceRect: Extract<MapGeometry, { kind: "rect" }>,
+  corridorRects: Array<{ id: string; geometry: Extract<MapGeometry, { kind: "rect" }>; points: Array<{ x: number; y: number }> }>,
+  sourceId: string,
+): Array<AxisSegment & { artefactType: MapArtefact["type"] }> {
+  let intervals = [{ start: segment.start, end: segment.end }];
+
+  corridorRects.forEach((other) => {
+    if (other.id === sourceId) return;
+
+    const overlaps = getPolygonLineOverlapIntervals(other.points, segment.orientation, segment.fixed);
+    overlaps.forEach((overlap) => {
+      intervals = subtractInterval(
+        intervals,
+        Math.max(segment.start, overlap.start),
+        Math.min(segment.end, overlap.end),
+      );
+    });
+  });
+
+  return intervals
+    .filter((interval) => interval.end > interval.start)
+    .map((interval) => ({
+      ...segment,
+      start: interval.start,
+      end: interval.end,
+    }));
+}
+
 export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundarySegment[] {
   const edgeSegments = new Map<string, (AxisSegment & { artefactType: MapArtefact["type"] })[]>();
+  const corridorRects = artefacts
+    .filter((artefact) => artefact.visible !== false && artefact.type === "corridor" && artefact.geometry.kind === "rect")
+    .map((artefact) => ({
+      id: artefact.id,
+      geometry: artefact.geometry as Extract<MapGeometry, { kind: "rect" }>,
+      points: getRotatedRectPoints(artefact.geometry as Extract<MapGeometry, { kind: "rect" }>),
+    }));
 
   artefacts
     .filter((artefact) => artefact.visible !== false)
@@ -734,12 +853,15 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundaryS
         { orientation: "vertical", fixed: x + width, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "right"), stroke, zOrder, sourceArea, artefactType: artefact.type },
       ] satisfies (AxisSegment & { artefactType: MapArtefact["type"] })[];
 
-      segments.filter((segment) => segment.thickness > 0).forEach((segment) => {
-        const key = `${segment.orientation}:${segment.fixed}:${segment.start}:${segment.end}`;
-        const existing = edgeSegments.get(key) ?? [];
-        existing.push(segment);
-        edgeSegments.set(key, existing);
-      });
+      segments
+        .filter((segment) => segment.thickness > 0)
+        .flatMap((segment) => (artefact.type === "corridor" ? clipCorridorSegment(segment, artefact.geometry as Extract<MapGeometry, { kind: "rect" }>, corridorRects, artefact.id) : [segment]))
+        .forEach((segment) => {
+          const key = `${segment.orientation}:${segment.fixed}:${segment.start}:${segment.end}`;
+          const existing = edgeSegments.get(key) ?? [];
+          existing.push(segment);
+          edgeSegments.set(key, existing);
+        });
     });
 
   const normalizedSegments = [...edgeSegments.values()]

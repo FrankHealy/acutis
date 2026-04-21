@@ -4,7 +4,6 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
-  Settings,
   LayoutGrid,
   ClipboardList,
   UserCog,

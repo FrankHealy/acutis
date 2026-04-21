@@ -1,5 +1,5 @@
-import MapDesigner from "@/areas/config/MapDesigner";
+import MapLibraryPage from "@/areas/config/MapLibraryPage";
 
 export default function MapDesignerPage() {
-  return <MapDesigner />;
+  return <MapLibraryPage />;
 }
