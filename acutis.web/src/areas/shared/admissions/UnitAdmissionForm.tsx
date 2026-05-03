@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSession } from "next-auth/react";
 import { Camera, Pill, Shield, UserRoundCheck, Venus, Wine } from "lucide-react";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import DetoxFloorPlan from "@/areas/detox/components/DetoxFloorPlan";
 import DynamicFormRenderer from "@/areas/screening/forms/DynamicFormRenderer";
 import {
   getActiveForm,
@@ -14,6 +15,7 @@ import {
   type SaveProgressResponse,
   type SaveResponse,
 } from "@/areas/screening/forms/ApiClient";
+import { operationsService, type RoomAssignmentOccupant, type UnitRoomAssignment } from "@/services/operationsService";
 import {
   screeningSchedulingService,
   type ScreeningSchedulingAssignment,
@@ -37,6 +39,13 @@ const iconByUnit: Record<UnitDefinition["iconKey"], React.ComponentType<{ classN
 };
 
 const PHOTO_ANSWER_KEY = "residentPhotoDataUrl";
+
+const createAdHocAdmissionId = () => {
+  const randomId = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `ad-hoc:${randomId}`;
+};
 
 const isSameLocalDate = (scheduledDate: string, targetDate: Date): boolean => {
   const normalizedDate = scheduledDate.slice(0, 10);
@@ -75,6 +84,16 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   const [loadingTodaysAdmissions, setLoadingTodaysAdmissions] = useState(false);
   const [todaysAdmissionsError, setTodaysAdmissionsError] = useState<string | null>(null);
   const [selectedAdmissionCaseId, setSelectedAdmissionCaseId] = useState<string | null>(null);
+  const [admissionSource, setAdmissionSource] = useState<"adHoc" | "scheduled">("adHoc");
+  const [adHocAdmissionId, setAdHocAdmissionId] = useState(createAdHocAdmissionId);
+  const [showCompletionMap, setShowCompletionMap] = useState(false);
+  const [completedAdmission, setCompletedAdmission] = useState<SaveResponse["admissionCompletion"] | null>(null);
+  const [roomAssignments, setRoomAssignments] = useState<UnitRoomAssignment[]>([]);
+  const [loadingRoomAssignments, setLoadingRoomAssignments] = useState(false);
+  const [roomAssignmentsError, setRoomAssignmentsError] = useState<string | null>(null);
+  const [selectedBedCode, setSelectedBedCode] = useState<string | null>(null);
+  const [assigningBed, setAssigningBed] = useState(false);
+  const [bedAssignmentMessage, setBedAssignmentMessage] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const textRef = useRef<(key: string, fallback: string, values?: Record<string, string | number>) => string>(
@@ -90,7 +109,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     }
   );
   const Icon = iconByUnit[unitIconKey];
-  const requiresAdmissionCaseSelection = unitId === "detox";
+  const activeAdmissionSubjectId = admissionSource === "scheduled" ? selectedAdmissionCaseId : adHocAdmissionId;
 
   useEffect(() => {
     void loadKeys([
@@ -122,6 +141,23 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       "admission.due_today.status",
       "admission.due_today.prefill",
       "admission.due_today.click_to_prefill",
+      "admission.ad_hoc.title",
+      "admission.ad_hoc.description",
+      "admission.ad_hoc.active",
+      "admission.ad_hoc.start",
+      "admission.complete.title",
+      "admission.complete.description",
+      "admission.complete.map_title",
+      "admission.complete.map_description",
+      "admission.complete.room_mapping",
+      "admission.complete.new_admission",
+      "admission.complete.bed_title",
+      "admission.complete.bed_description",
+      "admission.complete.bed_loading",
+      "admission.complete.bed_assign",
+      "admission.complete.bed_assigning",
+      "admission.complete.bed_none_selected",
+      "admission.complete.bed_success",
     ]);
   }, [loadKeys]);
 
@@ -153,15 +189,6 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         return;
       }
 
-      if (requiresAdmissionCaseSelection && !selectedAdmissionCaseId) {
-        if (active) {
-          setFormData(null);
-          setError(null);
-          setLoading(false);
-        }
-        return;
-      }
-
       try {
         setLoading(true);
         const accessToken = session?.accessToken;
@@ -173,7 +200,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
           accessToken,
           locale,
           "admission",
-          selectedAdmissionCaseId,
+          activeAdmissionSubjectId,
           admissionFormCode
         );
 
@@ -199,7 +226,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     return () => {
       active = false;
     };
-  }, [admissionFormCode, locale, mergeTranslations, selectedAdmissionCaseId, session?.accessToken, status, unitId]);
+  }, [activeAdmissionSubjectId, admissionFormCode, locale, mergeTranslations, session?.accessToken, status]);
 
   const loadTodaysAdmissions = useCallback(async () => {
     try {
@@ -243,21 +270,69 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   }, [loadTodaysAdmissions]);
 
   useEffect(() => {
+    if (admissionSource !== "scheduled") {
+      return;
+    }
+
     if (todaysAdmissions.length === 0) {
       setSelectedAdmissionCaseId(null);
+      setAdmissionSource("adHoc");
       return;
     }
 
     const selectedStillPresent = todaysAdmissions.some((assignment) => assignment.caseId === selectedAdmissionCaseId);
     if (!selectedStillPresent) {
-      setSelectedAdmissionCaseId(todaysAdmissions[0]?.caseId ?? null);
+      setSelectedAdmissionCaseId(null);
+      setAdmissionSource("adHoc");
     }
-  }, [selectedAdmissionCaseId, todaysAdmissions]);
+  }, [admissionSource, selectedAdmissionCaseId, todaysAdmissions]);
 
   useEffect(() => {
     const savedPhoto = formData?.draftAnswers?.[PHOTO_ANSWER_KEY];
     setPhotoDataUrl(typeof savedPhoto === "string" && savedPhoto.trim().length > 0 ? savedPhoto : null);
   }, [formData]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadRoomAssignments = async () => {
+      if (!showCompletionMap || unitId !== "detox" || !completedAdmission || !session?.accessToken) {
+        return;
+      }
+
+      try {
+        setLoadingRoomAssignments(true);
+        const response = await operationsService.getRoomAssignments(unitId, session.accessToken);
+        if (!active) {
+          return;
+        }
+
+        setRoomAssignments(response);
+        setRoomAssignmentsError(null);
+
+        const matchedBed = response
+          .flatMap((room) => room.beds)
+          .find((bed) => bed.occupant?.episodeId === completedAdmission.episodeId);
+        setSelectedBedCode(matchedBed?.bedCode ?? completedAdmission.bedCode ?? null);
+      } catch (nextError) {
+        if (!active) {
+          return;
+        }
+
+        setRoomAssignments([]);
+        setRoomAssignmentsError(nextError instanceof Error ? nextError.message : text("admission.unable_to_load", "Unable to load admission form."));
+      } finally {
+        if (active) {
+          setLoadingRoomAssignments(false);
+        }
+      }
+    };
+
+    void loadRoomAssignments();
+    return () => {
+      active = false;
+    };
+  }, [completedAdmission, session?.accessToken, showCompletionMap, text, unitId]);
 
   useEffect(() => {
     return () => {
@@ -340,6 +415,21 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     return { ...formData.draftAnswers, [PHOTO_ANSWER_KEY]: photoDataUrl } as Record<string, JsonValue>;
   }, [formData, photoDataUrl]);
 
+  const resetForNextAdmission = useCallback(() => {
+    setShowCompletionMap(false);
+    setCompletedAdmission(null);
+    setSelectedAdmissionCaseId(null);
+    setAdmissionSource("adHoc");
+    setAdHocAdmissionId(createAdHocAdmissionId());
+    setRoomAssignments([]);
+    setRoomAssignmentsError(null);
+    setSelectedBedCode(null);
+    setBedAssignmentMessage(null);
+    setPhotoDataUrl(null);
+    setError(null);
+    setFormData(null);
+  }, []);
+
   if (loading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
@@ -379,65 +469,141 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   }
 
   if (!formData) {
-    if (requiresAdmissionCaseSelection && !selectedAdmissionCaseId) {
-      return (
-        <div className="space-y-6">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-slate-100 p-2">
-                  <Icon className="h-5 w-5 text-slate-700" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900">{text("admission.page.header", "{unitName} Admission", { unitName })}</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {text("admission.generated_form", "Unit-scoped generated form: {formCode} v{version}", {
-                      formCode: admissionFormCode,
-                      version: "current",
-                    })}
-                  </p>
-                </div>
-              </div>
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
+        {text("admission.no_active_form", "No active admission form available.")}
+      </div>
+    );
+  }
+
+  if (showCompletionMap && unitId === "detox") {
+    const bedAssignments = roomAssignments.reduce<Record<string, RoomAssignmentOccupant | null>>((acc, room) => {
+      room.beds.forEach((bed) => {
+        acc[bed.bedCode] = bed.occupant ?? null;
+      });
+      return acc;
+    }, {});
+
+    const selectedRoom = selectedBedCode?.startsWith("roundel_")
+      ? selectedBedCode.replace("roundel_", "").replace(/[a-z]$/i, "")
+      : null;
+
+    const assignSelectedBed = async () => {
+      if (!completedAdmission || !selectedBedCode) {
+        setBedAssignmentMessage(text("admission.complete.bed_none_selected", "Select a bed to continue."));
+        return;
+      }
+
+      try {
+        setAssigningBed(true);
+        setBedAssignmentMessage(null);
+        await operationsService.assignBed(
+          unitId,
+          {
+            episodeId: completedAdmission.episodeId,
+            roomCode: selectedRoom ?? "",
+            bedCode: selectedBedCode,
+          },
+          session?.accessToken,
+        );
+
+        const response = await operationsService.getRoomAssignments(unitId, session?.accessToken);
+        setRoomAssignments(response);
+        setCompletedAdmission((current) => current ? { ...current, roomNumber: selectedRoom, bedCode: selectedBedCode } : current);
+        setBedAssignmentMessage(text("admission.complete.bed_success", "Bed assigned successfully."));
+      } catch (nextError) {
+        setBedAssignmentMessage(nextError instanceof Error ? nextError.message : text("admission.unable_to_load", "Unable to load admission form."));
+      } finally {
+        setAssigningBed(false);
+      }
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-emerald-950">
+                {text("admission.complete.title", "Admission completed")}
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm text-emerald-900">
+                {text("admission.complete.description", "The admission has been saved. Review the detox unit map before continuing to room placement or returning to the dashboard.")}
+              </p>
+              {completedAdmission?.residentName ? (
+                <p className="mt-2 text-sm font-semibold text-emerald-950">{completedAdmission.residentName}</p>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void assignSelectedBed()}
+                disabled={assigningBed || !selectedBedCode}
+                className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+              >
+                {assigningBed
+                  ? text("admission.complete.bed_assigning", "Assigning bed...")
+                  : text("admission.complete.bed_assign", "Assign Selected Bed")}
+              </button>
+              <button
+                type="button"
+                onClick={resetForNextAdmission}
+                className="rounded border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100"
+              >
+                {text("admission.complete.new_admission", "Start Another Admission")}
+              </button>
               <button
                 type="button"
                 onClick={() => setCurrentStep("dashboard")}
-                className="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                className="rounded border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100"
               >
-                <UserRoundCheck className="h-4 w-4" />
                 {text("admission.back_to_dashboard", "Back to Dashboard")}
               </button>
             </div>
           </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-3">
-              <h3 className="text-base font-semibold text-slate-900">
-                {text("admission.due_today.title", "Due For Admission Today")}
-              </h3>
-              <p className="mt-1 text-sm text-slate-600">
-                {text("admission.due_today.description", "Screened people scheduled for admission on today's date.")}
-              </p>
-            </div>
-
-            {loadingTodaysAdmissions ? (
-              <p className="text-sm text-slate-600">{text("admission.due_today.loading", "Loading today's admissions...")}</p>
-            ) : todaysAdmissionsError ? (
-              <p className="text-sm text-amber-700">{todaysAdmissionsError}</p>
-            ) : todaysAdmissions.length === 0 ? (
-              <p className="text-sm text-slate-600">{text("admission.due_today.none", "Nobody is due for admission today.")}</p>
-            ) : (
-              <p className="text-sm text-slate-600">
-                {text("admission.due_today.click_to_prefill", "Select this resident to prefill the admission form.")}
-              </p>
-            )}
-          </div>
+          {bedAssignmentMessage ? (
+            <p className="mt-3 text-sm font-medium text-emerald-900">{bedAssignmentMessage}</p>
+          ) : null}
         </div>
-      );
-    }
 
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
-        {text("admission.no_active_form", "No active admission form available.")}
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 className="text-base font-semibold text-slate-900">
+            {text("admission.complete.map_title", "Detox Unit Map")}
+          </h3>
+          <p className="mt-1 text-sm text-slate-600">
+            {text("admission.complete.map_description", "Use the detox map to confirm the placement area at the end of the admission process.")}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 className="text-base font-semibold text-slate-900">
+            {text("admission.complete.bed_title", "Assign Bed")}
+          </h3>
+          <p className="mt-1 text-sm text-slate-600">
+            {text("admission.complete.bed_description", "Click an available roundel to assign the resident to a bed in that room. Occupied beds show resident initials.")}
+          </p>
+          {loadingRoomAssignments ? (
+            <p className="mt-3 text-sm text-slate-600">{text("admission.complete.bed_loading", "Loading bed availability...")}</p>
+          ) : roomAssignmentsError ? (
+            <p className="mt-3 text-sm text-amber-700">{roomAssignmentsError}</p>
+          ) : null}
+        </div>
+
+        <DetoxFloorPlan
+          title={text("admission.complete.map_title", "Detox Unit Map")}
+          description={text("admission.complete.map_description", "Use the detox map to confirm the placement area at the end of the admission process.")}
+          heightClassName="h-[72vh] min-h-[640px]"
+          roomAssignments={roomAssignments}
+          bedAssignments={bedAssignments}
+          selectedBedCode={selectedBedCode}
+          onBedSelect={(bedCode) => {
+            if (bedAssignments[bedCode]) {
+              return;
+            }
+
+            setSelectedBedCode(bedCode);
+            setBedAssignmentMessage(null);
+          }}
+        />
       </div>
     );
   }
@@ -446,10 +612,6 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     submissionId: string | null;
     answers: Record<string, JsonValue>;
   }): Promise<SaveProgressResponse> => {
-    if (requiresAdmissionCaseSelection && !selectedAdmissionCaseId) {
-      throw new Error(text("admission.due_today.click_to_prefill", "Select this resident to prefill the admission form."));
-    }
-
     const answers = photoDataUrl
       ? { ...payload.answers, [PHOTO_ANSWER_KEY]: photoDataUrl }
       : payload.answers;
@@ -459,7 +621,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       formVersion: formData.form.version,
       locale,
       subjectType: "admission",
-      subjectId: selectedAdmissionCaseId,
+      subjectId: activeAdmissionSubjectId,
       submissionId: payload.submissionId,
       answers,
     });
@@ -469,23 +631,27 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     submissionId: string | null;
     answers: Record<string, JsonValue>;
   }): Promise<SaveResponse> => {
-    if (requiresAdmissionCaseSelection && !selectedAdmissionCaseId) {
-      throw new Error(text("admission.due_today.click_to_prefill", "Select this resident to prefill the admission form."));
-    }
-
     const answers = photoDataUrl
       ? { ...payload.answers, [PHOTO_ANSWER_KEY]: photoDataUrl }
       : payload.answers;
 
-    return save(accessToken, {
+    const result = await save(accessToken, {
       formCode: formData.form.code,
       formVersion: formData.form.version,
       locale,
       subjectType: "admission",
-      subjectId: selectedAdmissionCaseId,
+      subjectId: activeAdmissionSubjectId,
       submissionId: payload.submissionId,
       answers,
     });
+
+    if (unitId === "detox" && result.admissionCompletion) {
+      setCompletedAdmission(result.admissionCompletion);
+      setSelectedBedCode(result.admissionCompletion.bedCode ?? null);
+      setShowCompletionMap(true);
+    }
+
+    return result;
   };
 
   return (
@@ -518,60 +684,90 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       </div>
 
       {unitId === "detox" && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3">
-            <h3 className="text-base font-semibold text-slate-900">
-              {text("admission.due_today.title", "Due For Admission Today")}
-            </h3>
-            <p className="mt-1 text-sm text-slate-600">
-              {text("admission.due_today.description", "Screened people scheduled for admission on today's date.")}
-            </p>
-            {selectedAdmissionCaseId ? (
-              <p className="mt-2 text-xs font-medium text-blue-700">
-                {text("admission.due_today.prefill", "Admission fields are being prefilled from the selected screening case.")}
+        <div className="grid gap-4 lg:grid-cols-[minmax(18rem,0.85fr)_minmax(24rem,1.15fr)]">
+          <div className={`rounded-xl border p-4 shadow-sm ${admissionSource === "adHoc" ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white"}`}>
+            <div className="mb-3">
+              <h3 className="text-base font-semibold text-slate-900">
+                {text("admission.ad_hoc.title", "Ad Hoc Admission")}
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                {text("admission.ad_hoc.description", "Start an admission without linking it to a scheduled screening case.")}
               </p>
-            ) : null}
+            </div>
+            {admissionSource === "adHoc" ? (
+              <p className="text-sm font-semibold text-blue-700">{text("admission.ad_hoc.active", "Currently completing an ad hoc admission.")}</p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setAdmissionSource("adHoc");
+                  setSelectedAdmissionCaseId(null);
+                }}
+                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                {text("admission.ad_hoc.start", "Start Ad Hoc Admission")}
+              </button>
+            )}
           </div>
 
-          {loadingTodaysAdmissions ? (
-            <p className="text-sm text-slate-600">{text("admission.due_today.loading", "Loading today's admissions...")}</p>
-          ) : todaysAdmissionsError ? (
-            <p className="text-sm text-amber-700">{todaysAdmissionsError}</p>
-          ) : todaysAdmissions.length === 0 ? (
-            <p className="text-sm text-slate-600">{text("admission.due_today.none", "Nobody is due for admission today.")}</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.name", "Name")}</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.phone", "Phone")}</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.queue", "Queue")}</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.status", "Status")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {todaysAdmissions.map((assignment) => (
-                    <tr
-                      key={assignment.scheduledIntakeId}
-                      className={
-                        assignment.caseId === selectedAdmissionCaseId
-                          ? "cursor-pointer bg-blue-50 ring-1 ring-inset ring-blue-200"
-                          : "cursor-pointer bg-white hover:bg-slate-50"
-                      }
-                      onClick={() => setSelectedAdmissionCaseId(assignment.caseId)}
-                      title={text("admission.due_today.click_to_prefill", "Select this resident to prefill the admission form.")}
-                    >
-                      <td className="px-4 py-3 text-slate-900">{[assignment.name, assignment.surname].filter(Boolean).join(" ")}</td>
-                      <td className="px-4 py-3 text-slate-700">{assignment.phoneNumber || "-"}</td>
-                      <td className="px-4 py-3 text-slate-700">{assignment.queueType || "-"}</td>
-                      <td className="px-4 py-3 text-slate-700">{assignment.status || "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-3">
+              <h3 className="text-base font-semibold text-slate-900">
+                {text("admission.due_today.title", "Due For Admission Today")}
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                {text("admission.due_today.description", "Screened people scheduled for admission on today's date.")}
+              </p>
+              {admissionSource === "scheduled" && selectedAdmissionCaseId ? (
+                <p className="mt-2 text-xs font-medium text-blue-700">
+                  {text("admission.due_today.prefill", "Admission fields are being prefilled from the selected screening case.")}
+                </p>
+              ) : null}
             </div>
-          )}
+
+            {loadingTodaysAdmissions ? (
+              <p className="text-sm text-slate-600">{text("admission.due_today.loading", "Loading today's admissions...")}</p>
+            ) : todaysAdmissionsError ? (
+              <p className="text-sm text-amber-700">{todaysAdmissionsError}</p>
+            ) : todaysAdmissions.length === 0 ? (
+              <p className="text-sm text-slate-600">{text("admission.due_today.none", "Nobody is due for admission today.")}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.name", "Name")}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.phone", "Phone")}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.queue", "Queue")}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">{text("admission.due_today.status", "Status")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {todaysAdmissions.map((assignment) => (
+                      <tr
+                        key={assignment.scheduledIntakeId}
+                        className={
+                          admissionSource === "scheduled" && assignment.caseId === selectedAdmissionCaseId
+                            ? "cursor-pointer bg-blue-50 ring-1 ring-inset ring-blue-200"
+                            : "cursor-pointer bg-white hover:bg-slate-50"
+                        }
+                        onClick={() => {
+                          setSelectedAdmissionCaseId(assignment.caseId);
+                          setAdmissionSource("scheduled");
+                        }}
+                        title={text("admission.due_today.click_to_prefill", "Select this resident to prefill the admission form.")}
+                      >
+                        <td className="px-4 py-3 text-slate-900">{[assignment.name, assignment.surname].filter(Boolean).join(" ")}</td>
+                        <td className="px-4 py-3 text-slate-700">{assignment.phoneNumber || "-"}</td>
+                        <td className="px-4 py-3 text-slate-700">{assignment.queueType || "-"}</td>
+                        <td className="px-4 py-3 text-slate-700">{assignment.status || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -631,14 +827,14 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       </div>
 
       <DynamicFormRenderer
-        key={`${formData.form.code}:${formData.form.version}:${selectedAdmissionCaseId ?? "none"}:${formData.submissionId ?? "new"}`}
+        key={`${formData.form.code}:${formData.form.version}:${activeAdmissionSubjectId ?? "none"}:${formData.submissionId ?? "new"}`}
         form={formData.form}
         optionSets={formData.optionSets}
         locale={locale}
         initialSubmissionId={formData.submissionId}
         initialAnswers={mergedInitialAnswers}
         subjectType="admission"
-        subjectId={selectedAdmissionCaseId}
+        subjectId={activeAdmissionSubjectId}
         renderMode="wizard"
         onSaveProgress={onSaveProgress}
         onSave={onSave}

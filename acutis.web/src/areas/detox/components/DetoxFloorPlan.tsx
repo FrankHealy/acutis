@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, User } from "lucide-react";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import {
   clampScale,
@@ -15,6 +15,7 @@ import {
 } from "@/areas/config/mapDesigner/geometry";
 import { sampleDetoxReferenceMap } from "@/areas/config/mapDesigner/sampleMap";
 import type { MapArtefact, MapGeometry, ViewportState } from "@/areas/config/mapDesigner/types";
+import type { RoomAssignmentOccupant, UnitRoomAssignment } from "@/services/operationsService";
 
 function getArtefactLabel(artefact: MapArtefact, t: (key: string) => string) {
   if (artefact.labelOverride) return artefact.labelOverride;
@@ -37,8 +38,24 @@ function getAnchor(artefact: MapArtefact) {
   return { x: artefact.geometry.x + artefact.geometry.width / 2, y: artefact.geometry.y + artefact.geometry.height / 2 };
 }
 
-function renderArtefactShape(artefact: MapArtefact, displayGeometry?: MapGeometry) {
+function getRoomCodeForArtefact(artefact: MapArtefact) {
+  const label = artefact.labelOverride?.trim();
+  if (label && /^\d+$/.test(label)) {
+    return label;
+  }
+
+  const roomMatch = artefact.id.match(/^room_(\d+)$/i);
+  return roomMatch?.[1] ?? null;
+}
+
+function renderArtefactShape(
+  artefact: MapArtefact,
+  displayGeometry?: MapGeometry,
+  options?: { emphasize?: boolean },
+) {
   const geometry = displayGeometry ?? artefact.geometry;
+  const emphasizedStroke = options?.emphasize ? "var(--app-primary)" : undefined;
+  const emphasizedStrokeWidth = options?.emphasize ? 3 : 2;
 
   if (geometry.kind === "rect") {
     const fill =
@@ -46,20 +63,22 @@ function renderArtefactShape(artefact: MapArtefact, displayGeometry?: MapGeometr
         ? "color-mix(in srgb, var(--app-success) 12%, white)"
         : artefact.type === "stair"
           ? "color-mix(in srgb, var(--app-text-muted) 10%, white)"
-          : "color-mix(in srgb, var(--app-surface-muted) 72%, white)";
+          : artefact.type === "room" && options?.emphasize
+            ? "color-mix(in srgb, var(--app-primary) 12%, white)"
+            : "color-mix(in srgb, var(--app-surface-muted) 72%, white)";
     const stroke =
       artefact.type === "zone"
         ? "color-mix(in srgb, var(--app-success) 55%, var(--app-border))"
         : artefact.type === "stair"
           ? "var(--app-text)"
-          : "var(--app-border)";
+          : emphasizedStroke ?? "var(--app-border)";
 
     if (artefact.type === "stair") {
       const stepCount = Math.max(4, Math.floor(Math.max(geometry.width, geometry.height) / 18));
       const isVertical = geometry.height >= geometry.width;
       return (
         <>
-          <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={3} fill={fill} stroke={stroke} strokeWidth={2} />
+          <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={3} fill={fill} stroke={stroke} strokeWidth={emphasizedStrokeWidth} />
           {Array.from({ length: stepCount }).map((_, index) => {
             if (isVertical) {
               const y = geometry.y + (geometry.height / (stepCount + 1)) * (index + 1);
@@ -73,11 +92,11 @@ function renderArtefactShape(artefact: MapArtefact, displayGeometry?: MapGeometr
       );
     }
 
-    return <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={artefact.type === "zone" ? 0 : 4} fill={fill} stroke={stroke} strokeWidth={2} />;
+    return <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={artefact.type === "zone" ? 0 : 4} fill={fill} stroke={stroke} strokeWidth={emphasizedStrokeWidth} />;
   }
 
   if (geometry.kind === "polygon") {
-    return <polygon points={geometry.points.map((point) => `${point.x},${point.y}`).join(" ")} fill="color-mix(in srgb, var(--app-warning) 12%, white)" stroke="var(--app-border)" strokeWidth={2} />;
+    return <polygon points={geometry.points.map((point) => `${point.x},${point.y}`).join(" ")} fill={artefact.type === "room" && options?.emphasize ? "color-mix(in srgb, var(--app-primary) 12%, white)" : "color-mix(in srgb, var(--app-warning) 12%, white)"} stroke={emphasizedStroke ?? "var(--app-border)"} strokeWidth={emphasizedStrokeWidth} />;
   }
 
   if (geometry.kind === "line") {
@@ -117,11 +136,32 @@ function renderArtefactShape(artefact: MapArtefact, displayGeometry?: MapGeometr
   return <circle cx={geometry.x} cy={geometry.y} r={radius} fill="var(--app-primary)" />;
 }
 
-export default function DetoxFloorPlan() {
+type DetoxFloorPlanProps = {
+  title?: string;
+  description?: string;
+  heightClassName?: string;
+  roomAssignments?: UnitRoomAssignment[];
+  bedAssignments?: Record<string, RoomAssignmentOccupant | null | undefined>;
+  selectedBedCode?: string | null;
+  selectableBedCodes?: string[];
+  onBedSelect?: (bedCode: string) => void;
+};
+
+export default function DetoxFloorPlan({
+  title = "Detox Room Map",
+  description = "Structured SVG map rendered from the new detox spatial model.",
+  heightClassName = "h-[82vh] min-h-[760px]",
+  roomAssignments,
+  bedAssignments,
+  selectedBedCode,
+  selectableBedCodes,
+  onBedSelect,
+}: DetoxFloorPlanProps = {}) {
   const { loadKeys, t } = useLocalization();
   const [labelsVisible, setLabelsVisible] = useState(true);
   const [viewport, setViewport] = useState<ViewportState>({ scale: 1, panX: 32, panY: 32 });
   const [surfaceSize, setSurfaceSize] = useState({ width: 0, height: 0 });
+  const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
   const surfaceRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const hasInitializedViewportRef = useRef(false);
@@ -166,7 +206,84 @@ export default function DetoxFloorPlan() {
   const walls = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type === "wall"), []);
   const wallsById = useMemo(() => new Map(walls.map((wall) => [wall.id, wall])), [walls]);
   const mergedWallGeometries = useMemo(() => mergeCollinearWallArtefacts(walls), [walls]);
-  const nonWallArtefacts = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type !== "wall" && artefact.visible !== false), []);
+  const nonWallArtefacts = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type !== "wall" && artefact.type !== "roundel" && artefact.visible !== false), []);
+  const roomArtefacts = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type === "room" && artefact.visible !== false), []);
+  const roundels = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type === "roundel" && artefact.visible !== false), []);
+  const selectableBedCodeSet = useMemo(() => new Set(selectableBedCodes ?? []), [selectableBedCodes]);
+  const roundelAssignments = useMemo(() => new Map(Object.entries(bedAssignments ?? {})), [bedAssignments]);
+
+  const derivedRoomAssignments = useMemo<UnitRoomAssignment[]>(() => {
+    if (roomAssignments?.length) {
+      return roomAssignments;
+    }
+
+    if (!bedAssignments) {
+      return [];
+    }
+
+    const parentRoomById = new Map(roomArtefacts.map((artefact) => [artefact.id, artefact]));
+    const occupantsByRoomCode = new Map<string, RoomAssignmentOccupant[]>();
+
+    roundels.forEach((artefact) => {
+      const occupant = bedAssignments[artefact.id];
+      if (!occupant || !artefact.parentId) {
+        return;
+      }
+
+      const parentRoom = parentRoomById.get(artefact.parentId);
+      if (!parentRoom) {
+        return;
+      }
+
+      const roomCode = getRoomCodeForArtefact(parentRoom);
+      if (!roomCode) {
+        return;
+      }
+
+      const current = occupantsByRoomCode.get(roomCode) ?? [];
+      occupantsByRoomCode.set(roomCode, [...current, occupant]);
+    });
+
+    return Array.from(occupantsByRoomCode.entries()).map(([roomCode, occupants]) => ({
+      roomCode,
+      storageRoomCode: roomCode,
+      capacity: occupants.length,
+      occupants,
+      beds: [],
+    }));
+  }, [bedAssignments, roomArtefacts, roomAssignments, roundels]);
+
+  const roomAssignmentByCode = useMemo(
+    () => new Map(derivedRoomAssignments.map((assignment) => [assignment.roomCode.trim().toLowerCase(), assignment])),
+    [derivedRoomAssignments],
+  );
+
+  const hoveredRoom = useMemo(() => {
+    if (!hoveredRoomId) {
+      return null;
+    }
+
+    const artefact = roomArtefacts.find((item) => item.id === hoveredRoomId);
+    if (!artefact) {
+      return null;
+    }
+
+    const roomCode = getRoomCodeForArtefact(artefact);
+    if (!roomCode) {
+      return null;
+    }
+
+    const roomAssignment = roomAssignmentByCode.get(roomCode.trim().toLowerCase());
+    const anchor = getAnchor(artefact);
+
+    return {
+      label: getArtefactLabel(artefact, t),
+      roomCode,
+      occupants: roomAssignment?.occupants ?? [],
+      anchorX: anchor.x * viewport.scale + viewport.panX,
+      anchorY: anchor.y * viewport.scale + viewport.panY,
+    };
+  }, [hoveredRoomId, roomArtefacts, roomAssignmentByCode, t, viewport.panX, viewport.panY, viewport.scale]);
 
   const resetView = () => setViewport(createFitViewport(documentBounds, surfaceSize.width, surfaceSize.height));
   const zoomByFactor = (factor: number) => {
@@ -178,8 +295,8 @@ export default function DetoxFloorPlan() {
     <div className="app-card rounded-xl p-6">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--app-text)]">Detox Room Map</h2>
-          <p className="text-sm text-[var(--app-text-muted)]">Structured SVG map rendered from the new detox spatial model.</p>
+          <h2 className="text-lg font-semibold text-[var(--app-text)]">{title}</h2>
+          <p className="text-sm text-[var(--app-text-muted)]">{description}</p>
         </div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => setLabelsVisible((current) => !current)} className="app-outline-button rounded-md px-3 py-1.5 text-sm font-medium transition">
@@ -197,7 +314,7 @@ export default function DetoxFloorPlan() {
         </div>
       </div>
 
-      <div ref={containerRef} className="h-[82vh] min-h-[760px] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-canvas,#eef4fb)]">
+      <div ref={containerRef} className={`relative ${heightClassName} overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-canvas,#eef4fb)]`}>
         <svg ref={surfaceRef} className="h-full w-full">
           <rect x={0} y={0} width="100%" height="100%" fill="transparent" />
           <g transform={`translate(${viewport.panX} ${viewport.panY}) scale(${viewport.scale})`}>
@@ -207,7 +324,64 @@ export default function DetoxFloorPlan() {
             ))}
             {nonWallArtefacts.map((artefact) => {
               const displayGeometry = artefact.type === "door" || artefact.type === "window" ? resolveAttachedOpeningLine(artefact, wallsById) ?? artefact.geometry : artefact.geometry;
-              return <g key={artefact.id}>{renderArtefactShape(artefact, displayGeometry)}</g>;
+              const roomCode = artefact.type === "room" ? getRoomCodeForArtefact(artefact) : null;
+
+              return (
+                <g
+                  key={artefact.id}
+                  onMouseEnter={roomCode ? () => setHoveredRoomId(artefact.id) : undefined}
+                  onMouseLeave={roomCode ? () => setHoveredRoomId((current) => (current === artefact.id ? null : current)) : undefined}
+                >
+                  {renderArtefactShape(artefact, displayGeometry, artefact.type === "room" ? { emphasize: hoveredRoomId === artefact.id } : undefined)}
+                </g>
+              );
+            })}
+            {roundels.map((artefact) => {
+              if (artefact.geometry.kind !== "point") {
+                return null;
+              }
+
+              const occupant = roundelAssignments.get(artefact.id) ?? null;
+              const isSelected = selectedBedCode === artefact.id;
+              const isSelectable = selectableBedCodeSet.size === 0 || selectableBedCodeSet.has(artefact.id);
+              const radius = (artefact.geometry.size ?? 20) / 2;
+              const fill = occupant
+                ? "color-mix(in srgb, var(--app-danger) 16%, white)"
+                : isSelected
+                  ? "color-mix(in srgb, var(--app-primary) 18%, white)"
+                  : isSelectable
+                    ? "color-mix(in srgb, var(--app-success) 16%, white)"
+                    : "white";
+              const stroke = occupant
+                ? "var(--app-danger)"
+                : isSelected
+                  ? "var(--app-primary)"
+                  : isSelectable
+                    ? "var(--app-success)"
+                    : "var(--app-border)";
+
+              return (
+                <g
+                  key={artefact.id}
+                  onClick={isSelectable && onBedSelect ? () => onBedSelect(artefact.id) : undefined}
+                  className={isSelectable && onBedSelect ? "cursor-pointer" : undefined}
+                >
+                  <circle cx={artefact.geometry.x} cy={artefact.geometry.y} r={radius} fill={fill} stroke={stroke} strokeWidth={isSelected ? 4 : 2} />
+                  {occupant ? (
+                    <text
+                      x={artefact.geometry.x}
+                      y={artefact.geometry.y}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="var(--app-text)"
+                      fontSize={12}
+                      fontWeight={700}
+                    >
+                      {occupant.initials}
+                    </text>
+                  ) : null}
+                </g>
+              );
             })}
             {labelsVisible &&
               sampleDetoxReferenceMap.artefacts
@@ -227,6 +401,46 @@ export default function DetoxFloorPlan() {
                 })}
           </g>
         </svg>
+        {hoveredRoom ? (
+          <div
+            className="pointer-events-none absolute z-20 w-72 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur"
+            style={{
+              left: `${Math.min(Math.max(hoveredRoom.anchorX + 18, 12), Math.max(surfaceSize.width - 300, 12))}px`,
+              top: `${Math.min(Math.max(hoveredRoom.anchorY - 18, 12), Math.max(surfaceSize.height - 180, 12))}px`,
+            }}
+          >
+            <div className="mb-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Room</p>
+              <p className="text-sm font-semibold text-slate-900">{hoveredRoom.label}</p>
+            </div>
+            {hoveredRoom.occupants.length === 0 ? (
+              <p className="text-sm text-slate-600">Vacant</p>
+            ) : (
+              <div className="space-y-3">
+                {hoveredRoom.occupants.map((occupant) => (
+                  <div key={`${hoveredRoom.roomCode}-${occupant.episodeId}-${occupant.bedCode ?? occupant.residentGuid}`} className="flex items-start gap-3">
+                    {occupant.photoUrl ? (
+                      <img
+                        src={occupant.photoUrl}
+                        alt={`${occupant.firstName} ${occupant.surname}`}
+                        className="h-12 w-12 rounded-full object-cover ring-2 ring-slate-100"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 ring-2 ring-slate-100">
+                        <User className="h-5 w-5" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-900">{occupant.firstName} {occupant.surname}</p>
+                      <p className="text-xs text-slate-600">Week {occupant.weekNumber || "-"}</p>
+                      <p className="text-xs text-slate-600">OT Role: {occupant.otRole?.trim() ? occupant.otRole : "-"}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );

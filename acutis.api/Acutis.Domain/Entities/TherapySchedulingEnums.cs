@@ -49,7 +49,9 @@ public enum ScheduleRecurrenceType
 {
     OnceOff = 1,
     Daily = 2,
-    Weekly = 3
+    Weekly = 3,
+    Monthly = 4,
+    BiMonthly = 5
 }
 
 public enum ScheduleAudienceType

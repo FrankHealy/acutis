@@ -9,7 +9,11 @@ export const getApiBaseUrl = (): string => {
     return defaultApiBaseUrl;
   }
 
-  const configuredApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
+  const configuredApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!configuredApiUrl) {
+    return browserApiBasePath;
+  }
+
   const resolvedApiUrl = new URL(configuredApiUrl, window.location.origin);
   const pageIsSecure = window.location.protocol === "https:";
   const apiIsSecure = resolvedApiUrl.protocol === "https:";

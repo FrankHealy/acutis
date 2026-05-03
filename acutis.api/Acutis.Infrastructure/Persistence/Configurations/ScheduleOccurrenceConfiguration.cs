@@ -31,6 +31,7 @@ public sealed class ScheduleOccurrenceConfiguration : IEntityTypeConfiguration<S
         builder.HasIndex(x => new { x.EpisodeId, x.ScheduledDate });
         builder.HasIndex(x => x.ResidentId);
         builder.HasIndex(x => x.TemplateId);
+        builder.HasIndex(x => x.AssignedFacilitatorUserId);
 
         builder.HasOne(x => x.Centre)
             .WithMany()
@@ -60,6 +61,11 @@ public sealed class ScheduleOccurrenceConfiguration : IEntityTypeConfiguration<S
         builder.HasOne(x => x.Resident)
             .WithMany()
             .HasForeignKey(x => x.ResidentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(x => x.AssignedFacilitatorUser)
+            .WithMany()
+            .HasForeignKey(x => x.AssignedFacilitatorUserId)
             .OnDelete(DeleteBehavior.SetNull);
     }
 }

@@ -12,6 +12,7 @@ import { unitIdentityService } from '@/services/unitIdentityService';
 import { availableThemes, useTheme } from '@/areas/shared/theme/ThemeProvider';
 import { DEFAULT_THEME_KEY, type ThemeKey } from '@/areas/shared/theme/themeSystem';
 import { useAppAccess } from '@/areas/shared/hooks/useAppAccess';
+import { staffRosterService, type UnitStaffRosterShiftDto } from '@/services/staffRosterService';
 
 const THEME_MANAGE_PERMISSION = 'theme.manage';
 
@@ -46,6 +47,7 @@ const Header: React.FC<HeaderProps> = ({
   const [brandSubtitle, setBrandSubtitle] = useState<string>("");
   const [brandLogoUrl, setBrandLogoUrl] = useState<string>("");
   const [resolvedUnitId, setResolvedUnitId] = useState<string>("");
+  const [counsellorOnDutyText, setCounsellorOnDutyText] = useState<string>("");
   const menuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const displayName =
@@ -170,6 +172,64 @@ const Header: React.FC<HeaderProps> = ({
   }, [locale]);
 
   useEffect(() => {
+    let active = true;
+
+    const isActiveShift = (shift: UnitStaffRosterShiftDto, currentMinutes: number) => {
+      const normalizedCurrentMinutes =
+        currentMinutes < shift.startMinutes && shift.endMinutes > 1440
+          ? currentMinutes + 1440
+          : currentMinutes;
+      return normalizedCurrentMinutes >= shift.startMinutes && normalizedCurrentMinutes < shift.endMinutes;
+    };
+
+    const loadCounsellorOnDuty = async () => {
+      if (!unitCode) {
+        if (active) {
+          setCounsellorOnDutyText("");
+        }
+        return;
+      }
+
+      if (!session?.accessToken && !isAuthorizationDisabled) {
+        return;
+      }
+
+      try {
+        const board = await staffRosterService.getBoard(
+          session?.accessToken,
+          unitCode,
+          new Date().toISOString().slice(0, 10),
+        );
+        if (!active) {
+          return;
+        }
+
+        const codShifts = board.shifts.filter(
+          (shift) =>
+            shift.shiftType === "CouncillorOnDutyMorning" ||
+            shift.shiftType === "CouncillorOnDutyEvening",
+        );
+        const currentMinutes = (() => {
+          const date = new Date();
+          return date.getHours() * 60 + date.getMinutes();
+        })();
+        const activeShift = codShifts.find((shift) => isActiveShift(shift, currentMinutes));
+        const displayName = activeShift?.assignedStaffName || codShifts.find((shift) => shift.assignedStaffName)?.assignedStaffName || "";
+        setCounsellorOnDutyText(displayName ? `COD: ${displayName}` : "");
+      } catch {
+        if (active) {
+          setCounsellorOnDutyText("");
+        }
+      }
+    };
+
+    void loadCounsellorOnDuty();
+    return () => {
+      active = false;
+    };
+  }, [session?.accessToken, unitCode]);
+
+  useEffect(() => {
     if (!menuOpen) return;
 
     const onClick = (event: MouseEvent) => {
@@ -192,8 +252,13 @@ const Header: React.FC<HeaderProps> = ({
     };
   }, [menuOpen]);
 
-  const resolvedBrandName = brandName || t('app.brand');
-  const resolvedBrandSubtitle = brandSubtitle || t('app.centre.bruree');
+  const text = (key: string, fallback: string) => {
+    const resolved = t(key);
+    return resolved === key ? fallback : resolved;
+  };
+
+  const resolvedBrandName = brandName || text('app.brand', 'Acutis');
+  const resolvedBrandSubtitle = brandSubtitle || text('app.centre.bruree', 'Bruree Treatment Center');
   const resolvedBrandLogoUrl = brandLogoUrl || "/acutis-icon.svg";
   const canManageTheme =
     access.permissions.includes(THEME_MANAGE_PERMISSION) ||
@@ -246,13 +311,19 @@ const Header: React.FC<HeaderProps> = ({
             <div className="hidden xl:flex items-center space-x-4 text-sm text-[var(--app-text-muted)]">
               {showCapacity && (
                 <>
-                  <span>{t('header.capacity')}: {capacityText}</span>
+                  <span>{text('header.capacity', 'Capacity')}: {capacityText}</span>
                   <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                 </>
               )}
               <span>{today || "\u00A0"}</span>
               <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-              <span>{t('header.current_time')}: {now || "\u00A0"}</span>
+              <span>{text('header.current_time', 'Current time')}: {now || "\u00A0"}</span>
+              {counsellorOnDutyText && (
+                <>
+                  <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                  <span>{counsellorOnDutyText}</span>
+                </>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4">
@@ -325,7 +396,7 @@ const Header: React.FC<HeaderProps> = ({
                   className="absolute right-0 z-50 mt-2 w-60 rounded-xl border bg-[var(--app-surface)] shadow-lg"
                 >
                   <div className="border-b px-4 py-3 text-sm text-[var(--app-text)]">
-                    {t('header.signed_in_as')} <span className="font-semibold">{displayName}</span>
+                    {text('header.signed_in_as', 'Signed in as')} <span className="font-semibold">{displayName}</span>
                   </div>
                   {!isAuthorizationDisabled && (
                     <>
@@ -335,7 +406,7 @@ const Header: React.FC<HeaderProps> = ({
                         onClick={() => signIn('keycloak')}
                         className="w-full px-4 py-2 text-left text-sm hover:bg-[var(--app-surface-muted)]"
                       >
-                        {t('header.login_different_user')}
+                        {text('header.login_different_user', 'Log in as different user')}
                       </button>
                       <button
                         type="button"
@@ -358,7 +429,7 @@ const Header: React.FC<HeaderProps> = ({
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-[var(--app-danger)] hover:bg-[var(--app-surface-muted)]"
                       >
-                        {t('header.logout')}
+                        {text('header.logout', 'Log out')}
                       </button>
                     </>
                   )}

@@ -12,6 +12,8 @@ public sealed class ScheduleTemplate
     public string? Category { get; set; }
     public ScheduleRecurrenceType RecurrenceType { get; set; } = ScheduleRecurrenceType.OnceOff;
     public DayOfWeek? WeeklyDayOfWeek { get; set; }
+    public int? MonthlyDayOfMonth { get; set; }
+    public DateOnly? RecurrenceStartDate { get; set; }
     public TimeSpan? StartTime { get; set; }
     public TimeSpan? EndTime { get; set; }
     public ScheduleAudienceType AudienceType { get; set; } = ScheduleAudienceType.UnitResidents;

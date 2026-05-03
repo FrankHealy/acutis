@@ -21,7 +21,7 @@ import {
 } from "@/services/globalConfigurationService";
 
 const durationUnits = ["Weeks", "Days"] as const;
-const recurrenceTypes = ["Daily", "Weekly", "OnceOff"] as const;
+const recurrenceTypes = ["Daily", "Weekly", "Monthly", "BiMonthly", "OnceOff"] as const;
 const audienceTypes = ["UnitResidents", "AllResidents", "Cohort", "ResidentSubset", "Resident", "OpenSession"] as const;
 const facilitatorTypes = ["None", "Staff", "ResidentLed", "External"] as const;
 const occurrenceStatuses = ["Scheduled", "Cancelled", "Completed"] as const;
@@ -34,6 +34,7 @@ const weekdays = [
   { value: 6, label: "Saturday" },
   { value: 0, label: "Sunday" },
 ];
+const todayIso = new Date().toISOString().slice(0, 10);
 
 const emptyProgrammeForm: UpsertProgrammeDefinitionRequest = {
   centreId: "",
@@ -59,6 +60,8 @@ const emptyTemplateForm: UpsertScheduleTemplateRequest = {
   category: "",
   recurrenceType: "Weekly",
   weeklyDayOfWeek: 1,
+  monthlyDayOfMonth: null,
+  recurrenceStartDate: todayIso,
   startTime: "",
   endTime: "",
   audienceType: "UnitResidents",
@@ -67,8 +70,6 @@ const emptyTemplateForm: UpsertScheduleTemplateRequest = {
   externalResourceName: "",
   isActive: true,
 };
-
-const todayIso = new Date().toISOString().slice(0, 10);
 
 const emptyOccurrenceForm: UpsertScheduleOccurrenceRequest = {
   centreId: "",
@@ -219,6 +220,8 @@ const ProgramManager: React.FC = () => {
       category: template.category,
       recurrenceType: template.recurrenceType,
       weeklyDayOfWeek: template.weeklyDayOfWeek ?? null,
+      monthlyDayOfMonth: template.monthlyDayOfMonth ?? null,
+      recurrenceStartDate: template.recurrenceStartDate ?? todayIso,
       startTime: template.startTime,
       endTime: template.endTime,
       audienceType: template.audienceType,
@@ -293,6 +296,14 @@ const ProgramManager: React.FC = () => {
         unitId: templateForm.unitId || null,
         programmeDefinitionId: templateForm.programmeDefinitionId || null,
         weeklyDayOfWeek: templateForm.recurrenceType === "Weekly" ? templateForm.weeklyDayOfWeek ?? null : null,
+        monthlyDayOfMonth:
+          templateForm.recurrenceType === "Monthly" || templateForm.recurrenceType === "BiMonthly"
+            ? templateForm.monthlyDayOfMonth ?? null
+            : null,
+        recurrenceStartDate:
+          templateForm.recurrenceType === "Monthly" || templateForm.recurrenceType === "BiMonthly"
+            ? templateForm.recurrenceStartDate || null
+            : null,
       };
       if (editingTemplateId) {
         await globalConfigurationService.updateScheduleTemplate(accessToken, editingTemplateId, payload);
@@ -742,6 +753,35 @@ const ProgramManager: React.FC = () => {
                           {weekdays.map((day) => <option key={day.value} value={day.value}>{day.label}</option>)}
                         </select>
                       </label>
+                    )}
+                    {(templateForm.recurrenceType === "Monthly" || templateForm.recurrenceType === "BiMonthly") && (
+                      <>
+                        <label className="space-y-1 text-sm text-[var(--app-text)]">
+                          <span>Day of month</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={31}
+                            value={templateForm.monthlyDayOfMonth ?? ""}
+                            onChange={(event) =>
+                              setTemplateForm((current) => ({
+                                ...current,
+                                monthlyDayOfMonth: event.target.value ? Number(event.target.value) : null,
+                              }))
+                            }
+                            className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2"
+                          />
+                        </label>
+                        <label className="space-y-1 text-sm text-[var(--app-text)]">
+                          <span>Recurs from</span>
+                          <input
+                            type="date"
+                            value={templateForm.recurrenceStartDate ?? ""}
+                            onChange={(event) => setTemplateForm((current) => ({ ...current, recurrenceStartDate: event.target.value }))}
+                            className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2"
+                          />
+                        </label>
+                      </>
                     )}
                     <label className="space-y-1 text-sm text-[var(--app-text)]">
                       <span>Start time</span>

@@ -15,6 +15,7 @@ import {
   Building2,
   ShieldAlert,
   Map,
+  BriefcaseBusiness,
 } from "lucide-react";
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
 import { hasSuperAdminAccess } from "@/lib/adminAccess";
@@ -59,6 +60,8 @@ const ConfigurationLanding: React.FC = () => {
       "config.dashboard.quotes.description",
       "config.dashboard.programs.title",
       "config.dashboard.programs.description",
+      "config.dashboard.ot_roles.title",
+      "config.dashboard.ot_roles.description",
     ]);
   }, [loadKeys]);
 
@@ -156,6 +159,19 @@ const ConfigurationLanding: React.FC = () => {
               </div>
               <p className="text-sm text-[var(--app-text-muted)]">
                 {text("config.dashboard.designer.description", "Create a new admission form from scratch.")}
+              </p>
+            </button>
+
+            <button
+              onClick={() => router.push("/units/config/ot-roles")}
+              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <BriefcaseBusiness className="h-6 w-6 text-[var(--app-success)]" />
+                <h2 className="text-lg font-semibold text-[var(--app-text)]">{text("config.dashboard.ot_roles.title", "OT Roles")}</h2>
+              </div>
+              <p className="text-sm text-[var(--app-text-muted)]">
+                {text("config.dashboard.ot_roles.description", "Set up standing and one-off OT roles per unit before allocating residents operationally.")}
               </p>
             </button>
 

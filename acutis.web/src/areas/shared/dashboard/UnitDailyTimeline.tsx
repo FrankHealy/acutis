@@ -20,7 +20,7 @@ import {
   CalendarDays,
   type LucideIcon,
 } from "lucide-react";
-import { getUnitTimeline, type UnitTimelineItemDto } from "@/services/unitTimelineService";
+import { getUnitTimeline, takeUnitTimelineEvent } from "@/services/unitTimelineService";
 
 interface ScheduleEvent {
   key: string;
@@ -33,6 +33,10 @@ interface ScheduleEvent {
   days?: string;
   endTime?: string;
   stackPosition?: number;
+  source: string;
+  scheduledDate: string;
+  assignedFacilitatorName: string;
+  canTakeEvent: boolean;
 }
 
 type UnitDailyTimelineProps = {
@@ -49,6 +53,8 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
   const [manualViewMode, setManualViewMode] = useState<"morning" | "evening" | null>(null);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [takingEvent, setTakingEvent] = useState(false);
+  const currentDateKey = currentTime.toISOString().slice(0, 10);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -151,8 +157,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     const loadTimeline = async () => {
       try {
         setLoadError(null);
-        const date = currentTime.toISOString().slice(0, 10);
-        const items = await getUnitTimeline(session?.accessToken, unitId, date);
+        const items = await getUnitTimeline(session?.accessToken, unitId, currentDateKey);
         setEvents(
           items.map((item) => ({
             key: item.key,
@@ -164,6 +169,10 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
             description: item.description,
             endTime: item.endTime || undefined,
             stackPosition: stackForTitle(item.title),
+            source: item.source,
+            scheduledDate: item.scheduledDate,
+            assignedFacilitatorName: item.assignedFacilitatorName,
+            canTakeEvent: item.canTakeEvent,
           })),
         );
       } catch (error) {
@@ -173,7 +182,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     };
 
     void loadTimeline();
-  }, [currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), session?.accessToken, unitId]);
+  }, [currentDateKey, session?.accessToken, unitId]);
 
   const morningSchedule = events.filter((event) => event.timeMinutes <= 750);
   const eveningSchedule = events.filter((event) => event.timeMinutes >= 840);
@@ -208,6 +217,45 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     }
 
     setSelectedEvent(event);
+  };
+
+  const handleTakeEvent = async () => {
+    if (!selectedEvent) {
+      return;
+    }
+
+    setTakingEvent(true);
+    try {
+      const updated = await takeUnitTimelineEvent(session?.accessToken, unitId, {
+        key: selectedEvent.key,
+        source: selectedEvent.source,
+        scheduledDate: selectedEvent.scheduledDate,
+      });
+      setEvents((current) =>
+        current.map((event) =>
+          event.key === selectedEvent.key && event.source === selectedEvent.source
+            ? {
+                ...event,
+                assignedFacilitatorName: updated.assignedFacilitatorName,
+                canTakeEvent: updated.canTakeEvent,
+                source: updated.source,
+              }
+            : event,
+        ),
+      );
+      setSelectedEvent((current) =>
+        current
+          ? {
+              ...current,
+              assignedFacilitatorName: updated.assignedFacilitatorName,
+            }
+          : current,
+      );
+    } catch (error) {
+      setLoadError((error as Error).message);
+    } finally {
+      setTakingEvent(false);
+    }
   };
 
   const getCurrentMinutes = () => currentTime.getHours() * 60 + currentTime.getMinutes();
@@ -395,6 +443,15 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
 
             <div className="space-y-3">
               <p className="text-[var(--app-text)]">{selectedEvent.description}</p>
+              {selectedEvent.canTakeEvent && (
+                <div className="rounded-lg border border-[color:color-mix(in_srgb,var(--app-primary)_16%,var(--app-border))] bg-[var(--app-primary-soft)] p-3">
+                  <p className="text-sm font-medium text-[var(--app-primary-strong)]">
+                    {selectedEvent.assignedFacilitatorName
+                      ? `Assigned to ${selectedEvent.assignedFacilitatorName}`
+                      : "No facilitator assigned yet"}
+                  </p>
+                </div>
+              )}
               {selectedEvent.days && (
                 <div className="rounded-lg border border-[color:color-mix(in_srgb,var(--app-primary)_16%,var(--app-border))] bg-[var(--app-primary-soft)] p-3">
                   <p className="text-sm font-medium text-[var(--app-primary-strong)]">{selectedEvent.days}</p>
@@ -402,12 +459,23 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
               )}
             </div>
 
-            <button
-              onClick={() => setSelectedEvent(null)}
-              className="app-primary-button mt-6 w-full rounded-lg px-4 py-2 font-medium transition-colors"
-            >
-              Close
-            </button>
+            <div className="mt-6 flex gap-3">
+              {selectedEvent.canTakeEvent && (
+                <button
+                  onClick={() => void handleTakeEvent()}
+                  disabled={takingEvent}
+                  className="app-primary-button flex-1 rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-60"
+                >
+                  {takingEvent ? "Taking..." : "Take Event"}
+                </button>
+              )}
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="app-secondary-button flex-1 rounded-lg px-4 py-2 font-medium transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -14,6 +14,7 @@ public sealed class ResidentProgrammeEpisode
     public int EntryWeek { get; set; }
     public int EntrySequence { get; set; }
     public string? RoomNumber { get; set; }
+    public string? BedCode { get; set; }
     public DateTime? ExpectedCompletionDate { get; set; }
     public string? PrimaryAddiction { get; set; }
     public ProgrammeType ProgrammeType { get; set; } = ProgrammeType.Alcohol;

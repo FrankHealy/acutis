@@ -6,7 +6,7 @@ import DetoxFloorPlan from "@/areas/detox/components/DetoxFloorPlan";
 import MainFloorPlanWithLabels from "@/areas/detox/components/MainFloorPlanWithLabels";
 import MergedDloorplan from "@/areas/detox/components/MergedDloorplan";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
-import { operationsService } from "@/services/operationsService";
+import { operationsService, type UnitRoomAssignment } from "@/services/operationsService";
 import { residentService } from "@/services/residentService";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 
@@ -536,9 +536,58 @@ const LadiesRoomAssignments: React.FC = () => {
   );
 };
 
+const DetoxRoomAssignments: React.FC = () => {
+  const [roomAssignments, setRoomAssignments] = useState<UnitRoomAssignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        const response = await operationsService.getRoomAssignments("detox");
+        if (!active) {
+          return;
+        }
+
+        setRoomAssignments(response);
+        setError(null);
+      } catch (loadError) {
+        if (!active) {
+          return;
+        }
+
+        setRoomAssignments([]);
+        setError(loadError instanceof Error ? loadError.message : "Unable to load room assignments.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loading) {
+    return <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">Loading room assignments...</div>;
+  }
+
+  if (error) {
+    return <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">{error}</div>;
+  }
+
+  return <DetoxFloorPlan roomAssignments={roomAssignments} />;
+};
+
 const RoomAssignments: React.FC<RoomAssignmentsProps> = ({ unitId }) => {
   if (unitId === "detox") {
-    return <DetoxFloorPlan />;
+    return <DetoxRoomAssignments />;
   }
 
   if (unitId === "drugs") {

@@ -317,6 +317,41 @@ public sealed class ConfigurationController : ControllerBase
         });
     }
 
+    [HttpGet("ot-roles")]
+    public async Task<ActionResult<IReadOnlyList<OtRoleDefinitionConfigurationDto>>> GetOtRoleDefinitions(
+        [FromQuery] bool includeInactive = true,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetOtRoleDefinitionsAsync(includeInactive, cancellationToken));
+    }
+
+    [HttpPost("ot-roles")]
+    public async Task<ActionResult<OtRoleDefinitionConfigurationDto>> CreateOtRoleDefinition(
+        [FromBody] UpsertOtRoleDefinitionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateOtRoleDefinitionAsync(request, cancellationToken));
+    }
+
+    [HttpPut("ot-roles/{otRoleDefinitionId:guid}")]
+    public async Task<ActionResult<OtRoleDefinitionConfigurationDto>> UpdateOtRoleDefinition(
+        Guid otRoleDefinitionId,
+        [FromBody] UpsertOtRoleDefinitionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateOtRoleDefinitionAsync(otRoleDefinitionId, request, cancellationToken));
+    }
+
+    [HttpDelete("ot-roles/{otRoleDefinitionId:guid}")]
+    public async Task<IActionResult> ArchiveOtRoleDefinition(Guid otRoleDefinitionId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchiveOtRoleDefinitionAsync(otRoleDefinitionId, cancellationToken);
+            return NoContent();
+        });
+    }
+
     [HttpGet("programmes")]
     public async Task<ActionResult<IReadOnlyList<ProgrammeDefinitionDto>>> GetProgrammeDefinitions(
         [FromQuery] bool includeInactive = true,

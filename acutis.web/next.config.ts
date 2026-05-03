@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   turbopack: {
-    root: 'C:/Acutis/acutis.web',
+    root: process.cwd(),
   },
   images: {
     remotePatterns: [

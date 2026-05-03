@@ -712,11 +712,14 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<TherapyTopic> TherapyTopics => Set<TherapyTopic>();
     public DbSet<ResidentCase> ResidentCases => Set<ResidentCase>();
     public DbSet<ResidentProgrammeEpisode> ResidentProgrammeEpisodes => Set<ResidentProgrammeEpisode>();
+    public DbSet<OtRoleDefinition> OtRoleDefinitions => Set<OtRoleDefinition>();
+    public DbSet<ResidentOtRoleAssignment> ResidentOtRoleAssignments => Set<ResidentOtRoleAssignment>();
     public DbSet<ScheduledIntake> ScheduledIntakes => Set<ScheduledIntake>();
     public DbSet<ScreeningScheduleSlot> ScreeningScheduleSlots => Set<ScreeningScheduleSlot>();
     public DbSet<ProgrammeDefinition> ProgrammeDefinitions => Set<ProgrammeDefinition>();
     public DbSet<ScheduleTemplate> ScheduleTemplates => Set<ScheduleTemplate>();
     public DbSet<ScheduleOccurrence> ScheduleOccurrences => Set<ScheduleOccurrence>();
+    public DbSet<UnitStaffRosterAssignment> UnitStaffRosterAssignments => Set<UnitStaffRosterAssignment>();
     public DbSet<Incident> Incidents => Set<Incident>();
     public DbSet<IncidentType> IncidentTypes => Set<IncidentType>();
     public DbSet<WeeklyTherapyRun> WeeklyTherapyRuns => Set<WeeklyTherapyRun>();
@@ -1276,6 +1279,8 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new ResidentCaseConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentPreviousTreatmentConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentProgrammeEpisodeConfiguration());
+        modelBuilder.ApplyConfiguration(new OtRoleDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new ResidentOtRoleAssignmentConfiguration());
         modelBuilder.ApplyConfiguration(new ScheduledIntakeConfiguration());
         modelBuilder.ApplyConfiguration(new ScreeningScheduleSlotConfiguration());
         modelBuilder.ApplyConfiguration(new IncidentTypeConfiguration());
@@ -1288,6 +1293,7 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new TherapySchedulingConfigConfiguration());
         modelBuilder.ApplyConfiguration(new ScheduleTemplateConfiguration());
         modelBuilder.ApplyConfiguration(new ScheduleOccurrenceConfiguration());
+        modelBuilder.ApplyConfiguration(new UnitStaffRosterAssignmentConfiguration());
         modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
         modelBuilder.ApplyConfiguration(new MediaAssetConfiguration());
         modelBuilder.ApplyConfiguration(new QuoteConfiguration());

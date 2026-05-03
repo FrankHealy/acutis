@@ -49,6 +49,7 @@ builder.Services.AddScoped<IFormService, FormService>();
 builder.Services.AddScoped<IOptionService, OptionService>();
 builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
+builder.Services.AddScoped<IAdmissionCompletionService, AdmissionCompletionService>();
 builder.Services.AddScoped<IFormValidationService, FormValidationService>();
 builder.Services.AddScoped<IScreeningControlService, ScreeningControlService>();
 builder.Services.AddScoped<IGlobalConfigurationService, GlobalConfigurationService>();
@@ -59,6 +60,8 @@ builder.Services.AddScoped<IGroupTherapyService, GroupTherapyService>();
 builder.Services.AddScoped<IIncidentService, IncidentService>();
 builder.Services.AddScoped<IResidentService, ResidentService>();
 builder.Services.AddScoped<IUnitOperationsService, UnitOperationsService>();
+builder.Services.AddScoped<IUnitTimelineService, UnitTimelineService>();
+builder.Services.AddScoped<IUnitStaffRosterService, UnitStaffRosterService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<ITherapySchedulingService, TherapySchedulingService>();
 builder.Services.AddScoped<IMediaPlayerService, MediaPlayerService>();
@@ -171,6 +174,41 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
+var applyMigrationsOnStartup = builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup");
+if (applyMigrationsOnStartup)
+{
+    var startupRetryCount = Math.Max(1, builder.Configuration.GetValue<int>("Database:StartupRetryCount", 10));
+    var startupRetryDelaySeconds = Math.Max(1, builder.Configuration.GetValue<int>("Database:StartupRetryDelaySeconds", 5));
+    Exception? lastException = null;
+
+    for (var attempt = 1; attempt <= startupRetryCount; attempt++)
+    {
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AcutisDbContext>();
+            await dbContext.Database.MigrateAsync();
+            lastException = null;
+            break;
+        }
+        catch (Exception ex)
+        {
+            lastException = ex;
+            if (attempt == startupRetryCount)
+            {
+                break;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(startupRetryDelaySeconds));
+        }
+    }
+
+    if (lastException is not null)
+    {
+        throw new InvalidOperationException("Failed to apply database migrations during startup.", lastException);
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -179,7 +217,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpLogging();
 app.UseMiddleware<FileRequestLoggingMiddleware>();
-app.UseHttpsRedirection();
+if (!builder.Configuration.GetValue<bool>("Hosting:DisableHttpsRedirection", false))
+{
+    app.UseHttpsRedirection();
+}
 app.UseMiddleware<RequestCorrelationMiddleware>();
 app.UseCors("WebApp");
 app.UseAuthentication();

@@ -631,6 +631,14 @@ type AxisSegment = {
   sourceArea: number;
 };
 
+type FreeSegment = {
+  geometry: Extract<MapGeometry, { kind: "line" }>;
+  stroke: string;
+  zOrder: number;
+  sourceArea: number;
+  artefactType: MapArtefact["type"];
+};
+
 export type RoomBoundarySegment = {
   geometry: Extract<MapGeometry, { kind: "line" }>;
   stroke: string;
@@ -820,8 +828,113 @@ function clipCorridorSegment(
     }));
 }
 
+function isPointInsidePolygon(point: { x: number; y: number }, polygon: Array<{ x: number; y: number }>) {
+  let inside = false;
+  for (let index = 0, previousIndex = polygon.length - 1; index < polygon.length; previousIndex = index, index += 1) {
+    const current = polygon[index];
+    const previous = polygon[previousIndex];
+    const crossesY = current.y > point.y !== previous.y > point.y;
+    if (!crossesY) continue;
+    const intersectX = ((previous.x - current.x) * (point.y - current.y)) / (previous.y - current.y) + current.x;
+    if (point.x < intersectX) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function getSegmentIntersectionParameter(
+  segmentStart: { x: number; y: number },
+  segmentEnd: { x: number; y: number },
+  edgeStart: { x: number; y: number },
+  edgeEnd: { x: number; y: number },
+) {
+  const segmentDx = segmentEnd.x - segmentStart.x;
+  const segmentDy = segmentEnd.y - segmentStart.y;
+  const edgeDx = edgeEnd.x - edgeStart.x;
+  const edgeDy = edgeEnd.y - edgeStart.y;
+  const denominator = segmentDx * edgeDy - segmentDy * edgeDx;
+  if (Math.abs(denominator) < 0.000001) return null;
+
+  const deltaX = edgeStart.x - segmentStart.x;
+  const deltaY = edgeStart.y - segmentStart.y;
+  const segmentT = (deltaX * edgeDy - deltaY * edgeDx) / denominator;
+  const edgeT = (deltaX * segmentDy - deltaY * segmentDx) / denominator;
+  if (segmentT < 0 || segmentT > 1 || edgeT < 0 || edgeT > 1) return null;
+  return segmentT;
+}
+
+function getPolygonSegmentCoverIntervals(
+  segment: Extract<MapGeometry, { kind: "line" }>,
+  polygon: Array<{ x: number; y: number }>,
+) {
+  const start = { x: segment.x1, y: segment.y1 };
+  const end = { x: segment.x2, y: segment.y2 };
+  const parameters = [0, 1];
+
+  for (let index = 0; index < polygon.length; index += 1) {
+    const current = polygon[index];
+    const next = polygon[(index + 1) % polygon.length];
+    const parameter = getSegmentIntersectionParameter(start, end, current, next);
+    if (parameter !== null) {
+      parameters.push(parameter);
+    }
+  }
+
+  const sortedParameters = [...new Set(parameters.map((parameter) => Number(parameter.toFixed(6))))].sort((left, right) => left - right);
+  const intervals: Array<{ start: number; end: number }> = [];
+  for (let index = 0; index < sortedParameters.length - 1; index += 1) {
+    const intervalStart = sortedParameters[index];
+    const intervalEnd = sortedParameters[index + 1];
+    if (intervalEnd - intervalStart <= 0.000001) continue;
+
+    const midpointT = (intervalStart + intervalEnd) / 2;
+    const midpoint = {
+      x: start.x + (end.x - start.x) * midpointT,
+      y: start.y + (end.y - start.y) * midpointT,
+    };
+    if (isPointInsidePolygon(midpoint, polygon)) {
+      intervals.push({ start: intervalStart, end: intervalEnd });
+    }
+  }
+
+  return intervals;
+}
+
+function clipFreeCorridorSegment(
+  segment: FreeSegment,
+  corridorRects: Array<{ id: string; geometry: Extract<MapGeometry, { kind: "rect" }>; points: Array<{ x: number; y: number }> }>,
+  sourceId: string,
+): FreeSegment[] {
+  let intervals = [{ start: 0, end: 1 }];
+
+  corridorRects.forEach((other) => {
+    if (other.id === sourceId) return;
+
+    getPolygonSegmentCoverIntervals(segment.geometry, other.points).forEach((covered) => {
+      intervals = subtractInterval(intervals, covered.start, covered.end);
+    });
+  });
+
+  const { x1, y1, x2, y2, thickness } = segment.geometry;
+  return intervals
+    .filter((interval) => interval.end - interval.start > 0.000001)
+    .map((interval) => ({
+      ...segment,
+      geometry: {
+        kind: "line",
+        x1: x1 + (x2 - x1) * interval.start,
+        y1: y1 + (y2 - y1) * interval.start,
+        x2: x1 + (x2 - x1) * interval.end,
+        y2: y1 + (y2 - y1) * interval.end,
+        thickness,
+      },
+    }));
+}
+
 export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundarySegment[] {
   const edgeSegments = new Map<string, (AxisSegment & { artefactType: MapArtefact["type"] })[]>();
+  const freeSegments: FreeSegment[] = [];
   const corridorRects = artefacts
     .filter((artefact) => artefact.visible !== false && artefact.type === "corridor" && artefact.geometry.kind === "rect")
     .map((artefact) => ({
@@ -839,6 +952,37 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundaryS
       }
 
       if (artefact.geometry.rotation) {
+        const points = getRotatedRectPoints(artefact.geometry);
+        const stroke = getRoomBoundaryStroke(artefact);
+        const zOrder = getArtefactZOrder(artefact);
+        const sourceArea = artefact.geometry.width * artefact.geometry.height;
+        const sideSegments = [
+          { start: points[0], end: points[1], thickness: getRoomBoundarySideThickness(artefact, "top") },
+          { start: points[1], end: points[2], thickness: getRoomBoundarySideThickness(artefact, "right") },
+          { start: points[2], end: points[3], thickness: getRoomBoundarySideThickness(artefact, "bottom") },
+          { start: points[3], end: points[0], thickness: getRoomBoundarySideThickness(artefact, "left") },
+        ];
+
+        sideSegments
+          .filter((segment) => segment.thickness > 0)
+          .flatMap((segment) => {
+            const freeSegment: FreeSegment = {
+              geometry: {
+                kind: "line",
+                x1: segment.start.x,
+                y1: segment.start.y,
+                x2: segment.end.x,
+                y2: segment.end.y,
+                thickness: segment.thickness,
+              },
+              stroke,
+              zOrder,
+              sourceArea,
+              artefactType: artefact.type,
+            };
+            return artefact.type === "corridor" ? clipFreeCorridorSegment(freeSegment, corridorRects, artefact.id) : [freeSegment];
+          })
+          .forEach((segment) => freeSegments.push(segment));
         return;
       }
 
@@ -889,25 +1033,31 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundaryS
       ];
     });
 
-  return mergeAxisSegments(normalizedSegments).map((segment) => ({
-    geometry:
-      segment.orientation === "horizontal"
-        ? {
-            kind: "line",
-            x1: segment.start,
-            y1: segment.fixed,
-            x2: segment.end,
-            y2: segment.fixed,
-            thickness: segment.thickness,
-          }
-        : {
-            kind: "line",
-            x1: segment.fixed,
-            y1: segment.start,
-            x2: segment.fixed,
-            y2: segment.end,
-            thickness: segment.thickness,
-          },
-    stroke: segment.stroke,
-  }));
+  return [
+    ...mergeAxisSegments(normalizedSegments).map((segment) => ({
+      geometry:
+        segment.orientation === "horizontal"
+          ? {
+              kind: "line" as const,
+              x1: segment.start,
+              y1: segment.fixed,
+              x2: segment.end,
+              y2: segment.fixed,
+              thickness: segment.thickness,
+            }
+          : {
+              kind: "line" as const,
+              x1: segment.fixed,
+              y1: segment.start,
+              x2: segment.fixed,
+              y2: segment.end,
+              thickness: segment.thickness,
+            },
+      stroke: segment.stroke,
+    })),
+    ...freeSegments.map((segment) => ({
+      geometry: segment.geometry,
+      stroke: segment.stroke,
+    })),
+  ];
 }

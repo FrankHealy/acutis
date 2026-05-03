@@ -4597,6 +4597,87 @@ namespace Acutis.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Acutis.Domain.Entities.OtRoleDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("CentreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValue(new Guid("00000000-0000-0000-0000-000000000001"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsOneOff")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<bool>("RequiresTraining")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("RoleType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateOnly?>("ScheduledDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("StaffMemberInChargeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("UnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValue(new Guid("00000000-0000-0000-0000-000000000001"));
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UnitId");
+
+                    b.HasIndex("CentreId", "UnitId", "IsActive");
+
+                    b.HasIndex("CentreId", "UnitId", "Name");
+
+                    b.HasIndex("CentreId", "UnitId", "IsOneOff", "ScheduledDate");
+
+                    b.ToTable("OtRoleDefinition", (string)null);
+                });
+
             modelBuilder.Entity("Acutis.Domain.Entities.ProgrammeDefinition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8812,6 +8893,70 @@ namespace Acutis.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Acutis.Domain.Entities.ResidentOtRoleAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AssignedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("AssignedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValue(new Guid("00000000-0000-0000-0000-000000000001"));
+
+                    b.Property<Guid>("EpisodeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("OtRoleDefinitionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ReleasedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReleasedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ResidentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValue(new Guid("00000000-0000-0000-0000-000000000001"));
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResidentId");
+
+                    b.HasIndex("EpisodeId", "ReleasedAtUtc")
+                        .IsUnique()
+                        .HasFilter("[ReleasedAtUtc] IS NULL");
+
+                    b.HasIndex("OtRoleDefinitionId", "ReleasedAtUtc");
+
+                    b.ToTable("ResidentOtRoleAssignment", (string)null);
+                });
+
             modelBuilder.Entity("Acutis.Domain.Entities.ResidentPreviousTreatment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8882,6 +9027,10 @@ namespace Acutis.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BedCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("CentreEpisodeCode")
                         .HasMaxLength(32)
@@ -8970,6 +9119,9 @@ namespace Acutis.Infrastructure.Migrations
                     b.HasIndex("ResidentCaseId");
 
                     b.HasIndex("ResidentId", "StartDate");
+
+                    b.HasIndex("UnitId", "BedCode")
+                        .HasFilter("[BedCode] IS NOT NULL AND [EndDate] IS NULL");
 
                     b.HasIndex("CentreId", "UnitId", "ProgrammeType");
 
@@ -11896,6 +12048,9 @@ namespace Acutis.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("AssignedFacilitatorUserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("AudienceType")
                         .IsRequired()
                         .HasMaxLength(24)
@@ -11981,6 +12136,8 @@ namespace Acutis.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssignedFacilitatorUserId");
+
                     b.HasIndex("ProgrammeDefinitionId");
 
                     b.HasIndex("ResidentId");
@@ -12052,6 +12209,9 @@ namespace Acutis.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("MonthlyDayOfMonth")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -12059,6 +12219,9 @@ namespace Acutis.Infrastructure.Migrations
 
                     b.Property<Guid?>("ProgrammeDefinitionId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("RecurrenceStartDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("RecurrenceType")
                         .IsRequired()
@@ -12096,6 +12259,8 @@ namespace Acutis.Infrastructure.Migrations
                     b.HasIndex("UnitId", "ProgrammeDefinitionId", "WeeklyDayOfWeek");
 
                     b.HasIndex("CentreId", "UnitId", "IsActive", "Name");
+
+                    b.HasIndex("UnitId", "ProgrammeDefinitionId", "MonthlyDayOfMonth", "RecurrenceStartDate");
 
                     b.ToTable("ScheduleTemplate", (string)null);
 
@@ -15923,6 +16088,54 @@ namespace Acutis.Infrastructure.Migrations
                     b.ToTable("UnitQuoteCuration", (string)null);
                 });
 
+            modelBuilder.Entity("Acutis.Domain.Entities.UnitStaffRosterAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssignedAppUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateOnly>("ScheduledDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ShiftType")
+                        .IsRequired()
+                        .HasMaxLength(48)
+                        .HasColumnType("nvarchar(48)");
+
+                    b.Property<Guid>("UnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedAppUserId");
+
+                    b.HasIndex("UnitId", "ScheduledDate");
+
+                    b.HasIndex("UnitId", "ScheduledDate", "ShiftType")
+                        .IsUnique();
+
+                    b.ToTable("UnitStaffRosterAssignment", (string)null);
+                });
+
             modelBuilder.Entity("Acutis.Domain.Entities.UnitVideoCuration", b =>
                 {
                     b.Property<Guid>("Id")
@@ -16880,6 +17093,23 @@ namespace Acutis.Infrastructure.Migrations
                     b.Navigation("OptionSet");
                 });
 
+            modelBuilder.Entity("Acutis.Domain.Entities.OtRoleDefinition", b =>
+                {
+                    b.HasOne("Acutis.Domain.Entities.Centre", "Centre")
+                        .WithMany()
+                        .HasForeignKey("CentreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Acutis.Domain.Entities.Unit", "Unit")
+                        .WithMany()
+                        .HasForeignKey("UnitId");
+
+                    b.Navigation("Centre");
+
+                    b.Navigation("Unit");
+                });
+
             modelBuilder.Entity("Acutis.Domain.Entities.ProgrammeDefinition", b =>
                 {
                     b.HasOne("Acutis.Domain.Entities.Centre", "Centre")
@@ -16933,6 +17163,27 @@ namespace Acutis.Infrastructure.Migrations
                     b.Navigation("Unit");
                 });
 
+            modelBuilder.Entity("Acutis.Domain.Entities.ResidentOtRoleAssignment", b =>
+                {
+                    b.HasOne("Acutis.Domain.Entities.ResidentProgrammeEpisode", null)
+                        .WithMany()
+                        .HasForeignKey("EpisodeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Acutis.Domain.Entities.OtRoleDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("OtRoleDefinitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Acutis.Domain.Entities.Resident", null)
+                        .WithMany()
+                        .HasForeignKey("ResidentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Acutis.Domain.Entities.ResidentPreviousTreatment", b =>
                 {
                     b.HasOne("Acutis.Domain.Entities.Resident", "Resident")
@@ -16964,6 +17215,11 @@ namespace Acutis.Infrastructure.Migrations
 
             modelBuilder.Entity("Acutis.Domain.Entities.ScheduleOccurrence", b =>
                 {
+                    b.HasOne("Acutis.Domain.Entities.AppUser", "AssignedFacilitatorUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedFacilitatorUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Acutis.Domain.Entities.Centre", "Centre")
                         .WithMany()
                         .HasForeignKey("CentreId")
@@ -16994,6 +17250,8 @@ namespace Acutis.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UnitId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AssignedFacilitatorUser");
 
                     b.Navigation("Centre");
 
@@ -17120,6 +17378,24 @@ namespace Acutis.Infrastructure.Migrations
                         .HasForeignKey("QuoteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Acutis.Domain.Entities.UnitStaffRosterAssignment", b =>
+                {
+                    b.HasOne("Acutis.Domain.Entities.AppUser", "AssignedAppUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedAppUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Acutis.Domain.Entities.Unit", "Unit")
+                        .WithMany()
+                        .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AssignedAppUser");
+
+                    b.Navigation("Unit");
                 });
 
             modelBuilder.Entity("Acutis.Domain.Entities.UnitVideoCuration", b =>

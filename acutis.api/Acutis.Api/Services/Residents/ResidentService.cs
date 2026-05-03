@@ -82,6 +82,7 @@ public sealed class ResidentService : IResidentService
                     x.ProgrammeType,
                     x.ParticipationMode,
                     x.RoomNumber,
+                    x.BedCode,
                     x.ExpectedCompletionDate,
                     x.PrimaryAddiction
                 })
@@ -164,6 +165,7 @@ public sealed class ResidentService : IResidentService
                     : 18,
                 WeekNumber = currentWeekNumber,
                 RoomNumber = roomNumber,
+                BedCode = episode?.BedCode,
                 UnitId = currentUnitCode,
                 PhotoUrl = resident.PhotoUrl,
                 AdmissionDate = admissionDate,

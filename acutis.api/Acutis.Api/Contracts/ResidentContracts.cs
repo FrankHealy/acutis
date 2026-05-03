@@ -21,6 +21,7 @@ public sealed class ResidentListItemDto
     public int Age { get; set; }
     public int WeekNumber { get; set; }
     public string RoomNumber { get; set; } = string.Empty;
+    public string? BedCode { get; set; }
     public string UnitId { get; set; } = string.Empty;
     public string? PhotoUrl { get; set; }
     public string? AdmissionDate { get; set; }

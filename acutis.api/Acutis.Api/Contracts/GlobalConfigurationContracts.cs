@@ -67,6 +67,40 @@ public sealed class UpsertUnitRequest
     public bool IsActive { get; set; } = true;
 }
 
+public sealed class OtRoleDefinitionConfigurationDto
+{
+    public Guid OtRoleDefinitionId { get; set; }
+    public Guid CentreId { get; set; }
+    public string CentreName { get; set; } = string.Empty;
+    public Guid? UnitId { get; set; }
+    public string UnitName { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string RoleType { get; set; } = string.Empty;
+    public int? Capacity { get; set; }
+    public bool RequiresTraining { get; set; }
+    public bool IsOneOff { get; set; }
+    public DateOnly? ScheduledDate { get; set; }
+    public int DisplayOrder { get; set; }
+    public int ActiveAssignmentCount { get; set; }
+    public bool IsActive { get; set; }
+}
+
+public sealed class UpsertOtRoleDefinitionRequest
+{
+    public Guid CentreId { get; set; }
+    public Guid? UnitId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string RoleType { get; set; } = string.Empty;
+    public int? Capacity { get; set; }
+    public bool RequiresTraining { get; set; }
+    public bool IsOneOff { get; set; }
+    public DateOnly? ScheduledDate { get; set; }
+    public int DisplayOrder { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
 public sealed class ProgrammeDefinitionDto
 {
     public Guid ProgrammeDefinitionId { get; set; }
@@ -115,6 +149,8 @@ public sealed class ScheduleTemplateDto
     public string Category { get; set; } = string.Empty;
     public string RecurrenceType { get; set; } = string.Empty;
     public int? WeeklyDayOfWeek { get; set; }
+    public int? MonthlyDayOfMonth { get; set; }
+    public DateOnly? RecurrenceStartDate { get; set; }
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
     public string AudienceType { get; set; } = string.Empty;
@@ -135,6 +171,8 @@ public sealed class UpsertScheduleTemplateRequest
     public string Category { get; set; } = string.Empty;
     public string RecurrenceType { get; set; } = string.Empty;
     public int? WeeklyDayOfWeek { get; set; }
+    public int? MonthlyDayOfMonth { get; set; }
+    public DateOnly? RecurrenceStartDate { get; set; }
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
     public string AudienceType { get; set; } = string.Empty;

@@ -7,8 +7,9 @@ import { ArrowLeft, CalendarClock, RefreshCcw, TriangleAlert } from "lucide-reac
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import type { UnitId as WorkspaceUnitId } from "@/areas/shared/unit/unitTypes";
 import { intakeSchedulingService, type IntakeBacklogItem, type IntakeBoard } from "@/services/intakeSchedulingService";
+import UnitStaffRosterBoard from "@/areas/shared/dashboard/UnitStaffRosterBoard";
 
-type SchedulingUnitId = "alcohol" | "detox";
+type SchedulingUnitId = WorkspaceUnitId;
 
 const Units: Array<{ id: SchedulingUnitId; name: string; accent: string; chip: string }> = [
   {
@@ -22,6 +23,18 @@ const Units: Array<{ id: SchedulingUnitId; name: string; accent: string; chip: s
     name: "Detox",
     accent: "text-[var(--app-primary)]",
     chip: "bg-[var(--app-primary-soft)] text-[var(--app-primary)]",
+  },
+  {
+    id: "drugs",
+    name: "Drugs",
+    accent: "text-[var(--app-warning)]",
+    chip: "bg-[color:color-mix(in_srgb,var(--app-warning)_16%,white)] text-[var(--app-warning)]",
+  },
+  {
+    id: "ladies",
+    name: "Ladies",
+    accent: "text-[var(--app-accent)]",
+    chip: "bg-[color:color-mix(in_srgb,var(--app-accent)_16%,white)] text-[var(--app-accent)]",
   },
 ];
 
@@ -47,7 +60,7 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
   const accessToken = session?.accessToken;
 
   const [activeUnit, setActiveUnit] = useState<SchedulingUnitId>(
-    initialUnit === "alcohol" || initialUnit === "detox" ? initialUnit : "detox",
+    initialUnit,
   );
   const [board, setBoard] = useState<IntakeBoard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -201,6 +214,8 @@ const DayPlanner: React.FC<DayPlannerProps> = ({
         </div>
 
         <div className="app-card space-y-6 rounded-xl p-6">
+          <UnitStaffRosterBoard unitCode={activeUnit} unitName={activeUnitMeta.name} />
+
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-2">
               {lockUnit ? (

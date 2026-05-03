@@ -1,0 +1,5 @@
+C:\Acutis\tmp\api-docker-verify-obj\Debug\net8.0\Acutis.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Acutis\tmp\api-docker-verify-obj\Debug\net8.0\Acutis.Domain.AssemblyInfoInputs.cache
+C:\Acutis\tmp\api-docker-verify-obj\Debug\net8.0\Acutis.Domain.AssemblyInfo.cs
+C:\Acutis\tmp\api-docker-verify-obj\Debug\net8.0\Acutis.Domain.csproj.CoreCompileInputs.cache
+C:\Acutis\tmp\api-docker-verify-obj\Debug\net8.0\Acutis.Domain.sourcelink.json

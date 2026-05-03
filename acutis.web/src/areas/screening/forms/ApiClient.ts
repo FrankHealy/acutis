@@ -115,7 +115,20 @@ export type SaveProgressResponse = {
   status: "in_progress" | "submitted";
 };
 
-export type SaveResponse = SaveProgressResponse;
+export type AdmissionCompletion = {
+  residentId: string;
+  episodeId: string;
+  residentCaseId: string;
+  unitId: string;
+  unitCode: string;
+  residentName: string;
+  roomNumber: string | null;
+  bedCode: string | null;
+};
+
+export type SaveResponse = SaveProgressResponse & {
+  admissionCompletion?: AdmissionCompletion | null;
+};
 export type RejectResponse = SaveProgressResponse;
 
 export type ValidationProblem = {

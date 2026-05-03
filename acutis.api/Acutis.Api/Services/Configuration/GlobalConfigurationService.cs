@@ -15,6 +15,10 @@ public interface IGlobalConfigurationService
     Task<UnitConfigurationDto> CreateUnitAsync(UpsertUnitRequest request, CancellationToken cancellationToken = default);
     Task<UnitConfigurationDto> UpdateUnitAsync(Guid unitId, UpsertUnitRequest request, CancellationToken cancellationToken = default);
     Task ArchiveUnitAsync(Guid unitId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<OtRoleDefinitionConfigurationDto>> GetOtRoleDefinitionsAsync(bool includeInactive, CancellationToken cancellationToken = default);
+    Task<OtRoleDefinitionConfigurationDto> CreateOtRoleDefinitionAsync(UpsertOtRoleDefinitionRequest request, CancellationToken cancellationToken = default);
+    Task<OtRoleDefinitionConfigurationDto> UpdateOtRoleDefinitionAsync(Guid otRoleDefinitionId, UpsertOtRoleDefinitionRequest request, CancellationToken cancellationToken = default);
+    Task ArchiveOtRoleDefinitionAsync(Guid otRoleDefinitionId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ProgrammeDefinitionDto>> GetProgrammeDefinitionsAsync(bool includeInactive, CancellationToken cancellationToken = default);
     Task<ProgrammeDefinitionDto> CreateProgrammeDefinitionAsync(UpsertProgrammeDefinitionRequest request, CancellationToken cancellationToken = default);
     Task<ProgrammeDefinitionDto> UpdateProgrammeDefinitionAsync(Guid programmeDefinitionId, UpsertProgrammeDefinitionRequest request, CancellationToken cancellationToken = default);
@@ -327,6 +331,130 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<OtRoleDefinitionConfigurationDto>> GetOtRoleDefinitionsAsync(
+        bool includeInactive,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.OtRoleDefinitions
+            .AsNoTracking()
+            .Include(x => x.Centre)
+            .Include(x => x.Unit)
+            .AsQueryable();
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.IsActive);
+        }
+
+        var roles = await query
+            .OrderBy(x => x.Centre!.DisplayOrder)
+            .ThenBy(x => x.Unit != null ? x.Unit.DisplayOrder : int.MinValue)
+            .ThenBy(x => x.Unit != null ? x.Unit.Name : string.Empty)
+            .ThenBy(x => x.IsOneOff)
+            .ThenBy(x => x.ScheduledDate)
+            .ThenBy(x => x.DisplayOrder)
+            .ThenBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
+        var roleIds = roles.Select(x => x.Id).ToList();
+        var activeAssignmentCounts = roleIds.Count == 0
+            ? new Dictionary<Guid, int>()
+            : await _dbContext.ResidentOtRoleAssignments
+                .AsNoTracking()
+                .Where(x => x.ReleasedAtUtc == null && roleIds.Contains(x.OtRoleDefinitionId))
+                .GroupBy(x => x.OtRoleDefinitionId)
+                .Select(group => new { RoleId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(x => x.RoleId, x => x.Count, cancellationToken);
+
+        return roles
+            .Select(role => MapOtRoleDefinition(role, activeAssignmentCounts.TryGetValue(role.Id, out var count) ? count : 0))
+            .ToList();
+    }
+
+    public async Task<OtRoleDefinitionConfigurationDto> CreateOtRoleDefinitionAsync(
+        UpsertOtRoleDefinitionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateOtRoleDefinitionRequest(request);
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
+        var unit = await ResolveUnitAsync(request.UnitId, centre.Id, cancellationToken);
+        var roleType = ParseOtRoleType(request.RoleType, nameof(request.RoleType));
+
+        await EnsureOtRoleNameAvailableAsync(null, centre.Id, unit?.Id, request.Name, request.IsOneOff, request.ScheduledDate, cancellationToken);
+
+        var now = DateTime.UtcNow;
+        var role = new OtRoleDefinition
+        {
+            Id = Guid.NewGuid(),
+            CentreId = centre.Id,
+            Centre = centre,
+            UnitId = unit?.Id,
+            Unit = unit,
+            Name = request.Name.Trim(),
+            Description = request.Description.Trim(),
+            RoleType = roleType,
+            Capacity = request.Capacity,
+            RequiresTraining = request.RequiresTraining,
+            IsOneOff = request.IsOneOff,
+            ScheduledDate = request.IsOneOff ? request.ScheduledDate : null,
+            IsActive = request.IsActive,
+            DisplayOrder = request.DisplayOrder
+        };
+
+        _dbContext.OtRoleDefinitions.Add(role);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await LoadOtRoleDefinitionAsync(role.Id, cancellationToken);
+    }
+
+    public async Task<OtRoleDefinitionConfigurationDto> UpdateOtRoleDefinitionAsync(
+        Guid otRoleDefinitionId,
+        UpsertOtRoleDefinitionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateOtRoleDefinitionRequest(request);
+        var role = await _dbContext.OtRoleDefinitions
+            .Include(x => x.Centre)
+            .Include(x => x.Unit)
+            .FirstOrDefaultAsync(x => x.Id == otRoleDefinitionId, cancellationToken)
+            ?? throw new KeyNotFoundException($"OT role definition '{otRoleDefinitionId}' was not found.");
+        var centre = await _dbContext.Centres.FirstOrDefaultAsync(
+            x => x.Id == request.CentreId && x.IsActive,
+            cancellationToken)
+            ?? throw new ArgumentException("A valid active centre is required.", nameof(request));
+        var unit = await ResolveUnitAsync(request.UnitId, centre.Id, cancellationToken);
+        var roleType = ParseOtRoleType(request.RoleType, nameof(request.RoleType));
+
+        await EnsureOtRoleNameAvailableAsync(role.Id, centre.Id, unit?.Id, request.Name, request.IsOneOff, request.ScheduledDate, cancellationToken);
+
+        role.CentreId = centre.Id;
+        role.Centre = centre;
+        role.UnitId = unit?.Id;
+        role.Unit = unit;
+        role.Name = request.Name.Trim();
+        role.Description = request.Description.Trim();
+        role.RoleType = roleType;
+        role.Capacity = request.Capacity;
+        role.RequiresTraining = request.RequiresTraining;
+        role.IsOneOff = request.IsOneOff;
+        role.ScheduledDate = request.IsOneOff ? request.ScheduledDate : null;
+        role.IsActive = request.IsActive;
+        role.DisplayOrder = request.DisplayOrder;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await LoadOtRoleDefinitionAsync(role.Id, cancellationToken);
+    }
+
+    public async Task ArchiveOtRoleDefinitionAsync(Guid otRoleDefinitionId, CancellationToken cancellationToken = default)
+    {
+        var role = await _dbContext.OtRoleDefinitions.FirstOrDefaultAsync(x => x.Id == otRoleDefinitionId, cancellationToken)
+            ?? throw new KeyNotFoundException($"OT role definition '{otRoleDefinitionId}' was not found.");
+
+        role.IsActive = false;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<ProgrammeDefinitionDto>> GetProgrammeDefinitionsAsync(
         bool includeInactive,
         CancellationToken cancellationToken = default)
@@ -515,6 +643,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             Category = CleanOptional(request.Category),
             RecurrenceType = ParseScheduleRecurrenceType(request.RecurrenceType, nameof(request.RecurrenceType)),
             WeeklyDayOfWeek = request.WeeklyDayOfWeek.HasValue ? (DayOfWeek)request.WeeklyDayOfWeek.Value : null,
+            MonthlyDayOfMonth = request.MonthlyDayOfMonth,
+            RecurrenceStartDate = request.RecurrenceStartDate,
             StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime)),
             EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime)),
             AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType)),
@@ -571,6 +701,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         template.Category = CleanOptional(request.Category);
         template.RecurrenceType = ParseScheduleRecurrenceType(request.RecurrenceType, nameof(request.RecurrenceType));
         template.WeeklyDayOfWeek = request.WeeklyDayOfWeek.HasValue ? (DayOfWeek)request.WeeklyDayOfWeek.Value : null;
+        template.MonthlyDayOfMonth = request.MonthlyDayOfMonth;
+        template.RecurrenceStartDate = request.RecurrenceStartDate;
         template.StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime));
         template.EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime));
         template.AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType));
@@ -1118,6 +1250,45 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
                ?? throw new ArgumentException("The selected schedule template does not belong to the selected centre.");
     }
 
+    private async Task EnsureOtRoleNameAvailableAsync(
+        Guid? otRoleDefinitionId,
+        Guid centreId,
+        Guid? unitId,
+        string name,
+        bool isOneOff,
+        DateOnly? scheduledDate,
+        CancellationToken cancellationToken)
+    {
+        var trimmedName = name.Trim();
+        var normalizedName = trimmedName.ToLowerInvariant();
+        var query = _dbContext.OtRoleDefinitions
+            .AsNoTracking()
+            .Where(x =>
+                x.Id != otRoleDefinitionId &&
+                x.CentreId == centreId &&
+                x.UnitId == unitId &&
+                x.Name.ToLower() == normalizedName &&
+                x.IsActive);
+
+        if (isOneOff)
+        {
+            query = query.Where(x => x.IsOneOff && x.ScheduledDate == scheduledDate);
+        }
+        else
+        {
+            query = query.Where(x => !x.IsOneOff);
+        }
+
+        if (await query.AnyAsync(cancellationToken))
+        {
+            throw new ArgumentException(
+                isOneOff
+                    ? $"An OT role named '{trimmedName}' already exists for this unit on {scheduledDate:yyyy-MM-dd}."
+                    : $"An OT role named '{trimmedName}' already exists for this unit.",
+                nameof(name));
+        }
+    }
+
     private async Task<ProgrammeDefinitionDto> LoadProgrammeDefinitionAsync(Guid programmeDefinitionId, CancellationToken cancellationToken)
     {
         var programme = await _dbContext.ProgrammeDefinitions
@@ -1126,6 +1297,19 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             .Include(x => x.Units)
             .FirstAsync(x => x.Id == programmeDefinitionId, cancellationToken);
         return MapProgrammeDefinition(programme);
+    }
+
+    private async Task<OtRoleDefinitionConfigurationDto> LoadOtRoleDefinitionAsync(Guid otRoleDefinitionId, CancellationToken cancellationToken)
+    {
+        var role = await _dbContext.OtRoleDefinitions
+            .AsNoTracking()
+            .Include(x => x.Centre)
+            .Include(x => x.Unit)
+            .FirstAsync(x => x.Id == otRoleDefinitionId, cancellationToken);
+        var activeAssignmentCount = await _dbContext.ResidentOtRoleAssignments
+            .AsNoTracking()
+            .CountAsync(x => x.OtRoleDefinitionId == otRoleDefinitionId && x.ReleasedAtUtc == null, cancellationToken);
+        return MapOtRoleDefinition(role, activeAssignmentCount);
     }
 
     private async Task<ScheduleTemplateDto> LoadScheduleTemplateAsync(Guid scheduleTemplateId, CancellationToken cancellationToken)
@@ -1218,6 +1402,28 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         };
     }
 
+    private static OtRoleDefinitionConfigurationDto MapOtRoleDefinition(OtRoleDefinition role, int activeAssignmentCount)
+    {
+        return new OtRoleDefinitionConfigurationDto
+        {
+            OtRoleDefinitionId = role.Id,
+            CentreId = role.CentreId,
+            CentreName = role.Centre?.Name ?? string.Empty,
+            UnitId = role.UnitId,
+            UnitName = role.Unit?.Name ?? "All units",
+            Name = role.Name,
+            Description = role.Description,
+            RoleType = role.RoleType.ToString(),
+            Capacity = role.Capacity,
+            RequiresTraining = role.RequiresTraining,
+            IsOneOff = role.IsOneOff,
+            ScheduledDate = role.ScheduledDate,
+            DisplayOrder = role.DisplayOrder,
+            ActiveAssignmentCount = activeAssignmentCount,
+            IsActive = role.IsActive
+        };
+    }
+
     private static ProgrammeDefinitionDto MapProgrammeDefinition(ProgrammeDefinition programme)
     {
         return new ProgrammeDefinitionDto
@@ -1261,6 +1467,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             Category = template.Category ?? string.Empty,
             RecurrenceType = template.RecurrenceType.ToString(),
             WeeklyDayOfWeek = template.WeeklyDayOfWeek.HasValue ? (int)template.WeeklyDayOfWeek.Value : null,
+            MonthlyDayOfMonth = template.MonthlyDayOfMonth,
+            RecurrenceStartDate = template.RecurrenceStartDate,
             StartTime = template.StartTime?.ToString(@"hh\:mm") ?? string.Empty,
             EndTime = template.EndTime?.ToString(@"hh\:mm") ?? string.Empty,
             AudienceType = template.AudienceType.ToString(),
@@ -1459,6 +1667,36 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         }
     }
 
+    private static void ValidateOtRoleDefinitionRequest(UpsertOtRoleDefinitionRequest request)
+    {
+        if (request.CentreId == Guid.Empty)
+        {
+            throw new ArgumentException("Centre is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            throw new ArgumentException("OT role name is required.", nameof(request));
+        }
+
+        ParseOtRoleType(request.RoleType, nameof(request.RoleType));
+
+        if (request.Capacity.HasValue && request.Capacity.Value <= 0)
+        {
+            throw new ArgumentException("Capacity must be greater than zero when provided.", nameof(request));
+        }
+
+        if (request.DisplayOrder < 0)
+        {
+            throw new ArgumentException("Display order must be zero or greater.", nameof(request));
+        }
+
+        if (request.IsOneOff && !request.ScheduledDate.HasValue)
+        {
+            throw new ArgumentException("One-off OT roles require a scheduled date.", nameof(request));
+        }
+    }
+
     private static void ValidateProgrammeDefinitionRequest(UpsertProgrammeDefinitionRequest request)
     {
         if (request.CentreId == Guid.Empty)
@@ -1493,6 +1731,21 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             && (!request.WeeklyDayOfWeek.HasValue || request.WeeklyDayOfWeek < 0 || request.WeeklyDayOfWeek > 6))
         {
             throw new ArgumentException("Weekly schedules require a valid day of week.", nameof(request));
+        }
+
+        var isMonthly = string.Equals(request.RecurrenceType?.Trim(), ScheduleRecurrenceType.Monthly.ToString(), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(request.RecurrenceType?.Trim(), ScheduleRecurrenceType.BiMonthly.ToString(), StringComparison.OrdinalIgnoreCase);
+        if (isMonthly)
+        {
+            if (!request.MonthlyDayOfMonth.HasValue || request.MonthlyDayOfMonth < 1 || request.MonthlyDayOfMonth > 31)
+            {
+                throw new ArgumentException("Monthly schedules require a valid day of month between 1 and 31.", nameof(request));
+            }
+
+            if (!request.RecurrenceStartDate.HasValue)
+            {
+                throw new ArgumentException("Monthly and bi-monthly schedules require a recurrence start date.", nameof(request));
+            }
         }
     }
 
@@ -1547,6 +1800,16 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         }
 
         throw new ArgumentException($"Unsupported programme duration unit '{value}'.", parameterName);
+    }
+
+    private static OtRoleType ParseOtRoleType(string value, string parameterName)
+    {
+        if (Enum.TryParse<OtRoleType>(value?.Trim(), true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported OT role type '{value}'.", parameterName);
     }
 
     private static ScheduleRecurrenceType ParseScheduleRecurrenceType(string value, string parameterName)

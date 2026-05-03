@@ -20,6 +20,7 @@ public sealed class ScreeningController : ControllerBase
     private readonly IOptionService _optionService;
     private readonly ITranslationService _translationService;
     private readonly ISubmissionService _submissionService;
+    private readonly IAdmissionCompletionService _admissionCompletionService;
     private readonly IFormValidationService _validationService;
     private readonly IScreeningControlService _screeningControlService;
     private readonly IUnitIdentityService _unitIdentityService;
@@ -30,6 +31,7 @@ public sealed class ScreeningController : ControllerBase
         IOptionService optionService,
         ITranslationService translationService,
         ISubmissionService submissionService,
+        IAdmissionCompletionService admissionCompletionService,
         IFormValidationService validationService,
         IScreeningControlService screeningControlService,
         IUnitIdentityService unitIdentityService,
@@ -39,6 +41,7 @@ public sealed class ScreeningController : ControllerBase
         _optionService = optionService;
         _translationService = translationService;
         _submissionService = submissionService;
+        _admissionCompletionService = admissionCompletionService;
         _validationService = validationService;
         _screeningControlService = screeningControlService;
         _unitIdentityService = unitIdentityService;
@@ -202,10 +205,12 @@ public sealed class ScreeningController : ControllerBase
         }
 
         var submission = await _submissionService.SaveSubmittedAsync(request, cancellationToken);
+        var admissionCompletion = await _admissionCompletionService.CompleteAdmissionAsync(request, cancellationToken);
         return Ok(new SaveResponse
         {
             SubmissionId = submission.Id,
-            Status = submission.Status
+            Status = submission.Status,
+            AdmissionCompletion = admissionCompletion
         });
     }
 

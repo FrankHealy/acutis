@@ -16,6 +16,7 @@ public sealed class ScheduleTemplateConfiguration : IEntityTypeConfiguration<Sch
         builder.Property(x => x.Description).HasMaxLength(1000).IsRequired();
         builder.Property(x => x.Category).HasMaxLength(100);
         builder.Property(x => x.RecurrenceType).HasConversion<string>().HasMaxLength(20).IsRequired();
+        builder.Property(x => x.RecurrenceStartDate).HasColumnType("date");
         builder.Property(x => x.StartTime).HasColumnType("time");
         builder.Property(x => x.EndTime).HasColumnType("time");
         builder.Property(x => x.AudienceType).HasConversion<string>().HasMaxLength(24).IsRequired();
@@ -29,6 +30,7 @@ public sealed class ScheduleTemplateConfiguration : IEntityTypeConfiguration<Sch
         builder.HasIndex(x => new { x.CentreId, x.UnitId, x.Code }).IsUnique();
         builder.HasIndex(x => new { x.CentreId, x.UnitId, x.IsActive, x.Name });
         builder.HasIndex(x => new { x.UnitId, x.ProgrammeDefinitionId, x.WeeklyDayOfWeek });
+        builder.HasIndex(x => new { x.UnitId, x.ProgrammeDefinitionId, x.MonthlyDayOfMonth, x.RecurrenceStartDate });
         builder.HasIndex(x => x.ResidentId);
 
         builder.HasOne(x => x.Centre)

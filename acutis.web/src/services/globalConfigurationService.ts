@@ -65,6 +65,38 @@ export type UpsertUnitRequest = {
   isActive: boolean;
 };
 
+export type OtRoleDefinitionConfigurationDto = {
+  otRoleDefinitionId: string;
+  centreId: string;
+  centreName: string;
+  unitId?: string | null;
+  unitName: string;
+  name: string;
+  description: string;
+  roleType: string;
+  capacity?: number | null;
+  requiresTraining: boolean;
+  isOneOff: boolean;
+  scheduledDate?: string | null;
+  displayOrder: number;
+  activeAssignmentCount: number;
+  isActive: boolean;
+};
+
+export type UpsertOtRoleDefinitionRequest = {
+  centreId: string;
+  unitId?: string | null;
+  name: string;
+  description: string;
+  roleType: string;
+  capacity?: number | null;
+  requiresTraining: boolean;
+  isOneOff: boolean;
+  scheduledDate?: string | null;
+  displayOrder: number;
+  isActive: boolean;
+};
+
 export type ProgrammeDefinitionDto = {
   programmeDefinitionId: string;
   centreId: string;
@@ -110,6 +142,8 @@ export type ScheduleTemplateDto = {
   category: string;
   recurrenceType: string;
   weeklyDayOfWeek?: number | null;
+  monthlyDayOfMonth?: number | null;
+  recurrenceStartDate?: string | null;
   startTime: string;
   endTime: string;
   audienceType: string;
@@ -129,6 +163,8 @@ export type UpsertScheduleTemplateRequest = {
   category: string;
   recurrenceType: string;
   weeklyDayOfWeek?: number | null;
+  monthlyDayOfMonth?: number | null;
+  recurrenceStartDate?: string | null;
   startTime: string;
   endTime: string;
   audienceType: string;
@@ -321,6 +357,33 @@ export const globalConfigurationService = {
   },
   archiveUnit(accessToken: string | undefined, unitId: string) {
     return request<void>(`/api/configuration/units/${encodeURIComponent(unitId)}`, accessToken, {
+      method: "DELETE",
+    });
+  },
+  getOtRoleDefinitions(accessToken?: string, includeInactive = true) {
+    return request<OtRoleDefinitionConfigurationDto[]>(
+      `/api/configuration/ot-roles?includeInactive=${includeInactive ? "true" : "false"}`,
+      accessToken,
+    );
+  },
+  createOtRoleDefinition(accessToken: string | undefined, payload: UpsertOtRoleDefinitionRequest) {
+    return request<OtRoleDefinitionConfigurationDto>("/api/configuration/ot-roles", accessToken, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateOtRoleDefinition(accessToken: string | undefined, otRoleDefinitionId: string, payload: UpsertOtRoleDefinitionRequest) {
+    return request<OtRoleDefinitionConfigurationDto>(
+      `/api/configuration/ot-roles/${encodeURIComponent(otRoleDefinitionId)}`,
+      accessToken,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  archiveOtRoleDefinition(accessToken: string | undefined, otRoleDefinitionId: string) {
+    return request<void>(`/api/configuration/ot-roles/${encodeURIComponent(otRoleDefinitionId)}`, accessToken, {
       method: "DELETE",
     });
   },

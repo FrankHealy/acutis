@@ -160,12 +160,25 @@ public sealed class SaveResponse
 {
     public required Guid SubmissionId { get; set; }
     public required string Status { get; set; }
+    public AdmissionCompletionDto? AdmissionCompletion { get; set; }
 }
 
 public sealed class RejectResponse
 {
     public required Guid SubmissionId { get; set; }
     public required string Status { get; set; }
+}
+
+public sealed class AdmissionCompletionDto
+{
+    public Guid ResidentId { get; set; }
+    public Guid EpisodeId { get; set; }
+    public Guid ResidentCaseId { get; set; }
+    public Guid UnitId { get; set; }
+    public string UnitCode { get; set; } = string.Empty;
+    public string ResidentName { get; set; } = string.Empty;
+    public string? RoomNumber { get; set; }
+    public string? BedCode { get; set; }
 }
 
 public sealed class ValidationErrorDto

@@ -585,6 +585,9 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
         </g>
       );
     }
+    if (isStructuredArea && rotation) {
+      return <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={getRectCornerRadius(artefact)} transform={rectTransform} fill={selected ? selectionFill : baseFill} stroke={selected ? selectionStroke : "transparent"} strokeWidth={selected ? 4 : 0} />;
+    }
     return <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={getRectCornerRadius(artefact)} transform={rectTransform} fill={selected ? selectionFill : baseFill} stroke={selected ? selectionStroke : isStructuredArea ? "transparent" : stroke} strokeWidth={selected ? 4 : isStructuredArea ? 0 : 2} />;
   }
   if (geometry.kind === "polygon") {
