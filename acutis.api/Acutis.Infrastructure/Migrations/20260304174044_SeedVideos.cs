@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -141,16 +140,7 @@ END
 
         private static SeedVideoRow[] LoadSeedRows()
         {
-            var candidates = new[]
-            {
-                @"C:\Acutis\seed\videos.seed.json",
-                Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "..", "seed", "videos.seed.json")),
-                Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "seed", "videos.seed.json")),
-                Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "seed", "videos.seed.json"))
-            };
-
-            var path = candidates.FirstOrDefault(File.Exists);
-            var json = path is null ? EmbeddedSeedJson : File.ReadAllText(path);
+            var json = EmbeddedSeedJson;
             var rows = JsonSerializer.Deserialize<SeedVideoRow[]>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))
                 ?? Array.Empty<SeedVideoRow>();
             return rows.Where(x => !string.IsNullOrWhiteSpace(x.Id)).ToArray();
