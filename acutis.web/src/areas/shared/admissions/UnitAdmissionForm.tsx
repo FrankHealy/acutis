@@ -22,6 +22,7 @@ import {
 } from "@/areas/screening/services/screeningSchedulingService";
 import type { UnitId, UnitDefinition } from "@/areas/shared/unit/unitTypes";
 import { isAuthorizedClient } from "@/lib/authMode";
+import { createClientId } from "@/lib/createClientId";
 
 interface UnitAdmissionFormProps {
   unitId: UnitId;
@@ -41,9 +42,7 @@ const iconByUnit: Record<UnitDefinition["iconKey"], React.ComponentType<{ classN
 const PHOTO_ANSWER_KEY = "residentPhotoDataUrl";
 
 const createAdHocAdmissionId = () => {
-  const randomId = typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const randomId = createClientId();
   return `ad-hoc:${randomId}`;
 };
 

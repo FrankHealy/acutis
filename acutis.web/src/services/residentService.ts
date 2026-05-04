@@ -1,5 +1,7 @@
 import { type Resident } from "./mockDataService";
 import { UNIT_GUIDS } from "./unitIdentity";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { createClientId } from "@/lib/createClientId";
 
 export type AttendanceRecord = {
   residentId: number;
@@ -65,8 +67,6 @@ const store: {
 };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
 
 let residentSource: "api" | "mock" = "mock";
 
@@ -155,7 +155,7 @@ const mapApiResident = (dto: ResidentListItemDto): Resident => {
 
 const fetchResidentsFromApi = async (unit: Resident["unit"], accessToken?: string | null): Promise<Resident[]> => {
   const unitGuid = UNIT_GUIDS[unit];
-  const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/residents`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/residents`, {
     method: "GET",
     headers: {
       Accept: "application/json",
@@ -196,8 +196,8 @@ export const residentService = {
     reason: string | null,
     accessToken: string,
   ): Promise<RecordDischargeResult> {
-    const clientEventId = crypto.randomUUID();
-    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/discharge`, {
+    const clientEventId = createClientId();
+    const response = await fetch(`${getApiBaseUrl()}/api/residents/${encodeURIComponent(residentGuid)}/discharge`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -224,7 +224,7 @@ export const residentService = {
     residentGuid: string,
     accessToken: string,
   ): Promise<ResidentPreviousTreatment[]> {
-    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments`, {
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -246,7 +246,7 @@ export const residentService = {
     payload: UpsertResidentPreviousTreatmentRequest,
     accessToken: string,
   ): Promise<ResidentPreviousTreatment> {
-    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -270,7 +270,7 @@ export const residentService = {
     payload: UpsertResidentPreviousTreatmentRequest,
     accessToken: string,
   ): Promise<ResidentPreviousTreatment> {
-    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments/${encodeURIComponent(treatmentId)}`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments/${encodeURIComponent(treatmentId)}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -293,7 +293,7 @@ export const residentService = {
     treatmentId: string,
     accessToken: string,
   ): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments/${encodeURIComponent(treatmentId)}`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/residents/${encodeURIComponent(residentGuid)}/previous-treatments/${encodeURIComponent(treatmentId)}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${accessToken}`,

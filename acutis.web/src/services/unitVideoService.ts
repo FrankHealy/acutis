@@ -1,7 +1,6 @@
 import { UNIT_GUIDS } from "./unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export type VideoDto = {
   id: string;
@@ -21,7 +20,7 @@ export type VideoDto = {
 export const unitVideoService = {
   async getVideos(unitId: UnitId): Promise<VideoDto[]> {
     const unitGuid = UNIT_GUIDS[unitId];
-    const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/videos`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/videos`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
@@ -39,6 +38,6 @@ export const unitVideoService = {
       return "";
     }
 
-    return raw.startsWith("http") ? raw : `${API_BASE_URL}${raw}`;
+    return raw.startsWith("http") ? raw : `${getApiBaseUrl()}${raw}`;
   },
 };

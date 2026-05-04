@@ -1,6 +1,5 @@
 import { createAuthHeaders } from "@/lib/authMode";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export type UnitIdentityDto = {
   unitId: string;
@@ -25,7 +24,7 @@ export type UnitIdentityDto = {
 };
 
 async function request<T>(path: string, accessToken?: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     cache: "no-store",
     headers: createAuthHeaders(accessToken),
   });

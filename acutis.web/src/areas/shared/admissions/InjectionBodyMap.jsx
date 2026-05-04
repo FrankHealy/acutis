@@ -1,4 +1,5 @@
 import React, { useId, useMemo, useRef, useState } from "react";
+import { createClientId } from "@/lib/createClientId";
 
 const VIEWBOX_WIDTH = 206.326;
 const VIEWBOX_HEIGHT = 206.326;
@@ -6,10 +7,7 @@ const MARK_RADIUS = 2.4;
 
 function createMark(x, y) {
   return {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    id: createClientId(),
     x: Number(x.toFixed(3)),
     y: Number(y.toFixed(3)),
     createdAt: new Date().toISOString(),

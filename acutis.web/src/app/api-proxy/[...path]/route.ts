@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const getProxyUpstreamBaseUrl = (): string => {
+  const upstreamBaseUrl = process.env.INTERNAL_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!upstreamBaseUrl) {
+    throw new Error("API base URL is not configured for proxy requests.");
+  }
+
+  return upstreamBaseUrl.replace(/\/$/, "");
+};
 
 const buildUpstreamUrl = (request: NextRequest, path: string[]) => {
-  const upstreamBaseUrl = getApiBaseUrl();
-  const trimmedBaseUrl = upstreamBaseUrl.endsWith("/")
-    ? upstreamBaseUrl.slice(0, -1)
-    : upstreamBaseUrl;
   const search = request.nextUrl.search || "";
-  return `${trimmedBaseUrl}/${path.join("/")}${search}`;
+  return `${getProxyUpstreamBaseUrl()}/${path.join("/")}${search}`;
 };
 
 const buildUpstreamHeaders = (request: NextRequest) => {

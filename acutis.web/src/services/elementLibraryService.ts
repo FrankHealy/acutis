@@ -1,6 +1,5 @@
 import { createAuthHeaders } from "@/lib/authMode";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export type LibraryField = {
   id: string;
@@ -224,7 +223,7 @@ const mapGroupToCategory = (group: ElementGroupDto): LibraryCategory => {
 
 export const elementLibraryService = {
   async getLibrary(accessToken?: string | null): Promise<LibraryCategory[]> {
-    const response = await fetch(`${API_BASE_URL}/api/configuration/elements-library`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/configuration/elements-library`, {
       headers: createAuthHeaders(accessToken),
       cache: "no-store",
     });

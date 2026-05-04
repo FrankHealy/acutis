@@ -1,8 +1,7 @@
 import { createAuthHeaders } from "@/lib/authMode";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { UNIT_GUIDS } from "./unitIdentity";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export type IncidentTypeRecord = {
   id: number;
@@ -42,7 +41,7 @@ export type CreateIncidentPayload = {
 };
 
 async function request<T>(path: string, accessToken?: string | null, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     cache: "no-store",
     ...init,
     headers: {

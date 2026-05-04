@@ -1,6 +1,6 @@
 import { UNIT_GUIDS } from "./unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export type MediaAsset = {
   id: string;
@@ -45,7 +45,7 @@ export const mediaPlayerService = {
   async getCatalog(unitId: UnitId): Promise<MediaPlayerCatalog> {
     const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
-      `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/mediaplayer/catalog`,
+      `${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/mediaplayer/catalog`,
       noStoreFetchInit
     );
     return readEnvelope<MediaPlayerCatalog>(response);
@@ -53,7 +53,7 @@ export const mediaPlayerService = {
 
   async sync(unitId: UnitId, reason?: string): Promise<number> {
     const unitGuid = UNIT_GUIDS[unitId];
-    const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/mediaplayer/sync`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/mediaplayer/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ reason }),
@@ -70,7 +70,7 @@ export const mediaPlayerService = {
     lengthSeconds?: number;
     reason?: string;
   }): Promise<MediaAsset> {
-    const response = await fetch(`${API_BASE_URL}/api/mediaplayer/assets`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/mediaplayer/assets`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
@@ -79,7 +79,7 @@ export const mediaPlayerService = {
   },
 
   async markPlayed(assetId: string, reason?: string): Promise<MediaAsset> {
-    const response = await fetch(`${API_BASE_URL}/api/mediaplayer/assets/${assetId}/played`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/mediaplayer/assets/${assetId}/played`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ reason }),
@@ -88,7 +88,7 @@ export const mediaPlayerService = {
   },
 
   async deactivate(assetId: string, reason?: string): Promise<MediaAsset> {
-    const response = await fetch(`${API_BASE_URL}/api/mediaplayer/assets/${assetId}/deactivate`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/mediaplayer/assets/${assetId}/deactivate`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ reason }),
@@ -98,7 +98,7 @@ export const mediaPlayerService = {
 
   async delete(assetId: string, deleteFile: boolean, reason?: string): Promise<void> {
     const response = await fetch(
-      `${API_BASE_URL}/api/mediaplayer/assets/${assetId}?deleteFile=${deleteFile ? "true" : "false"}${
+      `${getApiBaseUrl()}/api/mediaplayer/assets/${assetId}?deleteFile=${deleteFile ? "true" : "false"}${
         reason ? `&reason=${encodeURIComponent(reason)}` : ""
       }`,
       { method: "DELETE", headers: { Accept: "application/json" } }
@@ -109,6 +109,6 @@ export const mediaPlayerService = {
   buildStreamUrl(asset: MediaAsset): string {
     return asset.streamUrl.startsWith("http")
       ? asset.streamUrl
-      : `${API_BASE_URL}${asset.streamUrl}`;
+      : `${getApiBaseUrl()}${asset.streamUrl}`;
   },
 };

@@ -11,19 +11,26 @@ WORKDIR /src/acutis.web
 COPY --from=deps /src/acutis.web/node_modules ./node_modules
 COPY acutis.web/ ./
 
+ENV NODE_ENV=production
+
 RUN npm run build
 
 FROM node:20-bookworm-slim AS runtime
-WORKDIR /app
+WORKDIR /app/acutis.web
 
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-COPY --from=build /src/acutis.web/.next/standalone ./
-COPY --from=build /src/acutis.web/.next/static ./.next/static
+COPY acutis.web/package.json acutis.web/package-lock.json ./
+COPY --from=deps /src/acutis.web/node_modules ./node_modules
+
+RUN npm prune --omit=dev
+
+COPY --from=build /src/acutis.web/.next ./.next
 COPY --from=build /src/acutis.web/public ./public
+COPY --from=build /src/acutis.web/next.config.ts ./next.config.ts
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["npm", "run", "start"]

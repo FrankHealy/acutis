@@ -8,6 +8,7 @@ import {
 } from '@/areas/screening/services/screeningControlService';
 import { getApiBaseUrl } from '@/lib/apiBaseUrl';
 import { createAuthHeaders } from '@/lib/authMode';
+import { createClientId } from '@/lib/createClientId';
 import type { UnitId } from '@/areas/shared/unit/unitTypes';
 
 type ApiCall = {
@@ -70,7 +71,7 @@ const mapApiCallToUi = (call: ApiCall): CallLog => {
 const mapUiToApiCall = (payload: Omit<CallLog, 'id'>): ApiCall => {
   const caller = [payload.firstName, payload.surname].filter(Boolean).join(' ').trim();
   return {
-    id: crypto.randomUUID(),
+    id: createClientId(),
     callTimeUtc: payload.timestamp || new Date().toISOString(),
     caller: caller || null,
     phoneNumber: payload.phoneNumber || null,

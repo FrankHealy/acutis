@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { createClientId } from "@/lib/createClientId";
 import {
   alignPointToArtefactAxes,
   clampScale,
@@ -132,7 +133,7 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
   label: "config.map_designer.tool.label",
 };
 
-const createId = (prefix: string) => `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
+const createId = (prefix: string) => `${prefix}_${createClientId().slice(0, 8)}`;
 const normalizeRect = (a: WorldPoint, b: WorldPoint) => ({ x: Math.round(Math.min(a.x, b.x)), y: Math.round(Math.min(a.y, b.y)), width: Math.round(Math.abs(b.x - a.x)), height: Math.round(Math.abs(b.y - a.y)) });
 const DEFAULT_WORLD = { width: 1600, height: 1050 };
 const SNAP_THRESHOLD = 16;
@@ -279,7 +280,7 @@ function getStructuredRectContainmentRelation(left: MapArtefact, right: MapArtef
 function createBlankMapDocument(name: string = "Untitled Map", createdBy: string = "Unknown"): MapDocument {
   const timestamp = new Date().toISOString();
   return {
-    id: `map_${crypto.randomUUID()}`,
+    id: `map_${createClientId()}`,
     name,
     descriptor: {
       name,

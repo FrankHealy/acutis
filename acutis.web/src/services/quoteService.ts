@@ -1,7 +1,6 @@
 import { UNIT_GUIDS } from "./unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export type QuoteOfDay = {
   date: string;
@@ -40,7 +39,7 @@ export type UnitQuoteCuration = {
 export const quoteService = {
   async getQuoteOfDay(unitId: UnitId): Promise<QuoteOfDay> {
     const unitGuid = UNIT_GUIDS[unitId];
-    const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/quote-of-the-day`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/quote-of-the-day`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
@@ -56,7 +55,7 @@ export const quoteService = {
     if (filters?.language) params.set("language", filters.language);
     if (filters?.tag) params.set("tag", filters.tag);
     if (filters?.active !== undefined) params.set("active", String(filters.active));
-    const response = await fetch(`${API_BASE_URL}/api/quotes?${params.toString()}`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/quotes?${params.toString()}`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
@@ -65,7 +64,7 @@ export const quoteService = {
   },
 
   async createQuote(payload: Omit<QuoteRecord, "id">): Promise<QuoteRecord> {
-    const response = await fetch(`${API_BASE_URL}/api/quotes`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/quotes`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
@@ -75,7 +74,7 @@ export const quoteService = {
   },
 
   async updateQuote(id: string, payload: Omit<QuoteRecord, "id">): Promise<QuoteRecord> {
-    const response = await fetch(`${API_BASE_URL}/api/quotes/${id}`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/quotes/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
@@ -85,7 +84,7 @@ export const quoteService = {
   },
 
   async deleteQuote(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/quotes/${id}`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/quotes/${id}`, {
       method: "DELETE",
       headers: { Accept: "application/json" },
     });
@@ -94,7 +93,7 @@ export const quoteService = {
 
   async getUnitCuration(unitId: UnitId): Promise<UnitQuoteCuration[]> {
     const unitGuid = UNIT_GUIDS[unitId];
-    const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/quote-curation`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/quote-curation`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
@@ -104,7 +103,7 @@ export const quoteService = {
 
   async upsertUnitCuration(unitId: UnitId, payload: Omit<UnitQuoteCuration, "id" | "unitId">): Promise<UnitQuoteCuration> {
     const unitGuid = UNIT_GUIDS[unitId];
-    const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/quote-curation`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/quote-curation`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
@@ -116,7 +115,7 @@ export const quoteService = {
   async deleteUnitCuration(unitId: UnitId, curationId: string): Promise<void> {
     const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
-      `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/quote-curation/${encodeURIComponent(curationId)}`,
+      `${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/quote-curation/${encodeURIComponent(curationId)}`,
       { method: "DELETE", headers: { Accept: "application/json" } }
     );
     if (!response.ok && response.status !== 204) throw new Error(`Failed to delete curation row (${response.status})`);

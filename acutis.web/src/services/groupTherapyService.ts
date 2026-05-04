@@ -1,7 +1,7 @@
 import { UNIT_GUIDS } from "./unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { createAuthHeaders } from "@/lib/authMode";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export type GroupTherapyDay = {
   dayNumber: number;
@@ -79,7 +79,7 @@ export const groupTherapyService = {
   async getProgram(unitId: UnitId, programCode: string, accessToken?: string | null): Promise<GroupTherapyProgram | null> {
     const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
-      `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/program?programCode=${encodeURIComponent(programCode)}`,
+      `${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/program?programCode=${encodeURIComponent(programCode)}`,
       {
         ...noStoreFetchInit,
         headers: createAuthHeaders(accessToken),
@@ -105,7 +105,7 @@ export const groupTherapyService = {
   ): Promise<GroupTherapyResidentRemark[]> {
     const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
-      `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/remarks?programCode=${encodeURIComponent(programCode)}&moduleKey=${encodeURIComponent(moduleKey)}`,
+      `${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/remarks?programCode=${encodeURIComponent(programCode)}&moduleKey=${encodeURIComponent(moduleKey)}`,
       {
         ...noStoreFetchInit,
         headers: createAuthHeaders(accessToken),
@@ -124,7 +124,7 @@ export const groupTherapyService = {
     accessToken?: string | null
   ): Promise<GroupTherapyResidentRemark> {
     const unitGuid = UNIT_GUIDS[payload.unitId];
-    const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/remarks`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/remarks`, {
       method: "POST",
       headers: {
         ...createAuthHeaders(accessToken),
@@ -155,7 +155,7 @@ export const groupTherapyService = {
   ): Promise<GroupTherapyResidentObservation[]> {
     const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
-      `${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/observations?programCode=${encodeURIComponent(programCode)}&moduleKey=${encodeURIComponent(moduleKey)}&sessionNumber=${encodeURIComponent(String(sessionNumber))}`,
+      `${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/observations?programCode=${encodeURIComponent(programCode)}&moduleKey=${encodeURIComponent(moduleKey)}&sessionNumber=${encodeURIComponent(String(sessionNumber))}`,
       {
         ...noStoreFetchInit,
         headers: createAuthHeaders(accessToken),
@@ -174,7 +174,7 @@ export const groupTherapyService = {
     accessToken?: string | null
   ): Promise<GroupTherapyResidentObservation> {
     const unitGuid = UNIT_GUIDS[payload.unitId];
-    const response = await fetch(`${API_BASE_URL}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/observations`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/observations`, {
       method: "POST",
       headers: {
         ...createAuthHeaders(accessToken),

@@ -1,8 +1,7 @@
 import { createAuthHeaders } from "@/lib/authMode";
 import { UNIT_GUIDS } from "@/services/unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5009";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 const DEFAULT_CENTRE_ID = "aaaaaaaa-1111-1111-1111-111111111111";
 
 export type IntakeBacklogItem = {
@@ -56,7 +55,7 @@ type ApiEnvelope<T> = {
 };
 
 async function request<T>(path: string, accessToken?: string | null, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     cache: "no-store",
     headers: {

@@ -1,15 +1,13 @@
 const browserApiBasePath = "/api-proxy";
-const defaultApiBaseUrl =
-  process.env.INTERNAL_API_BASE_URL
-  ?? process.env.NEXT_PUBLIC_API_BASE_URL
-  ?? "http://localhost:5009";
+const configuredInternalApiBaseUrl = process.env.INTERNAL_API_BASE_URL?.replace(/\/$/, "");
+const configuredPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
 
 export const getApiBaseUrl = (): string => {
   if (typeof window === "undefined") {
-    return defaultApiBaseUrl;
+    return configuredInternalApiBaseUrl ?? configuredPublicApiBaseUrl ?? browserApiBasePath;
   }
 
-  const configuredApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const configuredApiUrl = configuredPublicApiBaseUrl;
   if (!configuredApiUrl) {
     return browserApiBasePath;
   }
