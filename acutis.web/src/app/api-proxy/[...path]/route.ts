@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const getProxyUpstreamBaseUrl = (): string => {
-  const upstreamBaseUrl = process.env.INTERNAL_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL;
+  const upstreamBaseUrl =
+    process.env.INTERNAL_API_BASE_URL ??
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    (process.env.NODE_ENV === "production" ? undefined : "http://localhost:5009");
+
   if (!upstreamBaseUrl) {
     throw new Error("API base URL is not configured for proxy requests.");
   }

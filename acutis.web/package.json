@@ -9,6 +9,7 @@
     "lint": "node .\\node_modules\\eslint\\bin\\eslint.js --cache --cache-location .eslintcache src"
   },
   "dependencies": {
+    "html2canvas": "^1.4.1",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "next-auth": "^4.24.13",

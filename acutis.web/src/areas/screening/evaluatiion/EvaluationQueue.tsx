@@ -48,6 +48,17 @@ type EvaluationQueueProps = {
 type QueueFilter = "all" | CallLog["concernType"];
 type EvaluationRenderMode = "accordion" | "wizard";
 
+const isCandidateVisibleForUnit = (
+  candidate: EvaluationCandidate,
+  unitId: UnitId,
+): boolean => {
+  if (unitId === "alcohol" || unitId === "detox") {
+    return true;
+  }
+
+  return candidate.queueType === unitId || candidate.queueType === "general_query";
+};
+
 const getEvaluationFormCode = (
   queueType: CallLog["concernType"],
   unitId: UnitId,
@@ -188,7 +199,7 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
       const mapped = queue
         .map(mapQueueItem)
         .filter((item) => item.status !== "scheduled")
-        .filter((item) => unitId === "alcohol" || item.queueType === unitId || item.queueType === "general_query");
+        .filter((item) => isCandidateVisibleForUnit(item, unitId));
       setCandidates(mapped);
       setErrorMessage(null);
     } catch (error) {

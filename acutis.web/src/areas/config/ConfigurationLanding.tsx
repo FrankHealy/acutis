@@ -18,16 +18,11 @@ import {
   BriefcaseBusiness,
 } from "lucide-react";
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
-import { hasSuperAdminAccess } from "@/lib/adminAccess";
-import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
-import { useAppAccess } from "@/areas/shared/hooks/useAppAccess";
 
 const ConfigurationLanding: React.FC = () => {
   const router = useRouter();
   const { loadKeys, t } = useLocalization();
-  const { access } = useAppAccess();
-  const canAdministerGlobally = hasSuperAdminAccess(access.roles);
 
   useEffect(() => {
     void loadKeys([
@@ -87,11 +82,6 @@ const ConfigurationLanding: React.FC = () => {
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
                   {text("config.dashboard.global_only_description", "Centres are the main boundary for configuration. Units sit inside a centre, and user access can be configured at centre or unit scope.")}
                 </p>
-                {!isAuthorizationDisabled && !canAdministerGlobally && (
-                  <p className="mt-2 text-sm text-[var(--app-danger)]">
-                    {text("config.dashboard.global_only_blocked", "Your current session is not recognized as SuperAdmin, so this area will stay blocked.")}
-                  </p>
-                )}
               </div>
             </div>
           </div>
