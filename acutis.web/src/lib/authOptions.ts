@@ -6,6 +6,63 @@ type KeycloakAccessTokenPayload = {
   preferred_username?: string;
 };
 
+const refreshAccessToken = async (token: import("next-auth/jwt").JWT) => {
+  try {
+    if (!token.refreshToken) {
+      throw new Error("Missing refresh token.");
+    }
+
+    const issuer = typeof token.issuer === "string" ? token.issuer : process.env.AUTH_KEYCLOAK_ISSUER;
+    if (!issuer) {
+      throw new Error("Missing Keycloak issuer.");
+    }
+
+    const response = await fetch(`${issuer}/protocol/openid-connect/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: process.env.AUTH_KEYCLOAK_ID!,
+        client_secret: process.env.AUTH_KEYCLOAK_SECRET!,
+        grant_type: "refresh_token",
+        refresh_token: token.refreshToken,
+      }),
+    });
+
+    const refreshedTokens = (await response.json()) as {
+      access_token?: string;
+      expires_in?: number;
+      refresh_token?: string;
+      id_token?: string;
+      error?: string;
+      error_description?: string;
+    };
+
+    if (!response.ok || !refreshedTokens.access_token) {
+      throw new Error(refreshedTokens.error_description ?? refreshedTokens.error ?? "Token refresh failed.");
+    }
+
+    const payload = decodeJwtPayload(refreshedTokens.access_token);
+
+    return {
+      ...token,
+      accessToken: refreshedTokens.access_token,
+      idToken: refreshedTokens.id_token ?? token.idToken,
+      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
+      accessTokenExpires: Date.now() + ((refreshedTokens.expires_in ?? 60) - 10) * 1000,
+      issuer: payload?.iss ?? token.issuer,
+      username: payload?.preferred_username ?? token.username,
+      error: undefined,
+    };
+  } catch {
+    return {
+      ...token,
+      error: "RefreshAccessTokenError",
+    };
+  }
+};
+
 const decodeJwtPayload = (token: string): KeycloakAccessTokenPayload | null => {
   const payload = token.split(".")[1];
   if (!payload) return null;
@@ -31,6 +88,10 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, profile }) {
       if (account?.access_token) {
         token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
+        token.accessTokenExpires = account.expires_at
+          ? account.expires_at * 1000
+          : Date.now() + 50 * 1000;
         if (account.id_token) {
           token.idToken = account.id_token;
         }
@@ -46,8 +107,19 @@ export const authOptions: NextAuthOptions = {
         if (username) {
           token.username = username;
         }
+        token.error = undefined;
+        return token;
       }
-      return token;
+
+      if (
+        token.accessToken &&
+        token.accessTokenExpires &&
+        Date.now() < Number(token.accessTokenExpires)
+      ) {
+        return token;
+      }
+
+      return refreshAccessToken(token);
     },
     async session({ session, token }) {
       if (token?.accessToken) {
@@ -64,6 +136,9 @@ export const authOptions: NextAuthOptions = {
         if (session.user) {
           session.user.name = token.username as string;
         }
+      }
+      if (token?.error) {
+        session.error = token.error as string;
       }
       return session;
     },

@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { getUnitTimeline, takeUnitTimelineEvent } from "@/services/unitTimelineService";
+import { isAuthorizedClient } from "@/lib/authMode";
 
 interface ScheduleEvent {
   key: string;
@@ -47,7 +48,7 @@ type UnitDailyTimelineProps = {
 };
 
 const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName, onOpenGroupTherapy, onOpenRollCall }) => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [manualViewMode, setManualViewMode] = useState<"morning" | "evening" | null>(null);
@@ -155,6 +156,10 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
 
   useEffect(() => {
     const loadTimeline = async () => {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
+        return;
+      }
+
       try {
         setLoadError(null);
         const items = await getUnitTimeline(session?.accessToken, unitId, currentDateKey);
@@ -182,7 +187,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     };
 
     void loadTimeline();
-  }, [currentDateKey, session?.accessToken, unitId]);
+  }, [currentDateKey, session?.accessToken, status, unitId]);
 
   const morningSchedule = events.filter((event) => event.timeMinutes <= 750);
   const eveningSchedule = events.filter((event) => event.timeMinutes >= 840);
@@ -221,6 +226,9 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
 
   const handleTakeEvent = async () => {
     if (!selectedEvent) {
+      return;
+    }
+    if (!isAuthorizedClient(status, session?.accessToken)) {
       return;
     }
 

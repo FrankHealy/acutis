@@ -5,7 +5,7 @@ import { AlertTriangle, Pill, Shield, Venus, Wine } from 'lucide-react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
 import { getScreeningControl } from '@/areas/screening/services/screeningControlService';
-import { isAuthorizationDisabled } from '@/lib/authMode';
+import { isAuthorizationDisabled, isAuthorizedClient } from '@/lib/authMode';
 import type { UnitDefinition } from '@/areas/shared/unit/unitTypes';
 import { UnitDefinitions } from '@/areas/shared/unit/unitTypes';
 import { unitIdentityService } from '@/services/unitIdentityService';
@@ -37,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const { access } = useAppAccess();
   const { centreThemeKey, userThemeKey, setCentreThemeKey, setUserThemeKey } = useTheme();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { locale, setLocale, t, loadKeys } = useLocalization();
   const [today, setToday] = useState<string>("");
   const [now, setNow] = useState<string>("");
@@ -94,6 +94,9 @@ const Header: React.FC<HeaderProps> = ({
       if (!unitCode) {
         return;
       }
+      if (!isAuthorizedClient(status, session?.accessToken)) {
+        return;
+      }
 
       try {
         const unit = await unitIdentityService.resolveByCode(unitCode, session?.accessToken);
@@ -124,7 +127,7 @@ const Header: React.FC<HeaderProps> = ({
     return () => {
       active = false;
     };
-  }, [session?.accessToken, setCentreThemeKey, unitCode]);
+  }, [session?.accessToken, setCentreThemeKey, status, unitCode]);
 
   useEffect(() => {
     let active = true;
@@ -133,7 +136,7 @@ const Header: React.FC<HeaderProps> = ({
       const accessToken = session?.accessToken;
       if (!showCapacity) return;
       if (!unitCode || !(unitCode in UnitDefinitions)) return;
-      if (!accessToken && !isAuthorizationDisabled) return;
+      if (!isAuthorizedClient(status, accessToken)) return;
       try {
         const control = await getScreeningControl(accessToken, { unitId: unitCode as keyof typeof UnitDefinitions });
         if (!active) return;
@@ -148,7 +151,7 @@ const Header: React.FC<HeaderProps> = ({
     return () => {
       active = false;
     };
-  }, [session?.accessToken, showCapacity, unitCode]);
+  }, [session?.accessToken, showCapacity, status, unitCode]);
 
   useEffect(() => {
     // Compute on client to avoid SSR/client mismatch
@@ -190,7 +193,7 @@ const Header: React.FC<HeaderProps> = ({
         return;
       }
 
-      if (!session?.accessToken && !isAuthorizationDisabled) {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
         return;
       }
 
@@ -227,7 +230,7 @@ const Header: React.FC<HeaderProps> = ({
     return () => {
       active = false;
     };
-  }, [session?.accessToken, unitCode]);
+  }, [session?.accessToken, status, unitCode]);
 
   useEffect(() => {
     if (!menuOpen) return;

@@ -1,6 +1,7 @@
 import { UNIT_GUIDS } from "./unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { createAuthHeaders } from "@/lib/authMode";
 
 export type MediaAsset = {
   id: string;
@@ -26,10 +27,10 @@ type ApiEnvelope<T> = {
   data: T;
 };
 
-const noStoreFetchInit: RequestInit = {
-  headers: { Accept: "application/json" },
+const noStoreFetchInit = (accessToken?: string | null): RequestInit => ({
+  headers: createAuthHeaders(accessToken),
   cache: "no-store",
-};
+});
 
 async function readEnvelope<T>(response: Response): Promise<T> {
   const body = await response.json();
@@ -42,20 +43,20 @@ async function readEnvelope<T>(response: Response): Promise<T> {
 }
 
 export const mediaPlayerService = {
-  async getCatalog(unitId: UnitId): Promise<MediaPlayerCatalog> {
+  async getCatalog(unitId: UnitId, accessToken?: string | null): Promise<MediaPlayerCatalog> {
     const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(
       `${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/mediaplayer/catalog`,
-      noStoreFetchInit
+      noStoreFetchInit(accessToken)
     );
     return readEnvelope<MediaPlayerCatalog>(response);
   },
 
-  async sync(unitId: UnitId, reason?: string): Promise<number> {
+  async sync(unitId: UnitId, reason?: string, accessToken?: string | null): Promise<number> {
     const unitGuid = UNIT_GUIDS[unitId];
     const response = await fetch(`${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/mediaplayer/sync`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { "Content-Type": "application/json", ...createAuthHeaders(accessToken) },
       body: JSON.stringify({ reason }),
     });
     const data = await readEnvelope<{ added: number }>(response);
@@ -69,39 +70,39 @@ export const mediaPlayerService = {
     fileName: string;
     lengthSeconds?: number;
     reason?: string;
-  }): Promise<MediaAsset> {
+  }, accessToken?: string | null): Promise<MediaAsset> {
     const response = await fetch(`${getApiBaseUrl()}/api/mediaplayer/assets`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { "Content-Type": "application/json", ...createAuthHeaders(accessToken) },
       body: JSON.stringify(payload),
     });
     return readEnvelope<MediaAsset>(response);
   },
 
-  async markPlayed(assetId: string, reason?: string): Promise<MediaAsset> {
+  async markPlayed(assetId: string, reason?: string, accessToken?: string | null): Promise<MediaAsset> {
     const response = await fetch(`${getApiBaseUrl()}/api/mediaplayer/assets/${assetId}/played`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { "Content-Type": "application/json", ...createAuthHeaders(accessToken) },
       body: JSON.stringify({ reason }),
     });
     return readEnvelope<MediaAsset>(response);
   },
 
-  async deactivate(assetId: string, reason?: string): Promise<MediaAsset> {
+  async deactivate(assetId: string, reason?: string, accessToken?: string | null): Promise<MediaAsset> {
     const response = await fetch(`${getApiBaseUrl()}/api/mediaplayer/assets/${assetId}/deactivate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { "Content-Type": "application/json", ...createAuthHeaders(accessToken) },
       body: JSON.stringify({ reason }),
     });
     return readEnvelope<MediaAsset>(response);
   },
 
-  async delete(assetId: string, deleteFile: boolean, reason?: string): Promise<void> {
+  async delete(assetId: string, deleteFile: boolean, reason?: string, accessToken?: string | null): Promise<void> {
     const response = await fetch(
       `${getApiBaseUrl()}/api/mediaplayer/assets/${assetId}?deleteFile=${deleteFile ? "true" : "false"}${
         reason ? `&reason=${encodeURIComponent(reason)}` : ""
       }`,
-      { method: "DELETE", headers: { Accept: "application/json" } }
+      { method: "DELETE", headers: createAuthHeaders(accessToken) }
     );
     await readEnvelope<{ deleted: boolean }>(response);
   },

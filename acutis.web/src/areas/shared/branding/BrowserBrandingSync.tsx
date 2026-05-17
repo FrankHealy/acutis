@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { globalConfigurationService } from "@/services/globalConfigurationService";
 import { unitIdentityService } from "@/services/unitIdentityService";
+import { isAuthorizedClient } from "@/lib/authMode";
 
 const DEFAULT_TITLE = "Acutis";
 const DEFAULT_ICON = "/acutis-icon.svg";
@@ -31,12 +32,16 @@ const applyBranding = (title?: string | null, iconUrl?: string | null) => {
 
 export default function BrowserBrandingSync() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     let active = true;
 
     const syncBranding = async () => {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
+        return;
+      }
+
       const segments = pathname.split("/").filter(Boolean);
       const unitCode = segments[0] === "units" ? segments[1] : undefined;
 
@@ -66,7 +71,7 @@ export default function BrowserBrandingSync() {
     return () => {
       active = false;
     };
-  }, [pathname, session?.accessToken]);
+  }, [pathname, session?.accessToken, status]);
 
   return null;
 }

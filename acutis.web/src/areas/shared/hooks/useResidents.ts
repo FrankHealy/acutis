@@ -1,6 +1,8 @@
 // src/components/residents/hooks/useResidents.ts
 
 import { useState, useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
+import { isAuthorizedClient } from '@/lib/authMode';
 import { residentService, type AttendanceRecord, getResidentSource } from '../../../services/residentService';
 import type { Resident } from '../../../services/mockDataService';
 import type { UnitId } from '../unit/unitTypes';
@@ -12,6 +14,7 @@ export type SortBy = keyof Pick<
 export type SortOrder = 'asc' | 'desc';
 
 export const useResidents = (unitId: UnitId, initialRollCallView = false) => {
+  const { data: session, status } = useSession();
   const [residents, setResidents] = useState<Resident[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +32,16 @@ export const useResidents = (unitId: UnitId, initialRollCallView = false) => {
   // Load residents
   useEffect(() => {
     const loadResidents = async () => {
+      if (!isAuthorizedClient(status, session?.accessToken)) {
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
         const data = rollCallView
-          ? await residentService.getRollCallResidents(unitId)
-          : await residentService.getResidents(unitId);
+          ? await residentService.getRollCallResidents(unitId, session?.accessToken)
+          : await residentService.getResidents(unitId, session?.accessToken);
         setResidents(data);
         const newSource = getResidentSource();
         setResidentSource(newSource);
@@ -54,7 +61,7 @@ export const useResidents = (unitId: UnitId, initialRollCallView = false) => {
     };
 
     loadResidents();
-  }, [rollCallView, unitId]);
+  }, [rollCallView, session?.accessToken, status, unitId]);
 
   // Auto-hide toast after a short delay
   useEffect(() => {

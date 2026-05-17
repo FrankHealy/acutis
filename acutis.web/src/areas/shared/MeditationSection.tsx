@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Headphones, Music2 } from "lucide-react";
 import { mediaPlayerService, type MediaAsset, type MediaPlayerCatalog } from "@/services/mediaPlayerService";
 import type { UnitId } from "./unit/unitTypes";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { isAuthorizedClient } from "@/lib/authMode";
 
 type MeditationSectionProps = {
   unitId: UnitId;
@@ -18,6 +20,7 @@ const emptyCatalog = (unitCode: string): MediaPlayerCatalog => ({
 });
 
 const MeditationSection: React.FC<MeditationSectionProps> = ({ unitId, unitName }) => {
+  const { data: session, status } = useSession();
   const { loadKeys, t } = useLocalization();
   const [catalog, setCatalog] = useState<MediaPlayerCatalog>(emptyCatalog(unitId));
   const [loading, setLoading] = useState(true);
@@ -43,25 +46,33 @@ const MeditationSection: React.FC<MeditationSectionProps> = ({ unitId, unitName 
   }, [t]);
 
   const refreshCatalog = useCallback(async () => {
+    if (!isAuthorizedClient(status, session?.accessToken)) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const response = await mediaPlayerService.getCatalog(unitId);
+      const response = await mediaPlayerService.getCatalog(unitId, session?.accessToken);
       setCatalog(response);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [unitId]);
+  }, [session?.accessToken, status, unitId]);
 
   useEffect(() => {
     void refreshCatalog();
   }, [refreshCatalog]);
 
   const playAndTrack = async (asset: MediaAsset) => {
+    if (!isAuthorizedClient(status, session?.accessToken)) {
+      return;
+    }
+
     try {
-      const updated = await mediaPlayerService.markPlayed(asset.id, "Playback started from meditation player");
+      const updated = await mediaPlayerService.markPlayed(asset.id, "Playback started from meditation player", session?.accessToken);
       setCatalog((previous) => ({
         ...previous,
         voicedMeditations: previous.voicedMeditations.map((item) => (item.id === updated.id ? updated : item)),

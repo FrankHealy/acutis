@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { AlertTriangle, CalendarDays, RefreshCcw, ShieldPlus, Users } from "lucide-react";
-import { isAuthorizationDisabled } from "@/lib/authMode";
+import { isAuthorizedClient } from "@/lib/authMode";
 import {
   staffRosterService,
   type UnitStaffRosterBoardDto,
@@ -52,13 +52,13 @@ const UnitStaffRosterBoard: React.FC<UnitStaffRosterBoardProps> = ({ unitCode, u
   const [error, setError] = useState<string | null>(null);
 
   const loadBoard = useCallback(async () => {
-    if (!isAuthorizationDisabled && status === "unauthenticated") {
+    if (status === "unauthenticated") {
       setBoard(null);
       setLoading(false);
       return;
     }
 
-    if (!isAuthorizationDisabled && status !== "authenticated") {
+    if (!isAuthorizedClient(status, accessToken)) {
       return;
     }
 
@@ -80,6 +80,10 @@ const UnitStaffRosterBoard: React.FC<UnitStaffRosterBoardProps> = ({ unitCode, u
   const staffOptions = useMemo(() => board?.staff ?? [], [board]);
 
   const assignShift = async (shiftType: string, appUserId: string) => {
+    if (!isAuthorizedClient(status, accessToken)) {
+      return;
+    }
+
     setSaving(true);
     try {
       setError(null);
@@ -98,6 +102,10 @@ const UnitStaffRosterBoard: React.FC<UnitStaffRosterBoardProps> = ({ unitCode, u
   };
 
   const takeEvent = async (key: string, source: string) => {
+    if (!isAuthorizedClient(status, accessToken)) {
+      return;
+    }
+
     setSaving(true);
     try {
       setError(null);

@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { RefreshCw, Plus, Trash2, Ban } from "lucide-react";
 import { mediaPlayerService, type MediaAsset, type MediaPlayerCatalog } from "@/services/mediaPlayerService";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { isAuthorizedClient } from "@/lib/authMode";
 
 type UnitMediaConfigurationProps = {
   unitId: UnitId;
@@ -19,6 +21,7 @@ const emptyCatalog = (unitCode: string): MediaPlayerCatalog => ({
 });
 
 const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId }) => {
+  const { data: session, status } = useSession();
   const { loadKeys, t } = useLocalization();
   const [catalog, setCatalog] = useState<MediaPlayerCatalog>(emptyCatalog(unitId));
   const [loading, setLoading] = useState(true);
@@ -53,17 +56,21 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
   };
 
   const refreshCatalog = useCallback(async () => {
+    if (!isAuthorizedClient(status, session?.accessToken)) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const response = await mediaPlayerService.getCatalog(unitId);
+      const response = await mediaPlayerService.getCatalog(unitId, session?.accessToken);
       setCatalog(response);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [unitId]);
+  }, [session?.accessToken, status, unitId]);
 
   useEffect(() => {
     void refreshCatalog();
@@ -72,7 +79,8 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
   const handleSync = async () => {
     setError(null);
     try {
-      await mediaPlayerService.sync(unitId, "Manual sync from unit configuration");
+      if (!isAuthorizedClient(status, session?.accessToken)) return;
+      await mediaPlayerService.sync(unitId, "Manual sync from unit configuration", session?.accessToken);
       await refreshCatalog();
     } catch (e) {
       setError((e as Error).message);
@@ -85,6 +93,7 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
 
     setError(null);
     try {
+      if (!isAuthorizedClient(status, session?.accessToken)) return;
       await mediaPlayerService.register({
         unitCode: unitId,
         assetType: registerAssetType,
@@ -92,7 +101,7 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
         shortName: shortName.trim(),
         lengthSeconds: lengthSeconds ? Number(lengthSeconds) : undefined,
         reason: "Manual add from unit configuration",
-      });
+      }, session?.accessToken);
       setFileName("");
       setShortName("");
       setLengthSeconds("");
@@ -104,7 +113,8 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
 
   const deactivate = async (asset: MediaAsset) => {
     try {
-      await mediaPlayerService.deactivate(asset.id, "Removed from active catalog");
+      if (!isAuthorizedClient(status, session?.accessToken)) return;
+      await mediaPlayerService.deactivate(asset.id, "Removed from active catalog", session?.accessToken);
       await refreshCatalog();
     } catch (e) {
       setError((e as Error).message);
@@ -113,7 +123,8 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
 
   const deleteAsset = async (asset: MediaAsset) => {
     try {
-      await mediaPlayerService.delete(asset.id, deleteFile, "Deleted from unit configuration");
+      if (!isAuthorizedClient(status, session?.accessToken)) return;
+      await mediaPlayerService.delete(asset.id, deleteFile, "Deleted from unit configuration", session?.accessToken);
       await refreshCatalog();
     } catch (e) {
       setError((e as Error).message);
