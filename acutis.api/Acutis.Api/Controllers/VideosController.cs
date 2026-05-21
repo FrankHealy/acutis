@@ -7,7 +7,7 @@ namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api")]
-[AllowAnonymous]
+[Authorize]
 public sealed class VideosController : ControllerBase
 {
     private readonly IUnitVideoAdminService _adminService;
@@ -70,6 +70,7 @@ public sealed class VideosController : ControllerBase
     }
 
     [HttpGet("videos/{id:guid}/stream")]
+    [AllowAnonymous]
     public async Task<IActionResult> Stream(Guid id, CancellationToken cancellationToken = default)
     {
         var resolved = await _adminService.ResolveStream(id, cancellationToken);

@@ -79,6 +79,8 @@ acutis.tab/builds/
 ############################
 *.swp
 *.tmp
+tmp/*.err
+tmp/*.out
 .git-backups/
 
 ############################

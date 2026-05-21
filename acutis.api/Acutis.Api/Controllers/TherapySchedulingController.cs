@@ -8,7 +8,7 @@ namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api/centres/{centreId:guid}")]
-[AllowAnonymous]
+[Authorize]
 public sealed class TherapySchedulingController : ControllerBase
 {
     private readonly ITherapySchedulingService _therapySchedulingService;

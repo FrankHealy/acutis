@@ -40,6 +40,11 @@ services:
       AUTH_KEYCLOAK_SECRET: ${AUTH_KEYCLOAK_SECRET}
       AUTH_KEYCLOAK_ISSUER: ${AUTH_KEYCLOAK_ISSUER}
       NEXT_PUBLIC_DISABLE_AUTH: ${NEXT_PUBLIC_DISABLE_AUTH}
+      NEXT_PUBLIC_FEEDBACK_ENABLED: ${NEXT_PUBLIC_FEEDBACK_ENABLED}
+      Feedback__Enabled: ${Feedback__Enabled}
+      Feedback__GitHubOwner: ${Feedback__GitHubOwner}
+      Feedback__GitHubRepo: ${Feedback__GitHubRepo}
+      Feedback__GitHubToken: ${Feedback__GitHubToken}
     ports:
       - "${WEB_PORT}:3000"
     networks:

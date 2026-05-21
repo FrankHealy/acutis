@@ -1,9 +1,11 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { quoteService, type QuoteRecord, type UnitQuoteCuration } from "@/services/quoteService";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { isAuthorizedClient } from "@/lib/authMode";
 
 const units: UnitId[] = ["alcohol", "detox", "drugs", "ladies"];
 
@@ -19,6 +21,7 @@ const emptyQuote: Omit<QuoteRecord, "id"> = {
 };
 
 export default function QuotesAdmin() {
+  const { data: session, status } = useSession();
   const { loadKeys, t } = useLocalization();
   const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
   const [curation, setCuration] = useState<UnitQuoteCuration[]>([]);
@@ -68,16 +71,24 @@ export default function QuotesAdmin() {
   };
 
   const fetchQuotes = useCallback(async () => {
+    if (!isAuthorizedClient(status, session?.accessToken)) {
+      return [];
+    }
+
     return quoteService.getQuotes({
       attribution: filterAttribution || undefined,
       language: filterLanguage || undefined,
       tag: filterTag || undefined,
-    });
-  }, [filterAttribution, filterLanguage, filterTag]);
+    }, session?.accessToken);
+  }, [filterAttribution, filterLanguage, filterTag, session?.accessToken, status]);
 
   const fetchCuration = useCallback(async () => {
-    return quoteService.getUnitCuration(selectedUnit);
-  }, [selectedUnit]);
+    if (!isAuthorizedClient(status, session?.accessToken)) {
+      return [];
+    }
+
+    return quoteService.getUnitCuration(selectedUnit, session?.accessToken);
+  }, [selectedUnit, session?.accessToken, status]);
 
   useEffect(() => {
     let active = true;
@@ -126,9 +137,9 @@ export default function QuotesAdmin() {
         tags: form.tags.filter(Boolean),
       };
       if (editingId) {
-        await quoteService.updateQuote(editingId, payload);
+        await quoteService.updateQuote(editingId, payload, session?.accessToken);
       } else {
-        await quoteService.createQuote(payload);
+        await quoteService.createQuote(payload, session?.accessToken);
       }
       setForm(emptyQuote);
       setEditingId(null);
@@ -170,14 +181,18 @@ export default function QuotesAdmin() {
     const current = curation.find((x) => x.quoteId === quoteId);
     try {
       setError(null);
-      await quoteService.upsertUnitCuration(selectedUnit, {
-        quoteId,
-        weight: patch.weight ?? current?.weight ?? null,
-        displayOrder: patch.displayOrder ?? current?.displayOrder ?? null,
-        pinnedFrom: patch.pinnedFrom ?? current?.pinnedFrom ?? null,
-        pinnedTo: patch.pinnedTo ?? current?.pinnedTo ?? null,
-        isExcluded: patch.isExcluded ?? current?.isExcluded ?? false,
-      });
+      await quoteService.upsertUnitCuration(
+        selectedUnit,
+        {
+          quoteId,
+          weight: patch.weight ?? current?.weight ?? null,
+          displayOrder: patch.displayOrder ?? current?.displayOrder ?? null,
+          pinnedFrom: patch.pinnedFrom ?? current?.pinnedFrom ?? null,
+          pinnedTo: patch.pinnedTo ?? current?.pinnedTo ?? null,
+          isExcluded: patch.isExcluded ?? current?.isExcluded ?? false,
+        },
+        session?.accessToken,
+      );
       setCuration(await fetchCuration());
     } catch (e) {
       setError((e as Error).message);
@@ -236,7 +251,7 @@ export default function QuotesAdmin() {
               <p className="mt-1 text-xs text-gray-500">{quote.language} | {quote.isActive ? text("quotes.state.active", "active") : text("quotes.state.inactive", "inactive")}</p>
               <div className="mt-2 flex gap-2">
                 <button onClick={() => startEdit(quote)} className="rounded border px-2 py-1 text-xs">{text("quotes.edit", "Edit Quote")}</button>
-                <button onClick={() => void quoteService.deleteQuote(quote.id).then(async () => setQuotes(await fetchQuotes()))} className="rounded border border-red-300 px-2 py-1 text-xs text-red-700">{text("quotes.delete", "Delete")}</button>
+                <button onClick={() => void quoteService.deleteQuote(quote.id, session?.accessToken).then(async () => setQuotes(await fetchQuotes()))} className="rounded border border-red-300 px-2 py-1 text-xs text-red-700">{text("quotes.delete", "Delete")}</button>
               </div>
             </div>
           ))}

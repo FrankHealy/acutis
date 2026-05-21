@@ -7,7 +7,7 @@ namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api")]
-[AllowAnonymous]
+[Authorize]
 public sealed class QuotesController : ControllerBase
 {
     private readonly IQuoteService _quoteService;
@@ -18,6 +18,7 @@ public sealed class QuotesController : ControllerBase
     }
 
     [HttpGet("units/{unitId:guid}/quote-of-the-day")]
+    [AllowAnonymous]
     public async Task<ActionResult<QuoteOfTheDayResponse>> GetQuoteOfTheDay(
         Guid unitId,
         [FromQuery] DateOnly? localDate,

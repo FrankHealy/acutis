@@ -3,6 +3,7 @@ using Acutis.Api.Security;
 using Acutis.Api.Services.Residents;
 using Acutis.Api.Services.TherapyScheduling;
 using Acutis.Api.Services.Units;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
@@ -11,6 +12,7 @@ namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api/residents")]
+[Authorize]
 public sealed class ResidentsController : ControllerBase
 {
     private static readonly Guid SystemActorUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");

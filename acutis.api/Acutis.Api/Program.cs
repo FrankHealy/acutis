@@ -156,6 +156,10 @@ else
 
 builder.Services.AddAuthorization(options =>
 {
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+
     options.AddPolicy(
         ApplicationPolicies.ConfigurationManage,
         policy =>

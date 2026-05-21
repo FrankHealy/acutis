@@ -13,6 +13,7 @@ namespace Acutis.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class ScreeningsController : ControllerBase
 {
     public sealed record EvaluationQueueItemDto(

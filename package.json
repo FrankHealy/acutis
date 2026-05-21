@@ -2,7 +2,7 @@
   "name": "acutis",
   "private": true,
   "scripts": {
-    "web": "powershell -NoProfile -Command \"Set-Location 'acutis.web'; node .\\node_modules\\next\\dist\\bin\\next dev\"",
+    "web": "npm --prefix acutis.web run dev",
     "api": "dotnet watch --project acutis.api run",
     "mob": "powershell -NoProfile -Command \"Set-Location 'acutis.mob'; npm run start\"",
     "dev": "npm run web"

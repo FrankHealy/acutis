@@ -79,6 +79,7 @@ const Navigation: React.FC<NavigationProps> = ({
             <div className="absolute left-0 mt-2 w-56 rounded-lg border bg-[var(--app-surface)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
               {[
                 { key: 'operations/day-planner', label: 'Day Planner' },
+                { key: 'operations/unit-scheduler', label: 'Unit Scheduler' },
                 { key: 'operations/room-mapping', label: 'Room Assignments' },
                 { key: 'operations/ot-roles', label: 'OT Roles' },
                 { key: 'operations/therapy-schedule', label: 'Therapy Schedule' },

@@ -15,6 +15,7 @@ import ResidentsSection from "@/areas/shared/ResidentsSection";
 import MeditationSection from "@/areas/shared/MeditationSection";
 import IncidentsSection from "@/areas/shared/incidents/IncidentsSection";
 import IncidentCaptureModal, { type IncidentPrefill } from "@/areas/shared/incidents/IncidentCaptureModal";
+import UnitScheduler from "@/areas/shared/scheduler/UnitScheduler";
 import type { UnitId } from "./unitTypes";
 import { UnitDefinitions } from "./unitTypes";
 import { hasSuperAdminAccess } from "@/lib/adminAccess";
@@ -28,6 +29,7 @@ type Step =
   | "incidents"
   | "configuration"
   | "operations/day-planner"
+  | "operations/unit-scheduler"
   | "operations/room-mapping"
   | "operations/ot-roles"
   | "operations/therapy-schedule"
@@ -184,6 +186,8 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
             title={`${unit.name} Day Planner`}
           />
         );
+      case "operations/unit-scheduler":
+        return <UnitScheduler unitId={unitId} unitName={unit.name} />;
       case "operations/room-mapping":
         return <RoomAssignments unitId={unitId} />;
       case "operations/ot-roles":
