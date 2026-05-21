@@ -66,7 +66,7 @@ const Navigation: React.FC<NavigationProps> = ({
           </button>
 
           {/* Operations dropdown */}
-          <div className="relative group">
+          <div className="relative group py-4 -my-4">
             <button
               className={`text-sm font-medium ${
                 currentStep.startsWith('operations')
@@ -76,7 +76,8 @@ const Navigation: React.FC<NavigationProps> = ({
             >
               Operations
             </button>
-            <div className="absolute left-0 mt-2 w-56 rounded-lg border bg-[var(--app-surface)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+            <div className="invisible pointer-events-none absolute left-0 top-full w-56 pt-2 opacity-0 transition-opacity group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100">
+              <div className="overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] shadow-lg">
               {[
                 { key: 'operations/day-planner', label: 'Day Planner' },
                 { key: 'operations/unit-scheduler', label: 'Unit Scheduler' },
@@ -97,6 +98,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   {item.label}
                 </button>
               ))}
+              </div>
             </div>
           </div>
         </div>
