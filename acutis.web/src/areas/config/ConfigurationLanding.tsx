@@ -49,6 +49,8 @@ const ConfigurationLanding: React.FC = () => {
       "config.dashboard.integrations.coming_soon",
       "config.dashboard.day_planner.title",
       "config.dashboard.day_planner.description",
+      "config.dashboard.events.title",
+      "config.dashboard.events.description",
       "config.dashboard.map_designer.title",
       "config.dashboard.map_designer.description",
       "config.dashboard.quotes.title",
@@ -198,6 +200,19 @@ const ConfigurationLanding: React.FC = () => {
                 <h2 className="text-lg font-semibold text-[var(--app-text)]">{text("config.dashboard.day_planner.title", "Day Planner")}</h2>
               </div>
               <p className="text-sm text-[var(--app-text-muted)]">{text("config.dashboard.day_planner.description", "Plan daily activities, staffing, and schedules.")}</p>
+            </button>
+
+            <button
+              onClick={() => router.push("/units/config/event-management")}
+              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <ClipboardCheck className="h-6 w-6 text-[var(--app-primary)]" />
+                <h2 className="text-lg font-semibold text-[var(--app-text)]">{text("config.dashboard.events.title", "Event Management")}</h2>
+              </div>
+              <p className="text-sm text-[var(--app-text-muted)]">
+                {text("config.dashboard.events.description", "Configure reusable event definitions, audiences, capture requirements, and facilitators.")}
+              </p>
             </button>
 
             <button

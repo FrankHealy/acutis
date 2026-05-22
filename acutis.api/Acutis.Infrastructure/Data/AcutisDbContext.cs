@@ -1484,7 +1484,7 @@ public sealed class AcutisDbContext : DbContext
             CreateSeedScheduleTemplate(TemplateMorningCoffeeId, "coffee_morning", "Coffee", "Morning coffee and social time", "refreshments", new TimeSpan(8, 45, 0), null),
             CreateSeedScheduleTemplate(TemplateMorningOtId, "ot_morning", "OT", "Morning Occupational Therapy - skills development", "therapy", new TimeSpan(9, 5, 0), new TimeSpan(12, 30, 0)),
             CreateSeedScheduleTemplate(TemplateLunchId, "lunch", "Lunch", "Midday meal service", "meals", new TimeSpan(12, 30, 0), null),
-            CreateSeedScheduleTemplate(TemplateGamblingAwareId, "gambling_aware", "Gambling Aware", "Gambling Awareness Meeting", "group", new TimeSpan(14, 0, 0), new TimeSpan(14, 45, 0)),
+            CreateSeedScheduleTemplate(TemplateGamblingAwareId, "gambling_aware", "Gambling Aware", "Gambling Awareness Meeting", "group", new TimeSpan(14, 0, 0), new TimeSpan(14, 45, 0), ScheduleAudienceType.ResidentSubset, ScheduleResidentSubsetType.Gambling),
             CreateSeedScheduleTemplate(TemplateFocusMeetingId, "focus_meeting", "Focus Meeting", "Focus Meeting", "group", new TimeSpan(14, 0, 0), new TimeSpan(14, 45, 0)),
             CreateSeedScheduleTemplate(TemplateAfternoonOtId, "ot_afternoon", "OT", "Afternoon Occupational Therapy", "therapy", new TimeSpan(14, 45, 0), new TimeSpan(16, 0, 0)),
             CreateSeedScheduleTemplate(TemplateAfternoonCoffeeId, "coffee_afternoon", "Coffee", "Afternoon coffee break", "refreshments", new TimeSpan(16, 0, 0), null),
@@ -1507,7 +1507,10 @@ public sealed class AcutisDbContext : DbContext
         string description,
         string category,
         TimeSpan startTime,
-        TimeSpan? endTime)
+        TimeSpan? endTime,
+        ScheduleAudienceType audienceType = ScheduleAudienceType.UnitResidents,
+        ScheduleResidentSubsetType residentSubsetType = ScheduleResidentSubsetType.None,
+        ScheduleCaptureRequirement captureRequirement = ScheduleCaptureRequirement.None)
     {
         return new ScheduleTemplate
         {
@@ -1523,7 +1526,9 @@ public sealed class AcutisDbContext : DbContext
             WeeklyDayOfWeek = null,
             StartTime = startTime,
             EndTime = endTime,
-            AudienceType = ScheduleAudienceType.UnitResidents,
+            AudienceType = audienceType,
+            ResidentSubsetType = residentSubsetType,
+            CaptureRequirement = captureRequirement,
             CohortId = null,
             ResidentId = null,
             FacilitatorType = ScheduleFacilitatorType.None,

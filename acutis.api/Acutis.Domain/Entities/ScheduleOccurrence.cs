@@ -16,6 +16,8 @@ public sealed class ScheduleOccurrence
     public TimeSpan? StartTime { get; set; }
     public TimeSpan? EndTime { get; set; }
     public ScheduleAudienceType AudienceType { get; set; } = ScheduleAudienceType.UnitResidents;
+    public ScheduleResidentSubsetType ResidentSubsetType { get; set; } = ScheduleResidentSubsetType.None;
+    public ScheduleCaptureRequirement CaptureRequirement { get; set; } = ScheduleCaptureRequirement.None;
     public Guid? CohortId { get; set; }
     public ScheduleFacilitatorType FacilitatorType { get; set; } = ScheduleFacilitatorType.None;
     public string? FacilitatorRole { get; set; }

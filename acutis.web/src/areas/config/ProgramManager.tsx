@@ -36,6 +36,9 @@ const weekdays = [
 ];
 const todayIso = new Date().toISOString().slice(0, 10);
 
+const resolveResidentSubsetType = (audienceType: string, residentSubsetType: string) =>
+  audienceType === "ResidentSubset" ? residentSubsetType || "Gambling" : "None";
+
 const emptyProgrammeForm: UpsertProgrammeDefinitionRequest = {
   centreId: "",
   code: "",
@@ -65,6 +68,8 @@ const emptyTemplateForm: UpsertScheduleTemplateRequest = {
   startTime: "",
   endTime: "",
   audienceType: "UnitResidents",
+  residentSubsetType: "None",
+  captureRequirement: "None",
   facilitatorType: "None",
   facilitatorRole: "",
   externalResourceName: "",
@@ -83,6 +88,8 @@ const emptyOccurrenceForm: UpsertScheduleOccurrenceRequest = {
   startTime: "",
   endTime: "",
   audienceType: "UnitResidents",
+  residentSubsetType: "None",
+  captureRequirement: "None",
   facilitatorType: "None",
   facilitatorRole: "",
   externalResourceName: "",
@@ -225,6 +232,8 @@ const ProgramManager: React.FC = () => {
       startTime: template.startTime,
       endTime: template.endTime,
       audienceType: template.audienceType,
+      residentSubsetType: template.residentSubsetType,
+      captureRequirement: template.captureRequirement,
       facilitatorType: template.facilitatorType,
       facilitatorRole: template.facilitatorRole,
       externalResourceName: template.externalResourceName,
@@ -246,6 +255,8 @@ const ProgramManager: React.FC = () => {
       startTime: occurrence.startTime,
       endTime: occurrence.endTime,
       audienceType: occurrence.audienceType,
+      residentSubsetType: occurrence.residentSubsetType,
+      captureRequirement: occurrence.captureRequirement,
       facilitatorType: occurrence.facilitatorType,
       facilitatorRole: occurrence.facilitatorRole,
       externalResourceName: occurrence.externalResourceName,
@@ -295,6 +306,7 @@ const ProgramManager: React.FC = () => {
         ...templateForm,
         unitId: templateForm.unitId || null,
         programmeDefinitionId: templateForm.programmeDefinitionId || null,
+        residentSubsetType: resolveResidentSubsetType(templateForm.audienceType, templateForm.residentSubsetType),
         weeklyDayOfWeek: templateForm.recurrenceType === "Weekly" ? templateForm.weeklyDayOfWeek ?? null : null,
         monthlyDayOfMonth:
           templateForm.recurrenceType === "Monthly" || templateForm.recurrenceType === "BiMonthly"
@@ -333,6 +345,7 @@ const ProgramManager: React.FC = () => {
         unitId: occurrenceForm.unitId || null,
         programmeDefinitionId: occurrenceForm.programmeDefinitionId || null,
         templateId: occurrenceForm.templateId || null,
+        residentSubsetType: resolveResidentSubsetType(occurrenceForm.audienceType, occurrenceForm.residentSubsetType),
       };
       if (editingOccurrenceId) {
         await globalConfigurationService.updateScheduleOccurrence(accessToken, editingOccurrenceId, payload);
@@ -797,6 +810,22 @@ const ProgramManager: React.FC = () => {
                         {audienceTypes.map((type) => <option key={type} value={type}>{type}</option>)}
                       </select>
                     </label>
+                    {templateForm.audienceType === "ResidentSubset" && (
+                      <label className="space-y-1 text-sm text-[var(--app-text)]">
+                        <span>Resident subset</span>
+                        <select value={templateForm.residentSubsetType} onChange={(event) => setTemplateForm((current) => ({ ...current, residentSubsetType: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                          <option value="Gambling">Gambling</option>
+                          <option value="Substance">NA/Substance</option>
+                        </select>
+                      </label>
+                    )}
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Capture</span>
+                      <select value={templateForm.captureRequirement} onChange={(event) => setTemplateForm((current) => ({ ...current, captureRequirement: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="None">None</option>
+                        <option value="ImagePerResident">Image per resident</option>
+                      </select>
+                    </label>
                     <label className="space-y-1 text-sm text-[var(--app-text)]">
                       <span>Facilitator type</span>
                       <select value={templateForm.facilitatorType} onChange={(event) => setTemplateForm((current) => ({ ...current, facilitatorType: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
@@ -927,6 +956,22 @@ const ProgramManager: React.FC = () => {
                       <span>Audience</span>
                       <select value={occurrenceForm.audienceType} onChange={(event) => setOccurrenceForm((current) => ({ ...current, audienceType: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
                         {audienceTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                    </label>
+                    {occurrenceForm.audienceType === "ResidentSubset" && (
+                      <label className="space-y-1 text-sm text-[var(--app-text)]">
+                        <span>Resident subset</span>
+                        <select value={occurrenceForm.residentSubsetType} onChange={(event) => setOccurrenceForm((current) => ({ ...current, residentSubsetType: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                          <option value="Gambling">Gambling</option>
+                          <option value="Substance">NA/Substance</option>
+                        </select>
+                      </label>
+                    )}
+                    <label className="space-y-1 text-sm text-[var(--app-text)]">
+                      <span>Capture</span>
+                      <select value={occurrenceForm.captureRequirement} onChange={(event) => setOccurrenceForm((current) => ({ ...current, captureRequirement: event.target.value }))} className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+                        <option value="None">None</option>
+                        <option value="ImagePerResident">Image per resident</option>
                       </select>
                     </label>
                     <label className="space-y-1 text-sm text-[var(--app-text)]">

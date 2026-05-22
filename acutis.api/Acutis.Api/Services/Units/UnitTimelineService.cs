@@ -275,6 +275,8 @@ public sealed class UnitTimelineService : IUnitTimelineService
             StartTime = template.StartTime,
             EndTime = template.EndTime,
             AudienceType = template.AudienceType,
+            ResidentSubsetType = template.ResidentSubsetType,
+            CaptureRequirement = template.CaptureRequirement,
             FacilitatorType = template.FacilitatorType,
             FacilitatorRole = template.FacilitatorRole,
             ExternalResourceName = template.ExternalResourceName,

@@ -154,6 +154,8 @@ public sealed class ScheduleTemplateDto
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
     public string AudienceType { get; set; } = string.Empty;
+    public string ResidentSubsetType { get; set; } = string.Empty;
+    public string CaptureRequirement { get; set; } = string.Empty;
     public string FacilitatorType { get; set; } = string.Empty;
     public string FacilitatorRole { get; set; } = string.Empty;
     public string ExternalResourceName { get; set; } = string.Empty;
@@ -176,6 +178,8 @@ public sealed class UpsertScheduleTemplateRequest
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
     public string AudienceType { get; set; } = string.Empty;
+    public string ResidentSubsetType { get; set; } = string.Empty;
+    public string CaptureRequirement { get; set; } = string.Empty;
     public string FacilitatorType { get; set; } = string.Empty;
     public string FacilitatorRole { get; set; } = string.Empty;
     public string ExternalResourceName { get; set; } = string.Empty;
@@ -200,6 +204,8 @@ public sealed class ScheduleOccurrenceDto
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
     public string AudienceType { get; set; } = string.Empty;
+    public string ResidentSubsetType { get; set; } = string.Empty;
+    public string CaptureRequirement { get; set; } = string.Empty;
     public string FacilitatorType { get; set; } = string.Empty;
     public string FacilitatorRole { get; set; } = string.Empty;
     public string ExternalResourceName { get; set; } = string.Empty;
@@ -220,6 +226,8 @@ public sealed class UpsertScheduleOccurrenceRequest
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
     public string AudienceType { get; set; } = string.Empty;
+    public string ResidentSubsetType { get; set; } = string.Empty;
+    public string CaptureRequirement { get; set; } = string.Empty;
     public string FacilitatorType { get; set; } = string.Empty;
     public string FacilitatorRole { get; set; } = string.Empty;
     public string ExternalResourceName { get; set; } = string.Empty;

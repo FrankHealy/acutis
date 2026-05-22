@@ -648,6 +648,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime)),
             EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime)),
             AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType)),
+            ResidentSubsetType = ParseScheduleResidentSubsetType(request.ResidentSubsetType, nameof(request.ResidentSubsetType)),
+            CaptureRequirement = ParseScheduleCaptureRequirement(request.CaptureRequirement, nameof(request.CaptureRequirement)),
             FacilitatorType = ParseScheduleFacilitatorType(request.FacilitatorType, nameof(request.FacilitatorType)),
             FacilitatorRole = CleanOptional(request.FacilitatorRole),
             ExternalResourceName = CleanOptional(request.ExternalResourceName),
@@ -706,6 +708,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         template.StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime));
         template.EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime));
         template.AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType));
+        template.ResidentSubsetType = ParseScheduleResidentSubsetType(request.ResidentSubsetType, nameof(request.ResidentSubsetType));
+        template.CaptureRequirement = ParseScheduleCaptureRequirement(request.CaptureRequirement, nameof(request.CaptureRequirement));
         template.FacilitatorType = ParseScheduleFacilitatorType(request.FacilitatorType, nameof(request.FacilitatorType));
         template.FacilitatorRole = CleanOptional(request.FacilitatorRole);
         template.ExternalResourceName = CleanOptional(request.ExternalResourceName);
@@ -773,6 +777,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime)),
             EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime)),
             AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType)),
+            ResidentSubsetType = ParseScheduleResidentSubsetType(request.ResidentSubsetType, nameof(request.ResidentSubsetType)),
+            CaptureRequirement = ParseScheduleCaptureRequirement(request.CaptureRequirement, nameof(request.CaptureRequirement)),
             FacilitatorType = ParseScheduleFacilitatorType(request.FacilitatorType, nameof(request.FacilitatorType)),
             FacilitatorRole = CleanOptional(request.FacilitatorRole),
             ExternalResourceName = CleanOptional(request.ExternalResourceName),
@@ -824,6 +830,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         occurrence.StartTime = ParseOptionalTime(request.StartTime, nameof(request.StartTime));
         occurrence.EndTime = ParseOptionalTime(request.EndTime, nameof(request.EndTime));
         occurrence.AudienceType = ParseScheduleAudienceType(request.AudienceType, nameof(request.AudienceType));
+        occurrence.ResidentSubsetType = ParseScheduleResidentSubsetType(request.ResidentSubsetType, nameof(request.ResidentSubsetType));
+        occurrence.CaptureRequirement = ParseScheduleCaptureRequirement(request.CaptureRequirement, nameof(request.CaptureRequirement));
         occurrence.FacilitatorType = ParseScheduleFacilitatorType(request.FacilitatorType, nameof(request.FacilitatorType));
         occurrence.FacilitatorRole = CleanOptional(request.FacilitatorRole);
         occurrence.ExternalResourceName = CleanOptional(request.ExternalResourceName);
@@ -1472,6 +1480,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             StartTime = template.StartTime?.ToString(@"hh\:mm") ?? string.Empty,
             EndTime = template.EndTime?.ToString(@"hh\:mm") ?? string.Empty,
             AudienceType = template.AudienceType.ToString(),
+            ResidentSubsetType = template.ResidentSubsetType.ToString(),
+            CaptureRequirement = template.CaptureRequirement.ToString(),
             FacilitatorType = template.FacilitatorType.ToString(),
             FacilitatorRole = template.FacilitatorRole ?? string.Empty,
             ExternalResourceName = template.ExternalResourceName ?? string.Empty,
@@ -1499,6 +1509,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             StartTime = occurrence.StartTime?.ToString(@"hh\:mm") ?? string.Empty,
             EndTime = occurrence.EndTime?.ToString(@"hh\:mm") ?? string.Empty,
             AudienceType = occurrence.AudienceType.ToString(),
+            ResidentSubsetType = occurrence.ResidentSubsetType.ToString(),
+            CaptureRequirement = occurrence.CaptureRequirement.ToString(),
             FacilitatorType = occurrence.FacilitatorType.ToString(),
             FacilitatorRole = occurrence.FacilitatorRole ?? string.Empty,
             ExternalResourceName = occurrence.ExternalResourceName ?? string.Empty,
@@ -1747,6 +1759,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
                 throw new ArgumentException("Monthly and bi-monthly schedules require a recurrence start date.", nameof(request));
             }
         }
+
+        ValidateResidentSubsetTarget(request.AudienceType, request.ResidentSubsetType, nameof(request));
     }
 
     private static void ValidateScheduleOccurrenceRequest(UpsertScheduleOccurrenceRequest request)
@@ -1760,6 +1774,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         {
             throw new ArgumentException("Occurrence title is required.", nameof(request));
         }
+
+        ValidateResidentSubsetTarget(request.AudienceType, request.ResidentSubsetType, nameof(request));
     }
 
     private static void ValidatePermissionRequest(UpsertAppPermissionRequest request)
@@ -1830,6 +1846,52 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         }
 
         throw new ArgumentException($"Unsupported schedule audience type '{value}'.", parameterName);
+    }
+
+    private static ScheduleResidentSubsetType ParseScheduleResidentSubsetType(string value, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return ScheduleResidentSubsetType.None;
+        }
+
+        if (Enum.TryParse<ScheduleResidentSubsetType>(value.Trim(), true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported resident subset type '{value}'.", parameterName);
+    }
+
+    private static ScheduleCaptureRequirement ParseScheduleCaptureRequirement(string value, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return ScheduleCaptureRequirement.None;
+        }
+
+        if (Enum.TryParse<ScheduleCaptureRequirement>(value.Trim(), true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported schedule capture requirement '{value}'.", parameterName);
+    }
+
+    private static void ValidateResidentSubsetTarget(string audienceType, string residentSubsetType, string parameterName)
+    {
+        var audience = ParseScheduleAudienceType(audienceType, nameof(audienceType));
+        var residentSubset = ParseScheduleResidentSubsetType(residentSubsetType, nameof(residentSubsetType));
+
+        if (audience == ScheduleAudienceType.ResidentSubset && residentSubset == ScheduleResidentSubsetType.None)
+        {
+            throw new ArgumentException("Resident subset schedules require a resident subset type.", parameterName);
+        }
+
+        if (audience != ScheduleAudienceType.ResidentSubset && residentSubset != ScheduleResidentSubsetType.None)
+        {
+            throw new ArgumentException("Resident subset type can only be set for resident subset schedules.", parameterName);
+        }
     }
 
     private static ScheduleFacilitatorType ParseScheduleFacilitatorType(string value, string parameterName)

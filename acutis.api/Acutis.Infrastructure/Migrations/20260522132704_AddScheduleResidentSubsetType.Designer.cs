@@ -4,6 +4,7 @@ using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Acutis.Infrastructure.Migrations
 {
     [DbContext(typeof(AcutisDbContext))]
-    partial class AcutisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260522132704_AddScheduleResidentSubsetType")]
+    partial class AddScheduleResidentSubsetType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -12056,11 +12059,6 @@ namespace Acutis.Infrastructure.Migrations
                         .HasMaxLength(24)
                         .HasColumnType("nvarchar(24)");
 
-                    b.Property<string>("CaptureRequirement")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
                     b.Property<string>("Category")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -12174,11 +12172,6 @@ namespace Acutis.Infrastructure.Migrations
                         .HasMaxLength(24)
                         .HasColumnType("nvarchar(24)");
 
-                    b.Property<string>("CaptureRequirement")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
                     b.Property<string>("Category")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -12289,7 +12282,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000001"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "routine",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "wake_up_bell",
@@ -12307,7 +12299,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000002"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "attendance",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "roll_call_morning",
@@ -12326,7 +12317,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000003"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "group",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "works_group",
@@ -12345,7 +12335,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000004"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "checks",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "room_check",
@@ -12363,7 +12352,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000005"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "refreshments",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "coffee_morning",
@@ -12381,7 +12369,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000006"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "therapy",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "ot_morning",
@@ -12400,7 +12387,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000007"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "meals",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "lunch",
@@ -12418,7 +12404,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000008"),
                             AudienceType = "ResidentSubset",
-                            CaptureRequirement = "None",
                             Category = "group",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "gambling_aware",
@@ -12437,7 +12422,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000009"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "group",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "focus_meeting",
@@ -12456,7 +12440,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000010"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "therapy",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "ot_afternoon",
@@ -12475,7 +12458,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000011"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "refreshments",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "coffee_afternoon",
@@ -12493,7 +12475,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000012"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "therapy",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "ot_focus",
@@ -12512,7 +12493,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000013"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "meals",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "tea",
@@ -12530,7 +12510,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000014"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "attendance",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "roll_call_evening",
@@ -12548,7 +12527,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000015"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "group",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "group_a",
@@ -12567,7 +12545,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000016"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "group",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "group_b",
@@ -12586,7 +12563,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000017"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "group",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "group_c",
@@ -12605,7 +12581,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000018"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "spiritual",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "rosary",
@@ -12623,7 +12598,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000019"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "group",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "support_meeting",
@@ -12642,7 +12616,6 @@ namespace Acutis.Infrastructure.Migrations
                         {
                             Id = new Guid("66666666-1000-1000-1000-100000000020"),
                             AudienceType = "UnitResidents",
-                            CaptureRequirement = "None",
                             Category = "routine",
                             CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
                             Code = "bedtime",

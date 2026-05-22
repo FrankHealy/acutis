@@ -20,6 +20,8 @@ public sealed class ScheduleTemplateConfiguration : IEntityTypeConfiguration<Sch
         builder.Property(x => x.StartTime).HasColumnType("time");
         builder.Property(x => x.EndTime).HasColumnType("time");
         builder.Property(x => x.AudienceType).HasConversion<string>().HasMaxLength(24).IsRequired();
+        builder.Property(x => x.ResidentSubsetType).HasConversion<string>().HasMaxLength(24).IsRequired();
+        builder.Property(x => x.CaptureRequirement).HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(x => x.FacilitatorType).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(x => x.FacilitatorRole).HasMaxLength(120);
         builder.Property(x => x.ExternalResourceName).HasMaxLength(200);

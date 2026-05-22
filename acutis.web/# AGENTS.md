@@ -43,6 +43,13 @@ No independent truth.
 - No hardcoded colours
 - Use tokens only
 
+### Scheduler
+- Keep scheduler concepts portable to React Native.
+- Event type = icon, label, default duration, category.
+- Placement = day/date, start/end, recurrence, unit.
+- Staffing = COD, nurse cover, night cover, facilitators.
+- Do not hardcode programme-specific schedule assumptions unless explicitly requested.
+
 ---
 
 ## File Touch Discipline

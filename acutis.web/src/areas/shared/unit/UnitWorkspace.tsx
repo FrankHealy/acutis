@@ -157,6 +157,13 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
                 >
                   Program Manager
                 </button>
+                <button
+                  type="button"
+                  onClick={() => router.push("/units/config/event-management")}
+                  className="app-outline-button rounded px-3 py-2 text-sm font-semibold"
+                >
+                  Event Management
+                </button>
               </div>
               {canSeeGlobalAdministration && (
                 <div className="mt-6 border-t border-[var(--app-border)] pt-4">

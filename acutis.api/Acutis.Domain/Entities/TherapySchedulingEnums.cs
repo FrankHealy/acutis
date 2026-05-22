@@ -64,6 +64,19 @@ public enum ScheduleAudienceType
     OpenSession = 6
 }
 
+public enum ScheduleResidentSubsetType
+{
+    None = 1,
+    Gambling = 2,
+    Substance = 3
+}
+
+public enum ScheduleCaptureRequirement
+{
+    None = 1,
+    ImagePerResident = 2
+}
+
 public enum ScheduleFacilitatorType
 {
     None = 1,

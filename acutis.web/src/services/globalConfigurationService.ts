@@ -146,6 +146,8 @@ export type ScheduleTemplateDto = {
   startTime: string;
   endTime: string;
   audienceType: string;
+  residentSubsetType: string;
+  captureRequirement: string;
   facilitatorType: string;
   facilitatorRole: string;
   externalResourceName: string;
@@ -167,6 +169,8 @@ export type UpsertScheduleTemplateRequest = {
   startTime: string;
   endTime: string;
   audienceType: string;
+  residentSubsetType: string;
+  captureRequirement: string;
   facilitatorType: string;
   facilitatorRole: string;
   externalResourceName: string;
@@ -190,6 +194,8 @@ export type ScheduleOccurrenceDto = {
   startTime: string;
   endTime: string;
   audienceType: string;
+  residentSubsetType: string;
+  captureRequirement: string;
   facilitatorType: string;
   facilitatorRole: string;
   externalResourceName: string;
@@ -209,6 +215,8 @@ export type UpsertScheduleOccurrenceRequest = {
   startTime: string;
   endTime: string;
   audienceType: string;
+  residentSubsetType: string;
+  captureRequirement: string;
   facilitatorType: string;
   facilitatorRole: string;
   externalResourceName: string;
