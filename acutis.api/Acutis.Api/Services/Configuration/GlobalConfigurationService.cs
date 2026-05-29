@@ -31,6 +31,14 @@ public interface IGlobalConfigurationService
     Task<ScheduleOccurrenceDto> CreateScheduleOccurrenceAsync(UpsertScheduleOccurrenceRequest request, CancellationToken cancellationToken = default);
     Task<ScheduleOccurrenceDto> UpdateScheduleOccurrenceAsync(Guid scheduleOccurrenceId, UpsertScheduleOccurrenceRequest request, CancellationToken cancellationToken = default);
     Task ArchiveScheduleOccurrenceAsync(Guid scheduleOccurrenceId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<GroupTherapyConversationThemeConfigurationDto>> GetGroupTherapyConversationThemesAsync(bool includeInactive, CancellationToken cancellationToken = default);
+    Task<GroupTherapyConversationThemeConfigurationDto> CreateGroupTherapyConversationThemeAsync(UpsertGroupTherapyConversationThemeRequest request, CancellationToken cancellationToken = default);
+    Task<GroupTherapyConversationThemeConfigurationDto> UpdateGroupTherapyConversationThemeAsync(Guid conversationThemeId, UpsertGroupTherapyConversationThemeRequest request, CancellationToken cancellationToken = default);
+    Task ArchiveGroupTherapyConversationThemeAsync(Guid conversationThemeId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<GroupTherapyFacilitationConfigConfigurationDto>> GetGroupTherapyFacilitationConfigsAsync(bool includeInactive, CancellationToken cancellationToken = default);
+    Task<GroupTherapyFacilitationConfigConfigurationDto> CreateGroupTherapyFacilitationConfigAsync(UpsertGroupTherapyFacilitationConfigRequest request, CancellationToken cancellationToken = default);
+    Task<GroupTherapyFacilitationConfigConfigurationDto> UpdateGroupTherapyFacilitationConfigAsync(Guid facilitationConfigId, UpsertGroupTherapyFacilitationConfigRequest request, CancellationToken cancellationToken = default);
+    Task ArchiveGroupTherapyFacilitationConfigAsync(Guid facilitationConfigId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AppPermissionDto>> GetPermissionsAsync(CancellationToken cancellationToken = default);
     Task<AppPermissionDto> CreatePermissionAsync(UpsertAppPermissionRequest request, CancellationToken cancellationToken = default);
     Task<AppPermissionDto> UpdatePermissionAsync(Guid permissionId, UpsertAppPermissionRequest request, CancellationToken cancellationToken = default);
@@ -853,6 +861,214 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<GroupTherapyConversationThemeConfigurationDto>> GetGroupTherapyConversationThemesAsync(
+        bool includeInactive,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.GroupTherapyConversationThemes
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.IsActive);
+        }
+
+        var themes = await query
+            .OrderBy(x => x.UnitCode ?? string.Empty)
+            .ThenBy(x => x.ProgramCode ?? string.Empty)
+            .ThenBy(x => x.SortOrder)
+            .ThenBy(x => x.Label)
+            .ToListAsync(cancellationToken);
+
+        return themes.Select(MapGroupTherapyConversationTheme).ToList();
+    }
+
+    public async Task<GroupTherapyConversationThemeConfigurationDto> CreateGroupTherapyConversationThemeAsync(
+        UpsertGroupTherapyConversationThemeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateGroupTherapyConversationThemeRequest(request);
+        var unitCode = CleanOptionalKey(request.UnitCode);
+        var programCode = NormalizeKey(request.ProgramCode);
+        var code = NormalizeKey(request.Code);
+
+        if (await _dbContext.GroupTherapyConversationThemes.AnyAsync(
+            x => x.UnitCode == unitCode && x.ProgramCode == programCode && x.Code == code,
+            cancellationToken))
+        {
+            throw new ArgumentException($"A conversation theme with code '{code}' already exists for this scope.", nameof(request));
+        }
+
+        var now = DateTime.UtcNow;
+        var theme = new GroupTherapyConversationTheme
+        {
+            Id = Guid.NewGuid(),
+            UnitCode = unitCode,
+            ProgramCode = programCode,
+            Code = code,
+            Label = request.Label.Trim(),
+            Description = request.Description.Trim(),
+            SortOrder = request.SortOrder,
+            IsActive = request.IsActive,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.GroupTherapyConversationThemes.Add(theme);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapGroupTherapyConversationTheme(theme);
+    }
+
+    public async Task<GroupTherapyConversationThemeConfigurationDto> UpdateGroupTherapyConversationThemeAsync(
+        Guid conversationThemeId,
+        UpsertGroupTherapyConversationThemeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateGroupTherapyConversationThemeRequest(request);
+        var theme = await _dbContext.GroupTherapyConversationThemes.FirstOrDefaultAsync(x => x.Id == conversationThemeId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Group therapy conversation theme '{conversationThemeId}' was not found.");
+
+        var unitCode = CleanOptionalKey(request.UnitCode);
+        var programCode = NormalizeKey(request.ProgramCode);
+        var code = NormalizeKey(request.Code);
+
+        if (await _dbContext.GroupTherapyConversationThemes.AnyAsync(
+            x => x.Id != conversationThemeId && x.UnitCode == unitCode && x.ProgramCode == programCode && x.Code == code,
+            cancellationToken))
+        {
+            throw new ArgumentException($"A conversation theme with code '{code}' already exists for this scope.", nameof(request));
+        }
+
+        theme.UnitCode = unitCode;
+        theme.ProgramCode = programCode;
+        theme.Code = code;
+        theme.Label = request.Label.Trim();
+        theme.Description = request.Description.Trim();
+        theme.SortOrder = request.SortOrder;
+        theme.IsActive = request.IsActive;
+        theme.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapGroupTherapyConversationTheme(theme);
+    }
+
+    public async Task ArchiveGroupTherapyConversationThemeAsync(Guid conversationThemeId, CancellationToken cancellationToken = default)
+    {
+        var theme = await _dbContext.GroupTherapyConversationThemes.FirstOrDefaultAsync(x => x.Id == conversationThemeId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Group therapy conversation theme '{conversationThemeId}' was not found.");
+
+        theme.IsActive = false;
+        theme.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<GroupTherapyFacilitationConfigConfigurationDto>> GetGroupTherapyFacilitationConfigsAsync(
+        bool includeInactive,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.GroupTherapyFacilitationConfigs
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.IsActive);
+        }
+
+        var configs = await query
+            .OrderBy(x => x.UnitCode ?? string.Empty)
+            .ThenBy(x => x.ProgramCode)
+            .ThenBy(x => x.SortOrder)
+            .ThenBy(x => x.CounsellorStyle)
+            .ToListAsync(cancellationToken);
+
+        return configs.Select(MapGroupTherapyFacilitationConfig).ToList();
+    }
+
+    public async Task<GroupTherapyFacilitationConfigConfigurationDto> CreateGroupTherapyFacilitationConfigAsync(
+        UpsertGroupTherapyFacilitationConfigRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateGroupTherapyFacilitationConfigRequest(request);
+        var unitCode = CleanOptionalKey(request.UnitCode);
+        var programCode = NormalizeKey(request.ProgramCode);
+        var counsellorStyle = request.CounsellorStyle.Trim();
+
+        if (await _dbContext.GroupTherapyFacilitationConfigs.AnyAsync(
+            x => x.UnitCode == unitCode && x.ProgramCode == programCode && x.CounsellorStyle == counsellorStyle,
+            cancellationToken))
+        {
+            throw new ArgumentException($"A facilitation config for '{counsellorStyle}' already exists for this scope.", nameof(request));
+        }
+
+        var now = DateTime.UtcNow;
+        var config = new GroupTherapyFacilitationConfig
+        {
+            Id = Guid.NewGuid(),
+            UnitCode = unitCode,
+            ProgramCode = programCode,
+            CounsellorStyle = counsellorStyle,
+            IsTimingEnabled = request.IsTimingEnabled,
+            SessionDurationMinutes = request.SessionDurationMinutes,
+            ResidentDurationMinutes = request.ResidentDurationMinutes,
+            ResidentTimeMultiplier = request.ResidentTimeMultiplier,
+            SortOrder = request.SortOrder,
+            IsActive = request.IsActive,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.GroupTherapyFacilitationConfigs.Add(config);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapGroupTherapyFacilitationConfig(config);
+    }
+
+    public async Task<GroupTherapyFacilitationConfigConfigurationDto> UpdateGroupTherapyFacilitationConfigAsync(
+        Guid facilitationConfigId,
+        UpsertGroupTherapyFacilitationConfigRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateGroupTherapyFacilitationConfigRequest(request);
+        var config = await _dbContext.GroupTherapyFacilitationConfigs.FirstOrDefaultAsync(x => x.Id == facilitationConfigId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Group therapy facilitation config '{facilitationConfigId}' was not found.");
+
+        var unitCode = CleanOptionalKey(request.UnitCode);
+        var programCode = NormalizeKey(request.ProgramCode);
+        var counsellorStyle = request.CounsellorStyle.Trim();
+
+        if (await _dbContext.GroupTherapyFacilitationConfigs.AnyAsync(
+            x => x.Id != facilitationConfigId && x.UnitCode == unitCode && x.ProgramCode == programCode && x.CounsellorStyle == counsellorStyle,
+            cancellationToken))
+        {
+            throw new ArgumentException($"A facilitation config for '{counsellorStyle}' already exists for this scope.", nameof(request));
+        }
+
+        config.UnitCode = unitCode;
+        config.ProgramCode = programCode;
+        config.CounsellorStyle = counsellorStyle;
+        config.IsTimingEnabled = request.IsTimingEnabled;
+        config.SessionDurationMinutes = request.SessionDurationMinutes;
+        config.ResidentDurationMinutes = request.ResidentDurationMinutes;
+        config.ResidentTimeMultiplier = request.ResidentTimeMultiplier;
+        config.SortOrder = request.SortOrder;
+        config.IsActive = request.IsActive;
+        config.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapGroupTherapyFacilitationConfig(config);
+    }
+
+    public async Task ArchiveGroupTherapyFacilitationConfigAsync(Guid facilitationConfigId, CancellationToken cancellationToken = default)
+    {
+        var config = await _dbContext.GroupTherapyFacilitationConfigs.FirstOrDefaultAsync(x => x.Id == facilitationConfigId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Group therapy facilitation config '{facilitationConfigId}' was not found.");
+
+        config.IsActive = false;
+        config.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<AppPermissionDto>> GetPermissionsAsync(CancellationToken cancellationToken = default)
     {
         var permissions = await _dbContext.AppPermissions
@@ -1519,6 +1735,38 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         };
     }
 
+    private static GroupTherapyConversationThemeConfigurationDto MapGroupTherapyConversationTheme(GroupTherapyConversationTheme theme)
+    {
+        return new GroupTherapyConversationThemeConfigurationDto
+        {
+            ConversationThemeId = theme.Id,
+            UnitCode = theme.UnitCode ?? string.Empty,
+            ProgramCode = theme.ProgramCode ?? string.Empty,
+            Code = theme.Code,
+            Label = theme.Label,
+            Description = theme.Description,
+            SortOrder = theme.SortOrder,
+            IsActive = theme.IsActive
+        };
+    }
+
+    private static GroupTherapyFacilitationConfigConfigurationDto MapGroupTherapyFacilitationConfig(GroupTherapyFacilitationConfig config)
+    {
+        return new GroupTherapyFacilitationConfigConfigurationDto
+        {
+            FacilitationConfigId = config.Id,
+            UnitCode = config.UnitCode ?? string.Empty,
+            ProgramCode = config.ProgramCode,
+            CounsellorStyle = config.CounsellorStyle,
+            IsTimingEnabled = config.IsTimingEnabled,
+            SessionDurationMinutes = config.SessionDurationMinutes,
+            ResidentDurationMinutes = config.ResidentDurationMinutes,
+            ResidentTimeMultiplier = config.ResidentTimeMultiplier,
+            SortOrder = config.SortOrder,
+            IsActive = config.IsActive
+        };
+    }
+
     private static AppPermissionDto MapPermission(Acutis.Domain.Entities.AppPermission permission)
     {
         return new AppPermissionDto
@@ -1778,6 +2026,50 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         ValidateResidentSubsetTarget(request.AudienceType, request.ResidentSubsetType, nameof(request));
     }
 
+    private static void ValidateGroupTherapyConversationThemeRequest(UpsertGroupTherapyConversationThemeRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ProgramCode) ||
+            string.IsNullOrWhiteSpace(request.Code) ||
+            string.IsNullOrWhiteSpace(request.Label))
+        {
+            throw new ArgumentException("Program code, theme code, and label are required.", nameof(request));
+        }
+
+        if (request.SortOrder < 0)
+        {
+            throw new ArgumentException("Sort order must be zero or greater.", nameof(request));
+        }
+    }
+
+    private static void ValidateGroupTherapyFacilitationConfigRequest(UpsertGroupTherapyFacilitationConfigRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ProgramCode) ||
+            string.IsNullOrWhiteSpace(request.CounsellorStyle))
+        {
+            throw new ArgumentException("Program code and counsellor style are required.", nameof(request));
+        }
+
+        if (request.SessionDurationMinutes.HasValue && request.SessionDurationMinutes.Value <= 0)
+        {
+            throw new ArgumentException("Session duration must be greater than zero when provided.", nameof(request));
+        }
+
+        if (request.ResidentDurationMinutes.HasValue && request.ResidentDurationMinutes.Value <= 0)
+        {
+            throw new ArgumentException("Resident duration must be greater than zero when provided.", nameof(request));
+        }
+
+        if (request.ResidentTimeMultiplier <= 0)
+        {
+            throw new ArgumentException("Resident time multiplier must be greater than zero.", nameof(request));
+        }
+
+        if (request.SortOrder < 0)
+        {
+            throw new ArgumentException("Sort order must be zero or greater.", nameof(request));
+        }
+    }
+
     private static void ValidatePermissionRequest(UpsertAppPermissionRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Key) ||
@@ -1932,5 +2224,10 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
     private static string? CleanOptional(string value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string? CleanOptionalKey(string value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : NormalizeKey(value);
     }
 }

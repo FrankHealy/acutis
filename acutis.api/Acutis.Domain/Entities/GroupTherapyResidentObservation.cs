@@ -23,4 +23,5 @@ public sealed class GroupTherapyResidentObservation
     public ResidentProgrammeEpisode? Episode { get; set; }
     public EpisodeEvent? EpisodeEvent { get; set; }
     public AppUser? ObserverUser { get; set; }
+    public ICollection<GroupTherapyObservationConversationTheme> ConversationThemes { get; set; } = new List<GroupTherapyObservationConversationTheme>();
 }

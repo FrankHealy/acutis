@@ -235,6 +235,56 @@ public sealed class UpsertScheduleOccurrenceRequest
     public string Notes { get; set; } = string.Empty;
 }
 
+public sealed class GroupTherapyConversationThemeConfigurationDto
+{
+    public Guid ConversationThemeId { get; set; }
+    public string UnitCode { get; set; } = string.Empty;
+    public string ProgramCode { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+    public bool IsActive { get; set; }
+}
+
+public sealed class UpsertGroupTherapyConversationThemeRequest
+{
+    public string UnitCode { get; set; } = string.Empty;
+    public string ProgramCode { get; set; } = "bruree_alcohol_gt";
+    public string Code { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
+public sealed class GroupTherapyFacilitationConfigConfigurationDto
+{
+    public Guid FacilitationConfigId { get; set; }
+    public string UnitCode { get; set; } = string.Empty;
+    public string ProgramCode { get; set; } = string.Empty;
+    public string CounsellorStyle { get; set; } = string.Empty;
+    public bool IsTimingEnabled { get; set; }
+    public int? SessionDurationMinutes { get; set; }
+    public int? ResidentDurationMinutes { get; set; }
+    public decimal ResidentTimeMultiplier { get; set; }
+    public int SortOrder { get; set; }
+    public bool IsActive { get; set; }
+}
+
+public sealed class UpsertGroupTherapyFacilitationConfigRequest
+{
+    public string UnitCode { get; set; } = string.Empty;
+    public string ProgramCode { get; set; } = "bruree_alcohol_gt";
+    public string CounsellorStyle { get; set; } = string.Empty;
+    public bool IsTimingEnabled { get; set; } = true;
+    public int? SessionDurationMinutes { get; set; }
+    public int? ResidentDurationMinutes { get; set; }
+    public decimal ResidentTimeMultiplier { get; set; } = 1.0m;
+    public int SortOrder { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
 public sealed class AppPermissionDto
 {
     public Guid PermissionId { get; set; }

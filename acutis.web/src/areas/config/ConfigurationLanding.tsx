@@ -16,6 +16,7 @@ import {
   ShieldAlert,
   Map,
   BriefcaseBusiness,
+  MessageSquareText,
 } from "lucide-react";
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
@@ -59,6 +60,8 @@ const ConfigurationLanding: React.FC = () => {
       "config.dashboard.programs.description",
       "config.dashboard.ot_roles.title",
       "config.dashboard.ot_roles.description",
+      "config.dashboard.group_therapy.title",
+      "config.dashboard.group_therapy.description",
     ]);
   }, [loadKeys]);
 
@@ -164,6 +167,19 @@ const ConfigurationLanding: React.FC = () => {
               </div>
               <p className="text-sm text-[var(--app-text-muted)]">
                 {text("config.dashboard.ot_roles.description", "Set up standing and one-off OT roles per unit before allocating residents operationally.")}
+              </p>
+            </button>
+
+            <button
+              onClick={() => router.push("/units/config/group-therapy")}
+              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <MessageSquareText className="h-6 w-6 text-[var(--app-primary)]" />
+                <h2 className="text-lg font-semibold text-[var(--app-text)]">{text("config.dashboard.group_therapy.title", "Group Therapy")}</h2>
+              </div>
+              <p className="text-sm text-[var(--app-text-muted)]">
+                {text("config.dashboard.group_therapy.description", "Configure conversation themes and facilitation timing profiles for group therapy sessions.")}
               </p>
             </button>
 

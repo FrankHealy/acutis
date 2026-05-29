@@ -42,6 +42,7 @@ export type GroupTherapyResidentObservation = {
   sessionNumber: number;
   observedAtUtc: string;
   selectedTerms: string[];
+  conversationThemes: GroupTherapyConversationTheme[];
   notes?: string | null;
   createdAtUtc: string;
   updatedAtUtc: string;
@@ -67,7 +68,33 @@ export type UpsertGroupTherapyResidentObservationRequest = {
   episodeEventId?: string | null;
   observedAtUtc: string;
   selectedTerms: string[];
+  conversationThemeIds: string[];
   notes?: string | null;
+};
+
+export type GroupTherapyConversationTheme = {
+  id: string;
+  code: string;
+  label: string;
+  description: string;
+  sortOrder: number;
+};
+
+export type GroupTherapyFacilitationConfig = {
+  id: string;
+  counsellorStyle: string;
+  isTimingEnabled: boolean;
+  sessionDurationMinutes?: number | null;
+  residentDurationMinutes?: number | null;
+  residentTimeMultiplier: number;
+  sortOrder: number;
+};
+
+export type GroupTherapyFacilitationOptions = {
+  unitCode: string;
+  programCode: string;
+  configs: GroupTherapyFacilitationConfig[];
+  conversationThemes: GroupTherapyConversationTheme[];
 };
 
 const noStoreFetchInit: RequestInit = {
@@ -169,6 +196,27 @@ export const groupTherapyService = {
     return (await response.json()) as GroupTherapyResidentObservation[];
   },
 
+  async getFacilitationOptions(
+    unitId: UnitId,
+    programCode: string,
+    accessToken?: string | null
+  ): Promise<GroupTherapyFacilitationOptions> {
+    const unitGuid = UNIT_GUIDS[unitId];
+    const response = await fetch(
+      `${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/grouptherapy/facilitation-options?programCode=${encodeURIComponent(programCode)}`,
+      {
+        ...noStoreFetchInit,
+        headers: createAuthHeaders(accessToken),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Group therapy facilitation options API failed (${response.status})`);
+    }
+
+    return (await response.json()) as GroupTherapyFacilitationOptions;
+  },
+
   async upsertObservation(
     payload: UpsertGroupTherapyResidentObservationRequest,
     accessToken?: string | null
@@ -190,6 +238,7 @@ export const groupTherapyService = {
         episodeEventId: payload.episodeEventId ?? null,
         observedAtUtc: payload.observedAtUtc,
         selectedTerms: payload.selectedTerms,
+        conversationThemeIds: payload.conversationThemeIds,
         notes: payload.notes ?? null,
       }),
     });

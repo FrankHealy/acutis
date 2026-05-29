@@ -483,9 +483,10 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
       return acc;
     }, {});
 
-    const selectedRoom = selectedBedCode?.startsWith("roundel_")
-      ? selectedBedCode.replace("roundel_", "").replace(/[a-z]$/i, "")
+    const selectedRoomAssignment = selectedBedCode
+      ? roomAssignments.find((room) => room.beds.some((bed) => bed.bedCode === selectedBedCode))
       : null;
+    const selectedRoom = selectedRoomAssignment?.roomCode ?? null;
 
     const assignSelectedBed = async () => {
       if (!completedAdmission || !selectedBedCode) {

@@ -19,11 +19,14 @@ export type RoomAssignmentOccupant = {
 
 export type RoomAssignmentBed = {
   bedCode: string;
+  bedKey: string;
+  priority?: number | null;
   occupant?: RoomAssignmentOccupant | null;
 };
 
 export type UnitRoomAssignment = {
   roomCode: string;
+  roomKey: string;
   storageRoomCode: string;
   capacity: number;
   occupants: RoomAssignmentOccupant[];
@@ -99,8 +102,11 @@ export type AssignUnitBedResponse = {
   episodeId: string;
   residentCaseId?: string | null;
   roomCode: string;
+  roomKey: string;
   storageRoomCode: string;
   bedCode: string;
+  bedKey: string;
+  bedPriority?: number | null;
 };
 
 async function fetchJson<T>(path: string, accessToken?: string | null, init?: RequestInit): Promise<T> {

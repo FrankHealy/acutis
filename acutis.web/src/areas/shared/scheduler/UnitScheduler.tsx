@@ -16,14 +16,15 @@ import {
   Coffee,
   Handshake,
   HeartHandshake,
-  HeartPulse,
   List,
   Megaphone,
   MessageCircle,
   Moon,
   Pencil,
+  Pill,
   RefreshCcw,
   ShieldCheck,
+  Stethoscope,
   Target,
   Trash2,
   UtensilsCrossed,
@@ -33,6 +34,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { isAuthorizedClient } from "@/lib/authMode";
+import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import {
   globalConfigurationService,
@@ -50,6 +52,7 @@ type UnitSchedulerProps = {
 };
 
 type SchedulerMode = "template" | "week";
+type SchedulerView = "grid" | "day";
 
 type DragPayload =
   | {
@@ -79,6 +82,7 @@ type EventIconKey =
   | "group-therapy"
   | "meeting"
   | "health"
+  | "medication"
   | "exercise"
   | "meal"
   | "announcement"
@@ -101,7 +105,8 @@ const iconOptions: IconOption[] = [
   { key: "roll-call", label: "Roll Call", Icon: Users },
   { key: "group-therapy", label: "Group Therapy", Icon: Users },
   { key: "meeting", label: "Meeting", Icon: ClipboardList },
-  { key: "health", label: "Health", Icon: HeartPulse },
+  { key: "health", label: "Health", Icon: Stethoscope },
+  { key: "medication", label: "Medication", Icon: Pill },
   { key: "exercise", label: "Exercise", Icon: Wrench },
   { key: "meal", label: "Meal", Icon: UtensilsCrossed },
   { key: "announcement", label: "Announcement", Icon: Megaphone },
@@ -121,6 +126,10 @@ const dayColumns = [
 ];
 
 const hourRows = Array.from({ length: 16 }, (_, index) => 7 + index);
+const fullDayStartMinutes = 0;
+const fullDayEndMinutes = 24 * 60;
+const fullDayPixelsPerHour = 86;
+const fullDayWidth = ((fullDayEndMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour;
 
 const emptyNewEvent = {
   name: "",
@@ -173,6 +182,8 @@ const standardEventLibrary: SchedulerLibraryEvent[] = [
   { code: "gamblers-awareness", name: "Gamblers Awareness", description: "Programme-facilitated gambling awareness", category: "meeting", startTime: "14:00", endTime: "15:00", audienceType: "ResidentSubset", residentSubsetType: "Gambling", facilitatorType: "Staff", facilitatorRole: "Programme facilitator" },
   { code: "mass", name: "Mass", description: "Mass or spiritual service", category: "meeting", startTime: "10:00", endTime: "11:00", audienceType: "OpenSession", residentSubsetType: "None", facilitatorType: "External" },
   { code: "occupational-therapy", name: "Occupational Therapy", description: "Occupational therapy session", category: "exercise", startTime: "09:00", endTime: "10:00", audienceType: "UnitResidents", residentSubsetType: "None", facilitatorType: "Staff", facilitatorRole: "Occupational therapist" },
+  { code: "doctor-visit", name: "Doctor Visit", description: "Doctor clinic or visit for residents from this unit", category: "health", startTime: "10:00", endTime: "11:00", audienceType: "UnitResidents", residentSubsetType: "None", facilitatorType: "External", externalResourceName: "Doctor" },
+  { code: "medication-dispensation", name: "Medication Dispensation", description: "Medication dispensation round for residents from this unit", category: "medication", startTime: "08:00", endTime: "08:30", audienceType: "UnitResidents", residentSubsetType: "None", facilitatorType: "Staff", facilitatorRole: "Nurse" },
   { code: "copywriting", name: "Copywriting", description: "Copywriting or written reflection session", category: "meeting", startTime: "14:00", endTime: "15:00", audienceType: "UnitResidents", residentSubsetType: "None", facilitatorType: "Staff", facilitatorRole: "Facilitator" },
   { code: "weekly-care-plan-capture", name: "Weekly Care Plan Capture", description: "Capture each alcohol unit resident's completed weekly care plan", category: "capture", startTime: "11:00", endTime: "12:00", audienceType: "UnitResidents", residentSubsetType: "None", captureRequirement: "ImagePerResident", facilitatorType: "Staff", facilitatorRole: "Care plan reviewer" },
 ];
@@ -299,6 +310,41 @@ function eventBlockStyle(startTime: string, endTime: string, index: number): Rea
   };
 }
 
+function fullDayEventStyle(startTime: string, endTime: string, rowIndex: number): React.CSSProperties {
+  const start = Math.max(fullDayStartMinutes, minutesFromTime(startTime));
+  const end = Math.min(fullDayEndMinutes, start + durationMinutes(startTime, endTime));
+  const left = ((start - fullDayStartMinutes) / 60) * fullDayPixelsPerHour;
+  const width = Math.max(38, ((Math.max(start + 15, end) - start) / 60) * fullDayPixelsPerHour);
+  return {
+    left,
+    width,
+    top: 52 + rowIndex * 68,
+  };
+}
+
+function visualAccentStyle(colorClass: string): { block: React.CSSProperties; icon: React.CSSProperties } {
+  const tone =
+    colorClass.includes("orange") || colorClass.includes("amber") || colorClass.includes("lime")
+      ? "warning"
+      : colorClass.includes("red")
+        ? "danger"
+        : colorClass.includes("green") || colorClass.includes("emerald")
+          ? "success"
+          : colorClass.includes("blue") || colorClass.includes("sky") || colorClass.includes("cyan") || colorClass.includes("teal")
+            ? "primary"
+            : "text";
+  const token = `var(--app-${tone})`;
+  return {
+    block: {
+      backgroundColor: `color-mix(in srgb, ${token} 10%, var(--app-surface))`,
+      borderLeftColor: token,
+    },
+    icon: {
+      color: token,
+    },
+  };
+}
+
 function getCodName(roster?: UnitStaffRosterBoardDto, period?: "morning" | "evening") {
   const codShifts = roster?.shifts.filter((shift) => {
     const key = `${shift.shiftType} ${shift.label}`.toLowerCase();
@@ -398,6 +444,10 @@ function getEventVisual(key: string | null | undefined, fallbackName?: string): 
       return { key: "meeting", label: "Meeting", Icon: Target, colorClass: "bg-cyan-500" };
     case "Weekly Care Plan Capture":
       return { key: "capture", label: "Capture", Icon: Camera, colorClass: "bg-emerald-600" };
+    case "Doctor Visit":
+      return { key: "health", label: "Health", Icon: Stethoscope, colorClass: "bg-sky-600" };
+    case "Medication Dispensation":
+      return { key: "medication", label: "Medication", Icon: Pill, colorClass: "bg-lime-600" };
     case "Group A":
       return { key: "group-therapy", label: "Group Therapy", Icon: HeartHandshake, colorClass: "bg-pink-500" };
     case "Group B":
@@ -466,9 +516,15 @@ function makeLibraryTemplate(
 
 const UnitScheduler: React.FC<UnitSchedulerProps> = ({ unitId, unitName }) => {
   const { data: session, status } = useSession();
+  const { loadKeys, t } = useLocalization();
   const accessToken = session?.accessToken;
   const [mode, setMode] = useState<SchedulerMode>("template");
+  const [view, setView] = useState<SchedulerView>("day");
   const [weekStart, setWeekStart] = useState(() => startOfWeekIso(new Date()));
+  const [selectedDayIndex, setSelectedDayIndex] = useState(() => {
+    const today = new Date().getDay();
+    return today === 0 ? 6 : today - 1;
+  });
   const [units, setUnits] = useState<UnitConfigurationDto[]>([]);
   const [templates, setTemplates] = useState<ScheduleTemplateDto[]>([]);
   const [occurrences, setOccurrences] = useState<ScheduleOccurrenceDto[]>([]);
@@ -489,6 +545,25 @@ const UnitScheduler: React.FC<UnitSchedulerProps> = ({ unitId, unitName }) => {
     () => dayColumns.map((_, index) => addDaysIso(weekStart, index)),
     [weekStart],
   );
+  const selectedDay = dayColumns[selectedDayIndex] ?? dayColumns[0];
+  const selectedDate = weekDates[selectedDayIndex] ?? weekDates[0];
+
+  const text = useCallback(
+    (key: string, fallback: string) => {
+      const resolved = t(key);
+      return resolved === key ? fallback : resolved;
+    },
+    [t],
+  );
+
+  useEffect(() => {
+    void loadKeys([
+      "scheduler.view.grid",
+      "scheduler.view.full_day",
+      "scheduler.view.weekly_template",
+      "scheduler.view.no_events_day",
+    ]);
+  }, [loadKeys]);
 
   const placedTemplates = useMemo(
     () =>
@@ -569,6 +644,18 @@ const UnitScheduler: React.FC<UnitSchedulerProps> = ({ unitId, unitName }) => {
         ),
     [weekOccurrences],
   );
+
+  const fullDayEntries = useMemo(() => {
+    const entries =
+      mode === "template"
+        ? placedTemplates.filter((template) => template.weeklyDayOfWeek === selectedDay.value)
+        : weekOccurrences.filter((occurrence) => occurrence.scheduledDate === selectedDate);
+
+    return entries
+      .slice()
+      .sort((left, right) => minutesFromTime(left.startTime) - minutesFromTime(right.startTime))
+      .map((entry, index) => ({ entry, index }));
+  }, [mode, placedTemplates, selectedDate, selectedDay.value, weekOccurrences]);
 
   const loadScheduler = useCallback(async () => {
     if (status === "unauthenticated") {
@@ -1182,6 +1269,39 @@ const UnitScheduler: React.FC<UnitSchedulerProps> = ({ unitId, unitName }) => {
     );
   };
 
+  const renderFullDayEventBlock = (entry: ScheduleTemplateDto | ScheduleOccurrenceDto, index: number) => {
+    const title = "name" in entry ? entry.name : entry.title;
+    const visual = getEventVisual(entry.category, title);
+    const Icon = visual.Icon;
+    const accent = visualAccentStyle(visual.colorClass);
+    const time = `${entry.startTime || "--:--"} - ${entry.endTime || "--:--"}`;
+    const duration = durationMinutes(entry.startTime, entry.endTime);
+    const openEditor = () => {
+      if ("scheduleTemplateId" in entry) {
+        openTemplateEditor(entry);
+      } else {
+        openOccurrenceEditor(entry);
+      }
+    };
+
+    return (
+      <button
+        key={"scheduleTemplateId" in entry ? `day-template:${entry.scheduleTemplateId}` : `day-occurrence:${entry.scheduleOccurrenceId}`}
+        type="button"
+        onClick={openEditor}
+        className="absolute overflow-hidden rounded-lg border border-l-4 border-[var(--app-border)] px-2 py-2 text-left shadow-sm transition-colors hover:border-[var(--app-primary)] hover:ring-2 hover:ring-[color:color-mix(in_srgb,var(--app-primary)_18%,transparent)]"
+        style={{ ...fullDayEventStyle(entry.startTime, entry.endTime, index), ...accent.block }}
+      >
+        <Icon className="pointer-events-none absolute bottom-1 right-1 h-10 w-10 opacity-10" style={accent.icon} />
+        <span className="relative block truncate text-xs font-semibold text-[var(--app-text)]">{title}</span>
+        <span className="relative mt-0.5 block truncate text-[11px] font-medium text-[var(--app-text-muted)]">
+          {entry.startTime || "--:--"} · {duration < 60 ? `${duration} min` : `${Math.round(duration / 60)} hr`}
+        </span>
+        <span className="sr-only">{time}</span>
+      </button>
+    );
+  };
+
   if (status === "unauthenticated") {
     return (
       <div className="rounded-lg border border-[color:color-mix(in_srgb,var(--app-warning)_28%,var(--app-border))] bg-[color:color-mix(in_srgb,var(--app-warning)_10%,var(--app-surface))] p-4 text-sm text-[var(--app-text)]">
@@ -1219,6 +1339,36 @@ const UnitScheduler: React.FC<UnitSchedulerProps> = ({ unitId, unitName }) => {
                 </button>
               ))}
             </div>
+            <div className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-1">
+              {(["grid", "day"] as SchedulerView[]).map((nextView) => (
+                <button
+                  key={nextView}
+                  type="button"
+                  onClick={() => setView(nextView)}
+                  className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
+                    view === nextView ? "app-primary-button" : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
+                  }`}
+                >
+                  {nextView === "grid" ? text("scheduler.view.grid", "Grid") : text("scheduler.view.full_day", "Full Day")}
+                </button>
+              ))}
+            </div>
+            {view === "day" && (
+              <div className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-1">
+                {dayColumns.map((day, index) => (
+                  <button
+                    key={`day-picker:${day.value}`}
+                    type="button"
+                    onClick={() => setSelectedDayIndex(index)}
+                    className={`rounded-md px-2.5 py-1.5 text-xs font-semibold ${
+                      selectedDayIndex === index ? "app-primary-button" : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
+                    }`}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <label className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm text-[var(--app-text)]">
               Week
               <input
@@ -1315,6 +1465,71 @@ const UnitScheduler: React.FC<UnitSchedulerProps> = ({ unitId, unitName }) => {
 
           {loading ? (
             <div className="p-6 text-sm text-[var(--app-text-muted)]">Loading scheduler...</div>
+          ) : view === "day" ? (
+            <div className="overflow-x-auto overflow-y-hidden">
+              <div
+                className="relative min-h-[520px] border-b border-[var(--app-border)] bg-[var(--app-surface)]"
+                style={{ width: fullDayWidth + 160 }}
+              >
+                <div className="sticky left-0 top-0 z-10 flex h-11 items-center border-b border-[var(--app-border)] bg-[var(--app-surface-muted)]">
+                  <div className="sticky left-0 z-20 flex h-full w-40 shrink-0 items-center border-r border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--app-text-muted)]">
+                        {selectedDay.label}
+                      </p>
+                      <p className="text-xs text-[var(--app-text)]">{mode === "template" ? text("scheduler.view.weekly_template", "Weekly template") : selectedDate}</p>
+                    </div>
+                  </div>
+                  <div className="relative h-full shrink-0" style={{ width: fullDayWidth }}>
+                    {Array.from({ length: 25 }, (_, hour) => (
+                      <div
+                        key={`day-hour:${hour}`}
+                        className="absolute top-0 h-full border-l border-dashed border-[var(--app-border)]"
+                        style={{ left: hour * fullDayPixelsPerHour }}
+                      >
+                        {hour < 24 && (
+                          <span className="absolute left-2 top-2 text-xs font-medium text-[var(--app-text-muted)]">
+                            {timeFromHour(hour)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div
+                  className="absolute bottom-0 top-11"
+                  style={{
+                    left: 160,
+                    width: fullDayWidth,
+                    backgroundImage:
+                      "linear-gradient(to right, color-mix(in srgb, var(--app-border) 72%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in srgb, var(--app-border) 42%, transparent) 1px, transparent 1px)",
+                    backgroundSize: `${fullDayPixelsPerHour}px 100%, ${fullDayPixelsPerHour / 4}px 100%`,
+                  }}
+                >
+                  {mode === "week" && selectedDate === new Date().toISOString().slice(0, 10) && (() => {
+                    const now = new Date();
+                    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                    const left = ((nowMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour;
+                    if (left < 0 || left > fullDayWidth) return null;
+                    return (
+                      <div className="pointer-events-none absolute inset-y-0 z-20" style={{ left }}>
+                        <span className="absolute -left-5 top-1 rounded bg-red-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                          {timeFromMinutes(nowMinutes)}
+                        </span>
+                        <div className="h-full w-px bg-red-500" />
+                      </div>
+                    );
+                  })()}
+                  {fullDayEntries.length === 0 ? (
+                    <div className="absolute left-4 top-8 rounded-lg border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-3 text-sm text-[var(--app-text-muted)]">
+                      {text("scheduler.view.no_events_day", "No events on this day.")}
+                    </div>
+                  ) : (
+                    fullDayEntries.map(({ entry, index }) => renderFullDayEventBlock(entry, index))
+                  )}
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="max-h-[68vh] overflow-auto">
               <div className="min-w-[820px]">

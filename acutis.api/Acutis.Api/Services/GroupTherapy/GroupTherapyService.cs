@@ -30,6 +30,11 @@ public interface IGroupTherapyService
         int sessionNumber,
         CancellationToken cancellationToken = default);
 
+    Task<GroupTherapyFacilitationOptionsDto> GetFacilitationOptionsAsync(
+        string unitCode,
+        string programCode,
+        CancellationToken cancellationToken = default);
+
     Task<GroupTherapyResidentObservationDto> UpsertObservationAsync(
         UpsertGroupTherapyResidentObservationRequest request,
         Guid actorUserId,
@@ -175,6 +180,8 @@ public sealed class GroupTherapyService : IGroupTherapyService
 
         var observations = await _dbContext.GroupTherapyResidentObservations
             .AsNoTracking()
+            .Include(observation => observation.ConversationThemes)
+                .ThenInclude(link => link.ConversationTheme)
             .Where(observation =>
                 observation.UnitCode.ToLower() == normalizedUnitCode &&
                 observation.ProgramCode.ToLower() == normalizedProgramCode &&
@@ -185,6 +192,45 @@ public sealed class GroupTherapyService : IGroupTherapyService
             .ToListAsync(cancellationToken);
 
         return observations.Select(MapObservation).ToList();
+    }
+
+    public async Task<GroupTherapyFacilitationOptionsDto> GetFacilitationOptionsAsync(
+        string unitCode,
+        string programCode,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedUnitCode = unitCode.Trim().ToLowerInvariant();
+        var normalizedProgramCode = programCode.Trim().ToLowerInvariant();
+
+        var themes = await _dbContext.GroupTherapyConversationThemes
+            .AsNoTracking()
+            .Where(theme =>
+                theme.IsActive &&
+                (theme.ProgramCode == null || theme.ProgramCode.ToLower() == normalizedProgramCode) &&
+                (theme.UnitCode == null || theme.UnitCode.ToLower() == normalizedUnitCode))
+            .OrderBy(theme => theme.UnitCode == null ? 0 : 1)
+            .ThenBy(theme => theme.SortOrder)
+            .ThenBy(theme => theme.Label)
+            .ToListAsync(cancellationToken);
+
+        var configs = await _dbContext.GroupTherapyFacilitationConfigs
+            .AsNoTracking()
+            .Where(config =>
+                config.IsActive &&
+                config.ProgramCode.ToLower() == normalizedProgramCode &&
+                (config.UnitCode == null || config.UnitCode.ToLower() == normalizedUnitCode))
+            .OrderBy(config => config.UnitCode == null ? 0 : 1)
+            .ThenBy(config => config.SortOrder)
+            .ThenBy(config => config.CounsellorStyle)
+            .ToListAsync(cancellationToken);
+
+        return new GroupTherapyFacilitationOptionsDto
+        {
+            UnitCode = normalizedUnitCode,
+            ProgramCode = normalizedProgramCode,
+            ConversationThemes = themes.Select(MapConversationTheme).ToList(),
+            Configs = configs.Select(MapFacilitationConfig).ToList()
+        };
     }
 
     public async Task<GroupTherapyResidentObservationDto> UpsertObservationAsync(
@@ -199,6 +245,10 @@ public sealed class GroupTherapyService : IGroupTherapyService
             .Select(term => term.Trim())
             .Where(term => !string.IsNullOrWhiteSpace(term))
             .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var selectedThemeIds = request.ConversationThemeIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
             .ToList();
 
         var nowUtc = DateTime.UtcNow;
@@ -242,7 +292,16 @@ public sealed class GroupTherapyService : IGroupTherapyService
         existing.UpdatedAtUtc = nowUtc;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapObservation(existing);
+        var selectedThemes = await ReplaceObservationThemesAsync(
+            existing.Id,
+            selectedThemeIds,
+            normalizedUnitCode,
+            normalizedProgramCode,
+            nowUtc,
+            cancellationToken);
+        var response = MapObservation(existing);
+        response.ConversationThemes = selectedThemes;
+        return response;
     }
 
     private static GroupTherapyResidentRemarkDto MapRemark(GroupTherapyResidentRemark remark)
@@ -301,10 +360,87 @@ public sealed class GroupTherapyService : IGroupTherapyService
             SessionNumber = observation.SessionNumber,
             ObservedAtUtc = observation.ObservedAtUtc,
             SelectedTerms = selectedTerms ?? new List<string>(),
+            ConversationThemes = observation.ConversationThemes
+                .Where(link => link.ConversationTheme is not null)
+                .OrderBy(link => link.ConversationTheme.SortOrder)
+                .Select(link => MapConversationTheme(link.ConversationTheme))
+                .ToList(),
             Notes = observation.Notes,
             CreatedAtUtc = observation.CreatedAtUtc,
             UpdatedAtUtc = observation.UpdatedAtUtc
         };
+    }
+
+    private static GroupTherapyConversationThemeDto MapConversationTheme(GroupTherapyConversationTheme theme)
+    {
+        return new GroupTherapyConversationThemeDto
+        {
+            Id = theme.Id,
+            Code = theme.Code,
+            Label = theme.Label,
+            Description = theme.Description,
+            SortOrder = theme.SortOrder
+        };
+    }
+
+    private static GroupTherapyFacilitationConfigDto MapFacilitationConfig(GroupTherapyFacilitationConfig config)
+    {
+        return new GroupTherapyFacilitationConfigDto
+        {
+            Id = config.Id,
+            CounsellorStyle = config.CounsellorStyle,
+            IsTimingEnabled = config.IsTimingEnabled,
+            SessionDurationMinutes = config.SessionDurationMinutes,
+            ResidentDurationMinutes = config.ResidentDurationMinutes,
+            ResidentTimeMultiplier = config.ResidentTimeMultiplier,
+            SortOrder = config.SortOrder
+        };
+    }
+
+    private async Task<List<GroupTherapyConversationThemeDto>> ReplaceObservationThemesAsync(
+        Guid observationId,
+        IReadOnlyCollection<Guid> selectedThemeIds,
+        string unitCode,
+        string programCode,
+        DateTime nowUtc,
+        CancellationToken cancellationToken)
+    {
+        var existingLinks = await _dbContext.GroupTherapyObservationConversationThemes
+            .Where(link => link.ObservationId == observationId)
+            .ToListAsync(cancellationToken);
+
+        if (existingLinks.Count > 0)
+        {
+            _dbContext.GroupTherapyObservationConversationThemes.RemoveRange(existingLinks);
+        }
+
+        var selectedThemes = new List<GroupTherapyConversationTheme>();
+        if (selectedThemeIds.Count > 0)
+        {
+            selectedThemes = await _dbContext.GroupTherapyConversationThemes
+                .AsNoTracking()
+                .Where(theme =>
+                    theme.IsActive &&
+                    selectedThemeIds.Contains(theme.Id) &&
+                    (theme.ProgramCode == null || theme.ProgramCode.ToLower() == programCode) &&
+                    (theme.UnitCode == null || theme.UnitCode.ToLower() == unitCode))
+                .ToListAsync(cancellationToken);
+
+            _dbContext.GroupTherapyObservationConversationThemes.AddRange(selectedThemes.Select(theme =>
+                new GroupTherapyObservationConversationTheme
+                {
+                    ObservationId = observationId,
+                    ConversationThemeId = theme.Id,
+                    CreatedAtUtc = nowUtc
+                }));
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return selectedThemes
+            .OrderBy(theme => theme.SortOrder)
+            .ThenBy(theme => theme.Label)
+            .Select(MapConversationTheme)
+            .ToList();
     }
 
     private async Task ValidateObservationRequestAsync(

@@ -23,6 +23,7 @@ import {
   RotateCw,
   Save,
   ShieldAlert,
+  Slash,
   Square,
   Type,
   X,
@@ -61,6 +62,7 @@ type MapDesignerProps = {
 
 type WorldPoint = { x: number; y: number };
 type ResizeHandle = "right" | "bottom" | "bottomRight";
+type LineResizeHandle = "start" | "end";
 type PointerDragState =
   | { kind: "pan"; originClientX: number; originClientY: number; originPanX: number; originPanY: number }
   | {
@@ -72,6 +74,7 @@ type PointerDragState =
       childGeometries: Array<{ id: string; geometry: MapGeometry }>;
     }
   | { kind: "resize"; artefactId: string; handle: ResizeHandle; originWorld: WorldPoint; originalGeometry: Extract<MapGeometry, { kind: "rect" }> }
+  | { kind: "lineResize"; artefactId: string; handle: LineResizeHandle; originWorld: WorldPoint; originalGeometry: Extract<MapGeometry, { kind: "line" }> }
   | { kind: "room"; originWorld: WorldPoint; currentWorld: WorldPoint }
   | null;
 
@@ -107,6 +110,7 @@ const TOOL_ORDER: Array<{ id: MapTool; icon: React.ComponentType<{ className?: s
   { id: "room", icon: Square, fallbackLabel: "Room" },
   { id: "corridor", icon: MapIcon, fallbackLabel: "Corridor" },
   { id: "wall", icon: BrickWall, fallbackLabel: "Wall" },
+  { id: "line", icon: Slash, fallbackLabel: "Line" },
   { id: "partition", icon: Columns2, fallbackLabel: "Partition" },
   { id: "stair", icon: BetweenVerticalStart, fallbackLabel: "Stair" },
   { id: "door", icon: DoorOpen, fallbackLabel: "Door" },
@@ -123,6 +127,7 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
   room: "config.map_designer.tool.room",
   corridor: "config.map_designer.tool.corridor",
   wall: "config.map_designer.tool.wall",
+  line: "config.map_designer.tool.line",
   partition: "config.map_designer.tool.partition",
   stair: "config.map_designer.tool.stair",
   door: "config.map_designer.tool.door",
@@ -134,8 +139,30 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
 };
 
 const createId = (prefix: string) => `${prefix}_${createClientId().slice(0, 8)}`;
+
+function normalizeHumanKey(value?: string) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function isHumanKeyTarget(artefact: MapArtefact) {
+  return artefact.type === "room" || artefact.type === "corridor" || artefact.type === "roundel";
+}
+
+function findDuplicateHumanKey(artefacts: MapArtefact[], candidate: MapArtefact) {
+  const normalizedCandidateKey = normalizeHumanKey(candidate.humanKey);
+  if (!normalizedCandidateKey || !isHumanKeyTarget(candidate)) {
+    return null;
+  }
+
+  return artefacts.find(
+    (artefact) =>
+      artefact.id !== candidate.id &&
+      isHumanKeyTarget(artefact) &&
+      normalizeHumanKey(artefact.humanKey) === normalizedCandidateKey,
+  ) ?? null;
+}
 const normalizeRect = (a: WorldPoint, b: WorldPoint) => ({ x: Math.round(Math.min(a.x, b.x)), y: Math.round(Math.min(a.y, b.y)), width: Math.round(Math.abs(b.x - a.x)), height: Math.round(Math.abs(b.y - a.y)) });
-const DEFAULT_WORLD = { width: 1600, height: 1050 };
+const DEFAULT_WORLD = { width: 4000, height: 3000 };
 const SNAP_THRESHOLD = 16;
 
 function getArtefactZOrder(artefact: MapArtefact): number {
@@ -218,6 +245,31 @@ function getResizeHandlePositions(geometry: Extract<MapGeometry, { kind: "rect" 
     bottom: { x: geometry.x + geometry.width / 2, y: geometry.y + geometry.height },
     bottomRight: { x: geometry.x + geometry.width, y: geometry.y + geometry.height },
   } satisfies Record<ResizeHandle, WorldPoint>;
+}
+
+function getLineResizeHandlePositions(geometry: Extract<MapGeometry, { kind: "line" }>) {
+  return {
+    start: { x: geometry.x1, y: geometry.y1 },
+    end: { x: geometry.x2, y: geometry.y2 },
+  } satisfies Record<LineResizeHandle, WorldPoint>;
+}
+
+function getLineLength(geometry: Extract<MapGeometry, { kind: "line" }>): number {
+  return Math.round(Math.hypot(geometry.x2 - geometry.x1, geometry.y2 - geometry.y1));
+}
+
+function setLineLengthFromStart(geometry: Extract<MapGeometry, { kind: "line" }>, length: number): Extract<MapGeometry, { kind: "line" }> {
+  const nextLength = Math.max(1, Math.round(length));
+  const deltaX = geometry.x2 - geometry.x1;
+  const deltaY = geometry.y2 - geometry.y1;
+  const currentLength = Math.hypot(deltaX, deltaY);
+  const unitX = currentLength > 0 ? deltaX / currentLength : 1;
+  const unitY = currentLength > 0 ? deltaY / currentLength : 0;
+  return {
+    ...geometry,
+    x2: Math.round(geometry.x1 + unitX * nextLength),
+    y2: Math.round(geometry.y1 + unitY * nextLength),
+  };
 }
 
 function createRoomBatchDraft(rooms: MapArtefact[]): RoomBatchDraft {
@@ -851,7 +903,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
   );
   const isRoomBatchSelection = selectedRooms.length > 1;
   const renderOrderedArtefacts = useMemo(() => {
-    const groups: Record<MapArtefact["type"], Array<{ artefact: MapArtefact; index: number }>> = { zone: [], corridor: [], room: [], wall: [], partition: [], stair: [], door: [], window: [], exit: [], fireExit: [], roundel: [], label: [] };
+    const groups: Record<MapArtefact["type"], Array<{ artefact: MapArtefact; index: number }>> = { zone: [], corridor: [], room: [], wall: [], line: [], partition: [], stair: [], door: [], window: [], exit: [], fireExit: [], roundel: [], label: [] };
     documentModel.artefacts.forEach((artefact, index) => {
       if (artefact.visible !== false) groups[artefact.type].push({ artefact, index });
     });
@@ -891,6 +943,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       ...sortGroup(groups.room),
       ...sortGroup(groups.stair),
       ...sortGroup(groups.wall),
+      ...sortGroup(groups.line),
       ...sortGroup(groups.partition),
       ...sortGroup(groups.door),
       ...sortGroup(groups.window),
@@ -1107,7 +1160,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       setOpeningPreview(worldPoint ? createAttachedOpeningPreview(activeTool, worldPoint) : null);
     }
 
-    if (pendingWallStart && worldPoint && (activeTool === "wall" || activeTool === "partition")) {
+    if (pendingWallStart && worldPoint && (activeTool === "wall" || activeTool === "line" || activeTool === "partition")) {
       setWallPreviewPoint(getAlignedPoint(worldPoint, { referencePoint: pendingWallStart, shiftLock: shiftKey }));
     } else if (!currentDragState) {
       setWallPreviewPoint(null);
@@ -1136,6 +1189,19 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       if (currentDragState.handle === "bottom" || currentDragState.handle === "bottomRight") {
         nextGeometry.height = Math.max(12, Math.round(alignedPoint.y - original.y));
       }
+
+      setDocumentModel((current) => ({
+        ...current,
+        artefacts: current.artefacts.map((artefact) => (artefact.id === currentDragState.artefactId ? { ...artefact, geometry: nextGeometry } : artefact)),
+      }));
+      return;
+    }
+    if (currentDragState.kind === "lineResize") {
+      const alignedPoint = getAlignedPoint(worldPoint, { referencePoint: currentDragState.originWorld, shiftLock: shiftKey, ignoreArtefactId: currentDragState.artefactId });
+      const nextGeometry: Extract<MapGeometry, { kind: "line" }> =
+        currentDragState.handle === "start"
+          ? { ...currentDragState.originalGeometry, x1: alignedPoint.x, y1: alignedPoint.y }
+          : { ...currentDragState.originalGeometry, x2: alignedPoint.x, y2: alignedPoint.y };
 
       setDocumentModel((current) => ({
         ...current,
@@ -1194,6 +1260,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
           id: createId(activeTool === "stair" ? "stair" : activeTool === "corridor" ? "corridor" : "room"),
           type: activeTool === "stair" ? "stair" : activeTool === "corridor" ? "corridor" : "room",
           geometry: { kind: "rect", ...draftRect },
+          humanKey: activeTool === "room" || activeTool === "corridor" ? createId(activeTool === "corridor" ? "corridor_key" : "room_key") : undefined,
           labelOverride: activeTool === "stair" ? "Stairs" : activeTool === "corridor" ? "Corridor" : "Room",
           metadata: {
             cornerStyle: "square",
@@ -1207,7 +1274,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
         shouldReturnToSelect = true;
       }
     }
-    if (currentDragState?.kind === "move" || currentDragState?.kind === "resize") {
+    if (currentDragState?.kind === "move" || currentDragState?.kind === "resize" || currentDragState?.kind === "lineResize") {
       shouldReturnToSelect = true;
     }
     if (typeof pointerId === "number" && surfaceRef.current?.hasPointerCapture(pointerId)) {
@@ -1227,6 +1294,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       id: createId(type),
       type,
       geometry: { kind: "point", x: snappedPoint.x, y: snappedPoint.y, size: type === "roundel" ? 28 : 18 },
+      humanKey: type === "roundel" ? createId("bed_key") : undefined,
       labelOverride: type === "label" ? "Label" : undefined,
       parentId:
         type === "roundel"
@@ -1303,6 +1371,26 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
     surfaceRef.current.setPointerCapture(event.pointerId);
   };
 
+  const handleLineResizeHandlePointerDown = (event: React.PointerEvent<SVGCircleElement>, artefact: MapArtefact, handle: LineResizeHandle) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (activeTool !== "select" || event.button !== 0 || !surfaceRef.current || artefact.geometry.kind !== "line") return;
+    setPropertiesOpen(false);
+    setSelectedArtefactId(artefact.id);
+    const worldPoint = getWorldPointFromEvent(event);
+    if (!worldPoint) return;
+    const nextDragState: PointerDragState = {
+      kind: "lineResize",
+      artefactId: artefact.id,
+      handle,
+      originWorld: handle === "start" ? { x: artefact.geometry.x2, y: artefact.geometry.y2 } : { x: artefact.geometry.x1, y: artefact.geometry.y1 },
+      originalGeometry: artefact.geometry,
+    };
+    dragStateRef.current = nextDragState;
+    setDragState(nextDragState);
+    surfaceRef.current.setPointerCapture(event.pointerId);
+  };
+
   const handleSurfacePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
     event.preventDefault();
     if (!surfaceRef.current) return;
@@ -1326,7 +1414,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       surfaceRef.current.setPointerCapture(event.pointerId);
       return;
     }
-    if ((activeTool === "wall" || activeTool === "partition") && event.button === 0) {
+    if ((activeTool === "wall" || activeTool === "line" || activeTool === "partition") && event.button === 0) {
       const snappedPoint = getAlignedPoint(worldPoint, { referencePoint: pendingWallStart, shiftLock: event.shiftKey });
       if (!pendingWallStart) {
         setPropertiesOpen(false);
@@ -1337,8 +1425,9 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
         const nextArtefact: MapArtefact = {
           id: createId(activeTool),
           type: activeTool,
-          geometry: { kind: "line", x1: pendingWallStart.x, y1: pendingWallStart.y, x2: snappedPoint.x, y2: snappedPoint.y, thickness: activeTool === "partition" ? 6 : 14 },
-          labelOverride: activeTool === "partition" ? "Partition" : undefined,
+          geometry: { kind: "line", x1: pendingWallStart.x, y1: pendingWallStart.y, x2: snappedPoint.x, y2: snappedPoint.y, thickness: activeTool === "wall" ? 14 : activeTool === "partition" ? 6 : 4 },
+          labelOverride: activeTool === "line" ? "Line" : activeTool === "partition" ? "Partition" : undefined,
+          metadata: activeTool === "line" ? { borderColor: "#111827" } : undefined,
         };
         setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
         setSelectedArtefactId(nextArtefact.id);
@@ -1456,10 +1545,16 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       return;
     }
     if (!selectedArtefactId || !draftArtefact) return;
+    const duplicateHumanKeyArtefact = findDuplicateHumanKey(documentModel.artefacts, draftArtefact);
+    if (duplicateHumanKeyArtefact) {
+      setIoError(`Human key "${draftArtefact.humanKey}" is already used by ${duplicateHumanKeyArtefact.id}.`);
+      return;
+    }
     setDocumentModel((current) => ({
       ...current,
       artefacts: current.artefacts.map((artefact) => (artefact.id === selectedArtefactId ? draftArtefact : artefact)),
     }));
+    setIoError(null);
     closeProperties();
   };
   const adjustSelectedArtefactZOrder = (direction: "forward" | "backward") => {
@@ -1622,7 +1717,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                     aria-label={text(TOOL_LABEL_KEYS[tool.id], tool.fallbackLabel)}
                     onClick={() => {
                       setActiveTool(tool.id);
-                      if (tool.id !== "wall" && tool.id !== "partition") {
+                      if (tool.id !== "wall" && tool.id !== "line" && tool.id !== "partition") {
                         setPendingWallStart(null);
                         setWallPreviewPoint(null);
                       }
@@ -1688,7 +1783,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
             <div ref={containerRef} className={`relative overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-canvas,#eef4fb)] ${mode === "modal" ? "h-[72vh] min-h-[640px]" : "h-[82vh] min-h-[760px]"}`}>
               <svg
                 ref={surfaceRef}
-                className={`h-full w-full ${activeTool === "pan" ? "cursor-grab" : activeTool === "room" || activeTool === "corridor" ? "cursor-crosshair" : "cursor-default"}`}
+                className={`h-full w-full ${activeTool === "pan" ? "cursor-grab" : activeTool === "room" || activeTool === "corridor" || activeTool === "stair" || activeTool === "wall" || activeTool === "line" || activeTool === "partition" ? "cursor-crosshair" : "cursor-default"}`}
                 style={{ touchAction: "none", userSelect: "none" }}
                 onPointerDown={handleSurfacePointerDown}
                 onPointerMove={handleSurfacePointerMove}
@@ -1775,7 +1870,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                     const isSelected = artefact.id === selectedArtefactId || ((artefact.type === "room" || artefact.type === "corridor") && selectedRoomIds.includes(artefact.id));
                     return (
                       <g key={artefact.id} data-artefact-id={artefact.id} className="cursor-pointer" onPointerDown={(event) => handleArtefactPointerDown(event, artefact)}>
-                        {displayGeometry.kind === "line" && (artefact.type === "door" || artefact.type === "window" || artefact.type === "partition") && (
+                        {displayGeometry.kind === "line" && (artefact.type === "door" || artefact.type === "window" || artefact.type === "partition" || artefact.type === "line") && (
                           <line x1={displayGeometry.x1} y1={displayGeometry.y1} x2={displayGeometry.x2} y2={displayGeometry.y2} stroke="transparent" strokeWidth={18} strokeLinecap="round" />
                         )}
                         {renderArtefactShape(artefact, isSelected, displayGeometry, artefactsById)}
@@ -1806,6 +1901,29 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                       </g>
                     );
                   })()}
+                  {activeTool === "select" && selectedArtefact?.geometry.kind === "line" && (() => {
+                    const handles = getLineResizeHandlePositions(selectedArtefact.geometry);
+                    return (
+                      <g>
+                        {(["start", "end"] as LineResizeHandle[]).map((handle) => {
+                          const point = handles[handle];
+                          return (
+                            <circle
+                              key={`line_resize_${handle}`}
+                              cx={point.x}
+                              cy={point.y}
+                              r={7}
+                              fill="white"
+                              stroke="var(--app-primary)"
+                              strokeWidth={2}
+                              style={{ cursor: "crosshair" }}
+                              onPointerDown={(event) => handleLineResizeHandlePointerDown(event, selectedArtefact, handle)}
+                            />
+                          );
+                        })}
+                      </g>
+                    );
+                  })()}
                   {roomDraft && <rect x={roomDraft.x} y={roomDraft.y} width={roomDraft.width} height={roomDraft.height} fill="color-mix(in srgb, var(--app-primary) 12%, white)" stroke="var(--app-primary)" strokeWidth={2} strokeDasharray="10 8" />}
                   {pendingWallStart && <circle cx={pendingWallStart.x} cy={pendingWallStart.y} r={10} fill="var(--app-primary)" opacity={0.85} />}
                   {pendingWallStart && wallPreviewPoint && (
@@ -1815,7 +1933,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                       x2={wallPreviewPoint.x}
                       y2={wallPreviewPoint.y}
                       stroke="var(--app-primary)"
-                      strokeWidth={activeTool === "partition" ? 6 : 14}
+                      strokeWidth={activeTool === "wall" ? 14 : activeTool === "partition" ? 6 : 4}
                       strokeLinecap="square"
                       strokeDasharray={activeTool === "partition" ? "10 6" : undefined}
                       opacity={0.85}
@@ -1906,6 +2024,19 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.label_override", "Label Override")}</p>
                         <input type="text" value={editingArtefact.labelOverride ?? ""} onChange={(event) => setDraftArtefact((current) => (current ? { ...current, labelOverride: event.target.value || undefined } : current))} placeholder={text("config.map_designer.field.label_override_placeholder", "Enter visible label")} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-2 py-1.5 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]" />
                       </div>
+                      {isHumanKeyTarget(editingArtefact) && (
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.human_key", "Human Key")}</p>
+                          <input type="text" value={editingArtefact.humanKey ?? ""} onChange={(event) => setDraftArtefact((current) => (current ? { ...current, humanKey: event.target.value.trim() || undefined } : current))} placeholder={editingArtefact.type === "roundel" ? "D-01-A" : "D-01"} className="mt-1 w-full rounded-lg border border-[var(--app-border)] bg-white px-2 py-1.5 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-primary)]" />
+                        </div>
+                      )}
+                      {editingArtefact.type === "roundel" && (
+                        <NumberField
+                          label={text("config.map_designer.field.bed_priority", "Bed Priority")}
+                          value={editingArtefact.bedPriority ?? 0}
+                          onChange={(value) => setDraftArtefact((current) => (current ? { ...current, bedPriority: value > 0 ? value : undefined } : current))}
+                        />
+                      )}
                       <NumberField
                         label="Text Size"
                         value={getArtefactTextSize(editingArtefact)}
@@ -1997,13 +2128,14 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                         </div>
                       )}
 
-                      {(editingArtefact.type === "wall" || editingArtefact.type === "partition") && editingArtefact.geometry.kind === "line" && (
+                      {(editingArtefact.type === "wall" || editingArtefact.type === "line" || editingArtefact.type === "partition") && editingArtefact.geometry.kind === "line" && (
                         <div className="grid grid-cols-2 gap-2">
                           <NumberField label={text("config.map_designer.field.start_x", "Start X")} value={editingArtefact.geometry.x1} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, x1: value } : geometry)} />
                           <NumberField label={text("config.map_designer.field.start_y", "Start Y")} value={editingArtefact.geometry.y1} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, y1: value } : geometry)} />
                           <NumberField label={text("config.map_designer.field.end_x", "End X")} value={editingArtefact.geometry.x2} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, x2: value } : geometry)} />
                           <NumberField label={text("config.map_designer.field.end_y", "End Y")} value={editingArtefact.geometry.y2} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, y2: value } : geometry)} />
-                          <NumberField label={text("config.map_designer.field.thickness", "Thickness")} value={editingArtefact.geometry.thickness ?? 14} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, thickness: value } : geometry)} />
+                          <NumberField label="Length" value={getLineLength(editingArtefact.geometry)} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? setLineLengthFromStart(geometry, value) : geometry)} />
+                          <NumberField label={editingArtefact.type === "line" ? text("config.map_designer.field.width", "Width") : text("config.map_designer.field.thickness", "Thickness")} value={editingArtefact.geometry.thickness ?? (editingArtefact.type === "line" ? 4 : 14)} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "line" ? { ...geometry, thickness: value } : geometry)} />
                         </div>
                       )}
 

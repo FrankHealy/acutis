@@ -2,6 +2,7 @@ export type MapArtefactType =
   | "room"
   | "corridor"
   | "wall"
+  | "line"
   | "window"
   | "partition"
   | "stair"
@@ -44,6 +45,8 @@ export type MapArtefact = {
   id: string;
   type: MapArtefactType;
   geometry: MapGeometry;
+  humanKey?: string;
+  bedPriority?: number;
   parentId?: string;
   wallAttachment?: {
     wallId?: string;
@@ -90,6 +93,7 @@ export type MapTool =
   | "room"
   | "corridor"
   | "wall"
+  | "line"
   | "window"
   | "partition"
   | "stair"

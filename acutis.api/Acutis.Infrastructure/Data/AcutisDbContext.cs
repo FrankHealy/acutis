@@ -137,6 +137,8 @@ public sealed class AcutisDbContext : DbContext
     private static readonly Guid TemplateRosaryId = Guid.Parse("66666666-1000-1000-1000-100000000018");
     private static readonly Guid TemplateSupportMeetingId = Guid.Parse("66666666-1000-1000-1000-100000000019");
     private static readonly Guid TemplateBedtimeId = Guid.Parse("66666666-1000-1000-1000-100000000020");
+    private static readonly Guid TemplateDoctorVisitId = Guid.Parse("66666666-1000-1000-1000-100000000021");
+    private static readonly Guid TemplateMedicationDispensationId = Guid.Parse("66666666-1000-1000-1000-100000000022");
     private static readonly Guid ConfigurationManagePermissionId = Guid.Parse("55555555-1111-1111-1111-111111111111");
     private static readonly Guid ThemeManagePermissionId = Guid.Parse("55555555-1212-1212-1212-121212121212");
     private static readonly Guid UnitsManagePermissionId = Guid.Parse("55555555-2222-2222-2222-222222222222");
@@ -709,6 +711,9 @@ public sealed class AcutisDbContext : DbContext
     public DbSet<GroupTherapyDailyQuestion> GroupTherapyDailyQuestions => Set<GroupTherapyDailyQuestion>();
     public DbSet<GroupTherapyResidentRemark> GroupTherapyResidentRemarks => Set<GroupTherapyResidentRemark>();
     public DbSet<GroupTherapyResidentObservation> GroupTherapyResidentObservations => Set<GroupTherapyResidentObservation>();
+    public DbSet<GroupTherapyConversationTheme> GroupTherapyConversationThemes => Set<GroupTherapyConversationTheme>();
+    public DbSet<GroupTherapyFacilitationConfig> GroupTherapyFacilitationConfigs => Set<GroupTherapyFacilitationConfig>();
+    public DbSet<GroupTherapyObservationConversationTheme> GroupTherapyObservationConversationThemes => Set<GroupTherapyObservationConversationTheme>();
     public DbSet<TherapyTopic> TherapyTopics => Set<TherapyTopic>();
     public DbSet<ResidentCase> ResidentCases => Set<ResidentCase>();
     public DbSet<ResidentProgrammeEpisode> ResidentProgrammeEpisodes => Set<ResidentProgrammeEpisode>();
@@ -1275,6 +1280,9 @@ public sealed class AcutisDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GroupTherapyDailyQuestionConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyResidentRemarkConfiguration());
         modelBuilder.ApplyConfiguration(new GroupTherapyResidentObservationConfiguration());
+        modelBuilder.ApplyConfiguration(new GroupTherapyConversationThemeConfiguration());
+        modelBuilder.ApplyConfiguration(new GroupTherapyFacilitationConfigConfiguration());
+        modelBuilder.ApplyConfiguration(new GroupTherapyObservationConversationThemeConfiguration());
         modelBuilder.ApplyConfiguration(new TherapyTopicConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentCaseConfiguration());
         modelBuilder.ApplyConfiguration(new ResidentPreviousTreatmentConfiguration());
@@ -1316,6 +1324,7 @@ public sealed class AcutisDbContext : DbContext
         SeedElementLibrary(modelBuilder);
         SeedGroupTherapyProgram(modelBuilder);
         SeedGroupTherapyRemarks(modelBuilder);
+        SeedGroupTherapyFacilitation(modelBuilder);
         SeedTherapyTopics(modelBuilder);
         SeedEpisodeEventTypes(modelBuilder);
         SeedIncidentTypes(modelBuilder);
@@ -1496,7 +1505,9 @@ public sealed class AcutisDbContext : DbContext
             CreateSeedScheduleTemplate(TemplateGroupCId, "group_c", "Group C", "Evening group therapy session - Cohort C", "group", new TimeSpan(18, 45, 0), new TimeSpan(19, 45, 0)),
             CreateSeedScheduleTemplate(TemplateRosaryId, "rosary", "Rosary", "Evening prayer service", "spiritual", new TimeSpan(20, 0, 0), null),
             CreateSeedScheduleTemplate(TemplateSupportMeetingId, "support_meeting", "AA/NA/GA", "Support group meetings", "group", new TimeSpan(20, 30, 0), new TimeSpan(21, 30, 0)),
-            CreateSeedScheduleTemplate(TemplateBedtimeId, "bedtime", "Bedtime", "Lights out - rest time", "routine", new TimeSpan(22, 0, 0), null)
+            CreateSeedScheduleTemplate(TemplateBedtimeId, "bedtime", "Bedtime", "Lights out - rest time", "routine", new TimeSpan(22, 0, 0), null),
+            CreateSeedScheduleTemplate(TemplateDoctorVisitId, "doctor_visit", "Doctor Visit", "Doctor clinic or visit for residents from this unit.", "health", new TimeSpan(10, 0, 0), new TimeSpan(11, 0, 0), facilitatorType: ScheduleFacilitatorType.External, externalResourceName: "Doctor"),
+            CreateSeedScheduleTemplate(TemplateMedicationDispensationId, "medication_dispensation", "Medication Dispensation", "Medication dispensation round for residents from this unit.", "medication", new TimeSpan(8, 0, 0), new TimeSpan(8, 30, 0), facilitatorType: ScheduleFacilitatorType.Staff, facilitatorRole: "Nurse")
         );
     }
 
@@ -1510,7 +1521,10 @@ public sealed class AcutisDbContext : DbContext
         TimeSpan? endTime,
         ScheduleAudienceType audienceType = ScheduleAudienceType.UnitResidents,
         ScheduleResidentSubsetType residentSubsetType = ScheduleResidentSubsetType.None,
-        ScheduleCaptureRequirement captureRequirement = ScheduleCaptureRequirement.None)
+        ScheduleCaptureRequirement captureRequirement = ScheduleCaptureRequirement.None,
+        ScheduleFacilitatorType facilitatorType = ScheduleFacilitatorType.None,
+        string? facilitatorRole = null,
+        string? externalResourceName = null)
     {
         return new ScheduleTemplate
         {
@@ -1531,9 +1545,9 @@ public sealed class AcutisDbContext : DbContext
             CaptureRequirement = captureRequirement,
             CohortId = null,
             ResidentId = null,
-            FacilitatorType = ScheduleFacilitatorType.None,
-            FacilitatorRole = null,
-            ExternalResourceName = null,
+            FacilitatorType = facilitatorType,
+            FacilitatorRole = facilitatorRole,
+            ExternalResourceName = externalResourceName,
             IsActive = true,
             CreatedAtUtc = SeedCreatedAt,
             CreatedByUserId = null,
@@ -3065,6 +3079,93 @@ public sealed class AcutisDbContext : DbContext
         });
 
         modelBuilder.Entity<GroupTherapyResidentRemark>().HasData(seededRemarks);
+    }
+
+    private static void SeedGroupTherapyFacilitation(ModelBuilder modelBuilder)
+    {
+        var createdAt = SeedCreatedAt;
+        var themes = new (string Code, string Label, string Description)[]
+        {
+            ("past-trauma", "Past trauma", "Historic trauma or adverse experiences that shape recovery, trust, or emotional safety."),
+            ("family-bereavement", "Family death or bereavement", "Death of a family member, friend, or important support person."),
+            ("personal-injury", "Personal injury", "Accident, injury, chronic pain, or physical limitation affecting wellbeing."),
+            ("relationship-breakdown", "Marriage or relationship breakdown", "Separation, divorce, conflict, loss of trust, or significant relationship rupture."),
+            ("bullying", "Bullying", "Bullying, intimidation, humiliation, coercion, or exclusion."),
+            ("neurodivergence", "Neurodivergence", "ADHD, autism, dyslexia, sensory processing, attention, or communication needs."),
+            ("financial-problems", "Financial problems", "Debt, income pressure, benefits issues, gambling losses, or financial insecurity."),
+            ("family-conflict", "Family conflict", "Ongoing conflict, estrangement, boundaries, or family-system stress."),
+            ("children-parenting", "Children or parenting", "Parenting strain, access to children, custody, guilt, or repair work."),
+            ("housing-insecurity", "Housing insecurity", "Homelessness, unsafe housing, unstable tenancy, or returning to a high-risk home."),
+            ("legal-court", "Legal or court issues", "Court dates, probation, criminal justice stress, or legal consequences."),
+            ("employment", "Work or employment", "Job loss, work stress, employability, training, or return-to-work concerns."),
+            ("mental-health", "Mental health", "Anxiety, depression, panic, low mood, emotional regulation, or psychiatric support."),
+            ("shame-guilt", "Shame or guilt", "Self-blame, regret, secrecy, stigma, or difficulty accepting compassion."),
+            ("anger-conflict", "Anger or conflict", "Anger, resentment, interpersonal conflict, impulse control, or repair attempts."),
+            ("loneliness-isolation", "Loneliness or isolation", "Disconnection, lack of sober supports, social anxiety, or feeling excluded."),
+            ("relapse-triggers", "Relapse triggers", "People, places, emotions, cravings, routines, or situations linked to relapse risk."),
+            ("identity-self-worth", "Identity or self-worth", "Self-image, purpose, dignity, values, confidence, or rebuilding identity in recovery.")
+        };
+
+        modelBuilder.Entity<GroupTherapyConversationTheme>().HasData(themes.Select((theme, index) => new GroupTherapyConversationTheme
+        {
+            Id = CreateDeterministicGuid($"group-therapy:conversation-theme:{theme.Code}"),
+            UnitCode = null,
+            ProgramCode = "bruree_alcohol_gt",
+            Code = theme.Code,
+            Label = theme.Label,
+            Description = theme.Description,
+            SortOrder = index + 1,
+            IsActive = true,
+            CreatedAtUtc = createdAt,
+            UpdatedAtUtc = createdAt
+        }));
+
+        modelBuilder.Entity<GroupTherapyFacilitationConfig>().HasData(
+            new GroupTherapyFacilitationConfig
+            {
+                Id = CreateDeterministicGuid("group-therapy:facilitation-config:bruree_alcohol_gt:balanced"),
+                UnitCode = null,
+                ProgramCode = "bruree_alcohol_gt",
+                CounsellorStyle = "Balanced",
+                IsTimingEnabled = true,
+                SessionDurationMinutes = 60,
+                ResidentDurationMinutes = null,
+                ResidentTimeMultiplier = 1.0m,
+                SortOrder = 1,
+                IsActive = true,
+                CreatedAtUtc = createdAt,
+                UpdatedAtUtc = createdAt
+            },
+            new GroupTherapyFacilitationConfig
+            {
+                Id = CreateDeterministicGuid("group-therapy:facilitation-config:bruree_alcohol_gt:deep-dive"),
+                UnitCode = null,
+                ProgramCode = "bruree_alcohol_gt",
+                CounsellorStyle = "Deep Dive",
+                IsTimingEnabled = true,
+                SessionDurationMinutes = 60,
+                ResidentDurationMinutes = null,
+                ResidentTimeMultiplier = 1.35m,
+                SortOrder = 2,
+                IsActive = true,
+                CreatedAtUtc = createdAt,
+                UpdatedAtUtc = createdAt
+            },
+            new GroupTherapyFacilitationConfig
+            {
+                Id = CreateDeterministicGuid("group-therapy:facilitation-config:bruree_alcohol_gt:rapid-round"),
+                UnitCode = null,
+                ProgramCode = "bruree_alcohol_gt",
+                CounsellorStyle = "Rapid Round",
+                IsTimingEnabled = true,
+                SessionDurationMinutes = 45,
+                ResidentDurationMinutes = null,
+                ResidentTimeMultiplier = 0.75m,
+                SortOrder = 3,
+                IsActive = true,
+                CreatedAtUtc = createdAt,
+                UpdatedAtUtc = createdAt
+            });
     }
 
     private static void SeedElementLibrary(ModelBuilder modelBuilder)

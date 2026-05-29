@@ -15,6 +15,8 @@ import {
   Moon,
   BookOpen,
   HeartHandshake,
+  Pill,
+  Stethoscope,
   ChevronLeft,
   ChevronRight,
   CalendarDays,
@@ -22,6 +24,7 @@ import {
 } from "lucide-react";
 import { getUnitTimeline, takeUnitTimelineEvent } from "@/services/unitTimelineService";
 import { isAuthorizedClient } from "@/lib/authMode";
+import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 
 interface ScheduleEvent {
   key: string;
@@ -47,11 +50,20 @@ type UnitDailyTimelineProps = {
   onOpenRollCall: () => void;
 };
 
+type TimelineViewMode = "full" | "morning" | "evening";
+
+const fullDayStartMinutes = 0;
+const fullDayEndMinutes = 24 * 60;
+const fullDayPixelsPerHour = 88;
+const fullDayLabelWidth = 16;
+const fullDayWidth = ((fullDayEndMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour;
+
 const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName, onOpenGroupTherapy, onOpenRollCall }) => {
   const { data: session, status } = useSession();
+  const { loadKeys, t } = useLocalization();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
-  const [manualViewMode, setManualViewMode] = useState<"morning" | "evening" | null>(null);
+  const [viewMode, setViewMode] = useState<TimelineViewMode>("full");
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [takingEvent, setTakingEvent] = useState(false);
@@ -61,6 +73,21 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    void loadKeys([
+      "dashboard.timeline.view.full_day",
+      "dashboard.timeline.view.morning",
+      "dashboard.timeline.view.evening",
+      "dashboard.timeline.daily_title",
+      "dashboard.timeline.no_items",
+    ]);
+  }, [loadKeys]);
+
+  const text = (key: string, fallback: string) => {
+    const resolved = t(key);
+    return resolved === key ? fallback : resolved;
+  };
 
   const timeToMinutes = (time: string): number => {
     const [hours, minutes] = time.split(":").map(Number);
@@ -87,6 +114,10 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
         return UtensilsCrossed;
       case "Gambling Aware":
         return Brain;
+      case "Doctor Visit":
+        return Stethoscope;
+      case "Medication Dispensation":
+        return Pill;
       case "Focus Meeting":
       case "OT/Focus":
         return Target;
@@ -122,6 +153,10 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
         return "bg-red-500";
       case "Gambling Aware":
         return "bg-indigo-500";
+      case "Doctor Visit":
+        return "bg-sky-600";
+      case "Medication Dispensation":
+        return "bg-lime-600";
       case "Focus Meeting":
       case "OT/Focus":
         return "bg-cyan-500";
@@ -193,6 +228,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
   const eveningSchedule = events.filter((event) => event.timeMinutes >= 840);
 
   const getCurrentSchedule = () => (viewMode === "morning" ? morningSchedule : eveningSchedule);
+  const getFullDaySchedule = () => events.slice().sort((left, right) => left.timeMinutes - right.timeMinutes);
 
   const mapEventToModuleKey = (title: string): string | undefined => {
     switch (title) {
@@ -268,17 +304,50 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
 
   const getCurrentMinutes = () => currentTime.getHours() * 60 + currentTime.getMinutes();
 
-  const autoViewMode = (() => {
-    const nowMinutes = getCurrentMinutes();
-    return nowMinutes >= 750 && nowMinutes <= 1320 ? "evening" : "morning";
-  })();
-
-  const viewMode = manualViewMode ?? autoViewMode;
-
   const isCurrentEvent = (event: ScheduleEvent) => {
     const now = getCurrentMinutes();
     const endMinutes = event.endTime ? timeToMinutes(event.endTime) : event.timeMinutes + 30;
     return now >= event.timeMinutes && now < endMinutes;
+  };
+
+  const timeFromMinutes = (minutes: number): string => {
+    const clamped = Math.max(0, Math.min(minutes, 23 * 60 + 59));
+    const hours = Math.floor(clamped / 60);
+    const mins = clamped % 60;
+    return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+  };
+
+  const eventEndMinutes = (event: ScheduleEvent) => (event.endTime ? timeToMinutes(event.endTime) : event.timeMinutes + 30);
+
+  const eventDurationMinutes = (event: ScheduleEvent) => Math.max(15, eventEndMinutes(event) - event.timeMinutes);
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${minutes} min`;
+    const hours = minutes / 60;
+    return Number.isInteger(hours) ? `${hours} hr` : `${hours.toFixed(1)} hr`;
+  };
+
+  const eventTone = (event: ScheduleEvent): "primary" | "success" | "warning" | "danger" | "text" => {
+    if (event.color.includes("red")) return "danger";
+    if (event.color.includes("green") || event.color.includes("emerald")) return "success";
+    if (event.color.includes("orange") || event.color.includes("amber") || event.color.includes("lime")) return "warning";
+    if (event.color.includes("blue") || event.color.includes("sky") || event.color.includes("cyan") || event.color.includes("teal")) return "primary";
+    return "text";
+  };
+
+  const fullDayEventStyle = (event: ScheduleEvent, index: number): React.CSSProperties => {
+    const tone = eventTone(event);
+    const token = `var(--app-${tone})`;
+    const start = Math.max(fullDayStartMinutes, event.timeMinutes);
+    const end = Math.min(fullDayEndMinutes, Math.max(start + 15, eventEndMinutes(event)));
+    return {
+      left: ((start - fullDayStartMinutes) / 60) * fullDayPixelsPerHour,
+      width: Math.max(46, ((end - start) / 60) * fullDayPixelsPerHour),
+      top: 48 + index * 68,
+      backgroundColor: `color-mix(in srgb, ${token} 10%, var(--app-surface))`,
+      borderLeftColor: token,
+      color: token,
+    };
   };
 
   const getTimelinePosition = (minutes: number, index?: number) => {
@@ -324,16 +393,16 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
   };
 
   const currentMinutes = getCurrentMinutes();
-  const schedule = getCurrentSchedule();
+  const schedule = viewMode === "full" ? getFullDaySchedule() : getCurrentSchedule();
   if (schedule.length === 0) {
     return (
       <div className="app-card overflow-hidden rounded-xl p-6" style={{ paddingBottom: 24 }}>
         <h2 className="mb-4 flex items-center text-lg font-semibold text-[var(--app-text)]">
           <CalendarDays className="mr-2 h-5 w-5 text-[var(--app-primary)]" />
-          {unitName} Daily Timeline
+          {unitName} {text("dashboard.timeline.daily_title", "Daily Timeline")}
         </h2>
         <p className="text-sm text-[var(--app-text-muted)]">
-          {loadError ? `Unable to load timeline: ${loadError}` : "No timeline items for this day."}
+          {loadError ? `Unable to load timeline: ${loadError}` : text("dashboard.timeline.no_items", "No timeline items for this day.")}
         </p>
       </div>
     );
@@ -355,34 +424,105 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     <div className="app-card overflow-hidden rounded-xl p-6" style={{ paddingBottom: 24 }}>
       <h2 className="mb-4 flex items-center text-lg font-semibold text-[var(--app-text)]">
         <CalendarDays className="mr-2 h-5 w-5 text-[var(--app-primary)]" />
-        {unitName} Daily Timeline
+        {unitName} {text("dashboard.timeline.daily_title", "Daily Timeline")}
       </h2>
 
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <button
-          onClick={() => setManualViewMode("morning")}
+          onClick={() => setViewMode("full")}
+          disabled={viewMode === "full"}
+          className="rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50"
+        >
+          {text("dashboard.timeline.view.full_day", "Full Day")}
+        </button>
+        <button
+          onClick={() => setViewMode("morning")}
           disabled={viewMode === "morning"}
           className="flex items-center space-x-2 rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50"
         >
           <ChevronLeft className="h-4 w-4" />
-          <span>Morning</span>
+          <span>{text("dashboard.timeline.view.morning", "Morning")}</span>
         </button>
 
-        <div className="text-center">
-          <p className="text-lg font-bold text-[var(--app-text)]">{viewMode === "morning" ? "Morning Schedule" : "Evening Schedule"}</p>
-          <p className="text-sm text-[var(--app-text-muted)]">{viewMode === "morning" ? "06:30 - 12:30" : "14:00 - 22:00"}</p>
+        <div className="min-w-40 flex-1 text-center">
+          <p className="text-lg font-bold text-[var(--app-text)]">
+            {viewMode === "full"
+              ? text("dashboard.timeline.view.full_day", "Full Day")
+              : viewMode === "morning"
+                ? `${text("dashboard.timeline.view.morning", "Morning")} Schedule`
+                : `${text("dashboard.timeline.view.evening", "Evening")} Schedule`}
+          </p>
+          <p className="text-sm text-[var(--app-text-muted)]">{viewMode === "full" ? "00:00 - 24:00" : viewMode === "morning" ? "06:30 - 12:30" : "14:00 - 22:00"}</p>
         </div>
 
         <button
-          onClick={() => setManualViewMode("evening")}
+          onClick={() => setViewMode("evening")}
           disabled={viewMode === "evening"}
           className="flex items-center space-x-2 rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50"
         >
-          <span>Evening</span>
+          <span>{text("dashboard.timeline.view.evening", "Evening")}</span>
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
+      {viewMode === "full" ? (
+        <div className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
+          <div className="relative" style={{ width: fullDayWidth + fullDayLabelWidth, height: Math.max(300, 86 + schedule.length * 68) }}>
+            <div className="sticky top-0 z-20 h-11 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)]">
+              {Array.from({ length: 25 }, (_, hour) => (
+                <div
+                  key={`full-day-hour:${hour}`}
+                  className="absolute top-0 h-full border-l border-dashed border-[var(--app-border)]"
+                  style={{ left: fullDayLabelWidth + hour * fullDayPixelsPerHour }}
+                >
+                  {hour < 24 && <span className="absolute left-2 top-2 text-xs font-medium text-[var(--app-text-muted)]">{timeFromMinutes(hour * 60)}</span>}
+                </div>
+              ))}
+            </div>
+            <div
+              className="absolute bottom-0 top-11"
+              style={{
+                left: fullDayLabelWidth,
+                width: fullDayWidth,
+                backgroundImage:
+                  "linear-gradient(to right, color-mix(in srgb, var(--app-border) 72%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in srgb, var(--app-border) 38%, transparent) 1px, transparent 1px)",
+                backgroundSize: `${fullDayPixelsPerHour}px 100%, ${fullDayPixelsPerHour / 4}px 100%`,
+              }}
+            >
+              {currentMinutes >= fullDayStartMinutes && currentMinutes <= fullDayEndMinutes && (
+                <div
+                  className="pointer-events-none absolute inset-y-0 z-30"
+                  style={{ left: ((currentMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour }}
+                >
+                  <span className="absolute -left-5 top-1 rounded bg-[var(--app-danger)] px-1.5 py-0.5 text-[11px] font-bold text-white">
+                    {timeFromMinutes(currentMinutes)}
+                  </span>
+                  <div className="h-full w-px bg-[var(--app-danger)]" />
+                </div>
+              )}
+              {schedule.map((event, index) => {
+                const IconComponent = event.icon;
+                const duration = eventDurationMinutes(event);
+                return (
+                  <button
+                    key={event.key}
+                    type="button"
+                    onClick={() => handleEventClick(event)}
+                    className="absolute overflow-hidden rounded-lg border border-l-4 border-[var(--app-border)] px-2 py-2 text-left shadow-sm transition-colors hover:border-[var(--app-primary)] hover:ring-2 hover:ring-[color:color-mix(in_srgb,var(--app-primary)_18%,transparent)]"
+                    style={fullDayEventStyle(event, index)}
+                  >
+                    <IconComponent className="pointer-events-none absolute bottom-1 right-1 h-10 w-10 opacity-10" />
+                    <span className="relative block truncate text-xs font-semibold text-[var(--app-text)]">{event.title}</span>
+                    <span className="relative mt-0.5 block truncate text-[11px] font-medium text-[var(--app-text-muted)]">
+                      {event.time} · {formatDuration(duration)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="relative" style={{ height: timelineHeight }}>
         <div className="absolute left-0 right-0 rounded-full bg-[var(--app-border)]" style={{ top: baseTop, height: trackThickness }} />
 
@@ -427,6 +567,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
           })}
         </div>
       </div>
+      )}
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setSelectedEvent(null)}>

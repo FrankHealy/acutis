@@ -12655,6 +12655,46 @@ namespace Acutis.Infrastructure.Migrations
                             ResidentSubsetType = "None",
                             StartTime = new TimeSpan(0, 22, 0, 0, 0),
                             UpdatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("66666666-1000-1000-1000-100000000021"),
+                            AudienceType = "UnitResidents",
+                            CaptureRequirement = "None",
+                            Category = "health",
+                            CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
+                            Code = "doctor_visit",
+                            CreatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Doctor clinic or visit for residents from this unit.",
+                            EndTime = new TimeSpan(0, 11, 0, 0, 0),
+                            ExternalResourceName = "Doctor",
+                            FacilitatorType = "External",
+                            IsActive = true,
+                            Name = "Doctor Visit",
+                            RecurrenceType = "Daily",
+                            ResidentSubsetType = "None",
+                            StartTime = new TimeSpan(0, 10, 0, 0, 0),
+                            UpdatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("66666666-1000-1000-1000-100000000022"),
+                            AudienceType = "UnitResidents",
+                            CaptureRequirement = "None",
+                            Category = "medication",
+                            CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
+                            Code = "medication_dispensation",
+                            CreatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Medication dispensation round for residents from this unit.",
+                            EndTime = new TimeSpan(0, 8, 30, 0, 0),
+                            FacilitatorRole = "Nurse",
+                            FacilitatorType = "Staff",
+                            IsActive = true,
+                            Name = "Medication Dispensation",
+                            RecurrenceType = "Daily",
+                            ResidentSubsetType = "None",
+                            StartTime = new TimeSpan(0, 8, 0, 0, 0),
+                            UpdatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 

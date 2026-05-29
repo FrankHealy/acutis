@@ -8,8 +8,8 @@ export const sampleDetoxReferenceMap: MapDocument = {
     updatedAt: "2026-04-03T00:00:00.000Z",
   },
   world: {
-    width: 1600,
-    height: 1050,
+    width: 4000,
+    height: 3000,
   },
   artefacts: [
     {
@@ -22,6 +22,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_entrance",
       type: "room",
+      humanKey: "D-ENTRANCE",
       geometry: {
         kind: "polygon",
         points: [
@@ -37,6 +38,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_1",
       type: "room",
+      humanKey: "D-01",
       geometry: { kind: "rect", x: 235, y: 520, width: 95, height: 90 },
       labelKey: "mapDesigner.sample.rm1",
       labelOverride: "1",
@@ -44,6 +46,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_2",
       type: "room",
+      humanKey: "D-02",
       geometry: { kind: "rect", x: 330, y: 520, width: 95, height: 90 },
       labelKey: "mapDesigner.sample.rm2",
       labelOverride: "2",
@@ -51,6 +54,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_3",
       type: "room",
+      humanKey: "D-03",
       geometry: { kind: "rect", x: 425, y: 520, width: 95, height: 90 },
       labelKey: "mapDesigner.sample.rm3",
       labelOverride: "3",
@@ -58,6 +62,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_4",
       type: "room",
+      humanKey: "D-04",
       geometry: { kind: "rect", x: 520, y: 520, width: 95, height: 90 },
       labelKey: "mapDesigner.sample.rm4",
       labelOverride: "4",
@@ -65,6 +70,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_5",
       type: "room",
+      humanKey: "D-05",
       geometry: { kind: "rect", x: 615, y: 520, width: 95, height: 90 },
       labelKey: "mapDesigner.sample.rm5",
       labelOverride: "5",
@@ -72,6 +78,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_sa1",
       type: "room",
+      humanKey: "D-SA1",
       geometry: { kind: "rect", x: 410, y: 610, width: 170, height: 55 },
       labelKey: "mapDesigner.sample.sa1",
       labelOverride: "SA1",
@@ -79,6 +86,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_lc1",
       type: "room",
+      humanKey: "D-LC1",
       geometry: { kind: "rect", x: 580, y: 640, width: 85, height: 70 },
       labelKey: "mapDesigner.sample.lc1",
       labelOverride: "LC1",
@@ -86,6 +94,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_waiting",
       type: "room",
+      humanKey: "D-WAITING",
       geometry: { kind: "rect", x: 580, y: 710, width: 95, height: 85 },
       labelKey: "mapDesigner.sample.waiting",
       labelOverride: "Waiting",
@@ -93,6 +102,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_utility",
       type: "room",
+      humanKey: "D-UTILITY",
       geometry: { kind: "rect", x: 580, y: 795, width: 95, height: 95 },
       labelKey: "mapDesigner.sample.utility",
       labelOverride: "Utility",
@@ -100,6 +110,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_ns",
       type: "room",
+      humanKey: "D-NS",
       geometry: { kind: "rect", x: 740, y: 515, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.ns",
       labelOverride: "NS",
@@ -107,6 +118,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_tr",
       type: "room",
+      humanKey: "D-TR",
       geometry: { kind: "rect", x: 860, y: 515, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.tr",
       labelOverride: "TR",
@@ -114,6 +126,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_op",
       type: "room",
+      humanKey: "D-OP",
       geometry: { kind: "rect", x: 740, y: 605, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.op",
       labelOverride: "OP",
@@ -121,6 +134,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_store",
       type: "room",
+      humanKey: "D-STORE",
       geometry: { kind: "rect", x: 860, y: 605, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.store",
       labelOverride: "Store",
@@ -128,6 +142,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_kitchen",
       type: "room",
+      humanKey: "D-KITCHEN",
       geometry: { kind: "rect", x: 740, y: 695, width: 240, height: 215 },
       labelKey: "mapDesigner.sample.kitchen",
       labelOverride: "Detox Kitchen",
@@ -135,6 +150,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_16",
       type: "room",
+      humanKey: "D-16",
       geometry: { kind: "rect", x: 1030, y: 510, width: 110, height: 95 },
       labelKey: "mapDesigner.sample.rm16",
       labelOverride: "16",
@@ -142,6 +158,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_6",
       type: "room",
+      humanKey: "D-06",
       geometry: { kind: "rect", x: 1140, y: 510, width: 95, height: 95 },
       labelKey: "mapDesigner.sample.rm6",
       labelOverride: "6",
@@ -149,6 +166,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_7b",
       type: "room",
+      humanKey: "D-07B",
       geometry: { kind: "rect", x: 1235, y: 510, width: 105, height: 140 },
       labelKey: "mapDesigner.sample.rm7b",
       labelOverride: "7b",
@@ -156,6 +174,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_8",
       type: "room",
+      humanKey: "D-08",
       geometry: { kind: "rect", x: 1175, y: 300, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.rm8",
       labelOverride: "8",
@@ -163,6 +182,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_9",
       type: "room",
+      humanKey: "D-09",
       geometry: { kind: "rect", x: 1175, y: 390, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.rm9",
       labelOverride: "9",
@@ -170,6 +190,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_10",
       type: "room",
+      humanKey: "D-10",
       geometry: { kind: "rect", x: 1175, y: 480, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.rm10",
       labelOverride: "10",
@@ -177,6 +198,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_11",
       type: "room",
+      humanKey: "D-11",
       geometry: { kind: "rect", x: 1175, y: 570, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.rm11",
       labelOverride: "11",
@@ -184,6 +206,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_12",
       type: "room",
+      humanKey: "D-12",
       geometry: { kind: "rect", x: 1175, y: 660, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.rm12",
       labelOverride: "12",
@@ -191,6 +214,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_13",
       type: "room",
+      humanKey: "D-13",
       geometry: { kind: "rect", x: 1175, y: 750, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.rm13",
       labelOverride: "13",
@@ -198,6 +222,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_14",
       type: "room",
+      humanKey: "D-14",
       geometry: { kind: "rect", x: 1175, y: 840, width: 120, height: 90 },
       labelKey: "mapDesigner.sample.rm14",
       labelOverride: "14",
@@ -205,6 +230,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_fe",
       type: "room",
+      humanKey: "D-FE",
       geometry: { kind: "rect", x: 1175, y: 210, width: 190, height: 90 },
       labelKey: "mapDesigner.sample.fe",
       labelOverride: "FE",
@@ -212,6 +238,7 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "room_sa2",
       type: "room",
+      humanKey: "D-SA2",
       geometry: { kind: "rect", x: 1365, y: 440, width: 110, height: 80 },
       labelKey: "mapDesigner.sample.sa2",
       labelOverride: "SA2",
@@ -304,48 +331,64 @@ export const sampleDetoxReferenceMap: MapDocument = {
     {
       id: "roundel_1a",
       type: "roundel",
+      humanKey: "D-01-A",
+      bedPriority: 1,
       geometry: { kind: "point", x: 262, y: 550, size: 30 },
       parentId: "room_1",
     },
     {
       id: "roundel_1b",
       type: "roundel",
+      humanKey: "D-01-B",
+      bedPriority: 2,
       geometry: { kind: "point", x: 302, y: 585, size: 30 },
       parentId: "room_1",
     },
     {
       id: "roundel_2a",
       type: "roundel",
+      humanKey: "D-02-A",
+      bedPriority: 1,
       geometry: { kind: "point", x: 355, y: 548, size: 30 },
       parentId: "room_2",
     },
     {
       id: "roundel_2b",
       type: "roundel",
+      humanKey: "D-02-B",
+      bedPriority: 2,
       geometry: { kind: "point", x: 395, y: 583, size: 30 },
       parentId: "room_2",
     },
     {
       id: "roundel_8a",
       type: "roundel",
+      humanKey: "D-08-A",
+      bedPriority: 1,
       geometry: { kind: "point", x: 1202, y: 330, size: 28 },
       parentId: "room_8",
     },
     {
       id: "roundel_8b",
       type: "roundel",
+      humanKey: "D-08-B",
+      bedPriority: 2,
       geometry: { kind: "point", x: 1252, y: 365, size: 28 },
       parentId: "room_8",
     },
     {
       id: "roundel_9a",
       type: "roundel",
+      humanKey: "D-09-A",
+      bedPriority: 1,
       geometry: { kind: "point", x: 1202, y: 420, size: 28 },
       parentId: "room_9",
     },
     {
       id: "roundel_9b",
       type: "roundel",
+      humanKey: "D-09-B",
+      bedPriority: 2,
       geometry: { kind: "point", x: 1252, y: 455, size: 28 },
       parentId: "room_9",
     },

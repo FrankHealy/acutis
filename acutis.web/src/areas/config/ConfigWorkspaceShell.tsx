@@ -11,6 +11,7 @@ const primaryNavItems = [
   { href: "/units/config/forms", label: "Forms" },
   { href: "/units/config/forms/new", label: "Designer" },
   { href: "/units/config/quotes", label: "Quotes" },
+  { href: "/units/config/group-therapy", label: "Group Therapy" },
   { href: "/units/config/program-manager", label: "Program Manager" },
   { href: "/units/config/event-management", label: "Event Management" },
   { href: "/units/config/day-planner", label: "Day Planner" },

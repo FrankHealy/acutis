@@ -18,12 +18,15 @@ public sealed class RoomAssignmentOccupantDto
 public sealed class RoomAssignmentBedDto
 {
     public string BedCode { get; set; } = string.Empty;
+    public string BedKey { get; set; } = string.Empty;
+    public int? Priority { get; set; }
     public RoomAssignmentOccupantDto? Occupant { get; set; }
 }
 
 public sealed class UnitRoomAssignmentDto
 {
     public string RoomCode { get; set; } = string.Empty;
+    public string RoomKey { get; set; } = string.Empty;
     public string StorageRoomCode { get; set; } = string.Empty;
     public int Capacity { get; set; }
     public IReadOnlyList<RoomAssignmentOccupantDto> Occupants { get; set; } = Array.Empty<RoomAssignmentOccupantDto>();
@@ -107,8 +110,11 @@ public sealed class AssignUnitBedResponse
     public Guid EpisodeId { get; set; }
     public Guid? ResidentCaseId { get; set; }
     public string RoomCode { get; set; } = string.Empty;
+    public string RoomKey { get; set; } = string.Empty;
     public string StorageRoomCode { get; set; } = string.Empty;
     public string BedCode { get; set; } = string.Empty;
+    public string BedKey { get; set; } = string.Empty;
+    public int? BedPriority { get; set; }
 }
 
 public sealed class UnitTimelineItemDto

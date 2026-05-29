@@ -455,6 +455,76 @@ public sealed class ConfigurationController : ControllerBase
         });
     }
 
+    [HttpGet("group-therapy/conversation-themes")]
+    public async Task<ActionResult<IReadOnlyList<GroupTherapyConversationThemeConfigurationDto>>> GetGroupTherapyConversationThemes(
+        [FromQuery] bool includeInactive = true,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetGroupTherapyConversationThemesAsync(includeInactive, cancellationToken));
+    }
+
+    [HttpPost("group-therapy/conversation-themes")]
+    public async Task<ActionResult<GroupTherapyConversationThemeConfigurationDto>> CreateGroupTherapyConversationTheme(
+        [FromBody] UpsertGroupTherapyConversationThemeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateGroupTherapyConversationThemeAsync(request, cancellationToken));
+    }
+
+    [HttpPut("group-therapy/conversation-themes/{conversationThemeId:guid}")]
+    public async Task<ActionResult<GroupTherapyConversationThemeConfigurationDto>> UpdateGroupTherapyConversationTheme(
+        Guid conversationThemeId,
+        [FromBody] UpsertGroupTherapyConversationThemeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateGroupTherapyConversationThemeAsync(conversationThemeId, request, cancellationToken));
+    }
+
+    [HttpDelete("group-therapy/conversation-themes/{conversationThemeId:guid}")]
+    public async Task<IActionResult> ArchiveGroupTherapyConversationTheme(Guid conversationThemeId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchiveGroupTherapyConversationThemeAsync(conversationThemeId, cancellationToken);
+            return NoContent();
+        });
+    }
+
+    [HttpGet("group-therapy/facilitation-configs")]
+    public async Task<ActionResult<IReadOnlyList<GroupTherapyFacilitationConfigConfigurationDto>>> GetGroupTherapyFacilitationConfigs(
+        [FromQuery] bool includeInactive = true,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await _globalConfigurationService.GetGroupTherapyFacilitationConfigsAsync(includeInactive, cancellationToken));
+    }
+
+    [HttpPost("group-therapy/facilitation-configs")]
+    public async Task<ActionResult<GroupTherapyFacilitationConfigConfigurationDto>> CreateGroupTherapyFacilitationConfig(
+        [FromBody] UpsertGroupTherapyFacilitationConfigRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.CreateGroupTherapyFacilitationConfigAsync(request, cancellationToken));
+    }
+
+    [HttpPut("group-therapy/facilitation-configs/{facilitationConfigId:guid}")]
+    public async Task<ActionResult<GroupTherapyFacilitationConfigConfigurationDto>> UpdateGroupTherapyFacilitationConfig(
+        Guid facilitationConfigId,
+        [FromBody] UpsertGroupTherapyFacilitationConfigRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _globalConfigurationService.UpdateGroupTherapyFacilitationConfigAsync(facilitationConfigId, request, cancellationToken));
+    }
+
+    [HttpDelete("group-therapy/facilitation-configs/{facilitationConfigId:guid}")]
+    public async Task<IActionResult> ArchiveGroupTherapyFacilitationConfig(Guid facilitationConfigId, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteNonQuery(async () =>
+        {
+            await _globalConfigurationService.ArchiveGroupTherapyFacilitationConfigAsync(facilitationConfigId, cancellationToken);
+            return NoContent();
+        });
+    }
+
     [HttpGet("permissions")]
     public async Task<ActionResult<IReadOnlyList<AppPermissionDto>>> GetPermissions(CancellationToken cancellationToken = default)
     {

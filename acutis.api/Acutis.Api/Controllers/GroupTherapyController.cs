@@ -205,6 +205,32 @@ public sealed class GroupTherapyController : ControllerBase
         return Ok(observations);
     }
 
+    [HttpGet("/api/units/{unitId:guid}/grouptherapy/facilitation-options")]
+    public async Task<ActionResult<GroupTherapyFacilitationOptionsDto>> GetFacilitationOptionsByUnitId(
+        Guid unitId,
+        [FromQuery] string programCode = "bruree_alcohol_gt",
+        CancellationToken cancellationToken = default)
+    {
+        var unit = await _unitIdentityService.GetByIdAsync(unitId, cancellationToken);
+        if (unit is null)
+        {
+            return NotFound($"No unit mapping found for unitId '{unitId}'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(programCode))
+        {
+            return BadRequest("Query parameter 'programCode' is required.");
+        }
+
+        if (!_accessService.HasUnitPermission(User, unitId, ApplicationPermissions.GroupTherapyView))
+        {
+            return Forbid();
+        }
+
+        var options = await _groupTherapyService.GetFacilitationOptionsAsync(unit.UnitCode, programCode, cancellationToken);
+        return Ok(options);
+    }
+
     [HttpPost("remarks")]
     public async Task<ActionResult<GroupTherapyResidentRemarkDto>> UpsertRemark(
         [FromBody] UpsertGroupTherapyResidentRemarkRequest request,

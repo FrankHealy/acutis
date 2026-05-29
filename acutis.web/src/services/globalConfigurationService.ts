@@ -224,6 +224,52 @@ export type UpsertScheduleOccurrenceRequest = {
   notes: string;
 };
 
+export type GroupTherapyConversationThemeConfigurationDto = {
+  conversationThemeId: string;
+  unitCode: string;
+  programCode: string;
+  code: string;
+  label: string;
+  description: string;
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export type UpsertGroupTherapyConversationThemeRequest = {
+  unitCode: string;
+  programCode: string;
+  code: string;
+  label: string;
+  description: string;
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export type GroupTherapyFacilitationConfigConfigurationDto = {
+  facilitationConfigId: string;
+  unitCode: string;
+  programCode: string;
+  counsellorStyle: string;
+  isTimingEnabled: boolean;
+  sessionDurationMinutes?: number | null;
+  residentDurationMinutes?: number | null;
+  residentTimeMultiplier: number;
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export type UpsertGroupTherapyFacilitationConfigRequest = {
+  unitCode: string;
+  programCode: string;
+  counsellorStyle: string;
+  isTimingEnabled: boolean;
+  sessionDurationMinutes?: number | null;
+  residentDurationMinutes?: number | null;
+  residentTimeMultiplier: number;
+  sortOrder: number;
+  isActive: boolean;
+};
+
 export type AppPermissionDto = {
   permissionId: string;
   key: string;
@@ -459,6 +505,84 @@ export const globalConfigurationService = {
     return request<void>(`/api/configuration/schedule-occurrences/${encodeURIComponent(scheduleOccurrenceId)}`, accessToken, {
       method: "DELETE",
     });
+  },
+  getGroupTherapyConversationThemes(accessToken?: string, includeInactive = true) {
+    return request<GroupTherapyConversationThemeConfigurationDto[]>(
+      `/api/configuration/group-therapy/conversation-themes?includeInactive=${includeInactive ? "true" : "false"}`,
+      accessToken,
+    );
+  },
+  createGroupTherapyConversationTheme(accessToken: string | undefined, payload: UpsertGroupTherapyConversationThemeRequest) {
+    return request<GroupTherapyConversationThemeConfigurationDto>(
+      "/api/configuration/group-therapy/conversation-themes",
+      accessToken,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  updateGroupTherapyConversationTheme(
+    accessToken: string | undefined,
+    conversationThemeId: string,
+    payload: UpsertGroupTherapyConversationThemeRequest,
+  ) {
+    return request<GroupTherapyConversationThemeConfigurationDto>(
+      `/api/configuration/group-therapy/conversation-themes/${encodeURIComponent(conversationThemeId)}`,
+      accessToken,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  archiveGroupTherapyConversationTheme(accessToken: string | undefined, conversationThemeId: string) {
+    return request<void>(
+      `/api/configuration/group-therapy/conversation-themes/${encodeURIComponent(conversationThemeId)}`,
+      accessToken,
+      {
+        method: "DELETE",
+      },
+    );
+  },
+  getGroupTherapyFacilitationConfigs(accessToken?: string, includeInactive = true) {
+    return request<GroupTherapyFacilitationConfigConfigurationDto[]>(
+      `/api/configuration/group-therapy/facilitation-configs?includeInactive=${includeInactive ? "true" : "false"}`,
+      accessToken,
+    );
+  },
+  createGroupTherapyFacilitationConfig(accessToken: string | undefined, payload: UpsertGroupTherapyFacilitationConfigRequest) {
+    return request<GroupTherapyFacilitationConfigConfigurationDto>(
+      "/api/configuration/group-therapy/facilitation-configs",
+      accessToken,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  updateGroupTherapyFacilitationConfig(
+    accessToken: string | undefined,
+    facilitationConfigId: string,
+    payload: UpsertGroupTherapyFacilitationConfigRequest,
+  ) {
+    return request<GroupTherapyFacilitationConfigConfigurationDto>(
+      `/api/configuration/group-therapy/facilitation-configs/${encodeURIComponent(facilitationConfigId)}`,
+      accessToken,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  archiveGroupTherapyFacilitationConfig(accessToken: string | undefined, facilitationConfigId: string) {
+    return request<void>(
+      `/api/configuration/group-therapy/facilitation-configs/${encodeURIComponent(facilitationConfigId)}`,
+      accessToken,
+      {
+        method: "DELETE",
+      },
+    );
   },
   getPermissions(accessToken?: string) {
     return request<AppPermissionDto[]>("/api/configuration/permissions", accessToken);

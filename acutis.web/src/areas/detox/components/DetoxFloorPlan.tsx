@@ -48,6 +48,10 @@ function getRoomCodeForArtefact(artefact: MapArtefact) {
   return roomMatch?.[1] ?? null;
 }
 
+function getRoomKeyForArtefact(artefact: MapArtefact) {
+  return artefact.humanKey?.trim() || getRoomCodeForArtefact(artefact);
+}
+
 function renderArtefactShape(
   artefact: MapArtefact,
   displayGeometry?: MapGeometry,
@@ -222,7 +226,7 @@ export default function DetoxFloorPlan({
     }
 
     const parentRoomById = new Map(roomArtefacts.map((artefact) => [artefact.id, artefact]));
-    const occupantsByRoomCode = new Map<string, RoomAssignmentOccupant[]>();
+    const occupantsByRoomCode = new Map<string, { roomKey: string; occupants: RoomAssignmentOccupant[] }>();
 
     roundels.forEach((artefact) => {
       const occupant = bedAssignments[artefact.id];
@@ -240,21 +244,34 @@ export default function DetoxFloorPlan({
         return;
       }
 
-      const current = occupantsByRoomCode.get(roomCode) ?? [];
-      occupantsByRoomCode.set(roomCode, [...current, occupant]);
+      const current = occupantsByRoomCode.get(roomCode);
+      occupantsByRoomCode.set(roomCode, {
+        roomKey: getRoomKeyForArtefact(parentRoom) ?? roomCode,
+        occupants: [...(current?.occupants ?? []), occupant],
+      });
     });
 
-    return Array.from(occupantsByRoomCode.entries()).map(([roomCode, occupants]) => ({
+    return Array.from(occupantsByRoomCode.entries()).map(([roomCode, room]) => ({
       roomCode,
+      roomKey: room.roomKey,
       storageRoomCode: roomCode,
-      capacity: occupants.length,
-      occupants,
+      capacity: room.occupants.length,
+      occupants: room.occupants,
       beds: [],
     }));
   }, [bedAssignments, roomArtefacts, roomAssignments, roundels]);
 
   const roomAssignmentByCode = useMemo(
-    () => new Map(derivedRoomAssignments.map((assignment) => [assignment.roomCode.trim().toLowerCase(), assignment])),
+    () => {
+      const assignments = new Map<string, UnitRoomAssignment>();
+      derivedRoomAssignments.forEach((assignment) => {
+        assignments.set(assignment.roomCode.trim().toLowerCase(), assignment);
+        if (assignment.roomKey.trim()) {
+          assignments.set(assignment.roomKey.trim().toLowerCase(), assignment);
+        }
+      });
+      return assignments;
+    },
     [derivedRoomAssignments],
   );
 
@@ -273,12 +290,14 @@ export default function DetoxFloorPlan({
       return null;
     }
 
-    const roomAssignment = roomAssignmentByCode.get(roomCode.trim().toLowerCase());
+    const roomKey = getRoomKeyForArtefact(artefact);
+    const roomAssignment = roomAssignmentByCode.get(roomCode.trim().toLowerCase()) ?? (roomKey ? roomAssignmentByCode.get(roomKey.trim().toLowerCase()) : undefined);
     const anchor = getAnchor(artefact);
 
     return {
       label: getArtefactLabel(artefact, t),
       roomCode,
+      roomKey,
       occupants: roomAssignment?.occupants ?? [],
       anchorX: anchor.x * viewport.scale + viewport.panX,
       anchorY: anchor.y * viewport.scale + viewport.panY,
@@ -412,6 +431,7 @@ export default function DetoxFloorPlan({
             <div className="mb-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Room</p>
               <p className="text-sm font-semibold text-slate-900">{hoveredRoom.label}</p>
+              {hoveredRoom.roomKey ? <p className="text-xs text-slate-600">{hoveredRoom.roomKey}</p> : null}
             </div>
             {hoveredRoom.occupants.length === 0 ? (
               <p className="text-sm text-slate-600">Vacant</p>

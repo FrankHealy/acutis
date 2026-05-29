@@ -40,7 +40,7 @@ public sealed class UnitOperationsService : IUnitOperationsService
         CancellationToken cancellationToken = default)
     {
         var residents = await _residentService.GetAllResidentsAsync(unitCode, cancellationToken);
-        var rooms = GetRoomCodes(unitCode);
+        var rooms = GetRoomDefinitions(unitCode);
         var otRoleByEpisodeId = await GetActiveOtRoleByEpisodeIdAsync(unitCode, residents, cancellationToken);
 
         var occupantsByRoom = residents
@@ -72,27 +72,29 @@ public sealed class UnitOperationsService : IUnitOperationsService
                 StringComparer.OrdinalIgnoreCase);
 
         return rooms
-            .Select(roomCode =>
+            .Select(room =>
             {
-                var occupants = occupantsByRoom.TryGetValue(roomCode, out var roomOccupants)
+                var occupants = occupantsByRoom.TryGetValue(room.Code, out var roomOccupants)
                     ? roomOccupants
                     : Array.Empty<RoomAssignmentOccupantDto>();
-                var bedCodes = GetBedCodes(unitCode, roomCode);
                 var occupantByBed = occupants
                     .Where(occupant => !string.IsNullOrWhiteSpace(occupant.BedCode))
                     .ToDictionary(occupant => occupant.BedCode!, StringComparer.OrdinalIgnoreCase);
 
                 return new UnitRoomAssignmentDto
                 {
-                    RoomCode = roomCode,
-                    StorageRoomCode = ToStorageRoomCode(unitCode, roomCode),
-                    Capacity = bedCodes.Count,
+                    RoomCode = room.Code,
+                    RoomKey = room.Key,
+                    StorageRoomCode = room.StorageCode,
+                    Capacity = room.Beds.Count,
                     Occupants = occupants,
-                    Beds = bedCodes
-                        .Select(bedCode => new RoomAssignmentBedDto
+                    Beds = room.Beds
+                        .Select(bed => new RoomAssignmentBedDto
                         {
-                            BedCode = bedCode,
-                            Occupant = occupantByBed.TryGetValue(bedCode, out var occupant) ? occupant : null
+                            BedCode = bed.Code,
+                            BedKey = bed.Key,
+                            Priority = bed.Priority,
+                            Occupant = occupantByBed.TryGetValue(bed.Code, out var occupant) ? occupant : null
                         })
                         .ToList()
                 };
@@ -355,8 +357,10 @@ public sealed class UnitOperationsService : IUnitOperationsService
         var displayRoomCode = request.RoomCode.Trim();
         var storageRoomCode = ToStorageRoomCode(normalizedUnitCode, displayRoomCode);
         var bedCode = request.BedCode.Trim();
+        var roomDefinition = GetRoomDefinitions(normalizedUnitCode)
+            .SingleOrDefault(room => string.Equals(room.Code, displayRoomCode, StringComparison.OrdinalIgnoreCase));
 
-        if (!GetBedCodes(normalizedUnitCode, displayRoomCode).Contains(bedCode, StringComparer.OrdinalIgnoreCase))
+        if (roomDefinition is null || !roomDefinition.Beds.Any(bed => string.Equals(bed.Code, bedCode, StringComparison.OrdinalIgnoreCase)))
         {
             throw new InvalidOperationException("Bed code is not valid for the requested room.");
         }
@@ -380,7 +384,7 @@ public sealed class UnitOperationsService : IUnitOperationsService
                 item.UnitId == unit.Id &&
                 item.RoomNumber == storageRoomCode,
                 cancellationToken);
-        if (roomOccupancy >= GetBedCodes(normalizedUnitCode, displayRoomCode).Count)
+        if (roomOccupancy >= roomDefinition.Beds.Count)
         {
             throw new InvalidOperationException("That room is already full.");
         }
@@ -406,14 +410,19 @@ public sealed class UnitOperationsService : IUnitOperationsService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        var assignedBed = roomDefinition.Beds.First(bed => string.Equals(bed.Code, bedCode, StringComparison.OrdinalIgnoreCase));
+
         return new AssignUnitBedResponse
         {
             ResidentId = resident.Id,
             EpisodeId = episode.Id,
             ResidentCaseId = episode.ResidentCaseId,
             RoomCode = displayRoomCode,
+            RoomKey = roomDefinition.Key,
             StorageRoomCode = storageRoomCode,
-            BedCode = bedCode
+            BedCode = bedCode,
+            BedKey = assignedBed.Key,
+            BedPriority = assignedBed.Priority
         };
     }
 
@@ -477,26 +486,68 @@ public sealed class UnitOperationsService : IUnitOperationsService
             Notes = assignment.Notes
         };
 
-    private static IReadOnlyList<string> GetRoomCodes(string unitCode)
+    private sealed class UnitRoomDefinition
     {
-        return NormalizeUnitCode(unitCode) switch
-        {
-            "detox" => Enumerable.Range(1, 16).Select(index => index.ToString()).ToList(),
-            "ladies" => Enumerable.Range(1, 18).Select(index => index.ToString()).ToList(),
-            "drugs" => Enumerable.Range(1, 22).Select(index => index.ToString()).ToList(),
-            _ => Enumerable.Range(1, 44).Select(index => index.ToString()).ToList()
-        };
+        public required string Code { get; init; }
+        public required string Key { get; init; }
+        public required string StorageCode { get; init; }
+        public required IReadOnlyList<UnitBedDefinition> Beds { get; init; }
     }
 
-    private static IReadOnlyList<string> GetBedCodes(string unitCode, string roomCode)
+    private sealed class UnitBedDefinition
     {
-        var normalizedRoomCode = roomCode.Trim();
-        if (NormalizeUnitCode(unitCode) == "detox")
-        {
-            return [$"roundel_{normalizedRoomCode}a", $"roundel_{normalizedRoomCode}b"];
-        }
+        public required string Code { get; init; }
+        public required string Key { get; init; }
+        public int? Priority { get; init; }
+    }
 
-        return [$"{normalizedRoomCode}a", $"{normalizedRoomCode}b"];
+    private static IReadOnlyList<UnitRoomDefinition> GetRoomDefinitions(string unitCode)
+    {
+        var normalizedUnitCode = NormalizeUnitCode(unitCode);
+        var roomCount = normalizedUnitCode switch
+        {
+            "detox" => 16,
+            "ladies" => 18,
+            "drugs" => 22,
+            _ => 44
+        };
+
+        return Enumerable.Range(1, roomCount)
+            .Select(index =>
+            {
+                var roomCode = index.ToString();
+                var roomKey = BuildHumanRoomKey(normalizedUnitCode, index);
+                return new UnitRoomDefinition
+                {
+                    Code = roomCode,
+                    Key = roomKey,
+                    StorageCode = ToStorageRoomCode(normalizedUnitCode, roomCode),
+                    Beds = BuildBedDefinitions(normalizedUnitCode, roomCode, roomKey)
+                };
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<UnitBedDefinition> BuildBedDefinitions(string normalizedUnitCode, string roomCode, string roomKey)
+    {
+        var technicalPrefix = normalizedUnitCode == "detox" ? $"roundel_{roomCode}" : roomCode;
+        return
+        [
+            new UnitBedDefinition { Code = $"{technicalPrefix}a", Key = $"{roomKey}-A", Priority = 1 },
+            new UnitBedDefinition { Code = $"{technicalPrefix}b", Key = $"{roomKey}-B", Priority = 2 }
+        ];
+    }
+
+    private static string BuildHumanRoomKey(string normalizedUnitCode, int roomNumber)
+    {
+        return normalizedUnitCode switch
+        {
+            "detox" => $"D-{roomNumber:00}",
+            "alcohol" => $"A-{roomNumber:00}",
+            "drugs" => $"DR-{roomNumber:00}",
+            "ladies" => $"L-{roomNumber:00}",
+            _ => $"R-{roomNumber:00}"
+        };
     }
 
     private static IReadOnlyList<UnitOtSessionDto> BuildSessionsForDay(

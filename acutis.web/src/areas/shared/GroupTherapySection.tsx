@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import termRatingsData from "@/data/groupTherapyTermsRatings.json";
 import termsData from "@/data/groupTherapyTerms.json";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Clock, Pause, Play, RotateCcw } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { residentService } from "@/services/residentService";
 import { type Resident } from "@/services/mockDataService";
 import {
   groupTherapyService,
+  type GroupTherapyConversationTheme,
+  type GroupTherapyFacilitationConfig,
   type GroupTherapyProgram,
   type GroupTherapyResidentObservation,
 } from "@/services/groupTherapyService";
@@ -61,6 +63,7 @@ type ResidentRemarkState = {
 type ResidentObservationState = {
   id?: string;
   selectedTerms: string[];
+  conversationThemeIds: string[];
   notes: string;
   observedAtUtc: string;
 };
@@ -82,6 +85,8 @@ const PROGRAM_CODE = "bruree_alcohol_gt";
 const TOTAL_SESSIONS_PER_WEEK = 9;
 const QUESTIONS_PER_SESSION = 3;
 const PARTICIPANTS_PER_SESSION = 12;
+const DEFAULT_SESSION_DURATION_MINUTES = 60;
+const DEFAULT_RESIDENT_DURATION_MINUTES = 5;
 
 const GROUP_MODULES: Record<string, GroupModule> = {
   spirituality: {
@@ -169,6 +174,7 @@ const mapProgramToModules = (program: GroupTherapyProgram): Record<string, Group
 const mapObservationToState = (observation: GroupTherapyResidentObservation): ResidentObservationState => ({
   id: observation.id,
   selectedTerms: observation.selectedTerms ?? [],
+  conversationThemeIds: observation.conversationThemes?.map((theme) => theme.id) ?? [],
   notes: observation.notes ?? "",
   observedAtUtc: observation.observedAtUtc,
 });
@@ -188,6 +194,18 @@ const hashString = (value: string): number => {
     hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
   }
   return hash;
+};
+
+const formatTimer = (totalSeconds: number): string => {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
+const timerPercent = (elapsedSeconds: number, targetMinutes: number): number => {
+  const targetSeconds = Math.max(1, targetMinutes * 60);
+  return Math.min(100, Math.round((elapsedSeconds / targetSeconds) * 100));
 };
 
 const pickResidentsForSession = (
@@ -233,7 +251,6 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
   const [currentObservationTerms, setCurrentObservationTerms] = useState<string[]>([]);
   const [currentObservationNotes, setCurrentObservationNotes] = useState("");
   const [currentObservedAt, setCurrentObservedAt] = useState(() => toDateTimeLocalValue(new Date().toISOString()));
-  const [currentFreeText, setCurrentFreeText] = useState("");
   const [usedComments, setUsedComments] = useState<Set<string>>(() => new Set());
   const [termSearch, setTermSearch] = useState("");
   const [selectedRatingId, setSelectedRatingId] = useState<number | "all">("all");
@@ -243,6 +260,19 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [currentSessionNumber, setCurrentSessionNumber] = useState(1);
+  const [timerNow, setTimerNow] = useState(() => Date.now());
+  const [facilitationConfigs, setFacilitationConfigs] = useState<GroupTherapyFacilitationConfig[]>([]);
+  const [conversationThemes, setConversationThemes] = useState<GroupTherapyConversationTheme[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string>("");
+  const [sessionDurationMinutes, setSessionDurationMinutes] = useState(DEFAULT_SESSION_DURATION_MINUTES);
+  const [speakerDurationMinutes, setSpeakerDurationMinutes] = useState(DEFAULT_RESIDENT_DURATION_MINUTES);
+  const [isTimingEnabled, setIsTimingEnabled] = useState(true);
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
+  const [sessionElapsedBeforeStart, setSessionElapsedBeforeStart] = useState(0);
+  const [speakerStartedAt, setSpeakerStartedAt] = useState<number | null>(null);
+  const [speakerElapsedBeforeStart, setSpeakerElapsedBeforeStart] = useState(0);
+  const [selectedConversationThemeIds, setSelectedConversationThemeIds] = useState<string[]>([]);
+  const [themeSearch, setThemeSearch] = useState("");
 
   useEffect(() => {
     void loadKeys([
@@ -253,7 +283,6 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
       "group_therapy.observation_search",
       "group_therapy.observation_empty",
       "group_therapy.categorized_notes_placeholder",
-      "group_therapy.free_text_placeholder",
       "group_therapy.cancel",
       "group_therapy.saving",
       "group_therapy.save_notes",
@@ -263,6 +292,11 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
 
   const accessToken = session?.accessToken;
   const canUseLiveApi = isAuthorizedClient(status, accessToken);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setTimerNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const text = (key: string, fallback: string) => {
     const resolved = t(key);
@@ -315,8 +349,34 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
     );
   }, [selectedRatingId, termSearch, termsByRating]);
 
+  const filteredConversationThemes = useMemo(() => {
+    const searchValue = themeSearch.trim().toLowerCase();
+    if (!searchValue) {
+      return conversationThemes;
+    }
+
+    return conversationThemes.filter(
+      (theme) =>
+        theme.label.toLowerCase().includes(searchValue) ||
+        theme.description.toLowerCase().includes(searchValue)
+    );
+  }, [conversationThemes, themeSearch]);
+
   const activeRating = selectedRatingId === "all" ? null : ratingLookup.get(selectedRatingId);
   const moduleValues = useMemo(() => Object.values(modules), [modules]);
+  const selectedFacilitationConfig = useMemo(
+    () => facilitationConfigs.find((config) => config.id === selectedConfigId) ?? facilitationConfigs[0] ?? null,
+    [facilitationConfigs, selectedConfigId]
+  );
+
+  const sessionElapsedSeconds =
+    sessionElapsedBeforeStart + (sessionStartedAt ? Math.floor((timerNow - sessionStartedAt) / 1000) : 0);
+  const speakerElapsedSeconds =
+    speakerElapsedBeforeStart + (speakerStartedAt ? Math.floor((timerNow - speakerStartedAt) / 1000) : 0);
+  const sessionRemainingSeconds = Math.max(0, sessionDurationMinutes * 60 - sessionElapsedSeconds);
+  const speakerRemainingSeconds = Math.max(0, speakerDurationMinutes * 60 - speakerElapsedSeconds);
+  const isSessionTimerRunning = sessionStartedAt !== null;
+  const isSpeakerTimerRunning = speakerStartedAt !== null;
 
   const currentModule = useMemo(() => {
     if (initialModuleKey && modules[initialModuleKey]) {
@@ -373,6 +433,66 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
       isCancelled = true;
     };
   }, [accessToken, unitId]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadFacilitationOptions = async () => {
+      try {
+        const options = await groupTherapyService.getFacilitationOptions(unitId, PROGRAM_CODE, accessToken);
+        if (isCancelled) {
+          return;
+        }
+
+        setConversationThemes(options.conversationThemes);
+        setFacilitationConfigs(options.configs);
+        const firstConfig = options.configs[0];
+        if (firstConfig) {
+          setSelectedConfigId(firstConfig.id);
+          setIsTimingEnabled(firstConfig.isTimingEnabled);
+          setSessionDurationMinutes(firstConfig.sessionDurationMinutes ?? DEFAULT_SESSION_DURATION_MINUTES);
+        }
+      } catch {
+        if (!isCancelled) {
+          setConversationThemes([]);
+          setFacilitationConfigs([]);
+        }
+      }
+    };
+
+    void loadFacilitationOptions();
+    return () => {
+      isCancelled = true;
+    };
+  }, [accessToken, unitId]);
+
+  useEffect(() => {
+    if (!selectedFacilitationConfig) {
+      return;
+    }
+
+    setIsTimingEnabled(selectedFacilitationConfig.isTimingEnabled);
+    setSessionDurationMinutes(selectedFacilitationConfig.sessionDurationMinutes ?? DEFAULT_SESSION_DURATION_MINUTES);
+  }, [selectedFacilitationConfig]);
+
+  useEffect(() => {
+    if (!selectedFacilitationConfig) {
+      setSpeakerDurationMinutes(DEFAULT_RESIDENT_DURATION_MINUTES);
+      return;
+    }
+
+    if (selectedFacilitationConfig.residentDurationMinutes) {
+      setSpeakerDurationMinutes(selectedFacilitationConfig.residentDurationMinutes);
+      return;
+    }
+
+    const groupSize = Math.max(1, sessionParticipants.length);
+    const computedMinutes = Math.max(
+      1,
+      Math.floor((sessionDurationMinutes / groupSize) * Number(selectedFacilitationConfig.residentTimeMultiplier || 1))
+    );
+    setSpeakerDurationMinutes(computedMinutes);
+  }, [selectedFacilitationConfig, sessionDurationMinutes, sessionParticipants.length]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -524,36 +644,91 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
     setCurrentObservationTerms((prev) => (prev.includes(term.term) ? prev : [...prev, term.term]));
   };
 
+  const handleConversationThemeClick = (theme: GroupTherapyConversationTheme) => {
+    const key = `theme-${theme.id}`;
+    if (usedComments.has(key)) {
+      return;
+    }
+
+    setSelectedConversationThemeIds((prev) => (prev.includes(theme.id) ? prev : [...prev, theme.id]));
+  };
+
+  const handleConversationThemeRemove = (themeId: string) => {
+    setSelectedConversationThemeIds((prev) => prev.filter((id) => id !== themeId));
+  };
+
   const handleObservationTermRemove = (termValue: string) => {
     setCurrentObservationTerms((prev) => prev.filter((term) => term !== termValue));
+    const matchingTheme = conversationThemes.find((theme) => theme.label === termValue);
+    if (matchingTheme) {
+      setSelectedConversationThemeIds((prev) => prev.filter((id) => id !== matchingTheme.id));
+    }
+  };
+
+  const startSessionTimer = () => setSessionStartedAt((current) => current ?? Date.now());
+
+  const pauseSessionTimer = () => {
+    if (!sessionStartedAt) {
+      return;
+    }
+
+    setSessionElapsedBeforeStart(sessionElapsedSeconds);
+    setSessionStartedAt(null);
+  };
+
+  const resetSessionTimer = () => {
+    setSessionStartedAt(null);
+    setSessionElapsedBeforeStart(0);
+  };
+
+  const startSpeakerTimer = () => setSpeakerStartedAt((current) => current ?? Date.now());
+
+  const pauseSpeakerTimer = () => {
+    if (!speakerStartedAt) {
+      return;
+    }
+
+    setSpeakerElapsedBeforeStart(speakerElapsedSeconds);
+    setSpeakerStartedAt(null);
+  };
+
+  const resetSpeakerTimer = (autoStart = false) => {
+    setSpeakerElapsedBeforeStart(0);
+    setSpeakerStartedAt(autoStart ? Date.now() : null);
   };
 
   const openResidentModal = (resident: Participant) => {
     setSelectedResident(resident);
     const saved = sessionRemarks[resident.id];
     const savedObservation = resident.residentGuid ? sessionObservations[resident.residentGuid] : undefined;
+    const savedTerms = savedObservation?.selectedTerms ?? [];
+    const savedThemeIds = savedObservation?.conversationThemeIds ?? [];
     setCurrentNoteLines(saved?.noteLines ?? []);
-    setCurrentFreeText(saved?.freeText ?? "");
-    setCurrentObservationTerms(savedObservation?.selectedTerms ?? []);
+    setCurrentObservationTerms(savedTerms);
     setCurrentObservationNotes(savedObservation?.notes ?? "");
     setCurrentObservedAt(toDateTimeLocalValue(savedObservation?.observedAtUtc ?? new Date().toISOString()));
+    setSelectedConversationThemeIds(savedThemeIds);
     setUsedComments(new Set());
     setTermSearch("");
+    setThemeSearch("");
     setSelectedRatingId("all");
     setSaveError(null);
+    resetSpeakerTimer(true);
   };
 
   const closeModal = () => {
     setSelectedResident(null);
     setCurrentNoteLines([]);
-    setCurrentFreeText("");
     setCurrentObservationTerms([]);
     setCurrentObservationNotes("");
     setCurrentObservedAt(toDateTimeLocalValue(new Date().toISOString()));
+    setSelectedConversationThemeIds([]);
     setUsedComments(new Set());
     setTermSearch("");
+    setThemeSearch("");
     setSelectedRatingId("all");
     setSaveError(null);
+    resetSpeakerTimer(false);
   };
 
   const markAsSpoken = (participantId: number) => {
@@ -577,13 +752,20 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
     setIsSaving(true);
     setSaveError(null);
     try {
+      const noteLinesWithTiming = isTimingEnabled
+        ? [
+            ...currentNoteLines.filter((line) => !line.startsWith("Speaker duration:")),
+            `Speaker duration: ${formatTimer(speakerElapsedSeconds)}`,
+          ]
+        : currentNoteLines.filter((line) => !line.startsWith("Speaker duration:"));
+
       const savedRemark = await groupTherapyService.upsertRemark({
         unitId,
         programCode: PROGRAM_CODE,
         residentId: selectedResident.id,
         moduleKey: currentModule.id,
-        noteLines: currentNoteLines,
-        freeText: currentFreeText,
+        noteLines: noteLinesWithTiming,
+        freeText: "",
       }, accessToken);
 
       const savedObservation = await groupTherapyService.upsertObservation({
@@ -596,6 +778,7 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
         episodeId: selectedResident.episodeId ?? null,
         observedAtUtc: toObservedAtUtc(currentObservedAt),
         selectedTerms: currentObservationTerms,
+        conversationThemeIds: selectedConversationThemeIds,
         notes: currentObservationNotes.trim() || null,
       }, accessToken);
 
@@ -652,6 +835,83 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
               </button>
             );
           })}
+        </div>
+        <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+          <div className={`rounded-xl border p-4 ${isTimingEnabled ? "border-indigo-100 bg-indigo-50" : "border-gray-200 bg-gray-50"}`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-indigo-600" />
+                <div>
+                  <p className="text-sm font-semibold text-indigo-900">Session timer</p>
+                  <p className="text-xs text-indigo-700">{isTimingEnabled ? `Remaining ${formatTimer(sessionRemainingSeconds)}` : "Timing optional for this style"}</p>
+                </div>
+              </div>
+              <div className="text-2xl font-bold tabular-nums text-indigo-950">{formatTimer(sessionElapsedSeconds)}</div>
+            </div>
+            {isTimingEnabled && <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+              <div
+                className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                style={{ width: `${timerPercent(sessionElapsedSeconds, sessionDurationMinutes)}%` }}
+              />
+            </div>}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={!isTimingEnabled}
+                onClick={isSessionTimerRunning ? pauseSessionTimer : startSessionTimer}
+                className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {isSessionTimerRunning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                {isSessionTimerRunning ? "Pause" : "Start"}
+              </button>
+              <button
+                type="button"
+                disabled={!isTimingEnabled}
+                onClick={resetSessionTimer}
+                className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:border-indigo-300 disabled:opacity-50"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reset
+              </button>
+            </div>
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <label className="block text-xs font-medium text-gray-600">
+              Counsellor style
+              <select
+                value={selectedConfigId}
+                onChange={(event) => setSelectedConfigId(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              >
+                {facilitationConfigs.map((config) => (
+                  <option key={config.id} value={config.id}>{config.counsellorStyle}</option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-3 flex items-center gap-2 text-xs font-medium text-gray-600">
+              <input
+                type="checkbox"
+                checked={isTimingEnabled}
+                onChange={(event) => setIsTimingEnabled(event.target.checked)}
+              />
+              Timing enabled
+            </label>
+            <label className="block text-xs font-medium text-gray-600">
+              Session minutes
+              <input
+                type="number"
+                min={5}
+                step={5}
+                value={sessionDurationMinutes}
+                onChange={(event) => setSessionDurationMinutes(Math.max(5, Number(event.target.value) || DEFAULT_SESSION_DURATION_MINUTES))}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <div className="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
+              Resident minutes: <span className="font-semibold text-gray-900">{speakerDurationMinutes}</span>
+              <span className="block text-[11px] text-gray-500">Calculated from group size and style.</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -769,9 +1029,43 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-indigo-800">
-                Notes - {selectedResident.firstName} {selectedResident.surname}
-              </h3>
+              <div>
+                <h3 className="text-xl font-semibold text-indigo-800">
+                  Notes - {selectedResident.firstName} {selectedResident.surname}
+                </h3>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                    Speaker {formatTimer(speakerElapsedSeconds)}
+                  </span>
+                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                    Remaining {formatTimer(speakerRemainingSeconds)}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={!isTimingEnabled}
+                    onClick={isSpeakerTimerRunning ? pauseSpeakerTimer : startSpeakerTimer}
+                    className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-semibold text-indigo-700 disabled:opacity-50"
+                  >
+                    {isSpeakerTimerRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                    {isSpeakerTimerRunning ? "Pause" : "Start"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!isTimingEnabled}
+                    onClick={() => resetSpeakerTimer(true)}
+                    className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600 disabled:opacity-50"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Restart
+                  </button>
+                </div>
+                {isTimingEnabled && <div className="mt-2 h-1.5 w-72 max-w-full overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                    style={{ width: `${timerPercent(speakerElapsedSeconds, speakerDurationMinutes)}%` }}
+                  />
+                </div>}
+              </div>
               <button
                 type="button"
                 onClick={closeModal}
@@ -806,6 +1100,50 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                       </button>
                     );
                   })}
+                </div>
+
+                <h4 className="font-semibold mb-2 text-gray-800">Conversation Theme Library</h4>
+                <p className="text-xs text-gray-500 mb-3">
+                  Add the main subject area this resident is speaking about.
+                </p>
+                <input
+                  value={themeSearch}
+                  onChange={(event) => setThemeSearch(event.target.value)}
+                  type="text"
+                  placeholder="Search conversation themes..."
+                  className="w-full mb-3 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1 mb-6">
+                  {filteredConversationThemes.map((theme) => {
+                    const isUsed = selectedConversationThemeIds.includes(theme.id);
+
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        onClick={() => handleConversationThemeClick(theme)}
+                        disabled={isUsed}
+                        className={`text-left border-2 rounded-lg p-3 transition ${
+                          isUsed
+                            ? "border-green-200 bg-green-50 text-green-700 cursor-not-allowed"
+                            : "border-gray-200 hover:border-indigo-300 hover:shadow-sm bg-white"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{theme.label}</p>
+                            <p className="text-xs text-gray-600 mt-1 leading-snug">{theme.description}</p>
+                          </div>
+                          {isUsed && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {filteredConversationThemes.length === 0 && (
+                    <div className="col-span-full text-center text-sm text-gray-500 py-6 border-2 border-dashed border-gray-200 rounded-lg">
+                      No matching conversation themes.
+                    </div>
+                  )}
                 </div>
 
                 <h4 className="font-semibold mb-2 text-gray-800">Observation Library</h4>
@@ -909,6 +1247,32 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                   </p>
                 </div>
                 <div>
+                  <h4 className="font-semibold mb-2 text-gray-800">Conversation Themes</h4>
+                  <div className="flex flex-wrap gap-2 min-h-10 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                    {selectedConversationThemeIds.length === 0 ? (
+                      <span className="text-sm text-gray-400">No conversation themes selected yet.</span>
+                    ) : (
+                      selectedConversationThemeIds.map((themeId) => {
+                        const theme = conversationThemes.find((item) => item.id === themeId);
+                        if (!theme) {
+                          return null;
+                        }
+
+                        return (
+                          <button
+                            key={theme.id}
+                            type="button"
+                            onClick={() => handleConversationThemeRemove(theme.id)}
+                            className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700"
+                          >
+                            {theme.label} &times;
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+                <div>
                   <h4 className="font-semibold mb-2 text-gray-800">Recorded Observation</h4>
                   <p className="text-xs text-gray-500 mb-2">
                     Selected observation terms are stored as the session observation capture for this resident.
@@ -947,15 +1311,6 @@ const GroupTherapySession = ({ initialModuleKey, unitId }: GroupTherapySessionPr
                       placeholder="Optional observation notes for this session capture..."
                     />
                   </label>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2 text-gray-800">Free Text Note</h4>
-                  <textarea
-                    value={currentFreeText}
-                    onChange={(event) => setCurrentFreeText(event.target.value)}
-                    className="w-full h-44 p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 resize-none"
-                    placeholder={text("group_therapy.free_text_placeholder", "Add clinician free text for context, detail, and follow-up...")}
-                  />
                 </div>
               </div>
             </div>
