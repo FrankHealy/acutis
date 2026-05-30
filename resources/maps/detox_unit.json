@@ -4,15 +4,15 @@
   "descriptor": {
     "name": "Detox Unit plus drug unit",
     "description": "Started the link to main house an med wing rooms",
-    "version": 19,
+    "version": 21,
     "dateCreated": "2026-04-07T08:52:14.751Z",
     "createdBy": "Unknown",
-    "updatedAt": "2026-05-28T06:46:21.651Z",
+    "updatedAt": "2026-05-30T14:36:59.518Z",
     "updatedBy": "reception"
   },
   "metadata": {
     "createdAt": "2026-04-07T08:52:14.751Z",
-    "updatedAt": "2026-05-28T06:46:21.651Z",
+    "updatedAt": "2026-05-30T14:36:59.518Z",
     "createdBy": "Unknown",
     "updatedBy": "reception"
   },
@@ -1728,9 +1728,9 @@
       "type": "room",
       "geometry": {
         "kind": "rect",
-        "x": 1412.426,
+        "x": 1417.426,
         "y": 1709,
-        "width": 94,
+        "width": 87,
         "height": 86
       },
       "labelOverride": "Room",
@@ -2446,6 +2446,274 @@
       },
       "metadata": {
         "doorType": "internal"
+      }
+    },
+    {
+      "id": "corridor_7b0e3ec4",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 1381,
+        "y": 1673,
+        "width": 38,
+        "height": 121
+      },
+      "humanKey": "corridor_key_99d75209",
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(250,240,175)",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "corridor_a260182d",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 1051,
+        "y": 1757,
+        "width": 337,
+        "height": 36
+      },
+      "humanKey": "corridor_key_1b7c0219",
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(250,240,175)",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_8bd6f94f",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1225,
+        "y": 1628,
+        "width": 113,
+        "height": 129
+      },
+      "humanKey": "room_key_e68b15fe",
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_b698c2b4",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 1085,
+        "y": 1578,
+        "width": 141,
+        "height": 177
+      },
+      "humanKey": "room_key_1e9d520f",
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "corridor_e4407abc",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 1052,
+        "y": 1701,
+        "width": 34,
+        "height": 54
+      },
+      "humanKey": "corridor_key_d58c208e",
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(250,240,175)",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "corridor_e20fdde8",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 906,
+        "y": 1701,
+        "width": 148,
+        "height": 39
+      },
+      "humanKey": "corridor_key_5fe3a9f2",
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(250,240,175)",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_a029d080",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 929,
+        "y": 1578,
+        "width": 156,
+        "height": 121
+      },
+      "humanKey": "room_key_bc56e8a1",
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "corridor_704c60f4",
+      "type": "corridor",
+      "geometry": {
+        "kind": "rect",
+        "x": 906,
+        "y": 1738,
+        "width": 80,
+        "height": 115
+      },
+      "humanKey": "corridor_key_9eb8d41e",
+      "labelOverride": "Corridor",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(250,240,175)",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "room_395b0901",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 807,
+        "y": 1539,
+        "width": 118,
+        "height": 159
+      },
+      "humanKey": "room_key_5febafe7",
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "stair_12d3488e",
+      "type": "stair",
+      "geometry": {
+        "kind": "rect",
+        "x": 801,
+        "y": 1751,
+        "width": 103,
+        "height": 49
+      },
+      "labelOverride": "Stairs",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "#e7eefb",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "door_5634b8d1",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1224,
+        "y": 1652,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "room_8bd6f94f",
+        "hostType": "room",
+        "edge": "left",
+        "offset": 24,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "door_34f43acf",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1060,
+        "y": 1706,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "corridor_e4407abc",
+        "hostType": "corridor",
+        "edge": "top",
+        "offset": 8,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "door_0e3b1c62",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 1053,
+        "y": 1777,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "corridor_a260182d",
+        "hostType": "corridor",
+        "edge": "left",
+        "offset": 20,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
+      }
+    },
+    {
+      "id": "room_56654084",
+      "type": "room",
+      "geometry": {
+        "kind": "rect",
+        "x": 837,
+        "y": 1854,
+        "width": 113,
+        "height": 147
+      },
+      "humanKey": "room_key_7d72ed4c",
+      "labelOverride": "Room",
+      "metadata": {
+        "cornerStyle": "square",
+        "fillColor": "rgb(215,215,215)",
+        "borderColor": "#475569",
+        "textColor": "#0f172a"
       }
     }
   ]

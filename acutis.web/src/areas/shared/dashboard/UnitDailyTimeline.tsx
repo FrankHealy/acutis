@@ -43,6 +43,10 @@ interface ScheduleEvent {
   canTakeEvent: boolean;
 }
 
+type FullDayTimelineEvent = ScheduleEvent & {
+  lane: number;
+};
+
 type UnitDailyTimelineProps = {
   unitId: string;
   unitName: string;
@@ -335,7 +339,28 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     return "text";
   };
 
-  const fullDayEventStyle = (event: ScheduleEvent, index: number): React.CSSProperties => {
+  const buildFullDayLanes = (items: ScheduleEvent[]): FullDayTimelineEvent[] => {
+    const laneEndMinutes: number[] = [];
+
+    return items
+      .slice()
+      .sort((left, right) => left.timeMinutes - right.timeMinutes || eventEndMinutes(left) - eventEndMinutes(right))
+      .map((event) => {
+        const start = Math.max(fullDayStartMinutes, event.timeMinutes);
+        const end = Math.min(fullDayEndMinutes, Math.max(start + 15, eventEndMinutes(event)));
+        const lane = laneEndMinutes.findIndex((laneEnd) => laneEnd <= start);
+        const assignedLane = lane >= 0 ? lane : laneEndMinutes.length;
+
+        laneEndMinutes[assignedLane] = end;
+
+        return {
+          ...event,
+          lane: assignedLane,
+        };
+      });
+  };
+
+  const fullDayEventStyle = (event: FullDayTimelineEvent): React.CSSProperties => {
     const tone = eventTone(event);
     const token = `var(--app-${tone})`;
     const start = Math.max(fullDayStartMinutes, event.timeMinutes);
@@ -343,7 +368,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     return {
       left: ((start - fullDayStartMinutes) / 60) * fullDayPixelsPerHour,
       width: Math.max(46, ((end - start) / 60) * fullDayPixelsPerHour),
-      top: 48 + index * 68,
+      top: 16 + event.lane * 68,
       backgroundColor: `color-mix(in srgb, ${token} 10%, var(--app-surface))`,
       borderLeftColor: token,
       color: token,
@@ -394,6 +419,9 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
 
   const currentMinutes = getCurrentMinutes();
   const schedule = viewMode === "full" ? getFullDaySchedule() : getCurrentSchedule();
+  const fullDayEvents = viewMode === "full" ? buildFullDayLanes(schedule) : [];
+  const fullDayRows = Math.max(1, ...fullDayEvents.map((event) => event.lane + 1));
+
   if (schedule.length === 0) {
     return (
       <div className="app-card overflow-hidden rounded-xl p-6" style={{ paddingBottom: 24 }}>
@@ -467,7 +495,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
 
       {viewMode === "full" ? (
         <div className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-          <div className="relative" style={{ width: fullDayWidth + fullDayLabelWidth, height: Math.max(300, 86 + schedule.length * 68) }}>
+          <div className="relative" style={{ width: fullDayWidth + fullDayLabelWidth, height: Math.max(184, 70 + fullDayRows * 68) }}>
             <div className="sticky top-0 z-20 h-11 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)]">
               {Array.from({ length: 25 }, (_, hour) => (
                 <div
@@ -494,13 +522,13 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
                   className="pointer-events-none absolute inset-y-0 z-30"
                   style={{ left: ((currentMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour }}
                 >
-                  <span className="absolute -left-5 top-1 rounded bg-[var(--app-danger)] px-1.5 py-0.5 text-[11px] font-bold text-white">
+                  <span className="absolute -left-5 top-1 rounded bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
                     {timeFromMinutes(currentMinutes)}
                   </span>
-                  <div className="h-full w-px bg-[var(--app-danger)]" />
+                  <div className="h-full w-0.5 bg-red-600" />
                 </div>
               )}
-              {schedule.map((event, index) => {
+              {fullDayEvents.map((event) => {
                 const IconComponent = event.icon;
                 const duration = eventDurationMinutes(event);
                 return (
@@ -509,7 +537,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
                     type="button"
                     onClick={() => handleEventClick(event)}
                     className="absolute overflow-hidden rounded-lg border border-l-4 border-[var(--app-border)] px-2 py-2 text-left shadow-sm transition-colors hover:border-[var(--app-primary)] hover:ring-2 hover:ring-[color:color-mix(in_srgb,var(--app-primary)_18%,transparent)]"
-                    style={fullDayEventStyle(event, index)}
+                    style={fullDayEventStyle(event)}
                   >
                     <IconComponent className="pointer-events-none absolute bottom-1 right-1 h-10 w-10 opacity-10" />
                     <span className="relative block truncate text-xs font-semibold text-[var(--app-text)]">{event.title}</span>
@@ -527,10 +555,10 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
         <div className="absolute left-0 right-0 rounded-full bg-[var(--app-border)]" style={{ top: baseTop, height: trackThickness }} />
 
         {shouldShowIndicator && (
-          <div className="pointer-events-none absolute z-40 -translate-x-1/2" style={{ left: `${currentPosition}%`, top: baseTop - 2 }}>
-            <div className="h-3 w-3 rounded-full border-2 border-white bg-red-500 shadow" />
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-              <span className="rounded bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)] px-2 py-0.5 text-xs font-semibold text-[var(--app-danger)] shadow-sm">NOW</span>
+          <div className="pointer-events-none absolute bottom-0 top-0 z-40 -translate-x-1/2" style={{ left: `${currentPosition}%` }}>
+            <div className="h-full w-0.5 bg-red-600 shadow-sm" />
+            <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1 whitespace-nowrap">
+              <span className="rounded bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-sm">{timeFromMinutes(currentMinutes)}</span>
             </div>
           </div>
         )}
