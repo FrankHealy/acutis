@@ -2,15 +2,16 @@
   "expo": {
     "name": "acutis.tab",
     "slug": "acutis-tab",
+    "scheme": "acutis-tab",
     "plugins": [
       "expo-router",
       "expo-localization"
     ],
     "extra": {
       "router": {},
-      "apiBaseUrl": "http://10.77.12.112:5009",
+      "apiBaseUrl": "http://192.168.149.100:5009",
       "keycloak": {
-        "issuer": "http://10.77.12.112:8080/realms/AcutisRealm",
+        "issuer": "http://192.168.149.100:8080/realms/acutisrealm",
         "clientId": "tab-client",
         "audience": "api-client",
         "redirectUri": "acutis-tab://redirect"

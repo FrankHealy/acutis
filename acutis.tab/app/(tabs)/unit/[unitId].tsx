@@ -55,8 +55,8 @@ const UNIT_MODELS: Record<"detox" | "alcohol", UnitDashboardModel> = {
     actions: [
       { title: t("dashboard.roomMap"), href: "/(tabs)/maps/detox", accent: "#16A34A", surface: "#EDF9F0" },
       { title: t("dashboard.admissions"), href: "/(tabs)/admissions?unit=detox", accent: "#2563EB", surface: "#EEF4FF" },
+      { title: t("dashboard.groupTherapy"), href: "/(tabs)/therapy/today?unit=detox", accent: "#9333EA", surface: "#F6EEFF" },
       { title: t("dashboard.residents"), accent: "#9333EA", surface: "#F6EEFF", state: t("dashboard.availableSoon") },
-      { title: t("dashboard.incidents"), accent: "#F97316", surface: "#FFF2E8", state: t("dashboard.availableSoon") },
     ],
   },
   alcohol: {
@@ -76,9 +76,9 @@ const UNIT_MODELS: Record<"detox" | "alcohol", UnitDashboardModel> = {
     ],
     actions: [
       { title: t("dashboard.rollCall"), href: "/(tabs)/roll-call/alcohol", accent: "#2563EB", surface: "#EEF4FF" },
+      { title: t("dashboard.groupTherapy"), href: "/(tabs)/therapy/today?unit=alcohol", accent: "#9333EA", surface: "#F6EEFF" },
       { title: t("dashboard.admissions"), accent: "#16A34A", surface: "#EDF9F0", state: t("dashboard.availableSoon") },
       { title: t("dashboard.residents"), accent: "#9333EA", surface: "#F6EEFF", state: t("dashboard.availableSoon") },
-      { title: t("dashboard.incidents"), accent: "#F97316", surface: "#FFF2E8", state: t("dashboard.availableSoon") },
     ],
   },
 };

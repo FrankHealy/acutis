@@ -13,9 +13,11 @@ import {
   resolveAttachedOpeningLine,
   zoomAroundPoint,
 } from "@/areas/config/mapDesigner/geometry";
-import { sampleDetoxReferenceMap } from "@/areas/config/mapDesigner/sampleMap";
 import type { MapArtefact, MapGeometry, ViewportState } from "@/areas/config/mapDesigner/types";
+import detoxUnitMap from "@/areas/config/mapDesigner/detox_unit.json";
 import type { RoomAssignmentOccupant, UnitRoomAssignment } from "@/services/operationsService";
+
+const detoxMap = detoxUnitMap;
 
 function getArtefactLabel(artefact: MapArtefact, t: (key: string) => string) {
   if (artefact.labelOverride) return artefact.labelOverride;
@@ -44,12 +46,21 @@ function getRoomCodeForArtefact(artefact: MapArtefact) {
     return label;
   }
 
+  const humanKeyRoomMatch = artefact.humanKey?.match(/^ROOM-0*(\d+)$/i);
+  if (humanKeyRoomMatch?.[1]) {
+    return humanKeyRoomMatch[1];
+  }
+
   const roomMatch = artefact.id.match(/^room_(\d+)$/i);
   return roomMatch?.[1] ?? null;
 }
 
 function getRoomKeyForArtefact(artefact: MapArtefact) {
   return artefact.humanKey?.trim() || getRoomCodeForArtefact(artefact);
+}
+
+function getBedCodeForRoundel(artefact: MapArtefact) {
+  return artefact.humanKey?.trim() || artefact.id;
 }
 
 function renderArtefactShape(
@@ -182,7 +193,7 @@ export default function DetoxFloorPlan({
   }, [loadKeys]);
 
   const documentBounds = useMemo(
-    () => getDocumentBounds(sampleDetoxReferenceMap.artefacts, sampleDetoxReferenceMap.world.width, sampleDetoxReferenceMap.world.height),
+    () => getDocumentBounds(detoxMap.artefacts as MapArtefact[], detoxMap.world.width, detoxMap.world.height),
     [],
   );
 
@@ -207,12 +218,13 @@ export default function DetoxFloorPlan({
     return resolved === key ? fallback : resolved;
   };
 
-  const walls = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type === "wall"), []);
+  const artefacts = useMemo(() => detoxMap.artefacts as MapArtefact[], []);
+  const walls = useMemo(() => artefacts.filter((artefact) => artefact.type === "wall"), [artefacts]);
   const wallsById = useMemo(() => new Map(walls.map((wall) => [wall.id, wall])), [walls]);
   const mergedWallGeometries = useMemo(() => mergeCollinearWallArtefacts(walls), [walls]);
-  const nonWallArtefacts = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type !== "wall" && artefact.type !== "roundel" && artefact.visible !== false), []);
-  const roomArtefacts = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type === "room" && artefact.visible !== false), []);
-  const roundels = useMemo(() => sampleDetoxReferenceMap.artefacts.filter((artefact) => artefact.type === "roundel" && artefact.visible !== false), []);
+  const nonWallArtefacts = useMemo(() => artefacts.filter((artefact) => artefact.type !== "wall" && artefact.type !== "roundel" && artefact.visible !== false), [artefacts]);
+  const roomArtefacts = useMemo(() => artefacts.filter((artefact) => artefact.type === "room" && artefact.visible !== false), [artefacts]);
+  const roundels = useMemo(() => artefacts.filter((artefact) => artefact.type === "roundel" && artefact.visible !== false), [artefacts]);
   const selectableBedCodeSet = useMemo(() => new Set(selectableBedCodes ?? []), [selectableBedCodes]);
   const roundelAssignments = useMemo(() => new Map(Object.entries(bedAssignments ?? {})), [bedAssignments]);
 
@@ -229,7 +241,7 @@ export default function DetoxFloorPlan({
     const occupantsByRoomCode = new Map<string, { roomKey: string; occupants: RoomAssignmentOccupant[] }>();
 
     roundels.forEach((artefact) => {
-      const occupant = bedAssignments[artefact.id];
+      const occupant = bedAssignments[getBedCodeForRoundel(artefact)];
       if (!occupant || !artefact.parentId) {
         return;
       }
@@ -337,7 +349,7 @@ export default function DetoxFloorPlan({
         <svg ref={surfaceRef} className="h-full w-full">
           <rect x={0} y={0} width="100%" height="100%" fill="transparent" />
           <g transform={`translate(${viewport.panX} ${viewport.panY}) scale(${viewport.scale})`}>
-            <rect x={0} y={0} width={sampleDetoxReferenceMap.world.width} height={sampleDetoxReferenceMap.world.height} fill="color-mix(in srgb, var(--app-surface-muted) 35%, white)" />
+            <rect x={0} y={0} width={detoxMap.world.width} height={detoxMap.world.height} fill="color-mix(in srgb, var(--app-surface-muted) 35%, white)" />
             {mergedWallGeometries.map((geometry, index) => (
               <polygon key={`merged_wall_${index}`} points={createWallPolygonPoints(geometry)} fill="var(--app-text)" />
             ))}
@@ -360,9 +372,10 @@ export default function DetoxFloorPlan({
                 return null;
               }
 
-              const occupant = roundelAssignments.get(artefact.id) ?? null;
-              const isSelected = selectedBedCode === artefact.id;
-              const isSelectable = selectableBedCodeSet.size === 0 || selectableBedCodeSet.has(artefact.id);
+              const bedCode = getBedCodeForRoundel(artefact);
+              const occupant = roundelAssignments.get(bedCode) ?? null;
+              const isSelected = selectedBedCode === bedCode;
+              const isSelectable = selectableBedCodeSet.size === 0 || selectableBedCodeSet.has(bedCode);
               const radius = (artefact.geometry.size ?? 20) / 2;
               const fill = occupant
                 ? "color-mix(in srgb, var(--app-danger) 16%, white)"
@@ -382,7 +395,7 @@ export default function DetoxFloorPlan({
               return (
                 <g
                   key={artefact.id}
-                  onClick={isSelectable && onBedSelect ? () => onBedSelect(artefact.id) : undefined}
+                  onClick={isSelectable && onBedSelect ? () => onBedSelect(bedCode) : undefined}
                   className={isSelectable && onBedSelect ? "cursor-pointer" : undefined}
                 >
                   <circle cx={artefact.geometry.x} cy={artefact.geometry.y} r={radius} fill={fill} stroke={stroke} strokeWidth={isSelected ? 4 : 2} />
@@ -403,7 +416,7 @@ export default function DetoxFloorPlan({
               );
             })}
             {labelsVisible &&
-              sampleDetoxReferenceMap.artefacts
+              artefacts
                 .filter((artefact) => artefact.visible !== false)
                 .filter((artefact) => isLabelVisible(viewport.scale, artefact.type))
                 .map((artefact) => {

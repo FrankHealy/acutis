@@ -41,6 +41,12 @@ const iconByUnit: Record<UnitDefinition["iconKey"], React.ComponentType<{ classN
 
 const PHOTO_ANSWER_KEY = "residentPhotoDataUrl";
 
+const omitPhotoAnswer = (answers: Record<string, JsonValue>): Record<string, JsonValue> => {
+  const remainingAnswers = { ...answers };
+  delete remainingAnswers[PHOTO_ANSWER_KEY];
+  return remainingAnswers;
+};
+
 const createAdHocAdmissionId = () => {
   const randomId = createClientId();
   return `ad-hoc:${randomId}`;
@@ -295,7 +301,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     let active = true;
 
     const loadRoomAssignments = async () => {
-      if (!showCompletionMap || unitId !== "detox" || !completedAdmission || !session?.accessToken) {
+      if (unitId !== "detox" || !session?.accessToken || (!showCompletionMap && !formData)) {
         return;
       }
 
@@ -309,10 +315,12 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         setRoomAssignments(response);
         setRoomAssignmentsError(null);
 
-        const matchedBed = response
-          .flatMap((room) => room.beds)
-          .find((bed) => bed.occupant?.episodeId === completedAdmission.episodeId);
-        setSelectedBedCode(matchedBed?.bedCode ?? completedAdmission.bedCode ?? null);
+        if (completedAdmission) {
+          const matchedBed = response
+            .flatMap((room) => room.beds)
+            .find((bed) => bed.occupant?.episodeId === completedAdmission.episodeId);
+          setSelectedBedCode(matchedBed?.bedCode ?? completedAdmission.bedCode ?? null);
+        }
       } catch (nextError) {
         if (!active) {
           return;
@@ -331,7 +339,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     return () => {
       active = false;
     };
-  }, [completedAdmission, session?.accessToken, showCompletionMap, text, unitId]);
+  }, [completedAdmission, formData, session?.accessToken, showCompletionMap, text, unitId]);
 
   useEffect(() => {
     return () => {
@@ -385,12 +393,18 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     if (!video) return;
 
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    const videoWidth = video.videoWidth || 640;
+    const videoHeight = video.videoHeight || 480;
+    const cropSize = Math.min(videoWidth, videoHeight);
+    const cropX = Math.max(0, (videoWidth - cropSize) / 2);
+    const cropY = Math.max(0, (videoHeight - cropSize) / 2);
+
+    canvas.width = cropSize;
+    canvas.height = cropSize;
     const context = canvas.getContext("2d");
     if (!context) return;
 
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.drawImage(video, cropX, cropY, cropSize, cropSize, 0, 0, cropSize, cropSize);
     setPhotoDataUrl(canvas.toDataURL("image/jpeg", 0.85));
     stopCamera();
   };
@@ -475,49 +489,113 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     );
   }
 
-  if (showCompletionMap && unitId === "detox") {
-    const bedAssignments = roomAssignments.reduce<Record<string, RoomAssignmentOccupant | null>>((acc, room) => {
-      room.beds.forEach((bed) => {
-        acc[bed.bedCode] = bed.occupant ?? null;
-      });
-      return acc;
-    }, {});
+  const bedAssignments = roomAssignments.reduce<Record<string, RoomAssignmentOccupant | null>>((acc, room) => {
+    room.beds.forEach((bed) => {
+      acc[bed.bedCode] = bed.occupant ?? null;
+    });
+    return acc;
+  }, {});
+  const selectedRoomAssignment = selectedBedCode
+    ? roomAssignments.find((room) => room.beds.some((bed) => bed.bedCode === selectedBedCode))
+    : null;
+  const selectedRoom = selectedRoomAssignment?.roomCode ?? null;
+  const availableBedCodes = roomAssignments.flatMap((room) =>
+    room.beds.filter((bed) => !bed.occupant).map((bed) => bed.bedCode)
+  );
 
-    const selectedRoomAssignment = selectedBedCode
-      ? roomAssignments.find((room) => room.beds.some((bed) => bed.bedCode === selectedBedCode))
-      : null;
-    const selectedRoom = selectedRoomAssignment?.roomCode ?? null;
+  const assignBedToAdmission = async (
+    admission: NonNullable<SaveResponse["admissionCompletion"]>,
+    bedCode: string
+  ) => {
+    const roomCode = roomAssignments.find((room) => room.beds.some((bed) => bed.bedCode === bedCode))?.roomCode ?? "";
+    await operationsService.assignBed(
+      unitId,
+      {
+        episodeId: admission.episodeId,
+        roomCode,
+        bedCode,
+      },
+      session?.accessToken,
+    );
 
-    const assignSelectedBed = async () => {
-      if (!completedAdmission || !selectedBedCode) {
-        setBedAssignmentMessage(text("admission.complete.bed_none_selected", "Select a bed to continue."));
-        return;
+    const response = await operationsService.getRoomAssignments(unitId, session?.accessToken);
+    setRoomAssignments(response);
+    setCompletedAdmission({ ...admission, roomNumber: roomCode, bedCode });
+  };
+
+  const assignSelectedBed = async () => {
+    if (!completedAdmission || !selectedBedCode) {
+      setBedAssignmentMessage(text("admission.complete.bed_none_selected", "Select a bed to continue."));
+      return;
+    }
+
+    try {
+      setAssigningBed(true);
+      setBedAssignmentMessage(null);
+      await assignBedToAdmission(completedAdmission, selectedBedCode);
+      setBedAssignmentMessage(text("admission.complete.bed_success", "Bed assigned successfully."));
+    } catch (nextError) {
+      setBedAssignmentMessage(nextError instanceof Error ? nextError.message : text("admission.unable_to_load", "Unable to load admission form."));
+    } finally {
+      setAssigningBed(false);
+    }
+  };
+
+  const detoxRoomAssignmentStep = unitId === "detox"
+    ? {
+        title: text("admission.complete.bed_title", "Room Assignment"),
+        render: (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-base font-semibold text-slate-900">
+                {text("admission.complete.bed_title", "Room Assignment")}
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                {text("admission.complete.bed_description", "Click an available roundel to choose the resident's room and bed before submitting the admission.")}
+              </p>
+              {selectedRoom && selectedBedCode ? (
+                <p className="mt-2 text-sm font-semibold text-emerald-800">
+                  Selected room {selectedRoom}, bed {selectedBedCode}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm font-medium text-amber-700">
+                  {text("admission.complete.bed_none_selected", "Select a bed to continue.")}
+                </p>
+              )}
+              {loadingRoomAssignments ? (
+                <p className="mt-3 text-sm text-slate-600">{text("admission.complete.bed_loading", "Loading bed availability...")}</p>
+              ) : roomAssignmentsError ? (
+                <p className="mt-3 text-sm text-amber-700">{roomAssignmentsError}</p>
+              ) : null}
+            </div>
+            <DetoxFloorPlan
+              title={text("admission.complete.map_title", "Detox Unit Map")}
+              description={text("admission.complete.map_description", "Use the detox map to select the resident's room and bed before submitting.")}
+              heightClassName="h-[68vh] min-h-[620px]"
+              roomAssignments={roomAssignments}
+              bedAssignments={bedAssignments}
+              selectedBedCode={selectedBedCode}
+              selectableBedCodes={roomAssignments.length > 0 ? availableBedCodes : ["__none__"]}
+              onBedSelect={(bedCode) => {
+                if (loadingRoomAssignments || roomAssignments.length === 0) {
+                  return;
+                }
+
+                if (bedAssignments[bedCode]) {
+                  return;
+                }
+
+                setSelectedBedCode(bedCode);
+                setBedAssignmentMessage(null);
+              }}
+            />
+          </div>
+        ),
+        validate: () => selectedBedCode ? null : text("admission.complete.bed_none_selected", "Select a bed to continue."),
       }
+    : undefined;
 
-      try {
-        setAssigningBed(true);
-        setBedAssignmentMessage(null);
-        await operationsService.assignBed(
-          unitId,
-          {
-            episodeId: completedAdmission.episodeId,
-            roomCode: selectedRoom ?? "",
-            bedCode: selectedBedCode,
-          },
-          session?.accessToken,
-        );
-
-        const response = await operationsService.getRoomAssignments(unitId, session?.accessToken);
-        setRoomAssignments(response);
-        setCompletedAdmission((current) => current ? { ...current, roomNumber: selectedRoom, bedCode: selectedBedCode } : current);
-        setBedAssignmentMessage(text("admission.complete.bed_success", "Bed assigned successfully."));
-      } catch (nextError) {
-        setBedAssignmentMessage(nextError instanceof Error ? nextError.message : text("admission.unable_to_load", "Unable to load admission form."));
-      } finally {
-        setAssigningBed(false);
-      }
-    };
-
+  if (showCompletionMap && unitId === "detox" && completedAdmission) {
     return (
       <div className="space-y-6">
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
@@ -631,9 +709,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
     submissionId: string | null;
     answers: Record<string, JsonValue>;
   }): Promise<SaveResponse> => {
-    const answers = photoDataUrl
-      ? { ...payload.answers, [PHOTO_ANSWER_KEY]: photoDataUrl }
-      : payload.answers;
+    const answers = omitPhotoAnswer(payload.answers);
 
     const result = await save(accessToken, {
       formCode: formData.form.code,
@@ -647,7 +723,19 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
 
     if (unitId === "detox" && result.admissionCompletion) {
       setCompletedAdmission(result.admissionCompletion);
-      setSelectedBedCode(result.admissionCompletion.bedCode ?? null);
+      const bedCodeToAssign = selectedBedCode ?? result.admissionCompletion.bedCode;
+      setSelectedBedCode(bedCodeToAssign ?? null);
+      if (bedCodeToAssign) {
+        try {
+          setAssigningBed(true);
+          await assignBedToAdmission(result.admissionCompletion, bedCodeToAssign);
+          setBedAssignmentMessage(text("admission.complete.bed_success", "Bed assigned successfully."));
+        } catch (nextError) {
+          setBedAssignmentMessage(nextError instanceof Error ? nextError.message : text("admission.unable_to_load", "Unable to load admission form."));
+        } finally {
+          setAssigningBed(false);
+        }
+      }
       setShowCompletionMap(true);
     }
 
@@ -778,7 +866,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         </h3>
 
         <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
-          <div className="h-52 w-full overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50">
+          <div className="aspect-square w-full max-w-60 overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50">
             {photoDataUrl ? (
               <img src={photoDataUrl} alt={text("admission.photo.alt", "Captured resident")} className="h-full w-full object-cover" />
             ) : (
@@ -797,7 +885,16 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
               </button>
             ) : (
               <div className="space-y-2">
-                <video ref={videoRef} className="h-52 w-full rounded-lg border border-gray-200 bg-black object-cover" muted playsInline autoPlay />
+                <div className="relative aspect-square w-full max-w-sm overflow-hidden rounded-lg border border-gray-200 bg-black">
+                  <video ref={videoRef} className="h-full w-full object-cover" muted playsInline autoPlay />
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <div className="relative h-[78%] w-[62%]">
+                      <div className="absolute left-1/2 top-[6%] h-[32%] w-[52%] -translate-x-1/2 rounded-full border-2 border-white/80 bg-white/10 shadow-[0_0_0_999px_rgba(15,23,42,0.22)]" />
+                      <div className="absolute bottom-[7%] left-1/2 h-[45%] w-full -translate-x-1/2 rounded-t-[48%] border-2 border-white/80 border-b-0 bg-white/10" />
+                    </div>
+                  </div>
+                  <div className="pointer-events-none absolute inset-4 rounded border border-white/70" />
+                </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -836,6 +933,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         subjectType="admission"
         subjectId={activeAdmissionSubjectId}
         renderMode="wizard"
+        extraWizardStep={detoxRoomAssignmentStep}
         onSaveProgress={onSaveProgress}
         onSave={onSave}
       />

@@ -24,7 +24,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       # Development settings
-      KC_HOSTNAME: localhost
+      KC_HOSTNAME: http://192.168.149.100:8080
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
     ports:

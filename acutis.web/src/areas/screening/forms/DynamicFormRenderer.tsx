@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type {
   FormDefinitionDto,
@@ -15,6 +15,9 @@ import type {
 import { applyRules } from "./RuleEngine";
 import { validateAnswers, type ValidationErrors } from "./Validation";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import SectionDictationPanel from "@/components/voice/SectionDictationPanel";
+import type { SuggestedPatch } from "@/features/voice/voiceAssistMapper";
+import { enableVoiceAssistAdmissions } from "@/lib/featureFlags";
 import Toast from "@/units/shared/ui/Toast";
 import InjectionBodyMap from "@/areas/shared/admissions/InjectionBodyMap";
 
@@ -41,6 +44,11 @@ type DynamicFormRendererProps = {
     answers: Record<string, JsonValue>;
     rejectionReason: string;
   }) => Promise<RejectResponse>;
+  extraWizardStep?: {
+    title: string;
+    render: ReactNode;
+    validate?: () => string | null;
+  };
   submitLabel?: string;
   submittingLabel?: string;
   submittedLabel?: string;
@@ -152,6 +160,7 @@ export default function DynamicFormRenderer({
   onSaveProgress,
   onSave,
   onReject,
+  extraWizardStep,
   submitLabel = "Submit",
   submittingLabel = "Submitting...",
   submittedLabel = "Submitted.",
@@ -176,7 +185,9 @@ export default function DynamicFormRenderer({
   const [lastSavedSignature, setLastSavedSignature] = useState<string>(JSON.stringify(initialAnswers ?? {}));
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [touchedFields, setTouchedFields] = useState<string[]>([]);
+  const [voiceSuggestedFieldKeys, setVoiceSuggestedFieldKeys] = useState<string[]>([]);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [furthestVisitedSectionIndex, setFurthestVisitedSectionIndex] = useState(0);
   const answersRef = useRef<Record<string, JsonValue>>(initialAnswers);
 
   useEffect(() => {
@@ -189,7 +200,9 @@ export default function DynamicFormRenderer({
     setCurrentSectionIndex(0);
     setValidationErrors({});
     setTouchedFields([]);
+    setVoiceSuggestedFieldKeys([]);
     setFormError(null);
+    setFurthestVisitedSectionIndex(0);
     setRejectionReason("");
     setIsRejectModalOpen(false);
     setSubmitted(initialSubmissionStatus === "submitted");
@@ -292,8 +305,13 @@ export default function DynamicFormRenderer({
 
   const ruleState = useMemo(() => applyRules(form.rules, answers), [form.rules, answers]);
   const optionSetLookup = useMemo(() => new Map(optionSets.map((set) => [set.key, set])), [optionSets]);
-  const totalSections = form.ui.sections.length;
+  const formSectionCount = form.ui.sections.length;
+  const totalSections = formSectionCount + (extraWizardStep ? 1 : 0);
   const progressPercent = totalSections === 0 ? 0 : Math.round(((currentSectionIndex + 1) / totalSections) * 100);
+  const voiceAssistEnabled =
+    enableVoiceAssistAdmissions &&
+    subjectType === "admission" &&
+    form.code === "admission_detox";
   const getCurrentRuleState = () => applyRules(form.rules, answersRef.current);
   const buildVisibleValidationErrors = (
     nextAnswers: Record<string, JsonValue>,
@@ -341,6 +359,7 @@ export default function DynamicFormRenderer({
   };
 
   const handleChange = (fieldKey: string, nextValue: JsonValue) => {
+    setVoiceSuggestedFieldKeys((current) => current.filter((suggestedFieldKey) => suggestedFieldKey !== fieldKey));
     setAnswers((previousAnswers) => {
       const updatedAnswers = { ...previousAnswers, [fieldKey]: nextValue };
       const nextRuleState = applyRules(form.rules, updatedAnswers);
@@ -383,6 +402,12 @@ export default function DynamicFormRenderer({
   };
 
   const handleSubmit = async () => {
+    const extraStepError = extraWizardStep?.validate?.();
+    if (extraStepError) {
+      setFormError(extraStepError);
+      return;
+    }
+
     const currentRuleState = getCurrentRuleState();
     const clientErrors = validateAnswers(form.schema, currentRuleState.answers, optionSets, text);
     setTouchedFields(Object.keys(form.schema.properties));
@@ -400,6 +425,7 @@ export default function DynamicFormRenderer({
       setSubmissionId(result.submissionId);
       setSubmitted(true);
       setValidationErrors({});
+      setVoiceSuggestedFieldKeys([]);
       setFormError(null);
       setToast({
         open: true,
@@ -455,6 +481,7 @@ export default function DynamicFormRenderer({
       setSubmitted(true);
       setIsRejectModalOpen(false);
       setValidationErrors({});
+      setVoiceSuggestedFieldKeys([]);
       setFormError(null);
       setToast({
         open: true,
@@ -521,6 +548,9 @@ export default function DynamicFormRenderer({
     const currentRuleState = getCurrentRuleState();
     const currentSection = form.ui.sections[currentSectionIndex];
     if (!currentSection) {
+      if (extraWizardStep) {
+        setCurrentSectionIndex(Math.min(currentSectionIndex + 1, totalSections - 1));
+      }
       return;
     }
 
@@ -537,11 +567,38 @@ export default function DynamicFormRenderer({
     }
 
     await persistProgress(currentRuleState.answers);
-    setCurrentSectionIndex((previous) => Math.min(previous + 1, form.ui.sections.length - 1));
+    setVoiceSuggestedFieldKeys((current) =>
+      current.filter((fieldKey) => !visibleFieldKeys.includes(fieldKey))
+    );
+    const nextSectionIndex = Math.min(currentSectionIndex + 1, totalSections - 1);
+    setFurthestVisitedSectionIndex((furthest) => Math.max(furthest, nextSectionIndex));
+    setCurrentSectionIndex(nextSectionIndex);
   };
 
   const handlePreviousSection = () => {
+    setVoiceSuggestedFieldKeys([]);
     setCurrentSectionIndex((previous) => Math.max(previous - 1, 0));
+  };
+
+  const applyVoiceSuggestedPatches = (patches: SuggestedPatch[]) => {
+    if (patches.length === 0) {
+      return;
+    }
+
+    const patchByField = new Map(patches.map((patch) => [patch.fieldKey, patch.proposedValue]));
+    const suggestedFieldKeys = Array.from(patchByField.keys());
+    setAnswers((previousAnswers) => {
+      const patchedAnswers = { ...previousAnswers };
+      patchByField.forEach((proposedValue, fieldKey) => {
+        patchedAnswers[fieldKey] = proposedValue;
+      });
+      const nextRuleState = applyRules(form.rules, patchedAnswers);
+      answersRef.current = nextRuleState.answers;
+      return nextRuleState.answers;
+    });
+    setTouchedFields((current) => Array.from(new Set([...current, ...suggestedFieldKeys])));
+    setVoiceSuggestedFieldKeys(suggestedFieldKeys);
+    setFormError(null);
   };
 
   const renderField = (fieldKey: string) => {
@@ -574,8 +631,13 @@ export default function DynamicFormRenderer({
 
     const isBooleanField = widget === "toggle" || schemaProperty.type === "boolean";
 
+    const wasSuggestedByVoice = voiceSuggestedFieldKeys.includes(fieldKey);
+
     return (
-      <div key={fieldKey} className="space-y-1">
+      <div
+        key={fieldKey}
+        className={`space-y-1 rounded ${wasSuggestedByVoice ? "bg-amber-50 p-2 ring-2 ring-amber-300" : ""}`}
+      >
         {!isBooleanField && !isInstructionField && !isDrugTableField && !isAlcoholTableField && <label className="text-sm font-medium text-gray-800">{label}</label>}
 
         {isInstructionField && (
@@ -964,9 +1026,30 @@ export default function DynamicFormRenderer({
   const renderSectionBody = (section: UiSectionDto) => {
     const ungroupedItems = section.items ?? [];
     const groups = section.groups ?? [];
+    const sectionFieldKeys = getSectionFieldKeys(section);
+    const sectionDefinition = {
+      section,
+      schema: form.schema,
+      labels: Object.fromEntries(
+        sectionFieldKeys.map((fieldKey) => [fieldKey, t(form.ui.labelKeys[fieldKey] ?? fieldKey)])
+      ),
+      widgets: form.ui.widgets,
+      optionSets,
+      selectOptions: form.ui.selectOptions,
+    };
 
     return (
       <div className="space-y-4">
+        {voiceAssistEnabled && (
+          <SectionDictationPanel
+            key={`${form.code}:${form.version}:${section.titleKey}`}
+            sectionDefinition={sectionDefinition}
+            currentValues={ruleState.answers}
+            locale={locale}
+            onApplyPatches={applyVoiceSuggestedPatches}
+          />
+        )}
+
         {ungroupedItems.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {ungroupedItems.map((fieldKey) => renderField(fieldKey))}
@@ -1065,23 +1148,32 @@ export default function DynamicFormRenderer({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {form.ui.sections.map((section, index) => {
+            {[
+              ...form.ui.sections.map((section) => ({ title: t(section.titleKey), key: section.titleKey })),
+              ...(extraWizardStep ? [{ title: extraWizardStep.title, key: "__extra_wizard_step" }] : []),
+            ].map((section, index) => {
               const isActive = index === currentSectionIndex;
-              const isComplete = index < currentSectionIndex;
+              const isComplete = index < furthestVisitedSectionIndex && !isActive;
+              const canNavigateToSection = index <= furthestVisitedSectionIndex;
               return (
-                <div
-                  key={section.titleKey}
-                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                <button
+                  type="button"
+                  key={section.key}
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                     isActive
                       ? "bg-slate-800 text-white"
                       : isComplete
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-slate-100 text-slate-600"
+                        ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                        : canNavigateToSection
+                          ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          : "cursor-not-allowed bg-slate-100 text-slate-400"
                   }`}
+                  disabled={!canNavigateToSection || isSavingProgress || isSubmitting}
+                  onClick={() => setCurrentSectionIndex(index)}
                 >
                   <span>{index + 1}</span>
-                  <span>{t(section.titleKey)}</span>
-                </div>
+                  <span>{section.title}</span>
+                </button>
               );
             })}
           </div>
@@ -1096,6 +1188,14 @@ export default function DynamicFormRenderer({
               <div className="p-4">
                 {renderSectionBody(form.ui.sections[currentSectionIndex])}
               </div>
+            </section>
+          )}
+          {extraWizardStep && currentSectionIndex === formSectionCount && (
+            <section className="rounded-lg border border-slate-200 bg-white">
+              <div className="border-b border-gray-100 px-4 py-3">
+                <h2 className="text-base font-semibold text-gray-900">{extraWizardStep.title}</h2>
+              </div>
+              <div className="p-4">{extraWizardStep.render}</div>
             </section>
           )}
         </>
@@ -1162,7 +1262,7 @@ export default function DynamicFormRenderer({
               ? text("form.action.saving", "Saving...")
               : text("form.action.save_draft", "Save Draft")}
           </button>
-          {renderMode === "wizard" && currentSectionIndex < form.ui.sections.length - 1 ? (
+          {renderMode === "wizard" && currentSectionIndex < totalSections - 1 ? (
             <button
               type="button"
               className="rounded bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"

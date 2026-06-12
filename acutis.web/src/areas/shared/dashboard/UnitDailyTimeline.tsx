@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   Bell,
@@ -54,11 +54,9 @@ type UnitDailyTimelineProps = {
   onOpenRollCall: () => void;
 };
 
-type TimelineViewMode = "full" | "morning" | "evening";
-
-const fullDayStartMinutes = 0;
-const fullDayEndMinutes = 24 * 60;
-const fullDayPixelsPerHour = 88;
+const fullDayStartMinutes = 5 * 60;
+const fullDayEndMinutes = 25 * 60;
+const fullDayPixelsPerHour = 112;
 const fullDayLabelWidth = 16;
 const fullDayWidth = ((fullDayEndMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour;
 
@@ -67,10 +65,10 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
   const { loadKeys, t } = useLocalization();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
-  const [viewMode, setViewMode] = useState<TimelineViewMode>("full");
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [takingEvent, setTakingEvent] = useState(false);
+  const fullDayScrollRef = useRef<HTMLDivElement | null>(null);
   const currentDateKey = currentTime.toISOString().slice(0, 10);
 
   useEffect(() => {
@@ -80,9 +78,6 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
 
   useEffect(() => {
     void loadKeys([
-      "dashboard.timeline.view.full_day",
-      "dashboard.timeline.view.morning",
-      "dashboard.timeline.view.evening",
       "dashboard.timeline.daily_title",
       "dashboard.timeline.no_items",
     ]);
@@ -228,11 +223,15 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     void loadTimeline();
   }, [currentDateKey, session?.accessToken, status, unitId]);
 
-  const morningSchedule = events.filter((event) => event.timeMinutes <= 750);
-  const eveningSchedule = events.filter((event) => event.timeMinutes >= 840);
+  const normalizeTimelineMinutes = (minutes: number): number => minutes < fullDayStartMinutes ? minutes + 24 * 60 : minutes;
 
-  const getCurrentSchedule = () => (viewMode === "morning" ? morningSchedule : eveningSchedule);
-  const getFullDaySchedule = () => events.slice().sort((left, right) => left.timeMinutes - right.timeMinutes);
+  const getTimelineSchedule = () =>
+    events
+      .filter((event) => {
+        const start = normalizeTimelineMinutes(event.timeMinutes);
+        return start >= fullDayStartMinutes && start <= fullDayEndMinutes;
+      })
+      .sort((left, right) => normalizeTimelineMinutes(left.timeMinutes) - normalizeTimelineMinutes(right.timeMinutes));
 
   const mapEventToModuleKey = (title: string): string | undefined => {
     switch (title) {
@@ -308,20 +307,19 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
 
   const getCurrentMinutes = () => currentTime.getHours() * 60 + currentTime.getMinutes();
 
-  const isCurrentEvent = (event: ScheduleEvent) => {
-    const now = getCurrentMinutes();
-    const endMinutes = event.endTime ? timeToMinutes(event.endTime) : event.timeMinutes + 30;
-    return now >= event.timeMinutes && now < endMinutes;
-  };
-
   const timeFromMinutes = (minutes: number): string => {
-    const clamped = Math.max(0, Math.min(minutes, 23 * 60 + 59));
+    const normalizedMinutes = ((minutes % (24 * 60)) + 24 * 60) % (24 * 60);
+    const clamped = Math.max(0, Math.min(normalizedMinutes, 23 * 60 + 59));
     const hours = Math.floor(clamped / 60);
     const mins = clamped % 60;
     return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
   };
 
-  const eventEndMinutes = (event: ScheduleEvent) => (event.endTime ? timeToMinutes(event.endTime) : event.timeMinutes + 30);
+  const eventEndMinutes = (event: ScheduleEvent) => {
+    const start = normalizeTimelineMinutes(event.timeMinutes);
+    const end = event.endTime ? normalizeTimelineMinutes(timeToMinutes(event.endTime)) : start + 30;
+    return end <= start ? end + 24 * 60 : end;
+  };
 
   const eventDurationMinutes = (event: ScheduleEvent) => Math.max(15, eventEndMinutes(event) - event.timeMinutes);
 
@@ -344,9 +342,9 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
 
     return items
       .slice()
-      .sort((left, right) => left.timeMinutes - right.timeMinutes || eventEndMinutes(left) - eventEndMinutes(right))
+      .sort((left, right) => normalizeTimelineMinutes(left.timeMinutes) - normalizeTimelineMinutes(right.timeMinutes) || eventEndMinutes(left) - eventEndMinutes(right))
       .map((event) => {
-        const start = Math.max(fullDayStartMinutes, event.timeMinutes);
+        const start = Math.max(fullDayStartMinutes, normalizeTimelineMinutes(event.timeMinutes));
         const end = Math.min(fullDayEndMinutes, Math.max(start + 15, eventEndMinutes(event)));
         const lane = laneEndMinutes.findIndex((laneEnd) => laneEnd <= start);
         const assignedLane = lane >= 0 ? lane : laneEndMinutes.length;
@@ -363,7 +361,7 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
   const fullDayEventStyle = (event: FullDayTimelineEvent): React.CSSProperties => {
     const tone = eventTone(event);
     const token = `var(--app-${tone})`;
-    const start = Math.max(fullDayStartMinutes, event.timeMinutes);
+    const start = Math.max(fullDayStartMinutes, normalizeTimelineMinutes(event.timeMinutes));
     const end = Math.min(fullDayEndMinutes, Math.max(start + 15, eventEndMinutes(event)));
     return {
       left: ((start - fullDayStartMinutes) / 60) * fullDayPixelsPerHour,
@@ -375,52 +373,24 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
     };
   };
 
-  const getTimelinePosition = (minutes: number, index?: number) => {
-    const schedule = getCurrentSchedule();
-    const startMinutes = schedule[0].timeMinutes;
-    const endMinutes = schedule[schedule.length - 1].timeMinutes;
-    const totalMinutes = endMinutes - startMinutes;
-    const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
-    const safeEdge = 3;
-    const basePosition = clamp(((minutes - startMinutes) / totalMinutes) * 100, safeEdge, 100 - safeEdge);
-
-    if (typeof index !== "number") {
-      return basePosition;
-    }
-
-    const event = schedule[index];
-    if (!event) return basePosition;
-
-    if (event.stackPosition && event.stackPosition > 0) return basePosition;
-
-    if (event.title === "Coffee" && index > 0) {
-      const roomCheckIndex = schedule.findIndex((e) => e.title === "Room Check");
-      if (roomCheckIndex >= 0) {
-        const roomCheckPosition = ((schedule[roomCheckIndex].timeMinutes - startMinutes) / totalMinutes) * 100;
-        return clamp(roomCheckPosition + 8, safeEdge, 100 - safeEdge);
-      }
-    }
-
-    if (event.title === "OT" && viewMode === "morning" && index > 0) {
-      const coffeeIndex = schedule.findIndex((e) => e.title === "Coffee");
-      if (coffeeIndex >= 0) {
-        const coffeeEvent = schedule[coffeeIndex];
-        const roomCheckIndex = schedule.findIndex((e) => e.title === "Room Check");
-        const roomCheckPosition =
-          roomCheckIndex >= 0
-            ? ((schedule[roomCheckIndex].timeMinutes - startMinutes) / totalMinutes) * 100
-            : ((coffeeEvent.timeMinutes - startMinutes) / totalMinutes) * 100 - 8;
-        return clamp(roomCheckPosition + 16, safeEdge, 100 - safeEdge);
-      }
-    }
-
-    return basePosition;
-  };
-
   const currentMinutes = getCurrentMinutes();
-  const schedule = viewMode === "full" ? getFullDaySchedule() : getCurrentSchedule();
-  const fullDayEvents = viewMode === "full" ? buildFullDayLanes(schedule) : [];
+  const currentTimelineMinutes = normalizeTimelineMinutes(currentMinutes);
+  const schedule = getTimelineSchedule();
+  const fullDayEvents = buildFullDayLanes(schedule);
   const fullDayRows = Math.max(1, ...fullDayEvents.map((event) => event.lane + 1));
+  const shouldShowIndicator = currentTimelineMinutes >= fullDayStartMinutes && currentTimelineMinutes <= fullDayEndMinutes;
+
+  useEffect(() => {
+    const scrollContainer = fullDayScrollRef.current;
+    if (!scrollContainer) {
+      return;
+    }
+
+    const currentLineX = fullDayLabelWidth + ((currentTimelineMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour;
+    const maxScrollLeft = scrollContainer.scrollWidth - scrollContainer.clientWidth;
+    const centeredScrollLeft = currentLineX - scrollContainer.clientWidth / 2;
+    scrollContainer.scrollLeft = Math.max(0, Math.min(centeredScrollLeft, maxScrollLeft));
+  }, [currentTimelineMinutes, events.length]);
 
   if (schedule.length === 0) {
     return (
@@ -435,77 +405,60 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
       </div>
     );
   }
-  const maxStack = Math.max(0, ...schedule.map((e) => e.stackPosition ?? 0));
-  const verticalSpacing = 132;
-  const bubbleSize = 56;
-  const labelHeight = 72;
-  const baseTop = 6;
-  const trackThickness = 8;
-  const extraBottom = 32;
-  const rows = maxStack + 1;
-  const timelineHeight = baseTop + rows * verticalSpacing + bubbleSize + labelHeight + extraBottom;
-  const shouldShowIndicator =
-    viewMode === "morning" ? currentMinutes >= 390 && currentMinutes <= 750 : currentMinutes >= 840 && currentMinutes <= 1320;
-  const currentPosition = shouldShowIndicator ? getTimelinePosition(currentMinutes) : 0;
+  const scrollTimeline = (direction: -1 | 1) => {
+    const scrollContainer = fullDayScrollRef.current;
+    if (!scrollContainer) {
+      return;
+    }
+
+    scrollContainer.scrollBy({
+      left: direction * Math.max(320, scrollContainer.clientWidth * 0.7),
+      behavior: "smooth",
+    });
+  };
 
   return (
     <div className="app-card overflow-hidden rounded-xl p-6" style={{ paddingBottom: 24 }}>
-      <h2 className="mb-4 flex items-center text-lg font-semibold text-[var(--app-text)]">
-        <CalendarDays className="mr-2 h-5 w-5 text-[var(--app-primary)]" />
-        {unitName} {text("dashboard.timeline.daily_title", "Daily Timeline")}
-      </h2>
-
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          onClick={() => setViewMode("full")}
-          disabled={viewMode === "full"}
-          className="rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50"
-        >
-          {text("dashboard.timeline.view.full_day", "Full Day")}
-        </button>
-        <button
-          onClick={() => setViewMode("morning")}
-          disabled={viewMode === "morning"}
-          className="flex items-center space-x-2 rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          <span>{text("dashboard.timeline.view.morning", "Morning")}</span>
-        </button>
-
-        <div className="min-w-40 flex-1 text-center">
-          <p className="text-lg font-bold text-[var(--app-text)]">
-            {viewMode === "full"
-              ? text("dashboard.timeline.view.full_day", "Full Day")
-              : viewMode === "morning"
-                ? `${text("dashboard.timeline.view.morning", "Morning")} Schedule`
-                : `${text("dashboard.timeline.view.evening", "Evening")} Schedule`}
-          </p>
-          <p className="text-sm text-[var(--app-text-muted)]">{viewMode === "full" ? "00:00 - 24:00" : viewMode === "morning" ? "06:30 - 12:30" : "14:00 - 22:00"}</p>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="flex items-center text-lg font-semibold text-[var(--app-text)]">
+          <CalendarDays className="mr-2 h-5 w-5 text-[var(--app-primary)]" />
+          {unitName} {text("dashboard.timeline.daily_title", "Daily Timeline")}
+        </h2>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => scrollTimeline(-1)}
+            className="app-outline-button rounded-lg p-2 transition-colors"
+            aria-label="Scroll timeline earlier"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTimeline(1)}
+            className="app-outline-button rounded-lg p-2 transition-colors"
+            aria-label="Scroll timeline later"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
-
-        <button
-          onClick={() => setViewMode("evening")}
-          disabled={viewMode === "evening"}
-          className="flex items-center space-x-2 rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50"
-        >
-          <span>{text("dashboard.timeline.view.evening", "Evening")}</span>
-          <ChevronRight className="h-4 w-4" />
-        </button>
       </div>
 
-      {viewMode === "full" ? (
-        <div className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
+      <div ref={fullDayScrollRef} className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
           <div className="relative" style={{ width: fullDayWidth + fullDayLabelWidth, height: Math.max(184, 70 + fullDayRows * 68) }}>
             <div className="sticky top-0 z-20 h-11 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)]">
-              {Array.from({ length: 25 }, (_, hour) => (
+              {Array.from({ length: (fullDayEndMinutes - fullDayStartMinutes) / 60 + 1 }, (_, index) => {
+                const hour = fullDayStartMinutes / 60 + index;
+                return (
                 <div
                   key={`full-day-hour:${hour}`}
                   className="absolute top-0 h-full border-l border-dashed border-[var(--app-border)]"
-                  style={{ left: fullDayLabelWidth + hour * fullDayPixelsPerHour }}
+                  style={{ left: fullDayLabelWidth + index * fullDayPixelsPerHour }}
                 >
-                  {hour < 24 && <span className="absolute left-2 top-2 text-xs font-medium text-[var(--app-text-muted)]">{timeFromMinutes(hour * 60)}</span>}
+                  <span className="absolute left-2 top-2 text-xs font-medium text-[var(--app-text-muted)]">{timeFromMinutes(hour * 60)}</span>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div
               className="absolute bottom-0 top-11"
@@ -517,10 +470,10 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
                 backgroundSize: `${fullDayPixelsPerHour}px 100%, ${fullDayPixelsPerHour / 4}px 100%`,
               }}
             >
-              {currentMinutes >= fullDayStartMinutes && currentMinutes <= fullDayEndMinutes && (
+              {shouldShowIndicator && (
                 <div
                   className="pointer-events-none absolute inset-y-0 z-30"
-                  style={{ left: ((currentMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour }}
+                  style={{ left: ((currentTimelineMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour }}
                 >
                   <span className="absolute -left-5 top-1 rounded bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
                     {timeFromMinutes(currentMinutes)}
@@ -550,52 +503,6 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
             </div>
           </div>
         </div>
-      ) : (
-      <div className="relative" style={{ height: timelineHeight }}>
-        <div className="absolute left-0 right-0 rounded-full bg-[var(--app-border)]" style={{ top: baseTop, height: trackThickness }} />
-
-        {shouldShowIndicator && (
-          <div className="pointer-events-none absolute bottom-0 top-0 z-40 -translate-x-1/2" style={{ left: `${currentPosition}%` }}>
-            <div className="h-full w-0.5 bg-red-600 shadow-sm" />
-            <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1 whitespace-nowrap">
-              <span className="rounded bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-sm">{timeFromMinutes(currentMinutes)}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="absolute inset-x-0" style={{ top: baseTop + 24 }}>
-          {schedule.map((event, index) => {
-            const position = getTimelinePosition(event.timeMinutes, index);
-            const isCurrent = isCurrentEvent(event);
-            const IconComponent = event.icon;
-            const isSpecial = event.title === "Wake Up Bell" || event.title === "Bedtime";
-            const topOffset = (event.stackPosition || 0) * verticalSpacing;
-
-            return (
-              <div
-                key={event.key}
-                className="absolute"
-                style={{ left: `${position}%`, transform: "translateX(-50%)", top: `${topOffset}px` }}
-              >
-                <button
-                  onClick={() => handleEventClick(event)}
-                  className={`relative group transition-all duration-200 ${isCurrent ? "scale-125" : "hover:scale-110"}`}
-                >
-                  <div className={`h-14 w-14 ${event.color} flex items-center justify-center rounded-full shadow-lg ${isCurrent ? "ring-4 ring-[var(--app-warning)] ring-offset-2" : ""} ${isSpecial ? "ring-4 ring-[var(--app-border)] ring-offset-2" : ""}`}>
-                    <IconComponent className="h-7 w-7 text-white" />
-                  </div>
-                  <div className="absolute left-1/2 top-16 w-32 -translate-x-1/2 text-center leading-tight">
-                    <div className={`text-xs font-bold ${isCurrent ? "text-[var(--app-text)]" : "text-[var(--app-text-muted)]"}`}>{event.time}</div>
-                    <div className={`mt-1 max-w-[120px] text-xs ${isCurrent ? "font-bold text-[var(--app-text)]" : "text-[var(--app-text-muted)]"}`}>{event.title}</div>
-                    {event.days && <div className="mt-0.5 text-[10px] text-[color:color-mix(in_srgb,var(--app-text-muted)_70%,white)]">{event.days}</div>}
-                  </div>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      )}
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setSelectedEvent(null)}>
