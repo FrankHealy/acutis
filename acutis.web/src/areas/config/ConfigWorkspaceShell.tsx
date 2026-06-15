@@ -9,7 +9,6 @@ const primaryNavItems = [
   { href: "/units/config/centres", label: "Centres" },
   { href: "/units/config/units", label: "Units" },
   { href: "/units/config/forms", label: "Forms" },
-  { href: "/units/config/forms/new", label: "Designer" },
   { href: "/units/config/quotes", label: "Quotes" },
   { href: "/units/config/group-therapy", label: "Group Therapy" },
   { href: "/units/config/program-manager", label: "Program Manager" },

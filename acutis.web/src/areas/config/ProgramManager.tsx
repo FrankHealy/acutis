@@ -7,6 +7,7 @@ import { ArrowLeft, CalendarClock, ClipboardCheck, PencilLine, Plus, Save, Trash
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import Toast from "@/units/shared/ui/Toast";
 import {
   globalConfigurationService,
   type CentreConfigurationDto,
@@ -113,6 +114,10 @@ const ProgramManager: React.FC = () => {
   const [editingProgrammeId, setEditingProgrammeId] = useState<string | null>(null);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [editingOccurrenceId, setEditingOccurrenceId] = useState<string | null>(null);
+  const [programmeEditorOpen, setProgrammeEditorOpen] = useState(false);
+  const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
+  const [occurrenceEditorOpen, setOccurrenceEditorOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [programmeForm, setProgrammeForm] = useState<UpsertProgrammeDefinitionRequest>(emptyProgrammeForm);
   const [templateForm, setTemplateForm] = useState<UpsertScheduleTemplateRequest>(emptyTemplateForm);
   const [occurrenceForm, setOccurrenceForm] = useState<UpsertScheduleOccurrenceRequest>(emptyOccurrenceForm);
@@ -127,6 +132,8 @@ const ProgramManager: React.FC = () => {
       "config.programs.title",
       "config.programs.description",
       "config.programs.back",
+      "config.actions.add_new", "config.toast.close", "config.programs.confirm_archive",
+      "config.programs.toast.saved", "config.programs.toast.archived",
     ]);
   }, [loadKeys]);
 
@@ -186,17 +193,24 @@ const ProgramManager: React.FC = () => {
   const resetProgrammeForm = () => {
     setEditingProgrammeId(null);
     setProgrammeForm(emptyProgrammeForm);
+    setProgrammeEditorOpen(false);
   };
 
   const resetTemplateForm = () => {
     setEditingTemplateId(null);
     setTemplateForm(emptyTemplateForm);
+    setTemplateEditorOpen(false);
   };
 
   const resetOccurrenceForm = () => {
     setEditingOccurrenceId(null);
     setOccurrenceForm({ ...emptyOccurrenceForm, scheduledDate: todayIso });
+    setOccurrenceEditorOpen(false);
   };
+
+  const startCreateProgramme = () => { setEditingProgrammeId(null); setProgrammeForm(emptyProgrammeForm); setProgrammeEditorOpen(true); };
+  const startCreateTemplate = () => { setEditingTemplateId(null); setTemplateForm(emptyTemplateForm); setTemplateEditorOpen(true); };
+  const startCreateOccurrence = () => { setEditingOccurrenceId(null); setOccurrenceForm({ ...emptyOccurrenceForm, scheduledDate: todayIso }); setOccurrenceEditorOpen(true); };
 
   const startEditProgramme = (programme: ProgrammeDefinitionDto) => {
     setEditingProgrammeId(programme.programmeDefinitionId);
@@ -213,6 +227,7 @@ const ProgramManager: React.FC = () => {
       mainPhaseDurationUnit: programme.mainPhaseDurationUnit || "Weeks",
       isActive: programme.isActive,
     });
+    setProgrammeEditorOpen(true);
   };
 
   const startEditTemplate = (template: ScheduleTemplateDto) => {
@@ -239,6 +254,7 @@ const ProgramManager: React.FC = () => {
       externalResourceName: template.externalResourceName,
       isActive: template.isActive,
     });
+    setTemplateEditorOpen(true);
   };
 
   const startEditOccurrence = (occurrence: ScheduleOccurrenceDto) => {
@@ -263,6 +279,7 @@ const ProgramManager: React.FC = () => {
       status: occurrence.status,
       notes: occurrence.notes,
     });
+    setOccurrenceEditorOpen(true);
   };
 
   const submitProgramme = async (event: React.FormEvent) => {
@@ -286,6 +303,7 @@ const ProgramManager: React.FC = () => {
       }
       resetProgrammeForm();
       await loadConfiguration();
+      setToast(text("config.programs.toast.saved", "Programme saved."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -324,6 +342,7 @@ const ProgramManager: React.FC = () => {
       }
       resetTemplateForm();
       await loadConfiguration();
+      setToast(text("config.programs.toast.saved", "Template saved."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -354,6 +373,7 @@ const ProgramManager: React.FC = () => {
       }
       resetOccurrenceForm();
       await loadConfiguration();
+      setToast(text("config.programs.toast.saved", "Occurrence saved."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -392,6 +412,7 @@ const ProgramManager: React.FC = () => {
   };
 
   const archiveProgramme = async (programmeDefinitionId: string) => {
+    if (!window.confirm(text("config.programs.confirm_archive", "Archive this programme? It will no longer be available for active use."))) return;
     if (!accessToken && !isAuthorizationDisabled) {
       return;
     }
@@ -404,6 +425,7 @@ const ProgramManager: React.FC = () => {
         resetProgrammeForm();
       }
       await loadConfiguration();
+      setToast(text("config.programs.toast.archived", "Programme archived."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -412,6 +434,7 @@ const ProgramManager: React.FC = () => {
   };
 
   const archiveTemplate = async (scheduleTemplateId: string) => {
+    if (!window.confirm(text("config.programs.confirm_archive", "Archive this template? It will no longer be available for active use."))) return;
     if (!accessToken && !isAuthorizationDisabled) {
       return;
     }
@@ -424,6 +447,7 @@ const ProgramManager: React.FC = () => {
         resetTemplateForm();
       }
       await loadConfiguration();
+      setToast(text("config.programs.toast.archived", "Template archived."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -432,6 +456,7 @@ const ProgramManager: React.FC = () => {
   };
 
   const archiveOccurrence = async (scheduleOccurrenceId: string) => {
+    if (!window.confirm(text("config.programs.confirm_archive", "Cancel this occurrence? It will no longer be active."))) return;
     if (!accessToken && !isAuthorizationDisabled) {
       return;
     }
@@ -444,6 +469,7 @@ const ProgramManager: React.FC = () => {
         resetOccurrenceForm();
       }
       await loadConfiguration();
+      setToast(text("config.programs.toast.archived", "Occurrence cancelled."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -487,7 +513,7 @@ const ProgramManager: React.FC = () => {
             <div className="app-card rounded-2xl p-6 text-sm text-[var(--app-text-muted)]">Loading programme configuration...</div>
           ) : (
             <div className="space-y-6">
-              <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+              <section className="space-y-6">
                 <div className="app-card rounded-2xl p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <div>
@@ -496,11 +522,11 @@ const ProgramManager: React.FC = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={resetProgrammeForm}
+                      onClick={startCreateProgramme}
                       className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white"
                     >
                       <Plus className="h-4 w-4" />
-                      New programme
+                      {text("config.actions.add_new", "Add New")}
                     </button>
                   </div>
 
@@ -557,7 +583,7 @@ const ProgramManager: React.FC = () => {
                   </div>
                 </div>
 
-                <form onSubmit={submitProgramme} className="app-card rounded-2xl p-6 space-y-4">
+                {programmeEditorOpen && <form onSubmit={submitProgramme} className="app-card rounded-2xl p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-[var(--app-text)]">
                       {editingProgrammeId ? "Edit programme" : "Create programme"}
@@ -629,7 +655,7 @@ const ProgramManager: React.FC = () => {
                     {editingProgrammeId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                     {editingProgrammeId ? "Save programme" : "Create programme"}
                   </button>
-                </form>
+                </form>}
               </section>
 
               <section className="app-card rounded-2xl p-6">
@@ -663,16 +689,16 @@ const ProgramManager: React.FC = () => {
                 </div>
               </section>
 
-              <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <section className="space-y-6">
                 <div className="app-card rounded-2xl p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <div>
                       <h2 className="text-lg font-semibold text-[var(--app-text)]">Schedule Templates</h2>
                       <p className="text-sm text-[var(--app-text-muted)]">Define recurring daily, weekly, or named reusable schedule items.</p>
                     </div>
-                    <button type="button" onClick={resetTemplateForm} className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white">
+                    <button type="button" onClick={startCreateTemplate} className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white">
                       <Plus className="h-4 w-4" />
-                      New template
+                      {text("config.actions.add_new", "Add New")}
                     </button>
                   </div>
                   <div className="space-y-3">
@@ -708,7 +734,7 @@ const ProgramManager: React.FC = () => {
                   </div>
                 </div>
 
-                <form onSubmit={submitTemplate} className="app-card rounded-2xl p-6 space-y-4">
+                {templateEditorOpen && <form onSubmit={submitTemplate} className="app-card rounded-2xl p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingTemplateId ? "Edit template" : "Create template"}</h2>
                     {editingTemplateId && <button type="button" onClick={resetTemplateForm} className="text-sm font-semibold text-[var(--app-text-muted)]">Clear</button>}
@@ -849,19 +875,19 @@ const ProgramManager: React.FC = () => {
                     {editingTemplateId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                     {editingTemplateId ? "Save template" : "Create template"}
                   </button>
-                </form>
+                </form>}
               </section>
 
-              <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <section className="space-y-6">
                 <div className="app-card rounded-2xl p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <div>
                       <h2 className="text-lg font-semibold text-[var(--app-text)]">Schedule Occurrences</h2>
                       <p className="text-sm text-[var(--app-text-muted)]">Manage one-off or date-specific items that belong on the timeline.</p>
                     </div>
-                    <button type="button" onClick={resetOccurrenceForm} className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white">
+                    <button type="button" onClick={startCreateOccurrence} className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white">
                       <CalendarClock className="h-4 w-4" />
-                      New occurrence
+                      {text("config.actions.add_new", "Add New")}
                     </button>
                   </div>
                   <div className="space-y-3">
@@ -894,7 +920,7 @@ const ProgramManager: React.FC = () => {
                   </div>
                 </div>
 
-                <form onSubmit={submitOccurrence} className="app-card rounded-2xl p-6 space-y-4">
+                {occurrenceEditorOpen && <form onSubmit={submitOccurrence} className="app-card rounded-2xl p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingOccurrenceId ? "Edit occurrence" : "Create occurrence"}</h2>
                     {editingOccurrenceId && <button type="button" onClick={resetOccurrenceForm} className="text-sm font-semibold text-[var(--app-text-muted)]">Clear</button>}
@@ -1005,11 +1031,12 @@ const ProgramManager: React.FC = () => {
                     {editingOccurrenceId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                     {editingOccurrenceId ? "Save occurrence" : "Create occurrence"}
                   </button>
-                </form>
+                </form>}
               </section>
             </div>
           )}
         </main>
+        <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} closeLabel={text("config.toast.close", "Close")} />
       </div>
     </SuperAdminGuard>
   );

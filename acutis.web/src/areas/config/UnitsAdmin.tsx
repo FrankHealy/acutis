@@ -13,6 +13,8 @@ import {
 } from "@/services/globalConfigurationService";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { ConfigConfirmDialog, ConfigEditorDialog } from "@/areas/config/ConfigActionDialogs";
+import Toast from "@/units/shared/ui/Toast";
 
 const emptyForm: UpsertUnitRequest = {
   centreId: "",
@@ -38,6 +40,9 @@ export default function UnitsAdmin() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<UnitConfigurationDto | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [form, setForm] = useState<UpsertUnitRequest>(emptyForm);
 
   const loadUnits = useCallback(async () => {
@@ -109,6 +114,9 @@ export default function UnitsAdmin() {
       "config.units.metrics.free_beds",
       "config.units.metrics.default_week",
       "config.units.metrics.display_order",
+      "config.actions.add_new", "config.actions.close", "config.actions.cancel", "config.actions.confirm_delete",
+      "config.units.delete.title", "config.units.delete.message",
+      "config.units.toast.created", "config.units.toast.updated", "config.units.toast.deleted", "config.toast.close",
     ]);
   }, [loadKeys]);
 
@@ -120,6 +128,13 @@ export default function UnitsAdmin() {
   const resetForm = () => {
     setEditingUnitId(null);
     setForm(emptyForm);
+    setEditorOpen(false);
+  };
+
+  const startCreate = () => {
+    setEditingUnitId(null);
+    setForm(emptyForm);
+    setEditorOpen(true);
   };
 
   const startEdit = (unit: UnitConfigurationDto) => {
@@ -136,6 +151,7 @@ export default function UnitsAdmin() {
       displayOrder: unit.displayOrder,
       isActive: unit.isActive,
     });
+    setEditorOpen(true);
   };
 
   const submitUnit = async (event: React.FormEvent) => {
@@ -147,6 +163,7 @@ export default function UnitsAdmin() {
     setSaving(true);
     try {
       setError(null);
+      const wasEditing = Boolean(editingUnitId);
       if (editingUnitId) {
         await globalConfigurationService.updateUnit(accessToken, editingUnitId, form);
       } else {
@@ -154,6 +171,7 @@ export default function UnitsAdmin() {
       }
       resetForm();
       await loadUnits();
+      setToast(wasEditing ? text("config.units.toast.updated", "Unit updated.") : text("config.units.toast.created", "Unit created."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -174,6 +192,8 @@ export default function UnitsAdmin() {
         resetForm();
       }
       await loadUnits();
+      setDeleteTarget(null);
+      setToast(text("config.units.toast.deleted", "Unit deleted."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -211,7 +231,7 @@ export default function UnitsAdmin() {
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[1.4fr_1.05fr]">
+          <div>
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">{text("config.units.list.title", "Existing units")}</h2>
@@ -219,11 +239,11 @@ export default function UnitsAdmin() {
                   <span className="text-sm text-gray-500">{units.length} {text("config.units.list.total_suffix", "total")}</span>
                   <button
                     type="button"
-                    onClick={resetForm}
+                    onClick={startCreate}
                     className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                   >
                     <Plus className="h-4 w-4" />
-                    {text("config.units.list.create", "Create unit")}
+                    {text("config.actions.add_new", "Add New")}
                   </button>
                 </div>
               </div>
@@ -276,7 +296,7 @@ export default function UnitsAdmin() {
                           {unit.isActive && (
                             <button
                               type="button"
-                              onClick={() => void deleteUnit(unit.unitId)}
+                              onClick={() => setDeleteTarget(unit)}
                               className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -314,21 +334,8 @@ export default function UnitsAdmin() {
               )}
             </div>
 
-            <form onSubmit={submitUnit} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {editingUnitId ? text("config.units.form.edit_title", "Edit unit") : text("config.units.form.create_title", "Create unit")}
-                </h2>
-                {editingUnitId && (
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="text-sm font-semibold text-gray-500 hover:text-gray-700"
-                  >
-                    {text("config.units.form.clear", "Clear")}
-                  </button>
-                )}
-              </div>
+            <ConfigEditorDialog open={editorOpen} onClose={resetForm} closeLabel={text("config.actions.close", "Close")} title={editingUnitId ? text("config.units.form.edit_title", "Edit unit") : text("config.units.form.create_title", "Create unit")}>
+            <form onSubmit={submitUnit} className="space-y-4">
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-1 text-sm text-gray-700">
@@ -466,7 +473,10 @@ export default function UnitsAdmin() {
                 </button>
               </div>
             </form>
+            </ConfigEditorDialog>
           </div>
+          <ConfigConfirmDialog open={Boolean(deleteTarget)} title={text("config.units.delete.title", "Delete unit?")} message={text("config.units.delete.message", `Delete ${deleteTarget?.displayName ?? "this unit"}? This will archive it and remove it from active use.`)} confirmLabel={text("config.actions.confirm_delete", "Delete")} cancelLabel={text("config.actions.cancel", "Cancel")} busy={saving} onCancel={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && void deleteUnit(deleteTarget.unitId)} />
+          <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} closeLabel={text("config.toast.close", "Close")} />
         </main>
       </div>
     </SuperAdminGuard>

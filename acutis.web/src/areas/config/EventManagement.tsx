@@ -7,6 +7,8 @@ import { ArrowLeft, Camera, CalendarClock, PencilLine, Plus, Save, Trash2 } from
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { ConfigConfirmDialog, ConfigEditorDialog } from "@/areas/config/ConfigActionDialogs";
+import Toast from "@/units/shared/ui/Toast";
 import {
   globalConfigurationService,
   type CentreConfigurationDto,
@@ -72,6 +74,9 @@ const EventManagement: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ScheduleTemplateDto | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [templateForm, setTemplateForm] = useState<UpsertScheduleTemplateRequest>(emptyTemplateForm);
 
   const text = (key: string, fallback: string) => {
@@ -84,6 +89,9 @@ const EventManagement: React.FC = () => {
       "config.events.title",
       "config.events.description",
       "config.events.back",
+      "config.actions.add_new", "config.actions.close", "config.actions.cancel", "config.actions.confirm_archive",
+      "config.events.form.create_title", "config.events.form.edit_title", "config.events.delete.title", "config.events.delete.message",
+      "config.events.toast.created", "config.events.toast.updated", "config.events.toast.archived", "config.toast.close",
     ]);
   }, [loadKeys]);
 
@@ -136,6 +144,13 @@ const EventManagement: React.FC = () => {
   const resetTemplateForm = () => {
     setEditingTemplateId(null);
     setTemplateForm(emptyTemplateForm);
+    setEditorOpen(false);
+  };
+
+  const startCreateTemplate = () => {
+    setEditingTemplateId(null);
+    setTemplateForm(emptyTemplateForm);
+    setEditorOpen(true);
   };
 
   const startEditTemplate = (template: ScheduleTemplateDto) => {
@@ -162,6 +177,7 @@ const EventManagement: React.FC = () => {
       externalResourceName: template.externalResourceName,
       isActive: template.isActive,
     });
+    setEditorOpen(true);
   };
 
   const submitTemplate = async (event: React.FormEvent) => {
@@ -189,6 +205,7 @@ const EventManagement: React.FC = () => {
             : null,
       };
 
+      const wasEditing = Boolean(editingTemplateId);
       if (editingTemplateId) {
         await globalConfigurationService.updateScheduleTemplate(accessToken, editingTemplateId, payload);
       } else {
@@ -197,6 +214,7 @@ const EventManagement: React.FC = () => {
 
       resetTemplateForm();
       await loadConfiguration();
+      setToast(wasEditing ? text("config.events.toast.updated", "Event updated.") : text("config.events.toast.created", "Event created."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -217,6 +235,8 @@ const EventManagement: React.FC = () => {
         resetTemplateForm();
       }
       await loadConfiguration();
+      setDeleteTarget(null);
+      setToast(text("config.events.toast.archived", "Event archived."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -259,7 +279,7 @@ const EventManagement: React.FC = () => {
           {loading ? (
             <div className="app-card rounded-2xl p-6 text-sm text-[var(--app-text-muted)]">Loading event configuration...</div>
           ) : (
-            <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <section>
               <div className="app-card rounded-2xl p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
@@ -268,11 +288,11 @@ const EventManagement: React.FC = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={resetTemplateForm}
+                    onClick={startCreateTemplate}
                     className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white"
                   >
                     <Plus className="h-4 w-4" />
-                    New event
+                    {text("config.actions.add_new", "Add New")}
                   </button>
                 </div>
 
@@ -315,7 +335,7 @@ const EventManagement: React.FC = () => {
                           {template.isActive && (
                             <button
                               type="button"
-                              onClick={() => void archiveTemplate(template.scheduleTemplateId)}
+                              onClick={() => setDeleteTarget(template)}
                               className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-danger)]/30 px-3 py-2 text-sm font-semibold text-[var(--app-danger)]"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -329,11 +349,8 @@ const EventManagement: React.FC = () => {
                 </div>
               </div>
 
-              <form onSubmit={submitTemplate} className="app-card rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingTemplateId ? "Edit event" : "Create event"}</h2>
-                  {editingTemplateId && <button type="button" onClick={resetTemplateForm} className="text-sm font-semibold text-[var(--app-text-muted)]">Clear</button>}
-                </div>
+              <ConfigEditorDialog open={editorOpen} onClose={resetTemplateForm} closeLabel={text("config.actions.close", "Close")} title={editingTemplateId ? text("config.events.form.edit_title", "Edit event") : text("config.events.form.create_title", "Create event")}>
+              <form onSubmit={submitTemplate} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="space-y-1 text-sm text-[var(--app-text)]">
                     <span>Centre</span>
@@ -442,9 +459,12 @@ const EventManagement: React.FC = () => {
                   {editingTemplateId ? "Save event" : "Create event"}
                 </button>
               </form>
+              </ConfigEditorDialog>
             </section>
           )}
         </main>
+        <ConfigConfirmDialog open={Boolean(deleteTarget)} title={text("config.events.delete.title", "Archive event?")} message={text("config.events.delete.message", `Archive ${deleteTarget?.name ?? "this event"}? It will no longer be available for active scheduling.`)} confirmLabel={text("config.actions.confirm_archive", "Archive")} cancelLabel={text("config.actions.cancel", "Cancel")} busy={saving} onCancel={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && void archiveTemplate(deleteTarget.scheduleTemplateId)} />
+        <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} closeLabel={text("config.toast.close", "Close")} />
       </div>
     </SuperAdminGuard>
   );

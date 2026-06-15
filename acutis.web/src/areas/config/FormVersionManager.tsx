@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
 import {
   AlertCircle,
   ArrowLeft,
@@ -9,6 +10,7 @@ import {
   Download,
   FileText,
   GitCompare,
+  Plus,
   User,
 } from 'lucide-react';
 
@@ -128,6 +130,12 @@ const currentVersion = 3;
 
 const FormVersionManager = () => {
   const router = useRouter();
+  const { loadKeys, t } = useLocalization();
+  const text = (key: string, fallback: string) => t(key) === key ? fallback : t(key);
+
+  useEffect(() => {
+    void loadKeys(['config.actions.add_new']);
+  }, [loadKeys]);
   const [selectedVersions, setSelectedVersions] = useState<[number, number]>([3, 2]);
   const [expandedSections, setExpandedSections] = useState<string[]>(['3-Medical & Insurance']);
   const [viewMode, setViewMode] = useState<'timeline' | 'compare'>('timeline');
@@ -202,6 +210,10 @@ const FormVersionManager = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              <button onClick={() => router.push('/units/config/forms/new')} className="app-primary-button inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold transition-colors">
+                <Plus className="h-5 w-5" />
+                <span>{text('config.actions.add_new', 'Add New')}</span>
+              </button>
               <button className="app-primary-button inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold transition-colors">
                 <Download className="h-5 w-5" />
                 <span>Export History</span>

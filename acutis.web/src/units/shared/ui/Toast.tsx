@@ -7,17 +7,17 @@ type ToastProps = {
 };
 
 const typeToClasses: Record<NonNullable<ToastProps["type"]>, string> = {
-  success: "border-green-300 bg-green-50 text-green-800",
-  warning: "border-yellow-300 bg-yellow-50 text-yellow-800",
-  error: "border-red-300 bg-red-50 text-red-800",
-  info: "border-blue-300 bg-blue-50 text-blue-800",
+  success: "border-[color:color-mix(in_srgb,var(--app-success)_35%,var(--app-border))] bg-[var(--app-surface)] text-[var(--app-success)]",
+  warning: "border-[color:color-mix(in_srgb,var(--app-warning)_35%,var(--app-border))] bg-[var(--app-surface)] text-[var(--app-warning)]",
+  error: "border-[color:color-mix(in_srgb,var(--app-danger)_35%,var(--app-border))] bg-[var(--app-surface)] text-[var(--app-danger)]",
+  info: "border-[color:color-mix(in_srgb,var(--app-primary)_35%,var(--app-border))] bg-[var(--app-surface)] text-[var(--app-primary)]",
 };
 
 export default function Toast({ open, message, type = "info", onClose, closeLabel = "Close" }: ToastProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 end-4 z-[70] max-w-[calc(100vw-2rem)]">
       <div className={`rounded-lg border px-4 py-3 shadow-md ${typeToClasses[type]}`}>
         <div className="flex items-start gap-3">
           <p className="text-sm font-medium">{message}</p>

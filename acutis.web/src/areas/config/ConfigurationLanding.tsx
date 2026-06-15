@@ -8,7 +8,6 @@ import {
   ClipboardList,
   UserCog,
   Plug,
-  FileEdit,
   CalendarClock,
   ClipboardCheck,
   Quote,
@@ -141,19 +140,6 @@ const ConfigurationLanding: React.FC = () => {
               </div>
               <p className="text-sm text-[var(--app-text-muted)]">
                 {text("config.dashboard.elements.description", "Browse reusable form elements and field groups.")}
-              </p>
-            </button>
-
-            <button
-              onClick={() => router.push("/units/config/forms/new")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <FileEdit className="h-6 w-6 text-[var(--app-success)]" />
-                <h2 className="text-lg font-semibold text-[var(--app-text)]">{text("config.dashboard.designer.title", "Form Designer")}</h2>
-              </div>
-              <p className="text-sm text-[var(--app-text-muted)]">
-                {text("config.dashboard.designer.description", "Create a new admission form from scratch.")}
               </p>
             </button>
 

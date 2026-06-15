@@ -11,6 +11,7 @@ import {
   Plus,
   Save,
   ShieldCheck,
+  Trash2,
   UserCog,
   Users,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import {
 } from "@/services/globalConfigurationService";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import Toast from "@/units/shared/ui/Toast";
 
 const emptyCentre = "__centre__";
 
@@ -44,6 +46,7 @@ type UserForm = {
   userName: string;
   displayName: string;
   email: string;
+  temporaryPassword: string;
   isActive: boolean;
 };
 
@@ -71,6 +74,7 @@ const emptyUserForm = (): UserForm => ({
   userName: "",
   displayName: "",
   email: "",
+  temporaryPassword: "",
   isActive: true,
 });
 
@@ -108,6 +112,9 @@ export default function UsersRoles() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [userEditorOpen, setUserEditorOpen] = useState(false);
+  const [roleEditorOpen, setRoleEditorOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const selectedUser = useMemo(
     () => users.find((user) => user.userId === selectedUserId) ?? null,
@@ -249,6 +256,14 @@ export default function UsersRoles() {
       "config.users_roles.assignments.no_permissions",
       "config.users_roles.errors.user_id_missing",
       "config.users_roles.permission_category.other",
+      "config.actions.add_new",
+      "config.users_roles.toast.role_saved",
+      "config.users_roles.toast.user_saved",
+      "config.users_roles.toast.user_removed",
+      "config.users_roles.toast.role_removed",
+      "config.users_roles.confirm.remove_user",
+      "config.users_roles.confirm.remove_role",
+      "config.toast.close",
     ]);
   }, [loadKeys]);
 
@@ -264,6 +279,7 @@ export default function UsersRoles() {
       isActive: role.isActive,
       permissionKeys: [...role.permissionKeys],
     });
+    setRoleEditorOpen(true);
   };
 
   const startUserEdit = (user: AppUserDto) => {
@@ -274,6 +290,7 @@ export default function UsersRoles() {
       userName: user.userName,
       displayName: user.displayName,
       email: user.email,
+      temporaryPassword: "",
       isActive: user.isActive,
     });
     setAssignments(
@@ -287,18 +304,24 @@ export default function UsersRoles() {
           }))
         : [emptyAssignment()],
     );
+    setUserEditorOpen(true);
   };
 
   const resetRoleForm = () => {
     setEditingRoleId(null);
     setRoleForm(emptyRoleForm());
+    setRoleEditorOpen(false);
   };
 
   const resetUserForm = () => {
     setEditingUserId(null);
     setUserForm(emptyUserForm());
     setAssignments([emptyAssignment()]);
+    setUserEditorOpen(false);
   };
+
+  const startUserCreate = () => { setEditingUserId(null); setUserForm(emptyUserForm()); setAssignments([emptyAssignment()]); setUserEditorOpen(true); };
+  const startRoleCreate = () => { setEditingRoleId(null); setRoleForm(emptyRoleForm()); setRoleEditorOpen(true); };
 
   const submitRole = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -314,6 +337,7 @@ export default function UsersRoles() {
       }
       resetRoleForm();
       await loadData();
+      setToast(text("config.users_roles.toast.role_saved", "Role saved."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -358,6 +382,44 @@ export default function UsersRoles() {
 
       resetUserForm();
       await loadData();
+      setToast(text("config.users_roles.toast.user_saved", "User saved."));
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeUser = async (user: AppUserDto) => {
+    if (!accessToken && !isAuthorizationDisabled) return;
+    if (!window.confirm(text("config.users_roles.confirm.remove_user", `Remove ${user.displayName}? Their login and all assigned access will be disabled.`))) return;
+
+    setSaving(true);
+    try {
+      setError(null);
+      await globalConfigurationService.archiveUser(accessToken, user.userId);
+      if (editingUserId === user.userId) resetUserForm();
+      if (selectedUserId === user.userId) setSelectedUserId(null);
+      await loadData();
+      setToast(text("config.users_roles.toast.user_removed", "User removed."));
+    } catch (nextError) {
+      setError((nextError as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeRole = async (role: AppRoleDto) => {
+    if (!accessToken && !isAuthorizationDisabled) return;
+    if (!window.confirm(text("config.users_roles.confirm.remove_role", `Remove the ${role.name} role? Existing assignments for this role will be disabled.`))) return;
+
+    setSaving(true);
+    try {
+      setError(null);
+      await globalConfigurationService.archiveRole(accessToken, role.roleId);
+      if (editingRoleId === role.roleId) resetRoleForm();
+      await loadData();
+      setToast(text("config.users_roles.toast.role_removed", "Role removed."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -439,7 +501,7 @@ export default function UsersRoles() {
             </div>
           ) : (
             <div className="space-y-6">
-              <section className="grid gap-6 lg:grid-cols-[0.95fr_1.35fr]">
+              <section className="space-y-6">
                 <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div className="mb-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -455,11 +517,11 @@ export default function UsersRoles() {
                     </div>
                     <button
                       type="button"
-                      onClick={resetUserForm}
+                      onClick={startUserCreate}
                       className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                     >
                       <Plus className="h-4 w-4" />
-                      {text("config.users_roles.users.create", "Create user")}
+                      {text("config.actions.add_new", "Add New")}
                     </button>
                   </div>
 
@@ -467,10 +529,8 @@ export default function UsersRoles() {
                     {users.map((user) => {
                       const isSelected = selectedUserId === user.userId;
                       return (
-                        <button
+                        <div
                           key={user.userId}
-                          type="button"
-                          onClick={() => setSelectedUserId(user.userId)}
                           className={`w-full rounded-2xl border p-4 text-left transition ${
                             isSelected
                               ? "border-blue-300 bg-blue-50 shadow-sm"
@@ -513,13 +573,17 @@ export default function UsersRoles() {
                               </span>
                             )}
                           </div>
-                        </button>
+                          <button type="button" onClick={() => startUserEdit(user)} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                            <PencilLine className="h-4 w-4" />
+                            {text("config.users_roles.users.edit", "Edit user")}
+                          </button>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
 
-                <form onSubmit={submitUser} className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                {userEditorOpen && <form onSubmit={submitUser} className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div className="mb-6 flex items-center justify-between gap-4">
                     <div>
                       <h2 className="text-2xl font-semibold text-gray-900">
@@ -535,24 +599,39 @@ export default function UsersRoles() {
                       </p>
                     </div>
                     {selectedUser && (
-                      <button
-                        type="button"
-                        onClick={() => startUserEdit(selectedUser)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                      >
-                        <PencilLine className="h-4 w-4" />
-                        {text("config.users_roles.users.load_selected", "Load selected")}
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startUserEdit(selectedUser)}
+                          className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          <PencilLine className="h-4 w-4" />
+                          {text("config.users_roles.users.load_selected", "Load selected")}
+                        </button>
+                        {selectedUser.isActive && (
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => void removeUser(selectedUser)}
+                            className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Remove user
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
-                    <label className="space-y-2">
-                      <span className="text-sm font-semibold text-gray-700">
-                        {text("config.users_roles.users.external_subject", "External subject")}
-                      </span>
-                      <input value={userForm.externalSubject} onChange={(event) => setUserForm((current) => ({ ...current, externalSubject: event.target.value }))} placeholder={text("config.users_roles.users.external_subject_placeholder", "User subject from login")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
-                    </label>
+                    {editingUserId && (
+                      <label className="space-y-2">
+                        <span className="text-sm font-semibold text-gray-700">
+                          {text("config.users_roles.users.external_subject", "Keycloak subject")}
+                        </span>
+                        <input value={userForm.externalSubject} readOnly className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-500" />
+                      </label>
+                    )}
                     <label className="space-y-2">
                       <span className="text-sm font-semibold text-gray-700">
                         {text("config.users_roles.users.username", "Username")}
@@ -571,6 +650,21 @@ export default function UsersRoles() {
                       </span>
                       <input value={userForm.email} onChange={(event) => setUserForm((current) => ({ ...current, email: event.target.value }))} placeholder={text("config.users_roles.users.email_placeholder", "Email")} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base" />
                     </label>
+                    {!editingUserId && (
+                      <label className="space-y-2">
+                        <span className="text-sm font-semibold text-gray-700">Temporary password</span>
+                        <input
+                          type="password"
+                          required
+                          minLength={8}
+                          value={userForm.temporaryPassword}
+                          onChange={(event) => setUserForm((current) => ({ ...current, temporaryPassword: event.target.value }))}
+                          placeholder="At least 8 characters"
+                          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base"
+                        />
+                        <span className="block text-xs text-gray-500">The user must change this password on first sign-in.</span>
+                      </label>
+                    )}
                   </div>
 
                   <label className="mt-5 inline-flex items-center gap-3 text-base font-medium text-gray-700">
@@ -711,10 +805,10 @@ export default function UsersRoles() {
                       {text("config.users_roles.users.clear", "Clear")}
                     </button>
                   </div>
-                </form>
+                </form>}
               </section>
 
-              <section className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+              <section className="space-y-6">
                 <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div className="mb-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -731,9 +825,9 @@ export default function UsersRoles() {
                         </p>
                       </div>
                     </div>
-                    <button type="button" onClick={resetRoleForm} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                    <button type="button" onClick={startRoleCreate} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
                       <Plus className="h-4 w-4" />
-                      {text("config.users_roles.roles.create", "Create role")}
+                      {text("config.actions.add_new", "Add New")}
                     </button>
                   </div>
 
@@ -763,10 +857,23 @@ export default function UsersRoles() {
                                 : text("config.users_roles.scope.unit", "Unit")}
                             </p>
                           </div>
-                          <button type="button" onClick={() => startRoleEdit(role)} className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-                            <PencilLine className="h-4 w-4" />
-                            {text("config.users_roles.roles.edit_button", "Edit")}
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button type="button" onClick={() => startRoleEdit(role)} className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                              <PencilLine className="h-4 w-4" />
+                              {text("config.users_roles.roles.edit_button", "Edit")}
+                            </button>
+                            {role.isActive && !role.isSystemRole && (
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() => void removeRole(role)}
+                                className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Remove
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
                           {role.permissionKeys.map((permissionKey) => (
@@ -785,7 +892,7 @@ export default function UsersRoles() {
                   </div>
                 </div>
 
-                <form onSubmit={submitRole} className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                {roleEditorOpen && <form onSubmit={submitRole} className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div className="mb-5 flex items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-semibold text-gray-900">
@@ -880,11 +987,12 @@ export default function UsersRoles() {
                       {editingRoleId ? text("config.users_roles.roles.save_button", "Save role") : text("config.users_roles.roles.create_button", "Create role")}
                     </button>
                   </div>
-                </form>
+                </form>}
               </section>
             </div>
           )}
         </main>
+        <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} closeLabel={text("config.toast.close", "Close")} />
       </div>
     </SuperAdminGuard>
   );

@@ -14,6 +14,8 @@ import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import { availableThemes } from "@/areas/shared/theme/ThemeProvider";
 import { DEFAULT_THEME_KEY } from "@/areas/shared/theme/themeSystem";
+import { ConfigConfirmDialog, ConfigEditorDialog } from "@/areas/config/ConfigActionDialogs";
+import Toast from "@/units/shared/ui/Toast";
 
 const emptyForm: UpsertCentreRequest = {
   centreCode: "",
@@ -39,6 +41,9 @@ export default function CentresAdmin() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingCentreId, setEditingCentreId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<CentreConfigurationDto | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [form, setForm] = useState<UpsertCentreRequest>(emptyForm);
 
   const text = (key: string, fallback: string) => {
@@ -102,12 +107,22 @@ export default function CentresAdmin() {
       "config.centres.form.active",
       "config.centres.form.create_button",
       "config.centres.form.save_button",
+      "config.actions.add_new", "config.actions.close", "config.actions.cancel", "config.actions.confirm_delete",
+      "config.centres.delete.title", "config.centres.delete.message",
+      "config.centres.toast.created", "config.centres.toast.updated", "config.centres.toast.deleted", "config.toast.close",
     ]);
   }, [loadKeys]);
 
   const resetForm = () => {
     setEditingCentreId(null);
     setForm(emptyForm);
+    setEditorOpen(false);
+  };
+
+  const startCreate = () => {
+    setEditingCentreId(null);
+    setForm(emptyForm);
+    setEditorOpen(true);
   };
 
   const startEdit = (centre: CentreConfigurationDto) => {
@@ -125,6 +140,7 @@ export default function CentresAdmin() {
       displayOrder: centre.displayOrder,
       isActive: centre.isActive,
     });
+    setEditorOpen(true);
   };
 
   const submitCentre = async (event: React.FormEvent) => {
@@ -136,6 +152,7 @@ export default function CentresAdmin() {
     setSaving(true);
     try {
       setError(null);
+      const wasEditing = Boolean(editingCentreId);
       if (editingCentreId) {
         await globalConfigurationService.updateCentre(accessToken, editingCentreId, form);
       } else {
@@ -144,6 +161,7 @@ export default function CentresAdmin() {
 
       resetForm();
       await loadCentres();
+      setToast(wasEditing ? text("config.centres.toast.updated", "Centre updated.") : text("config.centres.toast.created", "Centre created."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -164,6 +182,8 @@ export default function CentresAdmin() {
         resetForm();
       }
       await loadCentres();
+      setDeleteTarget(null);
+      setToast(text("config.centres.toast.deleted", "Centre deleted."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -197,17 +217,17 @@ export default function CentresAdmin() {
 
           {error && <div className="mb-6 rounded-xl border border-[color:color-mix(in_srgb,var(--app-danger)_20%,var(--app-border))] bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)] px-4 py-3 text-sm text-[var(--app-danger)]">{error}</div>}
 
-          <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+          <div>
             <div className="app-card rounded-2xl p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-[var(--app-text)]">{text("config.centres.list.title", "Existing centres")}</h2>
                 <button
                   type="button"
-                  onClick={resetForm}
+                  onClick={startCreate}
                   className="app-primary-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold"
                 >
                   <Plus className="h-4 w-4" />
-                  {text("config.centres.list.create", "Create centre")}
+                  {text("config.actions.add_new", "Add New")}
                 </button>
               </div>
 
@@ -245,7 +265,7 @@ export default function CentresAdmin() {
                           {centre.isActive && (
                             <button
                               type="button"
-                              onClick={() => void deleteCentre(centre.centreId)}
+                              onClick={() => setDeleteTarget(centre)}
                               className="inline-flex items-center gap-2 rounded-lg border border-[color:color-mix(in_srgb,var(--app-danger)_20%,var(--app-border))] bg-[var(--app-surface)] px-3 py-2 text-sm font-semibold text-[var(--app-danger)] hover:bg-[color:color-mix(in_srgb,var(--app-danger)_8%,white)]"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -260,17 +280,8 @@ export default function CentresAdmin() {
               )}
             </div>
 
-            <form onSubmit={submitCentre} className="app-card space-y-4 rounded-2xl p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[var(--app-text)]">
-                  {editingCentreId ? text("config.centres.form.edit_title", "Edit centre") : text("config.centres.form.create_title", "Create centre")}
-                </h2>
-                {editingCentreId && (
-                  <button type="button" onClick={resetForm} className="text-sm font-semibold text-[var(--app-text-muted)] hover:text-[var(--app-text)]">
-                    {text("config.centres.form.clear", "Clear")}
-                  </button>
-                )}
-              </div>
+            <ConfigEditorDialog open={editorOpen} onClose={resetForm} closeLabel={text("config.actions.close", "Close")} title={editingCentreId ? text("config.centres.form.edit_title", "Edit centre") : text("config.centres.form.create_title", "Create centre")}>
+            <form onSubmit={submitCentre} className="space-y-4">
 
               <label className="block space-y-1 text-sm text-[var(--app-text)]">
                 <span>{text("config.centres.form.code", "Centre code")}</span>
@@ -334,7 +345,10 @@ export default function CentresAdmin() {
                 </button>
               </div>
             </form>
+            </ConfigEditorDialog>
           </div>
+          <ConfigConfirmDialog open={Boolean(deleteTarget)} title={text("config.centres.delete.title", "Delete centre?")} message={text("config.centres.delete.message", `Delete ${deleteTarget?.displayName ?? "this centre"}? This will archive it and remove it from active use.`)} confirmLabel={text("config.actions.confirm_delete", "Delete")} cancelLabel={text("config.actions.cancel", "Cancel")} busy={saving} onCancel={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && void deleteCentre(deleteTarget.centreId)} />
+          <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} closeLabel={text("config.toast.close", "Close")} />
         </main>
       </div>
     </SuperAdminGuard>

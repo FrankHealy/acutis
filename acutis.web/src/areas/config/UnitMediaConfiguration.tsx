@@ -7,6 +7,7 @@ import { mediaPlayerService, type MediaAsset, type MediaPlayerCatalog } from "@/
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import { isAuthorizedClient } from "@/lib/authMode";
+import Toast from "@/units/shared/ui/Toast";
 
 type UnitMediaConfigurationProps = {
   unitId: UnitId;
@@ -31,6 +32,8 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
   const [shortName, setShortName] = useState("");
   const [lengthSeconds, setLengthSeconds] = useState("");
   const [deleteFile, setDeleteFile] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     void loadKeys([
@@ -47,6 +50,14 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
       "config.media.empty",
       "config.media.deactivate",
       "config.media.delete",
+      "config.actions.add_new",
+      "config.media.confirm_deactivate",
+      "config.media.confirm_delete",
+      "config.media.toast.synced",
+      "config.media.toast.added",
+      "config.media.toast.deactivated",
+      "config.media.toast.deleted",
+      "config.toast.close",
     ]);
   }, [loadKeys]);
 
@@ -82,6 +93,7 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
       if (!isAuthorizedClient(status, session?.accessToken)) return;
       await mediaPlayerService.sync(unitId, "Manual sync from unit configuration", session?.accessToken);
       await refreshCatalog();
+      setToast(text("config.media.toast.synced", "Media folder synced."));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -106,26 +118,32 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
       setShortName("");
       setLengthSeconds("");
       await refreshCatalog();
+      setEditorOpen(false);
+      setToast(text("config.media.toast.added", "Media item added."));
     } catch (e) {
       setError((e as Error).message);
     }
   };
 
   const deactivate = async (asset: MediaAsset) => {
+    if (!window.confirm(text("config.media.confirm_deactivate", `Deactivate ${asset.shortName}?`))) return;
     try {
       if (!isAuthorizedClient(status, session?.accessToken)) return;
       await mediaPlayerService.deactivate(asset.id, "Removed from active catalog", session?.accessToken);
       await refreshCatalog();
+      setToast(text("config.media.toast.deactivated", "Media item deactivated."));
     } catch (e) {
       setError((e as Error).message);
     }
   };
 
   const deleteAsset = async (asset: MediaAsset) => {
+    if (!window.confirm(text("config.media.confirm_delete", `Delete ${asset.shortName}?`))) return;
     try {
       if (!isAuthorizedClient(status, session?.accessToken)) return;
       await mediaPlayerService.delete(asset.id, deleteFile, "Deleted from unit configuration", session?.accessToken);
       await refreshCatalog();
+      setToast(text("config.media.toast.deleted", "Media item deleted."));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -137,20 +155,13 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
     <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-lg font-semibold text-gray-900">{text("config.media.title", "Media Configuration")}</h3>
-        <button
-          type="button"
-          onClick={handleSync}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-        >
-          <RefreshCw className="h-4 w-4" />
-          {text("config.media.sync_folder", "Sync Folder")}
-        </button>
+        <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setEditorOpen(true)} className="app-primary-button inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"><Plus className="h-4 w-4" />{text("config.actions.add_new", "Add New")}</button><button type="button" onClick={handleSync} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"><RefreshCw className="h-4 w-4" />{text("config.media.sync_folder", "Sync Folder")}</button></div>
       </div>
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {loading && <p className="mt-3 text-sm text-gray-500">{text("config.media.loading", "Loading media catalog...")}</p>}
 
-      <form onSubmit={handleRegister} className="mt-4 grid gap-3 md:grid-cols-5">
+      {editorOpen && <form onSubmit={handleRegister} className="mt-4 grid gap-3 md:grid-cols-5">
         <div className="inline-flex overflow-hidden rounded-lg border border-gray-300">
           <button
             type="button"
@@ -200,7 +211,7 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
           <Plus className="h-4 w-4" />
           {text("config.media.add_item", "Add Media Item")}
         </button>
-      </form>
+      </form>}
 
       <div className="mt-6 flex items-center gap-2 text-sm">
         <input
@@ -245,6 +256,7 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
           </div>
         ))}
       </div>
+      <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} closeLabel={text("config.toast.close", "Close")} />
     </div>
   );
 };

@@ -24,6 +24,7 @@ import {
 } from "@/services/globalConfigurationService";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import Toast from "@/units/shared/ui/Toast";
 
 const roleTypes = ["Internal", "External", "Mixed", "Split"] as const;
 
@@ -87,6 +88,8 @@ export default function OtRolesAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [form, setForm] = useState<UpsertOtRoleDefinitionRequest>(emptyForm);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     void loadKeys([
@@ -95,6 +98,11 @@ export default function OtRolesAdmin() {
       "config.ot_roles.back",
       "config.dashboard.ot_roles.title",
       "config.dashboard.ot_roles.description",
+      "config.actions.add_new",
+      "config.ot_roles.confirm_archive",
+      "config.ot_roles.toast.saved",
+      "config.ot_roles.toast.archived",
+      "config.toast.close",
     ]);
   }, [loadKeys]);
 
@@ -151,7 +159,10 @@ export default function OtRolesAdmin() {
   const resetForm = () => {
     setEditingRoleId(null);
     setForm(emptyForm);
+    setEditorOpen(false);
   };
+
+  const startCreate = () => { setEditingRoleId(null); setForm(emptyForm); setEditorOpen(true); };
 
   const loadAll = async () => {
     if (!accessToken && !isAuthorizationDisabled) {
@@ -191,6 +202,7 @@ export default function OtRolesAdmin() {
       displayOrder: role.displayOrder,
       isActive: role.isActive,
     });
+    setEditorOpen(true);
   };
 
   const submitRole = async (event: FormEvent) => {
@@ -219,6 +231,7 @@ export default function OtRolesAdmin() {
 
       resetForm();
       await loadAll();
+      setToast(text("config.ot_roles.toast.saved", "OT role saved."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -227,6 +240,7 @@ export default function OtRolesAdmin() {
   };
 
   const archiveRole = async (roleId: string) => {
+    if (!window.confirm(text("config.ot_roles.confirm_archive", "Archive this OT role?"))) return;
     if (!accessToken && !isAuthorizationDisabled) {
       return;
     }
@@ -239,6 +253,7 @@ export default function OtRolesAdmin() {
         resetForm();
       }
       await loadAll();
+      setToast(text("config.ot_roles.toast.archived", "OT role archived."));
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -363,11 +378,11 @@ export default function OtRolesAdmin() {
                 </div>
                 <button
                   type="button"
-                  onClick={resetForm}
+                  onClick={startCreate}
                   className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
                 >
                   <Plus className="h-4 w-4" />
-                  New OT role
+                  Add New
                 </button>
               </div>
 
@@ -561,7 +576,7 @@ export default function OtRolesAdmin() {
               )}
             </section>
 
-            <section className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+            {editorOpen && <section className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">
@@ -754,9 +769,10 @@ export default function OtRolesAdmin() {
                   {editingRoleId ? "Save OT role" : "Create OT role"}
                 </button>
               </form>
-            </section>
+            </section>}
           </div>
         </main>
+        <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} closeLabel={text("config.toast.close", "Close")} />
       </div>
     </SuperAdminGuard>
   );

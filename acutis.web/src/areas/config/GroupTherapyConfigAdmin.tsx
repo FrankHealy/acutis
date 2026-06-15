@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, MessageSquareText, PencilLine, Plus, Save, Timer, Trash2 } from "lucide-react";
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
+import Toast from "@/units/shared/ui/Toast";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import {
   globalConfigurationService,
@@ -65,6 +66,9 @@ export default function GroupTherapyConfigAdmin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [themeEditorOpen, setThemeEditorOpen] = useState(false);
+  const [configEditorOpen, setConfigEditorOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const canLoad = Boolean(accessToken) || isAuthorizationDisabled;
 
@@ -139,12 +143,17 @@ export default function GroupTherapyConfigAdmin() {
   const resetThemeForm = () => {
     setEditingThemeId(null);
     setThemeForm(emptyThemeForm);
+    setThemeEditorOpen(false);
   };
 
   const resetConfigForm = () => {
     setEditingConfigId(null);
     setConfigForm(emptyConfigForm);
+    setConfigEditorOpen(false);
   };
+
+  const startCreateTheme = () => { setEditingThemeId(null); setThemeForm(emptyThemeForm); setThemeEditorOpen(true); };
+  const startCreateConfig = () => { setEditingConfigId(null); setConfigForm(emptyConfigForm); setConfigEditorOpen(true); };
 
   const startEditTheme = (theme: GroupTherapyConversationThemeConfigurationDto) => {
     setEditingThemeId(theme.conversationThemeId);
@@ -157,6 +166,7 @@ export default function GroupTherapyConfigAdmin() {
       sortOrder: theme.sortOrder,
       isActive: theme.isActive,
     });
+    setThemeEditorOpen(true);
   };
 
   const startEditConfig = (config: GroupTherapyFacilitationConfigConfigurationDto) => {
@@ -172,6 +182,7 @@ export default function GroupTherapyConfigAdmin() {
       sortOrder: config.sortOrder,
       isActive: config.isActive,
     });
+    setConfigEditorOpen(true);
   };
 
   const submitTheme = async (event: FormEvent) => {
@@ -200,6 +211,7 @@ export default function GroupTherapyConfigAdmin() {
 
       resetThemeForm();
       await loadAll();
+      setToast("Conversation theme saved.");
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -234,6 +246,7 @@ export default function GroupTherapyConfigAdmin() {
 
       resetConfigForm();
       await loadAll();
+      setToast("Timing profile saved.");
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -242,6 +255,7 @@ export default function GroupTherapyConfigAdmin() {
   };
 
   const archiveTheme = async (themeId: string) => {
+    if (!window.confirm("Archive this conversation theme?")) return;
     if (!canLoad) {
       return;
     }
@@ -254,6 +268,7 @@ export default function GroupTherapyConfigAdmin() {
         resetThemeForm();
       }
       await loadAll();
+      setToast("Conversation theme archived.");
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -262,6 +277,7 @@ export default function GroupTherapyConfigAdmin() {
   };
 
   const archiveConfig = async (configId: string) => {
+    if (!window.confirm("Archive this timing profile?")) return;
     if (!canLoad) {
       return;
     }
@@ -274,6 +290,7 @@ export default function GroupTherapyConfigAdmin() {
         resetConfigForm();
       }
       await loadAll();
+      setToast("Timing profile archived.");
     } catch (nextError) {
       setError((nextError as Error).message);
     } finally {
@@ -359,11 +376,11 @@ export default function GroupTherapyConfigAdmin() {
               </div>
               <button
                 type="button"
-                onClick={resetThemeForm}
+                onClick={startCreateTheme}
                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white"
               >
                 <Plus className="h-4 w-4" />
-                New theme
+                Add New
               </button>
             </div>
 
@@ -435,11 +452,11 @@ export default function GroupTherapyConfigAdmin() {
               </div>
               <button
                 type="button"
-                onClick={resetConfigForm}
+                onClick={startCreateConfig}
                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-primary)] px-3 py-2 text-sm font-semibold text-white"
               >
                 <Plus className="h-4 w-4" />
-                New profile
+                Add New
               </button>
             </div>
 
@@ -508,8 +525,8 @@ export default function GroupTherapyConfigAdmin() {
           </section>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          <section className="app-card rounded-xl p-5">
+        {(themeEditorOpen || configEditorOpen) && <div className="grid gap-6 xl:grid-cols-2">
+          {themeEditorOpen && <section className="app-card rounded-xl p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingThemeId ? "Edit Theme" : "Create Theme"}</h2>
               {editingThemeId && (
@@ -594,9 +611,9 @@ export default function GroupTherapyConfigAdmin() {
                 {editingThemeId ? "Save theme" : "Create theme"}
               </button>
             </form>
-          </section>
+          </section>}
 
-          <section className="app-card rounded-xl p-5">
+          {configEditorOpen && <section className="app-card rounded-xl p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingConfigId ? "Edit Timing Profile" : "Create Timing Profile"}</h2>
               {editingConfigId && (
@@ -719,8 +736,9 @@ export default function GroupTherapyConfigAdmin() {
                 {editingConfigId ? "Save profile" : "Create profile"}
               </button>
             </form>
-          </section>
-        </div>
+          </section>}
+        </div>}
+        <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} />
       </div>
     </SuperAdminGuard>
   );
