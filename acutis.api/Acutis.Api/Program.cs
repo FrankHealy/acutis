@@ -83,8 +83,30 @@ builder.Services.AddScoped<IAmbulatoryService, AmbulatoryService>();
 builder.Services.AddSingleton<IApplicationAccessService, ApplicationAccessService>();
 builder.Services.Configure<OfflineWindowPolicyOptions>(builder.Configuration.GetSection("OfflineWindowPolicy"));
 builder.Services.Configure<AuthorizationOptions>(builder.Configuration.GetSection(AuthorizationOptions.SectionName));
+builder.Services.Configure<KeycloakAdminOptions>(builder.Configuration.GetSection(KeycloakAdminOptions.SectionName));
 builder.Services.AddSingleton<IOfflineWindowPolicyService, OfflineWindowPolicyService>();
 builder.Services.AddHttpContextAccessor();
+
+var keycloakAdminOptions = builder.Configuration
+    .GetSection(KeycloakAdminOptions.SectionName)
+    .Get<KeycloakAdminOptions>() ?? new KeycloakAdminOptions();
+if (keycloakAdminOptions.Enabled)
+{
+    builder.Services.AddHttpClient<IKeycloakAdminService, KeycloakAdminService>(client =>
+    {
+        var baseUrl = keycloakAdminOptions.BaseUrl.Trim().TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new InvalidOperationException("KeycloakAdmin:BaseUrl is required when Keycloak admin integration is enabled.");
+        }
+
+        client.BaseAddress = new Uri($"{baseUrl}/");
+    });
+}
+else
+{
+    builder.Services.AddSingleton<IKeycloakAdminService, DisabledKeycloakAdminService>();
+}
 
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
 var defaultDevelopmentCorsOrigins = new[]

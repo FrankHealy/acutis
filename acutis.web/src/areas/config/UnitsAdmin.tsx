@@ -39,6 +39,7 @@ export default function UnitsAdmin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<UnitConfigurationDto | null>(null);
@@ -128,12 +129,14 @@ export default function UnitsAdmin() {
   const resetForm = () => {
     setEditingUnitId(null);
     setForm(emptyForm);
+    setEditorError(null);
     setEditorOpen(false);
   };
 
   const startCreate = () => {
     setEditingUnitId(null);
     setForm(emptyForm);
+    setEditorError(null);
     setEditorOpen(true);
   };
 
@@ -151,6 +154,7 @@ export default function UnitsAdmin() {
       displayOrder: unit.displayOrder,
       isActive: unit.isActive,
     });
+    setEditorError(null);
     setEditorOpen(true);
   };
 
@@ -162,7 +166,7 @@ export default function UnitsAdmin() {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       const wasEditing = Boolean(editingUnitId);
       if (editingUnitId) {
         await globalConfigurationService.updateUnit(accessToken, editingUnitId, form);
@@ -173,7 +177,7 @@ export default function UnitsAdmin() {
       await loadUnits();
       setToast(wasEditing ? text("config.units.toast.updated", "Unit updated.") : text("config.units.toast.created", "Unit created."));
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -336,6 +340,11 @@ export default function UnitsAdmin() {
 
             <ConfigEditorDialog open={editorOpen} onClose={resetForm} closeLabel={text("config.actions.close", "Close")} title={editingUnitId ? text("config.units.form.edit_title", "Edit unit") : text("config.units.form.create_title", "Create unit")}>
             <form onSubmit={submitUnit} className="space-y-4">
+              {editorError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {editorError}
+                </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-1 text-sm text-gray-700">

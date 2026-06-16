@@ -20,10 +20,22 @@ const buildUpstreamUrl = (request: NextRequest, path: string[]) => {
 
 const buildUpstreamHeaders = (request: NextRequest) => {
   const headers = new Headers();
+  const hopByHopHeaders = new Set([
+    "connection",
+    "content-length",
+    "host",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+  ]);
 
   request.headers.forEach((value, key) => {
     const normalized = key.toLowerCase();
-    if (normalized === "host" || normalized === "content-length") {
+    if (hopByHopHeaders.has(normalized)) {
       return;
     }
 

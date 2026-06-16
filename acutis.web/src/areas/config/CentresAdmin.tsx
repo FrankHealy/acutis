@@ -40,6 +40,7 @@ export default function CentresAdmin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const [editingCentreId, setEditingCentreId] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<CentreConfigurationDto | null>(null);
@@ -116,12 +117,14 @@ export default function CentresAdmin() {
   const resetForm = () => {
     setEditingCentreId(null);
     setForm(emptyForm);
+    setEditorError(null);
     setEditorOpen(false);
   };
 
   const startCreate = () => {
     setEditingCentreId(null);
     setForm(emptyForm);
+    setEditorError(null);
     setEditorOpen(true);
   };
 
@@ -140,6 +143,7 @@ export default function CentresAdmin() {
       displayOrder: centre.displayOrder,
       isActive: centre.isActive,
     });
+    setEditorError(null);
     setEditorOpen(true);
   };
 
@@ -151,7 +155,7 @@ export default function CentresAdmin() {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       const wasEditing = Boolean(editingCentreId);
       if (editingCentreId) {
         await globalConfigurationService.updateCentre(accessToken, editingCentreId, form);
@@ -163,7 +167,7 @@ export default function CentresAdmin() {
       await loadCentres();
       setToast(wasEditing ? text("config.centres.toast.updated", "Centre updated.") : text("config.centres.toast.created", "Centre created."));
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -282,6 +286,7 @@ export default function CentresAdmin() {
 
             <ConfigEditorDialog open={editorOpen} onClose={resetForm} closeLabel={text("config.actions.close", "Close")} title={editingCentreId ? text("config.centres.form.edit_title", "Edit centre") : text("config.centres.form.create_title", "Create centre")}>
             <form onSubmit={submitCentre} className="space-y-4">
+              {editorError && <div className="rounded-xl border border-[color:color-mix(in_srgb,var(--app-danger)_20%,var(--app-border))] bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)] px-4 py-3 text-sm text-[var(--app-danger)]">{editorError}</div>}
 
               <label className="block space-y-1 text-sm text-[var(--app-text)]">
                 <span>{text("config.centres.form.code", "Centre code")}</span>

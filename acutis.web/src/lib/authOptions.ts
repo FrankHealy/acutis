@@ -6,6 +6,8 @@ type KeycloakAccessTokenPayload = {
   preferred_username?: string;
 };
 
+const authSessionVersion = "2026-06-13-production-v1";
+
 const refreshAccessToken = async (token: import("next-auth/jwt").JWT) => {
   try {
     if (!token.refreshToken) {
@@ -77,6 +79,10 @@ const decodeJwtPayload = (token: string): KeycloakAccessTokenPayload | null => {
 };
 
 export const authOptions: NextAuthOptions = {
+  pages: {
+    error: "/auth/error",
+    signIn: "/auth/error",
+  },
   providers: [
     KeycloakProvider({
       clientId: process.env.AUTH_KEYCLOAK_ID!,
@@ -85,8 +91,29 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      const canonicalBaseUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, "") ?? baseUrl;
+      if (url.startsWith("/")) {
+        return `${canonicalBaseUrl}${url}`;
+      }
+
+      try {
+        const target = new URL(url);
+        const canonical = new URL(canonicalBaseUrl);
+        if (
+          target.origin === canonical.origin ||
+          target.hostname === "acutis.167-233-16-141.sslip.io"
+        ) {
+          return `${canonicalBaseUrl}${target.pathname}${target.search}${target.hash}`;
+        }
+      } catch {
+        return canonicalBaseUrl;
+      }
+
+      return canonicalBaseUrl;
+    },
     async jwt({ token, account, profile }) {
-      if (account?.access_token) {
+    if (account?.access_token) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.accessTokenExpires = account.expires_at
@@ -107,19 +134,25 @@ export const authOptions: NextAuthOptions = {
         if (username) {
           token.username = username;
         }
-        token.error = undefined;
-        return token;
-      }
+      token.error = undefined;
+      token.authSessionVersion = authSessionVersion;
+      return token;
+    }
 
-      if (
-        token.accessToken &&
-        token.accessTokenExpires &&
-        Date.now() < Number(token.accessTokenExpires)
+    if (
+      token.accessToken &&
+      token.authSessionVersion === authSessionVersion &&
+      token.accessTokenExpires &&
+      Date.now() < Number(token.accessTokenExpires)
       ) {
         return token;
       }
 
-      return refreshAccessToken(token);
+      const refreshedToken = await refreshAccessToken(token);
+      if (!refreshedToken.error) {
+        refreshedToken.authSessionVersion = authSessionVersion;
+      }
+      return refreshedToken;
     },
     async session({ session, token }) {
       if (token?.accessToken) {

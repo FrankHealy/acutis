@@ -81,6 +81,8 @@ acutis.tab/builds/
 *.tmp
 tmp/*.err
 tmp/*.out
+tmp/
+dotnet/
 .git-backups/
 
 ############################

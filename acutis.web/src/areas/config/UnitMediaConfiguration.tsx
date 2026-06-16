@@ -6,6 +6,7 @@ import { RefreshCw, Plus, Trash2, Ban } from "lucide-react";
 import { mediaPlayerService, type MediaAsset, type MediaPlayerCatalog } from "@/services/mediaPlayerService";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { ConfigEditorDialog } from "@/areas/config/ConfigActionDialogs";
 import { isAuthorizedClient } from "@/lib/authMode";
 import Toast from "@/units/shared/ui/Toast";
 
@@ -27,6 +28,7 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
   const [catalog, setCatalog] = useState<MediaPlayerCatalog>(emptyCatalog(unitId));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const [registerAssetType, setRegisterAssetType] = useState<AssetType>("VoicedMeditation");
   const [fileName, setFileName] = useState("");
   const [shortName, setShortName] = useState("");
@@ -34,6 +36,14 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
   const [deleteFile, setDeleteFile] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+
+  const resetEditor = () => {
+    setEditorError(null);
+    setFileName("");
+    setShortName("");
+    setLengthSeconds("");
+    setEditorOpen(false);
+  };
 
   useEffect(() => {
     void loadKeys([
@@ -103,7 +113,7 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
     event.preventDefault();
     if (!fileName.trim()) return;
 
-    setError(null);
+    setEditorError(null);
     try {
       if (!isAuthorizedClient(status, session?.accessToken)) return;
       await mediaPlayerService.register({
@@ -114,14 +124,11 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
         lengthSeconds: lengthSeconds ? Number(lengthSeconds) : undefined,
         reason: "Manual add from unit configuration",
       }, session?.accessToken);
-      setFileName("");
-      setShortName("");
-      setLengthSeconds("");
       await refreshCatalog();
-      setEditorOpen(false);
+      resetEditor();
       setToast(text("config.media.toast.added", "Media item added."));
     } catch (e) {
-      setError((e as Error).message);
+      setEditorError((e as Error).message);
     }
   };
 
@@ -155,13 +162,15 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
     <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-lg font-semibold text-gray-900">{text("config.media.title", "Media Configuration")}</h3>
-        <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setEditorOpen(true)} className="app-primary-button inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"><Plus className="h-4 w-4" />{text("config.actions.add_new", "Add New")}</button><button type="button" onClick={handleSync} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"><RefreshCw className="h-4 w-4" />{text("config.media.sync_folder", "Sync Folder")}</button></div>
+        <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setEditorError(null); setEditorOpen(true); }} className="app-primary-button inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"><Plus className="h-4 w-4" />{text("config.actions.add_new", "Add New")}</button><button type="button" onClick={handleSync} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"><RefreshCw className="h-4 w-4" />{text("config.media.sync_folder", "Sync Folder")}</button></div>
       </div>
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {loading && <p className="mt-3 text-sm text-gray-500">{text("config.media.loading", "Loading media catalog...")}</p>}
 
-      {editorOpen && <form onSubmit={handleRegister} className="mt-4 grid gap-3 md:grid-cols-5">
+      <ConfigEditorDialog open={editorOpen} onClose={resetEditor} closeLabel="Close" title={text("config.media.add_item", "Add Media Item")} size="medium">
+      <form onSubmit={handleRegister} className="grid gap-3">
+        {editorError && <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{editorError}</p>}
         <div className="inline-flex overflow-hidden rounded-lg border border-gray-300">
           <button
             type="button"
@@ -190,7 +199,7 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
           value={fileName}
           onChange={(event) => setFileName(event.target.value)}
           placeholder={text("config.media.file_name", "File name in folder")}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
         <input
           value={shortName}
@@ -206,12 +215,13 @@ const UnitMediaConfiguration: React.FC<UnitMediaConfigurationProps> = ({ unitId 
         />
         <button
           type="submit"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 md:col-span-5"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
           {text("config.media.add_item", "Add Media Item")}
         </button>
-      </form>}
+      </form>
+      </ConfigEditorDialog>
 
       <div className="mt-6 flex items-center gap-2 text-sm">
         <input

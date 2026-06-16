@@ -26,6 +26,7 @@ import {
 } from "@/services/globalConfigurationService";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { ConfigEditorDialog } from "@/areas/config/ConfigActionDialogs";
 import Toast from "@/units/shared/ui/Toast";
 
 const emptyCentre = "__centre__";
@@ -110,6 +111,7 @@ export default function UsersRoles() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userEditorOpen, setUserEditorOpen] = useState(false);
@@ -279,6 +281,7 @@ export default function UsersRoles() {
       isActive: role.isActive,
       permissionKeys: [...role.permissionKeys],
     });
+    setEditorError(null);
     setRoleEditorOpen(true);
   };
 
@@ -304,12 +307,14 @@ export default function UsersRoles() {
           }))
         : [emptyAssignment()],
     );
+    setEditorError(null);
     setUserEditorOpen(true);
   };
 
   const resetRoleForm = () => {
     setEditingRoleId(null);
     setRoleForm(emptyRoleForm());
+    setEditorError(null);
     setRoleEditorOpen(false);
   };
 
@@ -317,11 +322,12 @@ export default function UsersRoles() {
     setEditingUserId(null);
     setUserForm(emptyUserForm());
     setAssignments([emptyAssignment()]);
+    setEditorError(null);
     setUserEditorOpen(false);
   };
 
-  const startUserCreate = () => { setEditingUserId(null); setUserForm(emptyUserForm()); setAssignments([emptyAssignment()]); setUserEditorOpen(true); };
-  const startRoleCreate = () => { setEditingRoleId(null); setRoleForm(emptyRoleForm()); setRoleEditorOpen(true); };
+  const startUserCreate = () => { setEditingUserId(null); setUserForm(emptyUserForm()); setAssignments([emptyAssignment()]); setEditorError(null); setUserEditorOpen(true); };
+  const startRoleCreate = () => { setEditingRoleId(null); setRoleForm(emptyRoleForm()); setEditorError(null); setRoleEditorOpen(true); };
 
   const submitRole = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -353,11 +359,12 @@ export default function UsersRoles() {
     try {
       setError(null);
       let userId = editingUserId;
+      const payload = { ...userForm, manageKeycloak: true };
 
       if (editingUserId) {
-        await globalConfigurationService.updateUser(accessToken, editingUserId, userForm);
+        await globalConfigurationService.updateUser(accessToken, editingUserId, payload);
       } else {
-        const created = await globalConfigurationService.createUser(accessToken, userForm);
+        const created = await globalConfigurationService.createUser(accessToken, payload);
         userId = created.userId;
         setSelectedUserId(created.userId);
       }
@@ -396,14 +403,14 @@ export default function UsersRoles() {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       await globalConfigurationService.archiveUser(accessToken, user.userId);
       if (editingUserId === user.userId) resetUserForm();
       if (selectedUserId === user.userId) setSelectedUserId(null);
       await loadData();
       setToast(text("config.users_roles.toast.user_removed", "User removed."));
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -415,13 +422,13 @@ export default function UsersRoles() {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       await globalConfigurationService.archiveRole(accessToken, role.roleId);
       if (editingRoleId === role.roleId) resetRoleForm();
       await loadData();
       setToast(text("config.users_roles.toast.role_removed", "Role removed."));
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -583,7 +590,18 @@ export default function UsersRoles() {
                   </div>
                 </div>
 
-                {userEditorOpen && <form onSubmit={submitUser} className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                <ConfigEditorDialog
+                  open={userEditorOpen}
+                  onClose={resetUserForm}
+                  closeLabel={text("config.actions.close", "Close")}
+                  title={editingUserId ? text("config.users_roles.users.edit", "Edit user") : text("config.users_roles.users.create", "Create user")}
+                >
+                <form onSubmit={submitUser} className="space-y-6">
+                  {editorError && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {editorError}
+                    </div>
+                  )}
                   <div className="mb-6 flex items-center justify-between gap-4">
                     <div>
                       <h2 className="text-2xl font-semibold text-gray-900">
@@ -805,7 +823,8 @@ export default function UsersRoles() {
                       {text("config.users_roles.users.clear", "Clear")}
                     </button>
                   </div>
-                </form>}
+                </form>
+                </ConfigEditorDialog>
               </section>
 
               <section className="space-y-6">
@@ -892,7 +911,18 @@ export default function UsersRoles() {
                   </div>
                 </div>
 
-                {roleEditorOpen && <form onSubmit={submitRole} className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                <ConfigEditorDialog
+                  open={roleEditorOpen}
+                  onClose={resetRoleForm}
+                  closeLabel={text("config.actions.close", "Close")}
+                  title={editingRoleId ? text("config.users_roles.roles.edit", "Edit role") : text("config.users_roles.roles.create", "Create role")}
+                >
+                <form onSubmit={submitRole} className="space-y-6">
+                  {editorError && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {editorError}
+                    </div>
+                  )}
                   <div className="mb-5 flex items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-semibold text-gray-900">
@@ -987,7 +1017,8 @@ export default function UsersRoles() {
                       {editingRoleId ? text("config.users_roles.roles.save_button", "Save role") : text("config.users_roles.roles.create_button", "Create role")}
                     </button>
                   </div>
-                </form>}
+                </form>
+                </ConfigEditorDialog>
               </section>
             </div>
           )}

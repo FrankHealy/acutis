@@ -59,10 +59,12 @@ public interface IGlobalConfigurationService
 public sealed class GlobalConfigurationService : IGlobalConfigurationService
 {
     private readonly AcutisDbContext _dbContext;
+    private readonly IKeycloakAdminService _keycloakAdminService;
 
-    public GlobalConfigurationService(AcutisDbContext dbContext)
+    public GlobalConfigurationService(AcutisDbContext dbContext, IKeycloakAdminService keycloakAdminService)
     {
         _dbContext = dbContext;
+        _keycloakAdminService = keycloakAdminService;
     }
 
     public async Task<IReadOnlyList<CentreConfigurationDto>> GetCentresAsync(
@@ -1252,16 +1254,17 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
     public async Task<AppUserDto> CreateUserAsync(UpsertAppUserRequest request, CancellationToken cancellationToken = default)
     {
         ValidateUserRequest(request);
-        if (await _dbContext.AppUsers.AnyAsync(x => x.ExternalSubject == request.ExternalSubject.Trim(), cancellationToken))
+        var subject = await ResolveExternalSubjectAsync(request, null, cancellationToken);
+        if (await _dbContext.AppUsers.AnyAsync(x => x.ExternalSubject == subject, cancellationToken))
         {
-            throw new ArgumentException($"A user with subject '{request.ExternalSubject}' already exists.", nameof(request));
+            throw new ArgumentException($"A user with subject '{subject}' already exists.", nameof(request));
         }
 
         var now = DateTime.UtcNow;
         var user = new Acutis.Domain.Entities.AppUser
         {
             Id = Guid.NewGuid(),
-            ExternalSubject = request.ExternalSubject.Trim(),
+            ExternalSubject = subject,
             UserName = request.UserName.Trim(),
             DisplayName = request.DisplayName.Trim(),
             Email = request.Email.Trim(),
@@ -1281,7 +1284,7 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         var user = await _dbContext.AppUsers.FirstOrDefaultAsync(x => x.Id == userId, cancellationToken)
             ?? throw new KeyNotFoundException($"User '{userId}' was not found.");
 
-        var subject = request.ExternalSubject.Trim();
+        var subject = await ResolveExternalSubjectAsync(request, user.ExternalSubject, cancellationToken);
         if (await _dbContext.AppUsers.AnyAsync(x => x.Id != userId && x.ExternalSubject == subject, cancellationToken))
         {
             throw new ArgumentException($"A user with subject '{subject}' already exists.", nameof(request));
@@ -1298,13 +1301,62 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
         return await LoadUserAsync(user.Id, cancellationToken);
     }
 
+    private async Task<string> ResolveExternalSubjectAsync(
+        UpsertAppUserRequest request,
+        string? currentSubject,
+        CancellationToken cancellationToken)
+    {
+        if (!request.ManageKeycloak)
+        {
+            var subject = request.ExternalSubject.Trim();
+            if (string.IsNullOrWhiteSpace(subject))
+            {
+                throw new ArgumentException("User subject is required unless Keycloak management is enabled.", nameof(request));
+            }
+
+            return subject;
+        }
+
+        if (!_keycloakAdminService.IsEnabled)
+        {
+            throw new InvalidOperationException("Keycloak management was requested but Keycloak admin integration is not configured.");
+        }
+
+        var keycloakRequest = new KeycloakUserUpsertRequest(
+            request.UserName.Trim(),
+            request.DisplayName.Trim(),
+            request.Email.Trim(),
+            request.IsActive,
+            request.TemporaryPassword.Trim());
+
+        KeycloakUserRecord keycloakUser;
+        if (!string.IsNullOrWhiteSpace(currentSubject))
+        {
+            keycloakUser = await _keycloakAdminService.UpdateUserAsync(currentSubject, keycloakRequest, cancellationToken);
+        }
+        else if (!string.IsNullOrWhiteSpace(request.ExternalSubject))
+        {
+            keycloakUser = await _keycloakAdminService.UpdateUserAsync(request.ExternalSubject.Trim(), keycloakRequest, cancellationToken);
+        }
+        else
+        {
+            keycloakUser = await _keycloakAdminService.EnsureUserAsync(keycloakRequest, cancellationToken);
+        }
+
+        if (string.IsNullOrWhiteSpace(keycloakUser.Id))
+        {
+            throw new InvalidOperationException("Keycloak did not return a user subject.");
+        }
+
+        return keycloakUser.Id;
+    }
+
     public async Task<IReadOnlyList<AppUserRoleAssignmentDto>> ReplaceUserAssignmentsAsync(
         Guid userId,
         ReplaceUserRoleAssignmentsRequest request,
         CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.AppUsers
-            .Include(x => x.RoleAssignments)
             .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken)
             ?? throw new KeyNotFoundException($"User '{userId}' was not found.");
 
@@ -1371,14 +1423,16 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
             }
         }
 
-        _dbContext.AppUserRoleAssignments.RemoveRange(user.RoleAssignments);
-        user.RoleAssignments.Clear();
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         var now = DateTime.UtcNow;
+        await _dbContext.AppUserRoleAssignments
+            .Where(x => x.AppUserId == user.Id)
+            .ExecuteDeleteAsync(cancellationToken);
 
         foreach (var assignment in normalizedAssignments
                      .DistinctBy(x => new { x.RoleId, x.ScopeType, x.CentreId, x.UnitId }))
         {
-            user.RoleAssignments.Add(new Acutis.Domain.Entities.AppUserRoleAssignment
+            _dbContext.AppUserRoleAssignments.Add(new Acutis.Domain.Entities.AppUserRoleAssignment
             {
                 Id = Guid.NewGuid(),
                 AppUserId = user.Id,
@@ -1394,6 +1448,8 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
 
         user.UpdatedAtUtc = now;
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
         var updatedUser = await LoadUserAsync(user.Id, cancellationToken);
         return updatedUser.Assignments;
     }
@@ -2092,11 +2148,10 @@ public sealed class GlobalConfigurationService : IGlobalConfigurationService
 
     private static void ValidateUserRequest(UpsertAppUserRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.ExternalSubject) ||
-            string.IsNullOrWhiteSpace(request.UserName) ||
+        if (string.IsNullOrWhiteSpace(request.UserName) ||
             string.IsNullOrWhiteSpace(request.DisplayName))
         {
-            throw new ArgumentException("User subject, username, and display name are required.", nameof(request));
+            throw new ArgumentException("Username and display name are required.", nameof(request));
         }
     }
 

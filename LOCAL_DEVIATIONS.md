@@ -51,7 +51,7 @@ Affected documentation:
 Current behavior:
 - The recommended local API startup path for the Codex sandbox is to run the built executable directly instead of relying on `dotnet run`.
 - The documented command sets:
-  - `ASPNETCORE_URLS=http://localhost:5009`
+  - `ASPNETCORE_URLS=http://localhost:5010`
   - `ASPNETCORE_ENVIRONMENT=Development`
 - It then launches:
   - `acutis.api/Acutis.Api/bin/Debug/net8.0/Acutis.Api.exe`

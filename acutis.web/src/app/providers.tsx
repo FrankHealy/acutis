@@ -9,7 +9,7 @@ import { ThemeProvider } from "@/areas/shared/theme/ThemeProvider";
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={4 * 60} refetchOnWindowFocus>
       <LocalizationProvider>
         <ThemeProvider>
           <BrowserBrandingSync />

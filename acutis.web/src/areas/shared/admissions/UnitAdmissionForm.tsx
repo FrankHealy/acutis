@@ -470,13 +470,21 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   }
 
   if (error) {
+    const isAuthenticationError = /Request failed \(401\)/i.test(error);
+    const isMissingFormError = /Request failed \(404\)/i.test(error);
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-amber-900">{text("admission.page.header", "{unitName} Admission", { unitName })}</h2>
-        <p className="mt-2 text-sm text-amber-800">{error}</p>
-        <p className="mt-2 text-xs text-amber-700">
-          {text("admission.configure_activate", "Configure or activate {formCode} in the forms generator.", { formCode: admissionFormCode })}
+        <p className="mt-2 text-sm text-amber-800">
+          {isAuthenticationError
+            ? text("admission.session_expired", "Session expired. Please sign in again.")
+            : error}
         </p>
+        {isMissingFormError && (
+          <p className="mt-2 text-xs text-amber-700">
+            {text("admission.configure_activate", "Configure or activate {formCode} in the forms generator.", { formCode: admissionFormCode })}
+          </p>
+        )}
       </div>
     );
   }

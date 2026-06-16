@@ -1,0 +1,59 @@
+:root {
+  --acutis-green: #147d64;
+  --acutis-green-dark: #0d5f4c;
+  --acutis-ink: #18312b;
+  --acutis-muted: #5e716c;
+}
+
+body,
+.pf-v5-c-login {
+  background: linear-gradient(145deg, #f2faf7 0%, #ffffff 52%, #e8f4f0 100%);
+  color: var(--acutis-ink);
+}
+
+.pf-v5-c-login__main {
+  border: 1px solid #cfe3dc;
+  border-radius: 16px;
+  box-shadow: 0 18px 48px rgb(24 49 43 / 12%);
+  overflow: hidden;
+}
+
+.pf-v5-c-login__main::before {
+  background: #ffffff url("../img/acutis-logo.svg") center / min(310px, 78%) auto no-repeat;
+  content: "";
+  display: block;
+  height: 112px;
+}
+
+.pf-v5-c-title,
+.pf-v5-c-form__label-text {
+  color: var(--acutis-ink);
+}
+
+.pf-v5-c-button.pf-m-primary {
+  background: var(--acutis-green);
+  border-radius: 8px;
+}
+
+.pf-v5-c-button.pf-m-primary:hover,
+.pf-v5-c-button.pf-m-primary:focus-visible {
+  background: var(--acutis-green-dark);
+}
+
+.pf-v5-c-form-control {
+  border-radius: 8px;
+}
+
+.pf-v5-c-alert {
+  border-radius: 8px;
+}
+
+.pf-v5-c-alert.pf-m-danger,
+.pf-v5-c-helper-text__item-text.pf-m-error {
+  color: #9f2d2d;
+}
+
+.pf-v5-c-login__main-footer-band,
+.pf-v5-c-login__main-footer-links-item-link {
+  color: var(--acutis-muted);
+}

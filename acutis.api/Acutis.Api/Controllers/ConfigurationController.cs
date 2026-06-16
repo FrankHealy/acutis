@@ -635,6 +635,10 @@ public sealed class ConfigurationController : ControllerBase
         {
             return new BadRequestObjectResult(exception.Message);
         }
+        catch (InvalidOperationException exception)
+        {
+            return new BadRequestObjectResult(exception.Message);
+        }
         catch (KeyNotFoundException exception)
         {
             return new NotFoundObjectResult(exception.Message);
@@ -648,6 +652,10 @@ public sealed class ConfigurationController : ControllerBase
             return await action();
         }
         catch (ArgumentException exception)
+        {
+            return BadRequest(exception.Message);
+        }
+        catch (InvalidOperationException exception)
         {
             return BadRequest(exception.Message);
         }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, MessageSquareText, PencilLine, Plus, Save, Timer, Trash2 } from "lucide-react";
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
+import { ConfigEditorDialog } from "@/areas/config/ConfigActionDialogs";
 import Toast from "@/units/shared/ui/Toast";
 import { isAuthorizationDisabled } from "@/lib/authMode";
 import {
@@ -66,6 +67,7 @@ export default function GroupTherapyConfigAdmin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
   const [configEditorOpen, setConfigEditorOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -143,17 +145,19 @@ export default function GroupTherapyConfigAdmin() {
   const resetThemeForm = () => {
     setEditingThemeId(null);
     setThemeForm(emptyThemeForm);
+    setEditorError(null);
     setThemeEditorOpen(false);
   };
 
   const resetConfigForm = () => {
     setEditingConfigId(null);
     setConfigForm(emptyConfigForm);
+    setEditorError(null);
     setConfigEditorOpen(false);
   };
 
-  const startCreateTheme = () => { setEditingThemeId(null); setThemeForm(emptyThemeForm); setThemeEditorOpen(true); };
-  const startCreateConfig = () => { setEditingConfigId(null); setConfigForm(emptyConfigForm); setConfigEditorOpen(true); };
+  const startCreateTheme = () => { setEditingThemeId(null); setThemeForm(emptyThemeForm); setEditorError(null); setThemeEditorOpen(true); };
+  const startCreateConfig = () => { setEditingConfigId(null); setConfigForm(emptyConfigForm); setEditorError(null); setConfigEditorOpen(true); };
 
   const startEditTheme = (theme: GroupTherapyConversationThemeConfigurationDto) => {
     setEditingThemeId(theme.conversationThemeId);
@@ -166,6 +170,7 @@ export default function GroupTherapyConfigAdmin() {
       sortOrder: theme.sortOrder,
       isActive: theme.isActive,
     });
+    setEditorError(null);
     setThemeEditorOpen(true);
   };
 
@@ -182,6 +187,7 @@ export default function GroupTherapyConfigAdmin() {
       sortOrder: config.sortOrder,
       isActive: config.isActive,
     });
+    setEditorError(null);
     setConfigEditorOpen(true);
   };
 
@@ -193,7 +199,7 @@ export default function GroupTherapyConfigAdmin() {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       const payload: UpsertGroupTherapyConversationThemeRequest = {
         ...themeForm,
         unitCode: themeForm.unitCode.trim(),
@@ -213,7 +219,7 @@ export default function GroupTherapyConfigAdmin() {
       await loadAll();
       setToast("Conversation theme saved.");
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -227,7 +233,7 @@ export default function GroupTherapyConfigAdmin() {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       const payload: UpsertGroupTherapyFacilitationConfigRequest = {
         ...configForm,
         unitCode: configForm.unitCode.trim(),
@@ -248,7 +254,7 @@ export default function GroupTherapyConfigAdmin() {
       await loadAll();
       setToast("Timing profile saved.");
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -525,17 +531,25 @@ export default function GroupTherapyConfigAdmin() {
           </section>
         </div>
 
-        {(themeEditorOpen || configEditorOpen) && <div className="grid gap-6 xl:grid-cols-2">
-          {themeEditorOpen && <section className="app-card rounded-xl p-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingThemeId ? "Edit Theme" : "Create Theme"}</h2>
-              {editingThemeId && (
-                <button type="button" onClick={resetThemeForm} className="text-sm font-semibold text-[var(--app-primary)]">
-                  Clear
-                </button>
-              )}
-            </div>
+        <ConfigEditorDialog
+          open={themeEditorOpen}
+          onClose={resetThemeForm}
+          closeLabel="Close"
+          title={editingThemeId ? "Edit Theme" : "Create Theme"}
+        >
             <form onSubmit={submitTheme} className="space-y-4">
+              {editorError && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {editorError}
+                </div>
+              )}
+              {editingThemeId && (
+                <div className="flex justify-end">
+                  <button type="button" onClick={resetThemeForm} className="text-sm font-semibold text-[var(--app-primary)]">
+                    Clear
+                  </button>
+                </div>
+              )}
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-1 text-sm text-[var(--app-text)]">
                   <span>Unit code</span>
@@ -611,18 +625,27 @@ export default function GroupTherapyConfigAdmin() {
                 {editingThemeId ? "Save theme" : "Create theme"}
               </button>
             </form>
-          </section>}
+        </ConfigEditorDialog>
 
-          {configEditorOpen && <section className="app-card rounded-xl p-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingConfigId ? "Edit Timing Profile" : "Create Timing Profile"}</h2>
-              {editingConfigId && (
-                <button type="button" onClick={resetConfigForm} className="text-sm font-semibold text-[var(--app-primary)]">
-                  Clear
-                </button>
-              )}
-            </div>
+        <ConfigEditorDialog
+          open={configEditorOpen}
+          onClose={resetConfigForm}
+          closeLabel="Close"
+          title={editingConfigId ? "Edit Timing Profile" : "Create Timing Profile"}
+        >
             <form onSubmit={submitConfig} className="space-y-4">
+              {editorError && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {editorError}
+                </div>
+              )}
+              {editingConfigId && (
+                <div className="flex justify-end">
+                  <button type="button" onClick={resetConfigForm} className="text-sm font-semibold text-[var(--app-primary)]">
+                    Clear
+                  </button>
+                </div>
+              )}
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-1 text-sm text-[var(--app-text)]">
                   <span>Unit code</span>
@@ -736,8 +759,7 @@ export default function GroupTherapyConfigAdmin() {
                 {editingConfigId ? "Save profile" : "Create profile"}
               </button>
             </form>
-          </section>}
-        </div>}
+        </ConfigEditorDialog>
         <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} />
       </div>
     </SuperAdminGuard>

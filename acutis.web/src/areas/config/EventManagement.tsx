@@ -73,6 +73,7 @@ const EventManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ScheduleTemplateDto | null>(null);
@@ -144,12 +145,14 @@ const EventManagement: React.FC = () => {
   const resetTemplateForm = () => {
     setEditingTemplateId(null);
     setTemplateForm(emptyTemplateForm);
+    setEditorError(null);
     setEditorOpen(false);
   };
 
   const startCreateTemplate = () => {
     setEditingTemplateId(null);
     setTemplateForm(emptyTemplateForm);
+    setEditorError(null);
     setEditorOpen(true);
   };
 
@@ -177,6 +180,7 @@ const EventManagement: React.FC = () => {
       externalResourceName: template.externalResourceName,
       isActive: template.isActive,
     });
+    setEditorError(null);
     setEditorOpen(true);
   };
 
@@ -188,7 +192,7 @@ const EventManagement: React.FC = () => {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       const payload: UpsertScheduleTemplateRequest = {
         ...templateForm,
         unitId: templateForm.unitId || null,
@@ -216,7 +220,7 @@ const EventManagement: React.FC = () => {
       await loadConfiguration();
       setToast(wasEditing ? text("config.events.toast.updated", "Event updated.") : text("config.events.toast.created", "Event created."));
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -351,6 +355,7 @@ const EventManagement: React.FC = () => {
 
               <ConfigEditorDialog open={editorOpen} onClose={resetTemplateForm} closeLabel={text("config.actions.close", "Close")} title={editingTemplateId ? text("config.events.form.edit_title", "Edit event") : text("config.events.form.create_title", "Create event")}>
               <form onSubmit={submitTemplate} className="space-y-4">
+                {editorError && <div className="rounded-xl border border-[var(--app-danger)]/30 bg-[var(--app-danger)]/10 px-4 py-3 text-sm text-[var(--app-danger)]">{editorError}</div>}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="space-y-1 text-sm text-[var(--app-text)]">
                     <span>Centre</span>

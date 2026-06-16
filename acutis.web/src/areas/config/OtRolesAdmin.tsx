@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
+import { ConfigEditorDialog } from "@/areas/config/ConfigActionDialogs";
 import {
   globalConfigurationService,
   type CentreConfigurationDto,
@@ -86,6 +87,7 @@ export default function OtRolesAdmin() {
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [form, setForm] = useState<UpsertOtRoleDefinitionRequest>(emptyForm);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -159,10 +161,11 @@ export default function OtRolesAdmin() {
   const resetForm = () => {
     setEditingRoleId(null);
     setForm(emptyForm);
+    setEditorError(null);
     setEditorOpen(false);
   };
 
-  const startCreate = () => { setEditingRoleId(null); setForm(emptyForm); setEditorOpen(true); };
+  const startCreate = () => { setEditingRoleId(null); setForm(emptyForm); setEditorError(null); setEditorOpen(true); };
 
   const loadAll = async () => {
     if (!accessToken && !isAuthorizationDisabled) {
@@ -202,6 +205,7 @@ export default function OtRolesAdmin() {
       displayOrder: role.displayOrder,
       isActive: role.isActive,
     });
+    setEditorError(null);
     setEditorOpen(true);
   };
 
@@ -213,7 +217,7 @@ export default function OtRolesAdmin() {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       const payload: UpsertOtRoleDefinitionRequest = {
         ...form,
         unitId: form.unitId || null,
@@ -233,7 +237,7 @@ export default function OtRolesAdmin() {
       await loadAll();
       setToast(text("config.ot_roles.toast.saved", "OT role saved."));
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -576,7 +580,13 @@ export default function OtRolesAdmin() {
               )}
             </section>
 
-            {editorOpen && <section className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+            <ConfigEditorDialog
+              open={editorOpen}
+              onClose={resetForm}
+              closeLabel="Close"
+              title={editingRoleId ? "Edit OT role" : "Create OT role"}
+            >
+            <section className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">
@@ -598,6 +608,11 @@ export default function OtRolesAdmin() {
               </div>
 
               <form onSubmit={submitRole} className="space-y-5">
+                {editorError && (
+                  <div className="rounded-2xl border border-rose-300 bg-rose-950/50 px-4 py-3 text-sm text-rose-100">
+                    {editorError}
+                  </div>
+                )}
                 <div className="grid gap-4">
                   <label className="space-y-1 text-sm text-slate-200">
                     <span>Centre</span>
@@ -769,7 +784,8 @@ export default function OtRolesAdmin() {
                   {editingRoleId ? "Save OT role" : "Create OT role"}
                 </button>
               </form>
-            </section>}
+            </section>
+            </ConfigEditorDialog>
           </div>
         </main>
         <Toast open={Boolean(toast)} message={toast ?? ""} type="success" onClose={() => setToast(null)} closeLabel={text("config.toast.close", "Close")} />

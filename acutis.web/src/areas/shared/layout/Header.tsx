@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, Pill, Shield, Venus, Wine } from 'lucide-react';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
 import { getScreeningControl } from '@/areas/screening/services/screeningControlService';
 import { isAuthorizationDisabled, isAuthorizedClient } from '@/lib/authMode';
@@ -13,6 +13,7 @@ import { availableThemes, useTheme } from '@/areas/shared/theme/ThemeProvider';
 import { DEFAULT_THEME_KEY, type ThemeKey } from '@/areas/shared/theme/themeSystem';
 import { useAppAccess } from '@/areas/shared/hooks/useAppAccess';
 import { staffRosterService, type UnitStaffRosterShiftDto } from '@/services/staffRosterService';
+import { logoutFromAcutis } from '@/lib/logout';
 
 const THEME_MANAGE_PERMISSION = 'theme.manage';
 
@@ -414,22 +415,7 @@ const Header: React.FC<HeaderProps> = ({
                       <button
                         type="button"
                         role="menuitem"
-                        onClick={async () => {
-                          await signOut({ redirect: false });
-                          const issuer = session?.issuer;
-                          const idToken = session?.idToken;
-                          if (issuer && idToken) {
-                            const logoutUrl = new URL(`${issuer}/protocol/openid-connect/logout`);
-                            logoutUrl.searchParams.set('id_token_hint', idToken);
-                            logoutUrl.searchParams.set(
-                              'post_logout_redirect_uri',
-                              `${window.location.origin}/api/auth/signin`
-                            );
-                            window.location.href = logoutUrl.toString();
-                            return;
-                          }
-                          signIn('keycloak', { prompt: 'login' });
-                        }}
+                        onClick={() => void logoutFromAcutis(session)}
                         className="w-full px-4 py-2 text-left text-sm text-[var(--app-danger)] hover:bg-[var(--app-surface-muted)]"
                       >
                         {text('header.logout', 'Log out')}

@@ -17,7 +17,7 @@ Reliable workaround:
 Working command:
 
 ```powershell
-$env:ASPNETCORE_URLS='http://localhost:5009'
+$env:ASPNETCORE_URLS='http://localhost:5010'
 $env:ASPNETCORE_ENVIRONMENT='Development'
 Start-Process -FilePath 'C:\Acutis\acutis.api\Acutis.Api\bin\Debug\net8.0\Acutis.Api.exe' `
   -WorkingDirectory 'C:\Acutis\acutis.api\Acutis.Api\bin\Debug\net8.0'
@@ -26,7 +26,7 @@ Start-Process -FilePath 'C:\Acutis\acutis.api\Acutis.Api\bin\Debug\net8.0\Acutis
 Verification:
 
 ```powershell
-Invoke-WebRequest -UseBasicParsing http://localhost:5009/swagger
+Invoke-WebRequest -UseBasicParsing http://localhost:5010/swagger
 ```
 
 Expected result:

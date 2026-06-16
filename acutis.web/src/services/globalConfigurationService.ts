@@ -332,7 +332,9 @@ export type UpsertAppUserRequest = {
   userName: string;
   displayName: string;
   email: string;
+  temporaryPassword?: string;
   isActive: boolean;
+  manageKeycloak: boolean;
 };
 
 export type UpsertUserRoleAssignmentItem = {
@@ -620,6 +622,11 @@ export const globalConfigurationService = {
     return request<AppUserDto>(`/api/configuration/users/${encodeURIComponent(userId)}`, accessToken, {
       method: "PUT",
       body: JSON.stringify(payload),
+    });
+  },
+  archiveUser(accessToken: string | undefined, userId: string) {
+    return request<void>(`/api/configuration/users/${encodeURIComponent(userId)}`, accessToken, {
+      method: "DELETE",
     });
   },
   replaceUserAssignments(

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "rm -rf .next/standalone/.next/static .next/standalone/public && mkdir -p .next/standalone/.next && cp -a .next/static .next/standalone/.next/static && cp -a public .next/standalone/public",
     "start": "next start",
     "lint": "node .\\node_modules\\eslint\\bin\\eslint.js --cache --cache-location .eslintcache src"
   },

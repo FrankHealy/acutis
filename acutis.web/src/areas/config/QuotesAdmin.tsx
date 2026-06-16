@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { quoteService, type QuoteRecord, type UnitQuoteCuration } from "@/services/quoteService";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
+import { ConfigEditorDialog } from "@/areas/config/ConfigActionDialogs";
 import { isAuthorizedClient } from "@/lib/authMode";
 import Toast from "@/units/shared/ui/Toast";
 
@@ -33,6 +34,7 @@ export default function QuotesAdmin() {
   const [filterLanguage, setFilterLanguage] = useState("");
   const [filterTag, setFilterTag] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -139,7 +141,7 @@ export default function QuotesAdmin() {
   const submitQuote = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      setError(null);
+      setEditorError(null);
       const payload = {
         ...form,
         tags: form.tags.filter(Boolean),
@@ -149,14 +151,19 @@ export default function QuotesAdmin() {
       } else {
         await quoteService.createQuote(payload, session?.accessToken);
       }
-      setForm(emptyQuote);
-      setEditingId(null);
       setQuotes(await fetchQuotes());
-      setEditorOpen(false);
+      resetEditor();
       setToast(text("quotes.toast.saved", "Quote saved."));
     } catch (e) {
-      setError((e as Error).message);
+      setEditorError((e as Error).message);
     }
+  };
+
+  const resetEditor = () => {
+    setEditingId(null);
+    setForm(emptyQuote);
+    setEditorError(null);
+    setEditorOpen(false);
   };
 
   const startEdit = (quote: QuoteRecord) => {
@@ -171,10 +178,11 @@ export default function QuotesAdmin() {
       tags: quote.tags,
       isActive: quote.isActive,
     });
+    setEditorError(null);
     setEditorOpen(true);
   };
 
-  const startCreate = () => { setEditingId(null); setForm(emptyQuote); setEditorOpen(true); };
+  const startCreate = () => { setEditingId(null); setForm(emptyQuote); setEditorError(null); setEditorOpen(true); };
 
   const deleteQuote = async (quote: QuoteRecord) => {
     if (!window.confirm(text("quotes.confirm_delete", `Delete the quote attributed to ${quote.attribution}?`))) return;
@@ -239,8 +247,9 @@ export default function QuotesAdmin() {
         <button className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">{text("quotes.search", "Search")}</button>
       </form>
 
-      {editorOpen && <form onSubmit={submitQuote} className="app-card rounded-xl p-6 space-y-3">
-        <h3 className="text-lg font-semibold text-gray-900">{editingId ? text("quotes.edit", "Edit Quote") : text("quotes.add", "Add Quote")}</h3>
+      <ConfigEditorDialog open={editorOpen} onClose={resetEditor} closeLabel={text("quotes.cancel", "Cancel")} title={editingId ? text("quotes.edit", "Edit Quote") : text("quotes.add", "Add Quote")}>
+      <form onSubmit={submitQuote} className="space-y-3">
+        {editorError && <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{editorError}</p>}
         <textarea value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} placeholder={text("quotes.text", "Quote text")} className="w-full rounded border px-3 py-2 text-sm" rows={3} />
         <div className="grid gap-3 md:grid-cols-2">
           <input value={form.attribution} onChange={(e) => setForm({ ...form, attribution: e.target.value })} placeholder={text("quotes.attribution", "Attribution")} className="rounded border px-3 py-2 text-sm" />
@@ -259,12 +268,13 @@ export default function QuotesAdmin() {
         <div className="flex gap-2">
           <button className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">{editingId ? text("quotes.save", "Save Quote") : text("quotes.create", "Create Quote")}</button>
           {editingId && (
-            <button type="button" onClick={() => { setEditingId(null); setForm(emptyQuote); setEditorOpen(false); }} className="rounded border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+            <button type="button" onClick={resetEditor} className="rounded border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
               {text("quotes.cancel", "Cancel")}
             </button>
           )}
         </div>
-      </form>}
+      </form>
+      </ConfigEditorDialog>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between gap-4"><h3 className="text-lg font-semibold text-gray-900">{text("quotes.list_title", "Quotes")}</h3><button type="button" onClick={startCreate} className="app-primary-button rounded-lg px-4 py-2 text-sm font-semibold">{text("config.actions.add_new", "Add New")}</button></div>

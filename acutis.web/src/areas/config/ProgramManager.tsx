@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { ArrowLeft, CalendarClock, ClipboardCheck, PencilLine, Plus, Save, Trash2 } from "lucide-react";
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
 import { isAuthorizationDisabled } from "@/lib/authMode";
+import { ConfigEditorDialog } from "@/areas/config/ConfigActionDialogs";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 import Toast from "@/units/shared/ui/Toast";
 import {
@@ -111,6 +112,7 @@ const ProgramManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const [editingProgrammeId, setEditingProgrammeId] = useState<string | null>(null);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [editingOccurrenceId, setEditingOccurrenceId] = useState<string | null>(null);
@@ -193,24 +195,27 @@ const ProgramManager: React.FC = () => {
   const resetProgrammeForm = () => {
     setEditingProgrammeId(null);
     setProgrammeForm(emptyProgrammeForm);
+    setEditorError(null);
     setProgrammeEditorOpen(false);
   };
 
   const resetTemplateForm = () => {
     setEditingTemplateId(null);
     setTemplateForm(emptyTemplateForm);
+    setEditorError(null);
     setTemplateEditorOpen(false);
   };
 
   const resetOccurrenceForm = () => {
     setEditingOccurrenceId(null);
     setOccurrenceForm({ ...emptyOccurrenceForm, scheduledDate: todayIso });
+    setEditorError(null);
     setOccurrenceEditorOpen(false);
   };
 
-  const startCreateProgramme = () => { setEditingProgrammeId(null); setProgrammeForm(emptyProgrammeForm); setProgrammeEditorOpen(true); };
-  const startCreateTemplate = () => { setEditingTemplateId(null); setTemplateForm(emptyTemplateForm); setTemplateEditorOpen(true); };
-  const startCreateOccurrence = () => { setEditingOccurrenceId(null); setOccurrenceForm({ ...emptyOccurrenceForm, scheduledDate: todayIso }); setOccurrenceEditorOpen(true); };
+  const startCreateProgramme = () => { setEditingProgrammeId(null); setProgrammeForm(emptyProgrammeForm); setEditorError(null); setProgrammeEditorOpen(true); };
+  const startCreateTemplate = () => { setEditingTemplateId(null); setTemplateForm(emptyTemplateForm); setEditorError(null); setTemplateEditorOpen(true); };
+  const startCreateOccurrence = () => { setEditingOccurrenceId(null); setOccurrenceForm({ ...emptyOccurrenceForm, scheduledDate: todayIso }); setEditorError(null); setOccurrenceEditorOpen(true); };
 
   const startEditProgramme = (programme: ProgrammeDefinitionDto) => {
     setEditingProgrammeId(programme.programmeDefinitionId);
@@ -227,6 +232,7 @@ const ProgramManager: React.FC = () => {
       mainPhaseDurationUnit: programme.mainPhaseDurationUnit || "Weeks",
       isActive: programme.isActive,
     });
+    setEditorError(null);
     setProgrammeEditorOpen(true);
   };
 
@@ -254,6 +260,7 @@ const ProgramManager: React.FC = () => {
       externalResourceName: template.externalResourceName,
       isActive: template.isActive,
     });
+    setEditorError(null);
     setTemplateEditorOpen(true);
   };
 
@@ -279,6 +286,7 @@ const ProgramManager: React.FC = () => {
       status: occurrence.status,
       notes: occurrence.notes,
     });
+    setEditorError(null);
     setOccurrenceEditorOpen(true);
   };
 
@@ -290,7 +298,7 @@ const ProgramManager: React.FC = () => {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       const payload = {
         ...programmeForm,
         detoxPhaseDurationUnit: programmeForm.detoxPhaseDurationValue ? programmeForm.detoxPhaseDurationUnit : "",
@@ -305,7 +313,7 @@ const ProgramManager: React.FC = () => {
       await loadConfiguration();
       setToast(text("config.programs.toast.saved", "Programme saved."));
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -319,7 +327,7 @@ const ProgramManager: React.FC = () => {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       const payload = {
         ...templateForm,
         unitId: templateForm.unitId || null,
@@ -344,7 +352,7 @@ const ProgramManager: React.FC = () => {
       await loadConfiguration();
       setToast(text("config.programs.toast.saved", "Template saved."));
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -358,7 +366,7 @@ const ProgramManager: React.FC = () => {
 
     setSaving(true);
     try {
-      setError(null);
+      setEditorError(null);
       const payload = {
         ...occurrenceForm,
         unitId: occurrenceForm.unitId || null,
@@ -375,7 +383,7 @@ const ProgramManager: React.FC = () => {
       await loadConfiguration();
       setToast(text("config.programs.toast.saved", "Occurrence saved."));
     } catch (nextError) {
-      setError((nextError as Error).message);
+      setEditorError((nextError as Error).message);
     } finally {
       setSaving(false);
     }
@@ -583,7 +591,18 @@ const ProgramManager: React.FC = () => {
                   </div>
                 </div>
 
-                {programmeEditorOpen && <form onSubmit={submitProgramme} className="app-card rounded-2xl p-6 space-y-4">
+                <ConfigEditorDialog
+                  open={programmeEditorOpen}
+                  onClose={resetProgrammeForm}
+                  closeLabel="Close"
+                  title={editingProgrammeId ? "Edit programme" : "Create programme"}
+                >
+                <form onSubmit={submitProgramme} className="space-y-4">
+                  {editorError && (
+                    <div className="rounded-lg border border-[var(--app-danger)]/30 bg-[var(--app-danger)]/10 px-4 py-3 text-sm text-[var(--app-danger)]">
+                      {editorError}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-[var(--app-text)]">
                       {editingProgrammeId ? "Edit programme" : "Create programme"}
@@ -655,7 +674,8 @@ const ProgramManager: React.FC = () => {
                     {editingProgrammeId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                     {editingProgrammeId ? "Save programme" : "Create programme"}
                   </button>
-                </form>}
+                </form>
+                </ConfigEditorDialog>
               </section>
 
               <section className="app-card rounded-2xl p-6">
@@ -734,7 +754,18 @@ const ProgramManager: React.FC = () => {
                   </div>
                 </div>
 
-                {templateEditorOpen && <form onSubmit={submitTemplate} className="app-card rounded-2xl p-6 space-y-4">
+                <ConfigEditorDialog
+                  open={templateEditorOpen}
+                  onClose={resetTemplateForm}
+                  closeLabel="Close"
+                  title={editingTemplateId ? "Edit template" : "Create template"}
+                >
+                <form onSubmit={submitTemplate} className="space-y-4">
+                  {editorError && (
+                    <div className="rounded-lg border border-[var(--app-danger)]/30 bg-[var(--app-danger)]/10 px-4 py-3 text-sm text-[var(--app-danger)]">
+                      {editorError}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingTemplateId ? "Edit template" : "Create template"}</h2>
                     {editingTemplateId && <button type="button" onClick={resetTemplateForm} className="text-sm font-semibold text-[var(--app-text-muted)]">Clear</button>}
@@ -875,7 +906,8 @@ const ProgramManager: React.FC = () => {
                     {editingTemplateId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                     {editingTemplateId ? "Save template" : "Create template"}
                   </button>
-                </form>}
+                </form>
+                </ConfigEditorDialog>
               </section>
 
               <section className="space-y-6">
@@ -920,7 +952,18 @@ const ProgramManager: React.FC = () => {
                   </div>
                 </div>
 
-                {occurrenceEditorOpen && <form onSubmit={submitOccurrence} className="app-card rounded-2xl p-6 space-y-4">
+                <ConfigEditorDialog
+                  open={occurrenceEditorOpen}
+                  onClose={resetOccurrenceForm}
+                  closeLabel="Close"
+                  title={editingOccurrenceId ? "Edit occurrence" : "Create occurrence"}
+                >
+                <form onSubmit={submitOccurrence} className="space-y-4">
+                  {editorError && (
+                    <div className="rounded-lg border border-[var(--app-danger)]/30 bg-[var(--app-danger)]/10 px-4 py-3 text-sm text-[var(--app-danger)]">
+                      {editorError}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-[var(--app-text)]">{editingOccurrenceId ? "Edit occurrence" : "Create occurrence"}</h2>
                     {editingOccurrenceId && <button type="button" onClick={resetOccurrenceForm} className="text-sm font-semibold text-[var(--app-text-muted)]">Clear</button>}
@@ -1031,7 +1074,8 @@ const ProgramManager: React.FC = () => {
                     {editingOccurrenceId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                     {editingOccurrenceId ? "Save occurrence" : "Create occurrence"}
                   </button>
-                </form>}
+                </form>
+                </ConfigEditorDialog>
               </section>
             </div>
           )}
