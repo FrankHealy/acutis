@@ -130,5 +130,6 @@ public sealed class UpsertAmbulatoryAppointmentRequest
     public DateTime StartsAtUtc { get; set; }
     public DateTime EndsAtUtc { get; set; }
     public string DeliveryMode { get; set; } = "in-person";
+    public string? Status { get; set; }
     public string? Notes { get; set; }
 }

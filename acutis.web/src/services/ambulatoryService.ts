@@ -122,6 +122,7 @@ export type UpsertAmbulatoryAppointmentRequest = {
   startsAtUtc: string;
   endsAtUtc: string;
   deliveryMode: "in-person" | "video";
+  status?: string;
   notes?: string;
 };
 

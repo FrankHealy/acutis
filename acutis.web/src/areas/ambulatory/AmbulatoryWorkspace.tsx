@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CalendarDays,
-  BriefcaseBusiness,
   ChevronLeft,
   ChevronRight,
+  CircleSlash,
   ClipboardCheck,
   Download,
   ExternalLink,
@@ -16,9 +16,12 @@ import {
   Lock,
   MapPin,
   Mic,
+  Mail,
   Minus,
+  Phone,
   Plus,
   RefreshCw,
+  Search,
   UserPlus,
   UserRound,
   Users,
@@ -32,9 +35,7 @@ import { useSectionDictation } from "@/features/voice/useSectionDictation";
 import {
   ambulatoryLocalConfigs,
   ambulatoryLocalTranslations,
-  type AmbulatoryIconKey,
   type AmbulatoryLocalConfig,
-  type AmbulatoryQuickLinkKey,
 } from "./ambulatoryConfig";
 import {
   ambulatoryService,
@@ -42,10 +43,10 @@ import {
   type AmbulatoryDashboard,
   type AmbulatoryParticipant,
   type AmbulatoryProgramme,
-  type AmbulatoryProgrammeOffering,
   type UpsertAmbulatoryAppointmentRequest,
 } from "@/services/ambulatoryService";
 import { JitsiSessionFrame } from "./JitsiSessionFrame";
+import groupTherapyTerms from "@/data/groupTherapyTerms.json";
 
 type AmbulatoryWorkspaceProps = {
   programme: AmbulatoryProgramme;
@@ -54,6 +55,7 @@ type AmbulatoryWorkspaceProps = {
 type DialogMode = "participant" | "assessment" | "care-plan" | "appointment" | "session" | null;
 type CalendarMode = "day" | "work-week" | "month";
 type AppointmentDraftDefaults = { startsAt: string; endsAt: string } | null;
+type ObservationTerm = { id: number; term: string; description: string; ratingId: number };
 
 const appointmentTypes = [
   { value: "individual-therapy", label: "One to One Therapy" },
@@ -61,21 +63,11 @@ const appointmentTypes = [
   { value: "initial-assessment", label: "Initial Assessment" },
   { value: "full-assessment", label: "Full Assessment" },
 ] as const;
+const observationTerms = (groupTherapyTerms as ObservationTerm[])
+  .filter((term) => term.ratingId <= 2)
+  .slice(0, 24);
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-const iconMap: Record<AmbulatoryIconKey, LucideIcon> = {
-  assessment: ClipboardCheck,
-  calendar: CalendarDays,
-  "care-plan": FileText,
-  location: MapPin,
-  meeting: Users,
-  participant: UserRound,
-  programme: BriefcaseBusiness,
-  report: FileText,
-  therapy: UserRound,
-  video: Video,
-};
 
 function startOfDay(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
@@ -180,6 +172,7 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [participantSearch, setParticipantSearch] = useState("");
   const [calendarMode, setCalendarMode] = useState<CalendarMode>(() => config.calendar.defaultMode === "month" || config.calendar.defaultMode === "day" ? config.calendar.defaultMode : "work-week");
   const [anchorDate, setAnchorDate] = useState(startOfDay(new Date()));
   const [appointmentDefaults, setAppointmentDefaults] = useState<AppointmentDraftDefaults>(null);
@@ -190,7 +183,19 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
 
   const participants = useMemo(() => dashboard?.participants ?? [], [dashboard?.participants]);
   const appointments = useMemo(() => dashboard?.appointments ?? [], [dashboard?.appointments]);
-  const offerings = useMemo(() => dashboard?.programmeOfferings ?? [], [dashboard?.programmeOfferings]);
+  const filteredParticipants = useMemo(() => {
+    const query = participantSearch.trim().toLowerCase();
+    if (!query) return participants;
+    return participants.filter((participant) => [
+      participant.displayName,
+      participant.preferredName,
+      participant.phone,
+      participant.email,
+      participant.referralSource,
+      participant.status,
+      participant.currentCarePlan?.status,
+    ].some((value) => value?.toLowerCase().includes(query)));
+  }, [participantSearch, participants]);
   const selectedParticipant = useMemo(
     () => participants.find((participant) => participant.id === selectedParticipantId) ?? participants[0] ?? null,
     [participants, selectedParticipantId],
@@ -240,7 +245,6 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
   };
 
   const todayAppointments = appointments.filter((appointment) => isSameDate(appointment.startsAtUtc, anchorDate));
-  const officeToday = todayAppointments.filter((appointment) => (locationFromNotes(appointment.notes) ?? "").toLowerCase().includes("office")).length;
   const outreachToday = todayAppointments.filter((appointment) => (locationFromNotes(appointment.notes) ?? "").toLowerCase().includes("shelter")).length;
   const reportsDueToday = todayAppointments.filter(hasReportDue).length;
   const clinicalDisplayName =
@@ -255,6 +259,7 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
     startsAtUtc: startsAt.toISOString(),
     endsAtUtc: endsAt.toISOString(),
     deliveryMode: appointment.deliveryMode === "video" ? "video" : "in-person",
+    status: appointment.status,
     notes: appointment.notes ?? "",
   });
 
@@ -289,6 +294,21 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
     const start = new Date(appointment.startsAtUtc);
     const nextDuration = Math.max(config.calendar.slotMinutes, durationInMinutes(appointment) + deltaMinutes);
     await updateAppointmentTime(appointment, start, addMinutesToDate(start, nextDuration));
+  };
+
+  const markAppointmentMissed = async (appointment: AmbulatoryAppointment) => {
+    if (appointment.status === "missed") return;
+
+    try {
+      setError(null);
+      await ambulatoryService.updateAppointment(programme, appointment.id, {
+        ...buildAppointmentPayload(appointment, new Date(appointment.startsAtUtc), new Date(appointment.endsAtUtc)),
+        status: "missed",
+      }, session?.accessToken);
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
 
   const createAppointmentAt = (day: Date, slotMinutes: number) => {
@@ -334,39 +354,9 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
     window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, "_blank", "noopener,noreferrer");
   };
 
-  const runQuickLink = (key: AmbulatoryQuickLinkKey) => {
-    if (key === "today") {
-      setAnchorDate(startOfDay(new Date()));
-      setCalendarMode("day");
-      return;
-    }
-    if (key === "new-appointment") {
-      openDialog("appointment");
-      return;
-    }
-    if (key === "start-remote") {
-      const remote = todayAppointments.find((appointment) => appointment.deliveryMode === "video" && appointment.avJoinUrl) ??
-        appointments.find((appointment) => appointment.deliveryMode === "video" && appointment.avJoinUrl);
-      if (remote) openDialog("session", { appointment: remote });
-      return;
-    }
-    if (key === "assessment" && selectedParticipant) {
-      openDialog("assessment", { participant: selectedParticipant });
-      return;
-    }
-    if (key === "report") {
-      const report = todayAppointments.find(hasReportDue);
-      if (report) openDialog("session", { appointment: report });
-      return;
-    }
-    if (key === "programmes") {
-      document.getElementById("ambulatory-programmes")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
   return (
-    <main className="app-page-shell min-h-screen px-4 py-5 sm:px-6">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-950 sm:px-6">
+      <div className="mx-auto max-w-[1500px]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button type="button" onClick={() => router.push("/")} className="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
             <ArrowLeft className="h-4 w-4" />
@@ -378,13 +368,24 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
           </button>
         </div>
 
-        <header className="mt-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-[var(--app-primary)]">{t(config.eyebrowKey)}</p>
-            <h1 className="mt-2 text-4xl font-bold text-[var(--app-text)]">{t(config.titleKey)}</h1>
-          </div>
-          <div className={`rounded-lg border bg-[var(--app-surface)] px-4 py-3 text-sm font-semibold shadow-sm ${config.badgeClass}`}>
-            {formatDate(anchorDate)}
+        <header className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className={`h-1.5 ${config.primaryClass}`} />
+          <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white shadow-sm ${config.primaryClass}`}>
+                <CalendarDays className="h-6 w-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--app-primary)]">{t(config.eyebrowKey)}</p>
+                <h1 className="truncate text-2xl font-bold text-slate-950 sm:text-3xl">{t(config.titleKey)}</h1>
+                <p className="mt-1 text-sm text-slate-500">{clinicalDisplayName}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill Icon={CalendarDays} label={`${todayAppointments.length} appointments`} />
+              <StatusPill Icon={MapPin} label={`${outreachToday} outreach`} />
+              <StatusPill Icon={FileText} label={`${reportsDueToday} reports`} />
+            </div>
           </div>
         </header>
 
@@ -392,16 +393,21 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
         {loading && <p className="mt-4 text-sm text-gray-500">Loading...</p>}
 
         {!loading && dashboard && (
-          <div className="mt-6 space-y-6">
-            <QuickLinks config={config} t={t} onAction={runQuickLink} />
-
-            <div className="grid gap-4 md:grid-cols-4">
-              <Metric label={t("ambulatory.metric.appointments_today")} value={todayAppointments.length} Icon={CalendarDays} />
-              <Metric label={t("ambulatory.metric.in_office")} value={officeToday} Icon={Users} />
-              <Metric label={t("ambulatory.metric.outreach")} value={outreachToday} Icon={MapPin} />
-              <Metric label={t("ambulatory.metric.reports_due")} value={reportsDueToday} Icon={FileText} />
-            </div>
-
+          <div className="mt-5 grid gap-4 xl:grid-cols-[310px_minmax(0,1fr)]">
+            <ServiceUserPanel
+              config={config}
+              t={t}
+              participants={filteredParticipants}
+              totalParticipants={participants.length}
+              selectedParticipant={selectedParticipant}
+              search={participantSearch}
+              onSearch={setParticipantSearch}
+              onAdd={() => openDialog("participant")}
+              onSelect={(participant) => setSelectedParticipantId(participant.id)}
+              onAssessment={(participant) => openDialog("assessment", { participant })}
+              onCarePlan={(participant) => openDialog("care-plan", { participant })}
+              onAppointment={(participant) => openDialog("appointment", { participant })}
+            />
             <CalendarBoard
               config={config}
               t={t}
@@ -415,26 +421,10 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
               onCreateAt={createAppointmentAt}
               onMoveAppointment={(appointmentId, day, slotMinutes) => void moveAppointment(appointmentId, day, slotMinutes)}
               onResizeAppointment={(appointment, deltaMinutes) => void resizeAppointment(appointment, deltaMinutes)}
+              onMarkMissed={(appointment) => void markAppointmentMissed(appointment)}
               onExportOutlook={exportAppointments}
               onExportGoogle={() => openGoogleCalendar(selectedAppointment)}
             />
-
-            <TodayAgenda t={t} appointments={todayAppointments} onOpenSession={(appointment) => openDialog("session", { appointment })} />
-
-            <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-              <CaseloadPanel
-                config={config}
-                t={t}
-                participants={participants}
-                selectedParticipant={selectedParticipant}
-                onAdd={() => openDialog("participant")}
-                onSelect={(participant) => setSelectedParticipantId(participant.id)}
-                onAssessment={(participant) => openDialog("assessment", { participant })}
-                onCarePlan={(participant) => openDialog("care-plan", { participant })}
-                onAppointment={(participant) => openDialog("appointment", { participant })}
-              />
-              <ProgrammePanel t={t} offerings={offerings} onBook={() => openDialog("appointment")} />
-            </div>
           </div>
         )}
       </div>
@@ -458,69 +448,129 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
   );
 }
 
-function Metric({ label, value, Icon }: { label: string; value: number; Icon: LucideIcon }) {
+function StatusPill({ label, Icon }: { label: string; Icon: LucideIcon }) {
   return (
-    <div className="app-card rounded-xl p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-[var(--app-text-muted)]">{label}</span>
-        <Icon className="h-5 w-5 text-[var(--app-primary)]" />
-      </div>
-      <p className="mt-3 text-3xl font-bold text-[var(--app-text)]">{value}</p>
-    </div>
+    <span className="inline-flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700">
+      <Icon className="h-4 w-4 text-[var(--app-primary)]" />
+      {label}
+    </span>
   );
 }
 
-function QuickLinks({
+function ServiceUserPanel({
   config,
   t,
-  onAction,
+  participants,
+  totalParticipants,
+  selectedParticipant,
+  search,
+  onSearch,
+  onAdd,
+  onSelect,
+  onAssessment,
+  onCarePlan,
+  onAppointment,
 }: {
   config: AmbulatoryLocalConfig;
   t: (key: string) => string;
-  onAction: (key: AmbulatoryQuickLinkKey) => void;
+  participants: AmbulatoryParticipant[];
+  totalParticipants: number;
+  selectedParticipant: AmbulatoryParticipant | null;
+  search: string;
+  onSearch: (value: string) => void;
+  onAdd: () => void;
+  onSelect: (participant: AmbulatoryParticipant) => void;
+  onAssessment: (participant: AmbulatoryParticipant) => void;
+  onCarePlan: (participant: AmbulatoryParticipant) => void;
+  onAppointment: (participant: AmbulatoryParticipant) => void;
 }) {
   return (
-    <section className="app-card rounded-xl p-4">
-      <div className="flex gap-3 overflow-x-auto pb-1">
-        {config.quickLinks.map((link) => {
-          const Icon = iconMap[link.icon];
-          return (
-            <button
-              key={link.key}
-              type="button"
-              onClick={() => onAction(link.key)}
-              className="flex min-h-20 min-w-36 flex-col items-start justify-between rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-3 text-left shadow-sm"
-            >
-              <Icon className="h-5 w-5 text-[var(--app-primary)]" />
-              <span className="text-sm font-semibold text-[var(--app-text)]">{t(link.labelKey)}</span>
-            </button>
-          );
-        })}
+    <aside className="rounded-xl border border-slate-200 bg-white shadow-sm xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-hidden">
+      <div className={`h-1 ${config.primaryClass}`} />
+      <div className="border-b border-slate-200 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-950">{t(config.participantLabelKey)}</h2>
+            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{totalParticipants} active</p>
+          </div>
+          <button type="button" onClick={onAdd} className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-white ${config.primaryClass}`} aria-label={`Add ${t(config.participantLabelKey)}`}>
+            <UserPlus className="h-4 w-4" />
+          </button>
+        </div>
+        <label className="mt-4 flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-500 focus-within:border-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)]/10">
+          <Search className="h-4 w-4" />
+          <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search" className="min-w-0 flex-1 bg-transparent font-medium text-slate-900 outline-none placeholder:text-slate-400" />
+        </label>
       </div>
-    </section>
+      <div className="max-h-[48vh] overflow-y-auto p-3 xl:max-h-[calc(100vh-18rem)]">
+        {participants.length === 0 && <p className="px-2 py-4 text-sm text-slate-500">No matching service users.</p>}
+        <div className="space-y-2">
+          {participants.map((participant) => {
+            const selected = selectedParticipant?.id === participant.id;
+            return (
+              <button key={participant.id} type="button" onClick={() => onSelect(participant)} className={`w-full rounded-lg border px-3 py-2.5 text-left transition ${selected ? config.selectedClass : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"}`}>
+                <span className="flex items-start justify-between gap-2">
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-slate-950">{participant.displayName}</span>
+                    <span className="mt-0.5 block truncate text-xs text-slate-500">{participant.referralSource || participant.preferredName || "Community referral"}</span>
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase text-slate-600">{participant.status}</span>
+                </span>
+                <span className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-500">
+                  {participant.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />Phone</span>}
+                  {participant.email && <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />Email</span>}
+                  <span className="inline-flex items-center gap-1"><FileText className="h-3 w-3" />{participant.currentCarePlan?.status ?? "plan needed"}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {selectedParticipant && (
+        <div className="grid grid-cols-2 gap-2 border-t border-slate-200 p-3">
+          <PanelAction label="Assess" Icon={ClipboardCheck} onClick={() => onAssessment(selectedParticipant)} />
+          <PanelAction label="Care plan" Icon={FileText} onClick={() => onCarePlan(selectedParticipant)} />
+          <PanelAction label="Session" Icon={CalendarDays} onClick={() => onAppointment(selectedParticipant)} />
+          <PanelAction label="Remote" Icon={Video} onClick={() => onAppointment(selectedParticipant)} />
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function PanelAction({ label, Icon, onClick }: { label: string; Icon: LucideIcon; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+      <Icon className="h-4 w-4 text-[var(--app-primary)]" />
+      {label}
+    </button>
   );
 }
 
 function getAppointmentVisual(appointment: AmbulatoryAppointment): {
   Icon: LucideIcon;
   className: string;
+  accentClass: string;
 } {
+  if (appointment.status === "missed") {
+    return { Icon: CircleSlash, className: "border-slate-300 bg-slate-100 text-slate-500", accentClass: "bg-slate-500" };
+  }
   if (hasReportDue(appointment)) {
-    return { Icon: FileText, className: "border-amber-300 bg-amber-50 text-amber-950" };
+    return { Icon: FileText, className: "border-amber-300 bg-amber-50 text-amber-950", accentClass: "bg-amber-500" };
   }
   if (appointment.deliveryMode === "video") {
-    return { Icon: Video, className: "border-indigo-300 bg-indigo-50 text-indigo-950" };
+    return { Icon: Video, className: "border-indigo-300 bg-indigo-50 text-indigo-950", accentClass: "bg-indigo-500" };
   }
   if (locationFromNotes(appointment.notes)?.toLowerCase().includes("shelter")) {
-    return { Icon: MapPin, className: "border-rose-300 bg-rose-50 text-rose-950" };
+    return { Icon: MapPin, className: "border-rose-300 bg-rose-50 text-rose-950", accentClass: "bg-rose-500" };
   }
   if (appointment.appointmentType === "initial-assessment" || appointment.appointmentType === "full-assessment") {
-    return { Icon: ClipboardCheck, className: "border-sky-300 bg-sky-50 text-sky-950" };
+    return { Icon: ClipboardCheck, className: "border-sky-300 bg-sky-50 text-sky-950", accentClass: "bg-sky-500" };
   }
   if (appointment.appointmentType === "group-meeting") {
-    return { Icon: Users, className: "border-violet-300 bg-violet-50 text-violet-950" };
+    return { Icon: Users, className: "border-violet-300 bg-violet-50 text-violet-950", accentClass: "bg-violet-500" };
   }
-  return { Icon: UserRound, className: "border-emerald-300 bg-emerald-50 text-emerald-950" };
+  return { Icon: UserRound, className: "border-emerald-300 bg-emerald-50 text-emerald-950", accentClass: "bg-emerald-500" };
 }
 
 function CalendarAppointmentCard({
@@ -528,60 +578,56 @@ function CalendarAppointmentCard({
   slotMinutes,
   onOpen,
   onResize,
+  onMarkMissed,
 }: {
   appointment: AmbulatoryAppointment;
   slotMinutes: number;
   onOpen: () => void;
   onResize: (deltaMinutes: number) => void;
+  onMarkMissed: () => void;
 }) {
   const visual = getAppointmentVisual(appointment);
   const Icon = visual.Icon;
   const duration = durationInMinutes(appointment);
+  const isMissed = appointment.status === "missed";
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen(); } }}
       draggable={!appointment.isFixed}
       onDragStart={(event) => {
         if (appointment.isFixed) return;
         event.dataTransfer.setData("text/ambulatory-appointment", appointment.id);
         event.dataTransfer.effectAllowed = "move";
       }}
-      className={`group w-full rounded-lg border px-3 py-2 text-left shadow-sm ${visual.className}`}
-      style={{ minHeight: Math.max(44, Math.ceil(duration / slotMinutes) * 38) }}
+      className={`group relative h-full min-h-10 w-full cursor-pointer overflow-hidden rounded-lg border px-2 py-1.5 text-left shadow-sm transition hover:shadow-md ${visual.className} ${isMissed ? "opacity-75" : ""}`}
     >
-      <span className="flex items-center justify-between gap-2 text-xs font-semibold">
-        <span className="inline-flex items-center gap-2">
-          <Icon className="h-3.5 w-3.5" />
-          {formatTime(appointment.startsAtUtc)} · {duration}m
+      <span className={`absolute inset-y-0 left-0 w-1 ${visual.accentClass}`} />
+      <span className="flex items-center justify-between gap-1 pl-1 text-[11px] font-bold leading-none">
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <Icon className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{formatTime(appointment.startsAtUtc)} · {duration}m</span>
         </span>
-        {appointment.isFixed && <Lock className="h-3.5 w-3.5" />}
+        {appointment.isFixed && <Lock className="h-3.5 w-3.5 shrink-0" />}
       </span>
-      <span className="mt-1 block text-sm font-semibold leading-tight">{appointment.title}</span>
-      <span className="mt-1 block text-xs opacity-80">{locationFromNotes(appointment.notes) ?? appointmentTypeLabel(appointment.appointmentType)}</span>
+      <span className="mt-1 block truncate pl-1 text-xs font-bold leading-tight">{appointment.title}</span>
+      <span className="mt-0.5 block truncate pl-1 text-[11px] opacity-80">{appointment.participantName ?? locationFromNotes(appointment.notes) ?? appointmentTypeLabel(appointment.appointmentType)}</span>
       {!appointment.isFixed && (
-        <span className="mt-2 flex gap-1 opacity-100 sm:opacity-0 sm:transition group-hover:opacity-100">
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(event) => { event.stopPropagation(); onResize(-slotMinutes); }}
-            onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); onResize(-slotMinutes); } }}
-            className="inline-flex h-6 w-6 items-center justify-center rounded border border-current/20 bg-white/70"
-          >
+        <span className="absolute bottom-1 right-1 flex gap-1 opacity-0 transition group-hover:opacity-100">
+          <button type="button" onClick={(event) => { event.stopPropagation(); onMarkMissed(); }} className="inline-flex h-6 w-6 items-center justify-center rounded border border-current/20 bg-white/85" aria-label="Mark missed">
+            <CircleSlash className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onResize(-slotMinutes); }} className="inline-flex h-6 w-6 items-center justify-center rounded border border-current/20 bg-white/85" aria-label="Shorten">
             <Minus className="h-3.5 w-3.5" />
-          </span>
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(event) => { event.stopPropagation(); onResize(slotMinutes); }}
-            onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); onResize(slotMinutes); } }}
-            className="inline-flex h-6 w-6 items-center justify-center rounded border border-current/20 bg-white/70"
-          >
+          </button>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onResize(slotMinutes); }} className="inline-flex h-6 w-6 items-center justify-center rounded border border-current/20 bg-white/85" aria-label="Extend">
             <Plus className="h-3.5 w-3.5" />
-          </span>
+          </button>
         </span>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -598,6 +644,7 @@ function CalendarBoard({
   onCreateAt,
   onMoveAppointment,
   onResizeAppointment,
+  onMarkMissed,
   onExportOutlook,
   onExportGoogle,
 }: {
@@ -613,6 +660,7 @@ function CalendarBoard({
   onCreateAt: (day: Date, slotMinutes: number) => void;
   onMoveAppointment: (appointmentId: string, day: Date, slotMinutes: number) => void;
   onResizeAppointment: (appointment: AmbulatoryAppointment, deltaMinutes: number) => void;
+  onMarkMissed: (appointment: AmbulatoryAppointment) => void;
   onExportOutlook: (appointments: AmbulatoryAppointment[]) => void;
   onExportGoogle: () => void;
 }) {
@@ -635,28 +683,32 @@ function CalendarBoard({
     "work-week": `${config.calendar.workWeekDays} Day`,
     month: "Month",
   };
+  const slotHeight = 34;
+  const dayHeight = slots.length * slotHeight;
+  const startMinutes = config.calendar.startHour * 60;
+  const endMinutes = config.calendar.endHour * 60;
 
   return (
-    <section className="app-card rounded-xl p-5">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-[var(--app-text)]">{t("ambulatory.calendar.title")}</h2>
-          <p className="mt-1 text-sm text-[var(--app-text-muted)]">{title}</p>
+          <h2 className="text-xl font-bold text-slate-950">{t("ambulatory.calendar.title")}</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">{title}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => onAnchorChange(addDays(anchorDate, -step))} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-2"><ChevronLeft className="h-4 w-4" /></button>
-          <button type="button" onClick={() => onAnchorChange(startOfDay(new Date()))} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm font-semibold">{t("ambulatory.calendar.today")}</button>
-          <button type="button" onClick={() => onAnchorChange(addDays(anchorDate, step))} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-2"><ChevronRight className="h-4 w-4" /></button>
-          <div className="ml-1 inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)]">
+          <button type="button" onClick={() => onAnchorChange(addDays(anchorDate, -step))} className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50" aria-label="Previous"><ChevronLeft className="h-4 w-4" /></button>
+          <button type="button" onClick={() => onAnchorChange(startOfDay(new Date()))} className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50" aria-label={t("ambulatory.calendar.today")}><CalendarDays className="h-4 w-4" /></button>
+          <button type="button" onClick={() => onAnchorChange(addDays(anchorDate, step))} className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50" aria-label="Next"><ChevronRight className="h-4 w-4" /></button>
+          <div className="ml-1 inline-flex overflow-hidden rounded-lg border border-slate-300 bg-slate-50">
             {(["day", "work-week", "month"] as CalendarMode[]).map((item) => (
-              <button key={item} type="button" onClick={() => onModeChange(item)} className={`px-3 py-2 text-sm font-semibold ${mode === item ? config.selectedClass : "text-[var(--app-text-muted)]"}`}>{modeLabels[item]}</button>
+              <button key={item} type="button" onClick={() => onModeChange(item)} className={`px-3 py-2 text-sm font-semibold ${mode === item ? config.selectedClass : "text-slate-500"}`}>{modeLabels[item]}</button>
             ))}
           </div>
-          <button type="button" onClick={() => onExportOutlook(visibleAppointments)} className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm font-semibold text-[var(--app-text)]">
+          <button type="button" onClick={() => onExportOutlook(visibleAppointments)} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
             <Download className="h-4 w-4" />
             Outlook
           </button>
-          <button type="button" onClick={onExportGoogle} className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm font-semibold text-[var(--app-text)]">
+          <button type="button" onClick={onExportGoogle} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
             <ExternalLink className="h-4 w-4" />
             Google
           </button>
@@ -668,78 +720,90 @@ function CalendarBoard({
       </div>
 
       {mode !== "month" ? (
-        <div className="mt-5 overflow-x-auto rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)]">
-          <div className="min-w-[860px]">
-            <div className="grid border-b border-[var(--app-border)] bg-[var(--app-surface-muted)]" style={{ gridTemplateColumns: `84px repeat(${visibleDays.length}, minmax(150px, 1fr))` }}>
-              <div className="px-3 py-3 text-xs font-semibold uppercase text-[var(--app-text-muted)]">Time</div>
+        <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <div className="min-w-[920px]">
+            <div className="grid border-b border-slate-200 bg-slate-100" style={{ gridTemplateColumns: `76px repeat(${visibleDays.length}, minmax(168px, 1fr))` }}>
+              <div className="px-3 py-3 text-xs font-bold uppercase text-slate-500">Time</div>
               {visibleDays.map((day) => (
-                <div key={dateKeyLocal(day)} className="border-l border-[var(--app-border)] px-3 py-3">
-                  <p className="text-xs font-semibold uppercase text-[var(--app-text-muted)]">{dayNames[day.getDay()]}</p>
-                  <p className="text-sm font-bold text-[var(--app-text)]">{day.getDate()}</p>
+                <div key={dateKeyLocal(day)} className="border-l border-slate-200 px-3 py-3">
+                  <p className="text-xs font-bold uppercase text-slate-500">{dayNames[day.getDay()]}</p>
+                  <p className="text-sm font-bold text-slate-950">{day.getDate()}</p>
                 </div>
               ))}
             </div>
-            {slots.map((slot) => (
-              <div key={slot} className="grid min-h-[58px] border-b border-[var(--app-border)] last:border-b-0" style={{ gridTemplateColumns: `84px repeat(${visibleDays.length}, minmax(150px, 1fr))` }}>
-                <div className="border-r border-[var(--app-border)] px-3 py-2 text-xs font-semibold text-[var(--app-text-muted)]">{formatSlot(slot)}</div>
-                {visibleDays.map((day) => {
-                  const cellAppointments = appointments
-                    .filter((appointment) => isSameDate(appointment.startsAtUtc, day))
-                    .filter((appointment) => {
+            <div className="grid" style={{ gridTemplateColumns: `76px repeat(${visibleDays.length}, minmax(168px, 1fr))` }}>
+              <div className="relative border-r border-slate-200 bg-slate-50" style={{ height: dayHeight }}>
+                {slots.map((slot) => (
+                  <div key={slot} className={`absolute left-0 right-0 px-3 text-xs font-semibold ${slot % 60 === 0 ? "border-t border-slate-300 text-slate-600" : "border-t border-dotted border-slate-200 text-slate-400"}`} style={{ top: (slot - startMinutes) / config.calendar.slotMinutes * slotHeight, height: slotHeight }}>
+                    <span className="relative -top-2 bg-slate-50 pr-1">{slot % 60 === 0 ? formatSlot(slot) : ":30"}</span>
+                  </div>
+                ))}
+              </div>
+              {visibleDays.map((day) => {
+                const dayAppointments = appointments.filter((appointment) => isSameDate(appointment.startsAtUtc, day));
+                return (
+                  <div key={dateKeyLocal(day)} className="relative border-l border-slate-200 bg-white" style={{ height: dayHeight }}>
+                    {slots.map((slot) => (
+                      <div
+                        key={`${dateKeyLocal(day)}-${slot}`}
+                        onContextMenu={(event) => { event.preventDefault(); onCreateAt(day, slot); }}
+                        onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          const id = event.dataTransfer.getData("text/ambulatory-appointment");
+                          if (id) onMoveAppointment(id, day, slot);
+                        }}
+                        className={`absolute left-0 right-0 transition hover:bg-slate-100/60 ${slot % 60 === 0 ? "border-t border-slate-300" : "border-t border-dotted border-slate-200"}`}
+                        style={{ top: (slot - startMinutes) / config.calendar.slotMinutes * slotHeight, height: slotHeight }}
+                      />
+                    ))}
+                    {dayAppointments.map((appointment) => {
                       const start = new Date(appointment.startsAtUtc);
-                      return start.getHours() * 60 + start.getMinutes() === slot;
-                    });
-                  return (
-                    <div
-                      key={`${dateKeyLocal(day)}-${slot}`}
-                      onContextMenu={(event) => { event.preventDefault(); onCreateAt(day, slot); }}
-                      onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }}
-                      onDrop={(event) => {
-                        event.preventDefault();
-                        const id = event.dataTransfer.getData("text/ambulatory-appointment");
-                        if (id) onMoveAppointment(id, day, slot);
-                      }}
-                      className="border-l border-[var(--app-border)] p-1.5 transition hover:bg-[var(--app-surface-muted)]"
-                    >
-                      <div className="space-y-1.5">
-                        {cellAppointments.map((appointment) => (
+                      const startOfAppointment = start.getHours() * 60 + start.getMinutes();
+                      const top = Math.max(0, (startOfAppointment - startMinutes) / config.calendar.slotMinutes * slotHeight);
+                      const height = Math.max(30, durationInMinutes(appointment) / config.calendar.slotMinutes * slotHeight - 4);
+                      if (startOfAppointment < startMinutes || startOfAppointment >= endMinutes) return null;
+                      return (
+                        <div key={appointment.id} className="absolute left-1.5 right-1.5 z-10" style={{ top: top + 2, height }}>
                           <CalendarAppointmentCard
-                            key={appointment.id}
                             appointment={appointment}
                             slotMinutes={config.calendar.slotMinutes}
                             onOpen={() => onOpenSession(appointment)}
                             onResize={(deltaMinutes) => onResizeAppointment(appointment, deltaMinutes)}
+                            onMarkMissed={() => onMarkMissed(appointment)}
                           />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       ) : (
-        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
           {visibleDays.map((day) => {
             const dateKey = dateKeyLocal(day);
             const dayAppointments = appointments.filter((appointment) => isSameDate(appointment.startsAtUtc, day));
             const isCurrentMonth = day.getMonth() === anchorDate.getMonth();
             return (
-              <div key={dateKey} className={`min-h-40 rounded-lg border p-3 ${isCurrentMonth ? "border-[var(--app-border)] bg-[var(--app-surface)]" : "border-[var(--app-border)] bg-[var(--app-surface-muted)] opacity-70"}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase text-gray-500">{dayNames[day.getDay()]}</span>
-                  <span className="text-sm font-bold text-gray-950">{day.getDate()}</span>
+              <div key={dateKey} onContextMenu={(event) => { event.preventDefault(); onCreateAt(day, config.calendar.startHour * 60); }} className={`min-h-40 rounded-lg border p-2 ${isCurrentMonth ? "border-slate-200 bg-white" : "border-slate-200 bg-slate-50 opacity-70"}`}>
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-bold uppercase text-slate-500">{dayNames[day.getDay()]}</span>
+                  <span className="text-sm font-bold text-slate-950">{day.getDate()}</span>
                 </div>
-                <div className="mt-3 space-y-2">
+                <div className="mt-2 space-y-1.5">
                   {dayAppointments.slice(0, 4).map((appointment) => (
-                    <CalendarAppointmentCard
-                      key={appointment.id}
-                      appointment={appointment}
-                      slotMinutes={config.calendar.slotMinutes}
-                      onOpen={() => onOpenSession(appointment)}
-                      onResize={(deltaMinutes) => onResizeAppointment(appointment, deltaMinutes)}
-                    />
+                    <div key={appointment.id} className="h-16">
+                      <CalendarAppointmentCard
+                        appointment={appointment}
+                        slotMinutes={config.calendar.slotMinutes}
+                        onOpen={() => onOpenSession(appointment)}
+                        onResize={(deltaMinutes) => onResizeAppointment(appointment, deltaMinutes)}
+                        onMarkMissed={() => onMarkMissed(appointment)}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -748,135 +812,6 @@ function CalendarBoard({
         </div>
       )}
     </section>
-  );
-}
-
-function TodayAgenda({
-  t,
-  appointments,
-  onOpenSession,
-}: {
-  t: (key: string) => string;
-  appointments: AmbulatoryAppointment[];
-  onOpenSession: (appointment: AmbulatoryAppointment) => void;
-}) {
-  const sorted = [...appointments].sort((a, b) => a.startsAtUtc.localeCompare(b.startsAtUtc));
-  return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-950">{t("ambulatory.agenda.title")}</h2>
-          <p className="mt-1 text-sm text-gray-500">{t("ambulatory.agenda.subtitle")}</p>
-        </div>
-      </div>
-      <div className="mt-5 divide-y divide-gray-100">
-        {sorted.length === 0 && <p className="py-5 text-sm text-gray-500">No appointments for this day.</p>}
-        {sorted.map((appointment) => {
-          const location = locationFromNotes(appointment.notes);
-          const reportDue = hasReportDue(appointment);
-          return (
-            <div key={appointment.id} className="grid gap-4 py-4 md:grid-cols-[96px_1fr_auto] md:items-center">
-              <div className="text-sm font-bold text-gray-950">{formatTime(appointment.startsAtUtc)}</div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold text-gray-950">{appointment.title}</p>
-                  <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">{appointmentTypeLabel(appointment.appointmentType)}</span>
-                  {reportDue && <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">Report due</span>}
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                  <span>{appointment.participantName ?? "Meeting"}</span>
-                  <span>{appointment.deliveryMode === "video" ? "Remote" : "In person"}</span>
-                  {location && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{location}</span>}
-                </div>
-              </div>
-              <button type="button" onClick={() => onOpenSession(appointment)} className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-                {appointment.deliveryMode === "video" ? <Video className="h-4 w-4" /> : <ClipboardCheck className="h-4 w-4" />}
-                {appointment.deliveryMode === "video" ? "Start" : "Open"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function CaseloadPanel({
-  config,
-  t,
-  participants,
-  selectedParticipant,
-  onAdd,
-  onSelect,
-  onAssessment,
-  onCarePlan,
-  onAppointment,
-}: {
-  config: AmbulatoryLocalConfig;
-  t: (key: string) => string;
-  participants: AmbulatoryParticipant[];
-  selectedParticipant: AmbulatoryParticipant | null;
-  onAdd: () => void;
-  onSelect: (participant: AmbulatoryParticipant) => void;
-  onAssessment: (participant: AmbulatoryParticipant) => void;
-  onCarePlan: (participant: AmbulatoryParticipant) => void;
-  onAppointment: (participant: AmbulatoryParticipant) => void;
-}) {
-  return (
-    <section className="app-card rounded-xl p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[var(--app-text)]">{t("ambulatory.caseload.title")}</h2>
-        <button type="button" onClick={onAdd} className="rounded-lg border border-gray-300 p-2 hover:bg-gray-50"><UserPlus className="h-4 w-4" /></button>
-      </div>
-      <div className="mt-4 space-y-2">
-        {participants.map((participant) => (
-          <button key={participant.id} type="button" onClick={() => onSelect(participant)} className={`w-full rounded-lg border px-3 py-3 text-left ${selectedParticipant?.id === participant.id ? config.selectedClass : "border-[var(--app-border)] bg-[var(--app-surface)]"}`}>
-            <span className="block font-semibold text-gray-950">{participant.displayName}</span>
-            <span className="text-xs text-gray-500">{participant.currentCarePlan?.reviewDate ? `Review ${participant.currentCarePlan.reviewDate}` : "Care plan needed"}</span>
-          </button>
-        ))}
-      </div>
-      {selectedParticipant && (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <ActionButton label="Assessment" Icon={ClipboardCheck} onClick={() => onAssessment(selectedParticipant)} />
-          <ActionButton label="Care Plan" Icon={FileText} onClick={() => onCarePlan(selectedParticipant)} />
-          <ActionButton label="One to One" Icon={CalendarDays} onClick={() => onAppointment(selectedParticipant)} />
-          <ActionButton label="Remote" Icon={Video} onClick={() => onAppointment(selectedParticipant)} />
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ProgrammePanel({ t, offerings, onBook }: { t: (key: string) => string; offerings: AmbulatoryProgrammeOffering[]; onBook: (offering: AmbulatoryProgrammeOffering) => void }) {
-  return (
-    <section id="ambulatory-programmes" className="app-card rounded-xl p-5">
-      <h2 className="text-lg font-semibold text-[var(--app-text)]">{t("ambulatory.programmes.title")}</h2>
-      <div className="mt-4 space-y-3">
-        {offerings.map((offering) => (
-          <div key={offering.code} className="rounded-lg border border-gray-200 p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold text-gray-950">{offering.name}</p>
-                <p className="mt-1 text-xs font-semibold uppercase text-gray-500">{offering.category} · {offering.cadence}</p>
-              </div>
-              <button type="button" onClick={() => onBook(offering)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold hover:bg-gray-50">Refer</button>
-            </div>
-            <p className="mt-2 text-sm text-gray-600">{offering.description}</p>
-            <p className="mt-2 text-xs font-semibold text-gray-500">{offering.nextSessionLabel}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ActionButton({ label, Icon, onClick }: { label: string; Icon: LucideIcon; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-      <Icon className="h-4 w-4" />
-      {label}
-    </button>
   );
 }
 
@@ -1027,8 +962,17 @@ function AppointmentDialog({ open, config, defaults, participants, selectedParti
 
 function SessionDialog({ open, appointment, displayName, jwt, onClose }: { open: boolean; appointment: AmbulatoryAppointment | null; displayName: string; jwt?: string | null; onClose: () => void }) {
   const [sessionNotes, setSessionNotes] = useState("");
+  const [selectedTerms, setSelectedTerms] = useState<string[]>([]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { if (open) setSessionNotes(appointment?.notes ?? ""); }, [appointment?.notes, open]);
+  useEffect(() => { if (open) { setSessionNotes(appointment?.notes ?? ""); setSelectedTerms([]); } }, [appointment?.notes, open]);
+  const toggleTerm = (term: string) => {
+    setSelectedTerms((current) => current.includes(term) ? current.filter((item) => item !== term) : [...current, term]);
+  };
+  const addObservationsToNotes = () => {
+    if (selectedTerms.length === 0) return;
+    const line = `Observations: ${selectedTerms.join(", ")}`;
+    setSessionNotes((current) => current.trim() ? `${current.trim()}\n${line}` : line);
+  };
   return (
     <Dialog open={open} title={appointment ? appointment.title : "Session"} onClose={onClose}>
       {!appointment && <p className="text-sm text-gray-500">No session selected.</p>}
@@ -1047,8 +991,32 @@ function SessionDialog({ open, appointment, displayName, jwt, onClose }: { open:
               authorised={Boolean(appointment.avRoomName && jwt)}
             />
           )}
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-slate-950">Clinical observations</p>
+                <p className="mt-0.5 text-xs text-slate-500">Alcohol therapy observation library</p>
+              </div>
+              <button type="button" onClick={addObservationsToNotes} disabled={selectedTerms.length === 0} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Add to note</button>
+            </div>
+            <div className="mt-3 flex max-h-36 flex-wrap gap-2 overflow-y-auto">
+              {observationTerms.map((term) => {
+                const selected = selectedTerms.includes(term.term);
+                return (
+                  <button
+                    key={term.id}
+                    type="button"
+                    onClick={() => toggleTerm(term.term)}
+                    title={term.description}
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${selected ? "border-[var(--app-primary)] bg-[var(--app-primary)] text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+                  >
+                    {term.term}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <VoiceNotes value={sessionNotes} onChange={setSessionNotes} />
-          <p className="text-xs text-gray-500">Transcript text is captured locally here for now and can be pasted into the assessment or care plan fields.</p>
         </div>
       )}
     </Dialog>

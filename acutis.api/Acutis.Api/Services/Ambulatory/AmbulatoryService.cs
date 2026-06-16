@@ -185,6 +185,7 @@ public sealed class AmbulatoryService : IAmbulatoryService
             StartsAtUtc = request.StartsAtUtc,
             EndsAtUtc = request.EndsAtUtc,
             DeliveryMode = isVideo ? "video" : "in-person",
+            Status = string.IsNullOrWhiteSpace(request.Status) ? "scheduled" : request.Status.Trim(),
             Notes = Clean(request.Notes),
             CreatedAtUtc = now,
             UpdatedAtUtc = now
@@ -235,6 +236,7 @@ public sealed class AmbulatoryService : IAmbulatoryService
         appointment.StartsAtUtc = request.StartsAtUtc;
         appointment.EndsAtUtc = request.EndsAtUtc;
         appointment.DeliveryMode = isVideo ? "video" : "in-person";
+        appointment.Status = string.IsNullOrWhiteSpace(request.Status) ? appointment.Status : request.Status.Trim();
         appointment.Notes = Clean(request.Notes);
         appointment.UpdatedAtUtc = DateTime.UtcNow;
 
