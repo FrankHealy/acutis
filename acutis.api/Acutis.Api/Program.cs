@@ -1,6 +1,7 @@
 using Acutis.Api.Middleware;
 using Acutis.Api.Security;
 using Acutis.Api.Services.Configuration;
+using Acutis.Api.Services.Ambulatory;
 using Acutis.Api.Services.Forms;
 using Acutis.Api.Services.GroupTherapy;
 using Acutis.Api.Services.Incidents;
@@ -43,6 +44,15 @@ builder.Services.AddHttpLogging(options =>
 builder.Services.AddDbContext<AcutisDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+var defaultConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
+var ambulatoryConnectionString = builder.Configuration.GetConnectionString("AmbulatoryConnection")
+    ?? defaultConnectionString.Replace("Database=bruree-cm-db;", "Database=bruree-cm-ambulatory-db;", StringComparison.OrdinalIgnoreCase)
+        .Replace("Database=Acutis_CuanMhuire_IE_Dev;", "Database=Acutis_Ambulatory_IE_Dev;", StringComparison.OrdinalIgnoreCase);
+
+builder.Services.AddDbContext<AcutisAmbulatoryDbContext>(options =>
+    options.UseSqlServer(ambulatoryConnectionString));
+
 builder.Services.AddScoped<ICallRepository, CallRepository>();
 builder.Services.AddScoped<ICallService, CallService>();
 builder.Services.AddScoped<IFormService, FormService>();
@@ -69,6 +79,7 @@ builder.Services.AddScoped<IQuoteService, QuoteService>();
 builder.Services.AddScoped<IUnitVideoService, UnitVideoService>();
 builder.Services.AddScoped<IUnitVideoAdminService, UnitVideoService>();
 builder.Services.AddScoped<IUnitIdentityService, UnitIdentityService>();
+builder.Services.AddScoped<IAmbulatoryService, AmbulatoryService>();
 builder.Services.AddSingleton<IApplicationAccessService, ApplicationAccessService>();
 builder.Services.Configure<OfflineWindowPolicyOptions>(builder.Configuration.GetSection("OfflineWindowPolicy"));
 builder.Services.Configure<AuthorizationOptions>(builder.Configuration.GetSection(AuthorizationOptions.SectionName));

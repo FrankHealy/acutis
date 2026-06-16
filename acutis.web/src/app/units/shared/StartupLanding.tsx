@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
-import { Heart, Wine, Pill, Users, ClipboardCheck, Settings } from 'lucide-react';
+import { Handshake, Heart, Wine, Pill, Users, ClipboardCheck, Settings, Video } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
@@ -148,6 +148,20 @@ const StartupLanding: React.FC = () => {
             />
             <Tile
               delayMs={700}
+              label="Acutis Community"
+              Icon={Handshake}
+              color="border-cyan-400 bg-cyan-50 text-cyan-700"
+              onClick={() => router.push('/units/community')}
+            />
+            <Tile
+              delayMs={820}
+              label="Acutis Practitioner"
+              Icon={Video}
+              color="border-indigo-400 bg-indigo-50 text-indigo-700"
+              onClick={() => router.push('/units/practitioner')}
+            />
+            <Tile
+              delayMs={940}
               label="Configuration"
               Icon={Settings}
               color="border-orange-400 bg-orange-50 text-orange-700"
