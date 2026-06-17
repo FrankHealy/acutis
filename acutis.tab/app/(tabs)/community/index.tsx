@@ -232,6 +232,19 @@ export default function CommunityScreen() {
           </View>
           <View style={styles.card}>
             <View style={styles.sectionHead}>
+              <View>
+                <Text style={styles.sectionTitle}>{t("admissions.community.title", "Community Admissions")}</Text>
+                <Text style={styles.mutedText}>{t("admissions.community.subtitle", "Start Community service-user admissions and capture first-page consent.")}</Text>
+              </View>
+              <Link href={{ pathname: "/(tabs)/admissions/[episodeId]", params: { episodeId: "new", unit: "community" } }} asChild>
+                <Pressable style={styles.smallButton}>
+                  <Text style={styles.smallButtonText}>{t("admissions.detox.startAdmission", "Start Admission")}</Text>
+                </Pressable>
+              </Link>
+            </View>
+          </View>
+          <View style={styles.card}>
+            <View style={styles.sectionHead}>
               <Text style={styles.sectionTitle}>{t("community.todaySchedule", "Today")}</Text>
               <Pressable onPress={() => setCurrentView("operations")} style={styles.smallButton}>
                 <Text style={styles.smallButtonText}>{t("community.openSchedule", "Open schedule")}</Text>

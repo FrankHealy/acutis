@@ -1,7 +1,10 @@
-import { Link, useLocalSearchParams } from "expo-router";
-import { ScrollView, Pressable, StyleSheet, Text, View } from "react-native";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
+import { Alert, ScrollView, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { t } from "../../../src/i18n";
+import { DictationNotes, PhotoCapture, SignaturePad, type SignatureStroke } from "../../../src/features/admissions/captureInputs";
+import { saveAdmissionDraft, saveAdmissionSignature } from "../../../src/features/admissions/repository";
 
 type RouteParams = {
   episodeId?: string | string[];
@@ -32,10 +35,16 @@ function takeFirst(value?: string | string[]) {
 
 export default function AdmissionEpisodeScreen() {
   const params = useLocalSearchParams<RouteParams>();
+  const router = useRouter();
   const episodeId = takeFirst(params.episodeId) ?? "new";
   const unit = takeFirst(params.unit) ?? "detox";
+  const isCommunity = unit === "community";
   const isDraft = episodeId === "new";
-  const resident = takeFirst(params.resident) ?? t("admissions.detox.draftResident", "New Detox Admission");
+  const resident = takeFirst(params.resident) ?? (
+    isCommunity
+      ? t("admissions.community.draftResident", "New Community Admission")
+      : t("admissions.detox.draftResident", "New Detox Admission")
+  );
   const status = takeFirst(params.status) ?? t("admissions.detox.statusDraft", "Draft");
   const phone = takeFirst(params.phone) ?? "Not supplied";
   const queueType = takeFirst(params.queueType) ?? "Manual";
@@ -49,26 +58,63 @@ export default function AdmissionEpisodeScreen() {
         minute: "2-digit",
       })
     : "Not recorded";
+  const [notes, setNotes] = useState("");
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [signatureStrokes, setSignatureStrokes] = useState<SignatureStroke[]>([]);
+  const [saving, setSaving] = useState(false);
+  const admissionTitle = isCommunity
+    ? t("admissions.community.title", "Community Admissions")
+    : t("admissions.detox.title", "Detox Admissions");
+  const unitName = isCommunity ? t("community.unitName", "Community") : t("units.detox.name", "Detox");
 
-  if (unit !== "detox") {
-    return (
-      <View style={styles.emptyScreen}>
-        <Text style={styles.emptyTitle}>{t("admissions.detox.emptyTitle", "Admissions not available")}</Text>
-        <Text style={styles.emptyText}>{t("admissions.detox.emptyText", "This admissions view is currently prepared for Detox only.")}</Text>
-        <Link href="/(tabs)/dashboard" asChild>
-          <Pressable style={styles.backButton}>
-            <Text style={styles.backButtonText}>{t("admissions.detox.backToDashboard", "Back to dashboard")}</Text>
-          </Pressable>
-        </Link>
-      </View>
-    );
-  }
+  const saveFirstPage = async () => {
+    setSaving(true);
+    try {
+      const draft = await saveAdmissionDraft({
+        id: isDraft ? undefined : episodeId,
+        unitId: unit,
+        residentName: resident,
+        payload: {
+          firstPage: {
+            notes,
+            photoUri,
+            hasSignature: signatureStrokes.length > 0,
+            source: queueType,
+            phone,
+            completedAt,
+          },
+        },
+      });
+
+      if (signatureStrokes.length > 0) {
+        await saveAdmissionSignature({
+          draftId: draft.id,
+          signerRole: "service_user",
+          signerName: resident,
+          signaturePayload: { strokes: signatureStrokes },
+        });
+      }
+
+      if (isDraft) {
+        router.replace({
+          pathname: "/(tabs)/admissions/[episodeId]",
+          params: { episodeId: draft.id, unit, resident, status, phone, queueType, completedAt: completedAtRaw ?? "" },
+        });
+      }
+
+      Alert.alert(t("admissions.capture.savedTitle", "Admission Saved"), t("admissions.capture.savedMessage", "First-page capture has been saved on this tablet."));
+    } catch (error) {
+      Alert.alert(t("admissions.capture.saveFailedTitle", "Could not save"), (error as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
-      <Link href="/(tabs)/admissions?unit=detox" asChild>
+      <Link href={{ pathname: "/(tabs)/admissions", params: { unit } }} asChild>
         <Pressable style={styles.backButton}>
-          <Text style={styles.backButtonText}>{t("admissions.detox.title", "Detox Admissions")}</Text>
+          <Text style={styles.backButtonText}>{admissionTitle}</Text>
         </Pressable>
       </Link>
 
@@ -103,6 +149,23 @@ export default function AdmissionEpisodeScreen() {
       </View>
 
       <View style={styles.infoCard}>
+        <View style={styles.captureIntro}>
+          <View>
+            <Text style={styles.sectionTitle}>{t("admissions.capture.firstPageTitle", "First Page Capture")}</Text>
+            <Text style={styles.captureSubtitle}>{unitName}</Text>
+          </View>
+          <Pressable disabled={saving} style={[styles.primaryButton, saving ? styles.disabledButton : null]} onPress={() => void saveFirstPage()}>
+            <Text style={styles.primaryButtonText}>
+              {saving ? t("admissions.capture.saving", "Saving...") : t("admissions.capture.save", "Save Capture")}
+            </Text>
+          </Pressable>
+        </View>
+        <DictationNotes value={notes} onChange={setNotes} />
+        <PhotoCapture uri={photoUri} onChange={setPhotoUri} />
+        <SignaturePad strokes={signatureStrokes} onChange={setSignatureStrokes} />
+      </View>
+
+      <View style={styles.infoCard}>
         <Text style={styles.sectionTitle}>{t("admissions.detox.workflowTitle", "Admission Workflow")}</Text>
         {SECTION_CARDS.map((section) => (
           <Link
@@ -113,7 +176,7 @@ export default function AdmissionEpisodeScreen() {
                 episodeId,
                 sectionKey: section.key,
                 resident,
-                unit: "detox",
+                unit,
               },
             }}
             asChild
@@ -135,7 +198,7 @@ export default function AdmissionEpisodeScreen() {
           <Link
             href={{
               pathname: "/(tabs)/admissions/[episodeId]/review",
-              params: { episodeId, resident, unit: "detox" },
+              params: { episodeId, resident, unit },
             }}
             asChild
           >
@@ -147,7 +210,7 @@ export default function AdmissionEpisodeScreen() {
           <Link
             href={{
               pathname: "/(tabs)/admissions/[episodeId]/signature",
-              params: { episodeId, resident, unit: "detox" },
+              params: { episodeId, resident, unit },
             }}
             asChild
           >
@@ -271,6 +334,18 @@ const styles = StyleSheet.create({
     color: "#0F172A",
     marginBottom: 14,
   },
+  captureIntro: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  captureSubtitle: {
+    color: "#64748B",
+    fontSize: 13,
+    fontWeight: "700",
+  },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -325,6 +400,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   primaryButtonText: {
     color: "#FFFFFF",

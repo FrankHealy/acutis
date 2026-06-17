@@ -36,13 +36,14 @@ export default function AdmissionSectionScreen() {
   const episodeId = takeFirst(params.episodeId) ?? "new";
   const sectionKey = takeFirst(params.sectionKey) ?? "arrival";
   const resident = takeFirst(params.resident) ?? t("admissions.detox.draftResident", "New Detox Admission");
+  const unit = takeFirst(params.unit) ?? "detox";
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
       <Link
         href={{
           pathname: "/(tabs)/admissions/[episodeId]",
-          params: { episodeId, resident, unit: "detox" },
+          params: { episodeId, resident, unit },
         }}
         asChild
       >

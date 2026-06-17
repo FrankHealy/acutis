@@ -97,8 +97,15 @@ export const DETOX_ADMISSION_WORKFLOW: AdmissionWorkflowDefinition = {
   ],
 };
 
+export const COMMUNITY_ADMISSION_WORKFLOW: AdmissionWorkflowDefinition = {
+  ...DETOX_ADMISSION_WORKFLOW,
+  unitId: "community",
+};
+
 export function getAdmissionWorkflow(unitId: string): AdmissionWorkflowDefinition | null {
-  return unitId === DETOX_ADMISSION_WORKFLOW.unitId ? DETOX_ADMISSION_WORKFLOW : null;
+  if (unitId === DETOX_ADMISSION_WORKFLOW.unitId) return DETOX_ADMISSION_WORKFLOW;
+  if (unitId === COMMUNITY_ADMISSION_WORKFLOW.unitId) return COMMUNITY_ADMISSION_WORKFLOW;
+  return null;
 }
 
 export function validateAdmissionSection(

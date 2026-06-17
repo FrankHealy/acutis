@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { fetchDetoxSchedulingBoard, type ScreeningSchedulingAwaitingItemDto } from "../../../src/features/admissions/api";
+import { getAdmissionDraftsForUnit, type AdmissionDraft } from "../../../src/features/admissions/repository";
 import { t } from "../../../src/i18n";
 
 type RouteParams = {
@@ -67,27 +68,27 @@ const DETOX_STEPS: StepItem[] = [
   {
     id: "arrival",
     title: t("admissions.detox.sections.arrival", "Arrival Check-In"),
-    description: "Confirm arrival time, referral source and escort details.",
+    description: t("admissions.detox.sectionDescriptions.arrival", "Confirm arrival time, referral source and escort details."),
   },
   {
     id: "assessment",
     title: t("admissions.detox.sections.assessment", "Clinical Assessment"),
-    description: "Record presenting condition, withdrawal risk and immediate observations.",
+    description: t("admissions.detox.sectionDescriptions.assessment", "Record presenting condition, withdrawal risk and immediate observations."),
   },
   {
     id: "belongings",
     title: t("admissions.detox.sections.belongings", "Belongings / Search"),
-    description: "Log valuables, complete search record and note restricted items.",
+    description: t("admissions.detox.sectionDescriptions.belongings", "Log valuables, complete search record and note restricted items."),
   },
   {
     id: "room",
     title: t("admissions.detox.sections.room", "Room Allocation"),
-    description: "Assign bed space, confirm roundel availability and hand over room rules.",
+    description: t("admissions.detox.sectionDescriptions.room", "Assign bed space, confirm roundel availability and hand over room rules."),
   },
   {
     id: "consent",
     title: t("admissions.detox.sections.consent", "Consent & Signoff"),
-    description: "Capture signatures and complete the initial admission checklist.",
+    description: t("admissions.detox.sectionDescriptions.consent", "Capture signatures and complete the initial admission checklist."),
   },
 ];
 
@@ -110,10 +111,31 @@ function toQueueItem(item: ScreeningSchedulingAwaitingItemDto): QueueItem {
   };
 }
 
+function draftToQueueItem(item: AdmissionDraft): QueueItem {
+  return {
+    id: item.id,
+    resident: item.residentName,
+    eta: new Date(item.updatedAtClient).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+    statusKey: item.status === "ready_to_submit" ? "statusReady" : "statusReview",
+    accent: item.status === "ready_to_submit" ? "#16A34A" : "#0E7490",
+    note: t("admissions.community.localDraftNote", "Saved locally on this tablet."),
+    phoneNumber: "",
+    queueType: t("admissions.community.localDraft", "Local draft"),
+    completedAt: item.updatedAtClient,
+  };
+}
+
 export default function AdmissionsIndexScreen() {
   const params = useLocalSearchParams<RouteParams>();
   const rawUnit = Array.isArray(params.unit) ? params.unit[0] : params.unit;
   const unit = rawUnit ?? "detox";
+  const isCommunity = unit === "community";
+  const isDetox = unit === "detox";
+  const title = isCommunity ? t("admissions.community.title", "Community Admissions") : t("admissions.detox.title", "Detox Admissions");
+  const subtitle = isCommunity
+    ? t("admissions.community.subtitle", "Start Community service-user admissions and capture first-page consent.")
+    : t("admissions.detox.subtitle", "Track arrivals, room readiness and the current intake queue.");
+  const unitName = isCommunity ? t("community.unitName", "Community") : t("units.detox.name", "Detox");
 
   const [queueItems, setQueueItems] = useState<QueueItem[]>(FALLBACK_QUEUE);
   const [scheduledCount, setScheduledCount] = useState(0);
@@ -123,7 +145,22 @@ export default function AdmissionsIndexScreen() {
   useEffect(() => {
     let cancelled = false;
 
-    if (unit !== "detox") {
+    if (!isDetox) {
+      getAdmissionDraftsForUnit(unit)
+        .then((drafts) => {
+          if (cancelled) return;
+          setQueueItems(drafts.map(draftToQueueItem));
+          setScheduledCount(0);
+          setSlotCount(0);
+          setIsUsingFallback(false);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setQueueItems([]);
+          setScheduledCount(0);
+          setSlotCount(0);
+          setIsUsingFallback(false);
+        });
       return;
     }
 
@@ -152,14 +189,14 @@ export default function AdmissionsIndexScreen() {
     return () => {
       cancelled = true;
     };
-  }, [unit]);
+  }, [isDetox, unit]);
 
   const roomReadyCount = useMemo(
     () => queueItems.filter((item) => item.statusKey === "statusReady").length,
     [queueItems],
   );
 
-  if (unit !== "detox") {
+  if (!isDetox && !isCommunity) {
     return (
       <View style={styles.emptyScreen}>
         <Text style={styles.emptyTitle}>{t("admissions.detox.emptyTitle", "Admissions not available")}</Text>
@@ -175,26 +212,28 @@ export default function AdmissionsIndexScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
-      <Link href="/(tabs)/unit/detox" asChild>
+      <Link href={isCommunity ? "/(tabs)/community" : "/(tabs)/unit/detox"} asChild>
         <Pressable style={styles.backButton}>
-          <Text style={styles.backButtonText}>{t("admissions.detox.backToDetox", "Back to Detox")}</Text>
+          <Text style={styles.backButtonText}>
+            {isCommunity ? t("community.backToCommunity", "Back to Community") : t("admissions.detox.backToDetox", "Back to Detox")}
+          </Text>
         </Pressable>
       </Link>
 
       <View style={styles.headerCard}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.title}>{t("admissions.detox.title", "Detox Admissions")}</Text>
-            <Text style={styles.subtitle}>{t("admissions.detox.subtitle", "Track arrivals, room readiness and the current intake queue.")}</Text>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
           </View>
 
           <View style={styles.unitPill}>
             <Text style={styles.unitPillLabel}>{t("admissions.detox.currentUnitLabel", "Current Unit")}</Text>
-            <Text style={styles.unitPillValue}>{t("units.detox.name", "Detox")}</Text>
+            <Text style={styles.unitPillValue}>{unitName}</Text>
           </View>
         </View>
 
-        <Link href="/(tabs)/admissions/new?unit=detox" asChild>
+        <Link href={{ pathname: "/(tabs)/admissions/[episodeId]", params: { episodeId: "new", unit } }} asChild>
           <Pressable style={styles.primaryButton}>
             <Text style={styles.primaryButtonText}>{t("admissions.detox.startAdmission", "Start Admission")}</Text>
           </Pressable>
@@ -203,41 +242,55 @@ export default function AdmissionsIndexScreen() {
 
       <View style={styles.metricRow}>
         <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>{t("admissions.detox.awaitingCount", "Awaiting Scheduling")}</Text>
+          <Text style={styles.metricLabel}>{isCommunity ? t("admissions.community.localDrafts", "Local Drafts") : t("admissions.detox.awaitingCount", "Awaiting Scheduling")}</Text>
           <Text style={styles.metricValue}>{queueItems.length}</Text>
         </View>
-        <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>{t("admissions.detox.scheduledCount", "Scheduled")}</Text>
-          <Text style={[styles.metricValue, { color: "#2563EB" }]}>{scheduledCount}</Text>
-        </View>
-        <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>{t("admissions.detox.slotCount", "Upcoming Dates")}</Text>
-          <Text style={[styles.metricValue, { color: "#16A34A" }]}>{slotCount}</Text>
-        </View>
-        <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>{t("admissions.detox.roomReady", "Rooms Ready")}</Text>
-          <Text style={[styles.metricValue, { color: "#16A34A" }]}>{roomReadyCount}</Text>
-        </View>
+        {isDetox ? (
+          <>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>{t("admissions.detox.scheduledCount", "Scheduled")}</Text>
+              <Text style={[styles.metricValue, { color: "#2563EB" }]}>{scheduledCount}</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>{t("admissions.detox.slotCount", "Upcoming Dates")}</Text>
+              <Text style={[styles.metricValue, { color: "#16A34A" }]}>{slotCount}</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>{t("admissions.detox.roomReady", "Rooms Ready")}</Text>
+              <Text style={[styles.metricValue, { color: "#16A34A" }]}>{roomReadyCount}</Text>
+            </View>
+          </>
+        ) : null}
       </View>
 
       <View style={styles.sectionCard}>
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>{t("admissions.detox.queueTitle", "Admissions Queue")}</Text>
-          <View style={[styles.liveBadge, isUsingFallback ? styles.liveBadgeFallback : styles.liveBadgeLive]}>
-            <Text style={[styles.liveBadgeText, isUsingFallback ? styles.liveBadgeTextFallback : styles.liveBadgeTextLive]}>
-              {isUsingFallback ? t("admissions.detox.fallbackQueue", "Fallback queue") : t("admissions.detox.liveQueue", "Live queue")}
-            </Text>
-          </View>
+          <Text style={styles.sectionTitle}>{isCommunity ? t("admissions.community.queueTitle", "Community Admission Drafts") : t("admissions.detox.queueTitle", "Admissions Queue")}</Text>
+          {!isCommunity ? (
+            <View style={[styles.liveBadge, isUsingFallback ? styles.liveBadgeFallback : styles.liveBadgeLive]}>
+              <Text style={[styles.liveBadgeText, isUsingFallback ? styles.liveBadgeTextFallback : styles.liveBadgeTextLive]}>
+                {isUsingFallback ? t("admissions.detox.fallbackQueue", "Fallback queue") : t("admissions.detox.liveQueue", "Live queue")}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.liveBadge}>
+              <Text style={styles.liveBadgeTextFallback}>{t("admissions.community.localOnly", "Local first-page capture")}</Text>
+            </View>
+          )}
         </View>
 
-        {isUsingFallback ? (
+        {isUsingFallback && !isCommunity ? (
           <Text style={styles.noticeText}>
             {t("admissions.detox.queueUnavailable", "Live admissions data is unavailable, so this screen is showing fallback tablet data.")}
           </Text>
         ) : null}
 
         {queueItems.length === 0 ? (
-          <Text style={styles.emptyQueueText}>{t("admissions.detox.queueEmpty", "No admissions are currently awaiting scheduling.")}</Text>
+          <Text style={styles.emptyQueueText}>
+            {isCommunity
+              ? t("admissions.community.queueEmpty", "Start a new admission to capture first-page details, notes, photo and signature.")
+              : t("admissions.detox.queueEmpty", "No admissions are currently awaiting scheduling.")}
+          </Text>
         ) : null}
 
         {queueItems.map((item) => (
@@ -247,7 +300,7 @@ export default function AdmissionsIndexScreen() {
               pathname: "/(tabs)/admissions/[episodeId]",
               params: {
                 episodeId: item.id,
-                unit: "detox",
+                unit,
                 resident: item.resident,
                 status: t(`admissions.detox.${item.statusKey}`),
                 phone: item.phoneNumber,
@@ -279,7 +332,7 @@ export default function AdmissionsIndexScreen() {
       </View>
 
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>{t("admissions.detox.stepsTitle", "Detox Intake Steps")}</Text>
+        <Text style={styles.sectionTitle}>{isCommunity ? t("admissions.community.stepsTitle", "Community Intake Steps") : t("admissions.detox.stepsTitle", "Detox Intake Steps")}</Text>
         {DETOX_STEPS.map((step, index) => (
           <View key={step.id} style={styles.stepRow}>
             <View style={styles.stepNumber}>

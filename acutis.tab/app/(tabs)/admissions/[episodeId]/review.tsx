@@ -6,6 +6,7 @@ import { t } from "../../../../src/i18n";
 type RouteParams = {
   episodeId?: string | string[];
   resident?: string | string[];
+  unit?: string | string[];
 };
 
 function takeFirst(value?: string | string[]) {
@@ -16,13 +17,14 @@ export default function AdmissionReviewScreen() {
   const params = useLocalSearchParams<RouteParams>();
   const episodeId = takeFirst(params.episodeId) ?? "new";
   const resident = takeFirst(params.resident) ?? t("admissions.detox.draftResident", "New Detox Admission");
+  const unit = takeFirst(params.unit) ?? "detox";
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
       <Link
         href={{
           pathname: "/(tabs)/admissions/[episodeId]",
-          params: { episodeId, resident, unit: "detox" },
+          params: { episodeId, resident, unit },
         }}
         asChild
       >

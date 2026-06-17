@@ -11,7 +11,18 @@ module.exports = {
     slug: "acutis-tab",
     scheme,
     platforms: ["android"],
-    plugins: ["expo-router", "expo-localization"],
+    plugins: [
+      "expo-router",
+      "expo-localization",
+      "expo-speech-recognition",
+      [
+        "expo-image-picker",
+        {
+          photosPermission: "Allow Acutis Tablet to attach admission photos.",
+          cameraPermission: "Allow Acutis Tablet to capture admission photos.",
+        },
+      ],
+    ],
     extra: {
       router: {},
       apiBaseUrl: process.env.ACUTIS_TAB_API_BASE_URL || apiBaseUrl,
@@ -32,6 +43,10 @@ module.exports = {
     },
     android: {
       package: "com.salientrecovery.acutis.tab",
+      permissions: [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+      ],
     },
   },
 };

@@ -1,11 +1,14 @@
 import { Link, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { t } from "../../../../src/i18n";
+import { SignaturePad, type SignatureStroke } from "../../../../src/features/admissions/captureInputs";
 
 type RouteParams = {
   episodeId?: string | string[];
   resident?: string | string[];
+  unit?: string | string[];
 };
 
 function takeFirst(value?: string | string[]) {
@@ -16,13 +19,15 @@ export default function AdmissionSignatureScreen() {
   const params = useLocalSearchParams<RouteParams>();
   const episodeId = takeFirst(params.episodeId) ?? "new";
   const resident = takeFirst(params.resident) ?? t("admissions.detox.draftResident", "New Detox Admission");
+  const unit = takeFirst(params.unit) ?? "detox";
+  const [signatureStrokes, setSignatureStrokes] = useState<SignatureStroke[]>([]);
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
       <Link
         href={{
           pathname: "/(tabs)/admissions/[episodeId]",
-          params: { episodeId, resident, unit: "detox" },
+          params: { episodeId, resident, unit },
         }}
         asChild
       >
@@ -36,9 +41,7 @@ export default function AdmissionSignatureScreen() {
         <Text style={styles.subtitle}>{t("admissions.detox.signatureSubtitle", "Capture consent and admission signoff here.")}</Text>
         <Text style={styles.resident}>{resident}</Text>
 
-        <View style={styles.placeholderPanel}>
-          <Text style={styles.placeholderText}>{t("admissions.detox.signatureComingSoon", "Tablet signature capture is not implemented yet.")}</Text>
-        </View>
+        <SignaturePad strokes={signatureStrokes} onChange={setSignatureStrokes} />
       </View>
     </ScrollView>
   );
