@@ -3,21 +3,26 @@
     "name": "acutis.tab",
     "slug": "acutis-tab",
     "scheme": "acutis-tab",
+    "platforms": [
+      "android"
+    ],
     "plugins": [
       "expo-router",
       "expo-localization"
     ],
     "extra": {
       "router": {},
-      "apiBaseUrl": "http://192.168.149.100:5009",
+      "apiBaseUrl": "https://acutis.salientrecovery.com/api-proxy",
       "keycloak": {
-        "issuer": "http://192.168.149.100:8080/realms/acutisrealm",
+        "baseUrl": "https://acutis.salientrecovery.com/keycloak",
+        "issuer": "https://acutis.salientrecovery.com/keycloak/realms/acutisrealm",
+        "authUrl": "https://acutis.salientrecovery.com/keycloak/realms/acutisrealm/protocol/openid-connect/auth",
         "clientId": "tab-client",
         "audience": "api-client",
         "redirectUri": "acutis-tab://redirect"
       },
       "development": {
-        "authorizationDisabled": true
+        "authorizationDisabled": false
       },
       "eas": {
         "projectId": "b5f5142e-085e-4803-b48a-e4fd3e53a80d"

@@ -1,0 +1,37 @@
+const canonicalHost = "https://acutis.salientrecovery.com";
+const apiBaseUrl = `${canonicalHost}/api-proxy`;
+const keycloakBaseUrl = `${canonicalHost}/keycloak`;
+const scheme = process.env.ACUTIS_TAB_SCHEME || "acutis-tab";
+
+const boolFromEnv = (value) => String(value ?? "").toLowerCase() === "true";
+
+module.exports = {
+  expo: {
+    name: "acutis.tab",
+    slug: "acutis-tab",
+    scheme,
+    platforms: ["android"],
+    plugins: ["expo-router", "expo-localization"],
+    extra: {
+      router: {},
+      apiBaseUrl: process.env.ACUTIS_TAB_API_BASE_URL || apiBaseUrl,
+      keycloak: {
+        baseUrl: process.env.ACUTIS_TAB_KEYCLOAK_BASE_URL || keycloakBaseUrl,
+        issuer: process.env.ACUTIS_TAB_KEYCLOAK_ISSUER || `${keycloakBaseUrl}/realms/acutisrealm`,
+        authUrl: process.env.ACUTIS_TAB_KEYCLOAK_AUTH_URL || `${keycloakBaseUrl}/realms/acutisrealm/protocol/openid-connect/auth`,
+        clientId: process.env.ACUTIS_TAB_KEYCLOAK_CLIENT_ID || "tab-client",
+        audience: process.env.ACUTIS_TAB_KEYCLOAK_AUDIENCE || "api-client",
+        redirectUri: process.env.ACUTIS_TAB_REDIRECT_URI || `${scheme}://redirect`,
+      },
+      development: {
+        authorizationDisabled: boolFromEnv(process.env.ACUTIS_TAB_AUTH_DISABLED),
+      },
+      eas: {
+        projectId: "b5f5142e-085e-4803-b48a-e4fd3e53a80d",
+      },
+    },
+    android: {
+      package: "com.salientrecovery.acutis.tab",
+    },
+  },
+};

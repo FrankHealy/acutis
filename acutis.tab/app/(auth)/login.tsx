@@ -9,7 +9,7 @@ export default function LoginScreen() {
   const { state, signIn } = useAuth();
 
   if (state === "authenticated") {
-    return <Redirect href="/(auth)/select-unit" />;
+    return <Redirect href="/(tabs)/community" />;
   }
 
   return (

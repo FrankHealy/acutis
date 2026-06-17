@@ -12,6 +12,15 @@ export default function SelectUnitScreen() {
         <Text style={styles.title}>{t("auth.selectUnit", "Select Unit")}</Text>
         <Text style={styles.subtitle}>{t("auth.selectUnitSubtitle", "Choose the operational unit for this tablet session.")}</Text>
       </View>
+      <Link href="/(tabs)/community" asChild>
+        <Pressable style={styles.unitRow}>
+          <View style={[styles.marker, { backgroundColor: "#0E7490" }]} />
+          <View>
+            <Text style={styles.unitName}>{t("community.unitName", "Community")}</Text>
+            <Text style={styles.unitDescription}>{t("community.description", "Arbour House service-user dashboard, sessions and care plans.")}</Text>
+          </View>
+        </Pressable>
+      </Link>
       {ROLL_CALL_UNITS.map((unit) => (
         <Link key={unit.id} href={`/(tabs)/unit/${unit.id}` as never} asChild>
           <Pressable style={styles.unitRow}>

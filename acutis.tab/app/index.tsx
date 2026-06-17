@@ -17,7 +17,7 @@ export default function IndexScreen() {
   }, [state, signIn]);
 
   if (state === "authenticated") {
-    return <Redirect href="/(tabs)/dashboard" />;
+    return <Redirect href="/(tabs)/community" />;
   }
 
   return (

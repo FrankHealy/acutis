@@ -5,7 +5,7 @@ import { clearAuthTokens, getAuthTokens, setAuthTokens } from "./secureTokenStor
 async function getDiscovery(): Promise<AuthSession.DiscoveryDocument> {
   const { issuer } = getKeycloakConfig();
   if (!issuer) {
-    throw new Error("Missing Keycloak issuer in app.json under expo.extra.keycloak");
+    throw new Error("Missing Keycloak issuer in Expo runtime config");
   }
   return AuthSession.fetchDiscoveryAsync(issuer);
 }
@@ -13,7 +13,7 @@ async function getDiscovery(): Promise<AuthSession.DiscoveryDocument> {
 export async function signInWithKeycloak(): Promise<void> {
   const { clientId, redirectUri: configuredRedirectUri } = getKeycloakConfig();
   if (!clientId) {
-    throw new Error("Missing Keycloak clientId in app.json under expo.extra.keycloak");
+    throw new Error("Missing Keycloak clientId in Expo runtime config");
   }
 
   const redirectUri = configuredRedirectUri || AuthSession.makeRedirectUri({ scheme: "acutis-tab" });

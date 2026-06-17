@@ -63,7 +63,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<boolean>
   try {
     const { issuer, clientId } = getKeycloakConfig();
     if (!issuer || !clientId) {
-      throw new Error("Missing Keycloak config in app.json under expo.extra.keycloak");
+      throw new Error("Missing Keycloak config in Expo runtime config");
     }
 
     const tokenEndpoint = `${issuer.replace(/\/$/, "")}/protocol/openid-connect/token`;

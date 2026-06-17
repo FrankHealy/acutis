@@ -1,10 +1,21 @@
 ﻿import { getApiBaseUrl, isDevelopmentAuthorizationDisabled } from "../../constants/runtimeConfig";
-import { getValidAccessToken } from "../auth/secureTokenStorage";
+import { clearAuthTokens, getValidAccessToken } from "../auth/secureTokenStorage";
 
 type ApiRequestOptions = RequestInit & {
   authenticated?: boolean;
 };
 
+export class ApiError extends Error {
+  status: number;
+  body?: string;
+
+  constructor(status: number, body?: string) {
+    super(body ? `API request failed with status ${status}: ${body}` : `API request failed with status ${status}`);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
 
 export async function apiFetch(path: string, init: ApiRequestOptions = {}): Promise<Response> {
   const { authenticated = true, headers, ...rest } = init;
@@ -24,17 +35,24 @@ export async function apiFetch(path: string, init: ApiRequestOptions = {}): Prom
     nextHeaders.set("Content-Type", "application/json");
   }
 
-  return fetch(requestUrl, {
+  const response = await fetch(requestUrl, {
     ...rest,
     headers: nextHeaders,
   });
+
+  if (response.status === 401 && authenticated) {
+    await clearAuthTokens();
+  }
+
+  return response;
 }
 
 export async function apiFetchJson<T>(path: string, init: ApiRequestOptions = {}): Promise<T> {
   const response = await apiFetch(path, init);
 
   if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}`);
+    const body = await response.text().catch(() => undefined);
+    throw new ApiError(response.status, body || undefined);
   }
 
   return (await response.json()) as T;

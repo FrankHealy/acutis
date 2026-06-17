@@ -3,7 +3,9 @@ import Constants from "expo-constants";
 export type RuntimeExtraConfig = {
   apiBaseUrl?: string;
   keycloak?: {
+    baseUrl?: string;
     issuer?: string;
+    authUrl?: string;
     clientId?: string;
     audience?: string;
     redirectUri?: string;
@@ -30,11 +32,11 @@ export function getRuntimeExtra(): RuntimeExtraConfig {
 
 export function isDevelopmentAuthorizationDisabled(): boolean {
   const configured = getRuntimeExtra().development?.authorizationDisabled;
-  return typeof configured === "boolean" ? configured : __DEV__;
+  return typeof configured === "boolean" ? configured : false;
 }
 
 export function getApiBaseUrl(): string {
-  return getRuntimeExtra().apiBaseUrl?.replace(/\/$/, "") ?? "";
+  return getRuntimeExtra().apiBaseUrl?.replace(/\/$/, "") ?? "https://acutis.salientrecovery.com/api-proxy";
 }
 
 export function getKeycloakConfig() {
