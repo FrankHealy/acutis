@@ -94,3 +94,24 @@ export async function fetchCommunityDashboard(): Promise<CommunityDashboard> {
     programmeOfferings: dashboard.programmeOfferings ?? [],
   };
 }
+
+export async function fetchCommunityParticipants(): Promise<CommunityParticipant[]> {
+  const dashboard = await fetchCommunityDashboard();
+  return dashboard.participants;
+}
+
+export async function fetchCommunityParticipantDetail(
+  participantId: string
+): Promise<{ participant: CommunityParticipant | null; appointments: CommunityAppointment[] }> {
+  const dashboard = await fetchCommunityDashboard();
+
+  return {
+    participant: dashboard.participants.find((participant) => participant.id === participantId) ?? null,
+    appointments: dashboard.appointments.filter((appointment) => appointment.participantId === participantId),
+  };
+}
+
+export async function fetchCommunityAppointments(): Promise<CommunityAppointment[]> {
+  const dashboard = await fetchCommunityDashboard();
+  return dashboard.appointments;
+}

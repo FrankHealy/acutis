@@ -246,9 +246,11 @@ export default function CommunityScreen() {
           <View style={styles.card}>
             <View style={styles.sectionHead}>
               <Text style={styles.sectionTitle}>{t("community.todaySchedule", "Today")}</Text>
-              <Pressable onPress={() => setCurrentView("operations")} style={styles.smallButton}>
-                <Text style={styles.smallButtonText}>{t("community.openSchedule", "Open schedule")}</Text>
-              </Pressable>
+              <Link href="/(tabs)/community/sessions" asChild>
+                <Pressable style={styles.smallButton}>
+                  <Text style={styles.smallButtonText}>{t("community.openSchedule", "Open schedule")}</Text>
+                </Pressable>
+              </Link>
             </View>
             {todayAppointments.length === 0 ? (
               <Text style={styles.mutedText}>{t("community.noSessionsToday", "No sessions scheduled for today.")}</Text>
@@ -263,7 +265,11 @@ export default function CommunityScreen() {
         <View style={styles.card}>
           <View style={styles.sectionHead}>
             <Text style={styles.sectionTitle}>{t("community.serviceUsers", "Service Users")}</Text>
-            <Text style={styles.countText}>{participants.length} {t("community.active", "active")}</Text>
+            <Link href="/(tabs)/community/participants" asChild>
+              <Pressable style={styles.smallButton}>
+                <Text style={styles.smallButtonText}>{participants.length} {t("community.active", "active")}</Text>
+              </Pressable>
+            </Link>
           </View>
           {participants.length === 0 ? (
             <Text style={styles.mutedText}>{t("community.noServiceUsers", "No service users returned by the API.")}</Text>

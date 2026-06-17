@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  fetchCommunityDashboard,
+  fetchCommunityParticipantDetail,
   type CommunityAppointment,
   type CommunityParticipant,
 } from "../../../../src/features/community/api";
@@ -53,11 +53,11 @@ export default function CommunityParticipantDetailScreen() {
 
   useEffect(() => {
     let active = true;
-    fetchCommunityDashboard()
-      .then((dashboard) => {
+    fetchCommunityParticipantDetail(participantId)
+      .then((detail) => {
         if (!active) return;
-        setParticipant(dashboard.participants.find((item) => item.id === participantId) ?? null);
-        setAppointments(dashboard.appointments.filter((item) => item.participantId === participantId));
+        setParticipant(detail.participant);
+        setAppointments(detail.appointments);
         setError(null);
       })
       .catch((loadError) => {
