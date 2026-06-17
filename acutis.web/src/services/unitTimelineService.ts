@@ -1,5 +1,6 @@
 import { createAuthHeaders } from "@/lib/authMode";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 
 export type UnitTimelineItemDto = {
   key: string;
@@ -31,8 +32,7 @@ export async function getUnitTimeline(accessToken: string | undefined, unitCode:
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(body || `Request failed: ${response.status}`);
+    await throwApiError(response);
   }
 
   return (await response.json()) as UnitTimelineItemDto[];
@@ -54,8 +54,7 @@ export async function takeUnitTimelineEvent(
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(body || `Request failed: ${response.status}`);
+    await throwApiError(response);
   }
 
   return (await response.json()) as UnitTimelineItemDto;

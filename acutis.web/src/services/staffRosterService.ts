@@ -1,5 +1,6 @@
 import { createAuthHeaders } from "@/lib/authMode";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 
 export type UnitStaffRosterStaffDto = {
   appUserId: string;
@@ -71,8 +72,7 @@ async function request<T>(accessToken: string | undefined, path: string, init?: 
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(body || `Request failed: ${response.status}`);
+    await throwApiError(response);
   }
 
   return (await response.json()) as T;

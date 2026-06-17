@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, Pill, Shield, Venus, Wine } from 'lucide-react';
+import { AlertTriangle, Pill, Shield, Users, Venus, Wine } from 'lucide-react';
 import { signIn, useSession } from 'next-auth/react';
 import { useLocalization } from '@/areas/shared/i18n/LocalizationProvider';
 import { getScreeningControl } from '@/areas/screening/services/screeningControlService';
@@ -23,8 +23,11 @@ interface HeaderProps {
   unitName?: string;
   unitLabel?: string;
   unitAccentClass?: string;
-  unitIconKey?: UnitDefinition["iconKey"];
+  unitIconKey?: UnitDefinition["iconKey"] | "community";
   onOpenIncidentCapture?: () => void;
+  brandNameOverride?: string;
+  brandSubtitleOverride?: string;
+  brandLogoUrlOverride?: string;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -35,6 +38,9 @@ const Header: React.FC<HeaderProps> = ({
   unitAccentClass,
   unitIconKey,
   onOpenIncidentCapture,
+  brandNameOverride,
+  brandSubtitleOverride,
+  brandLogoUrlOverride,
 }) => {
   const { access } = useAppAccess();
   const { centreThemeKey, userThemeKey, setCentreThemeKey, setUserThemeKey } = useTheme();
@@ -66,12 +72,14 @@ const Header: React.FC<HeaderProps> = ({
     shield: Shield,
     pill: Pill,
     venus: Venus,
+    community: Users,
   } as const;
   const unitTabletThemeMap = {
     wine: "border-blue-200 bg-blue-50 text-blue-800 shadow-blue-100/80",
     shield: "border-red-200 bg-red-50 text-red-800 shadow-red-100/80",
     pill: "border-orange-200 bg-orange-50 text-orange-800 shadow-orange-100/80",
     venus: "border-pink-200 bg-pink-50 text-pink-800 shadow-pink-100/80",
+    community: "border-cyan-200 bg-cyan-50 text-cyan-800 shadow-cyan-100/80",
   } as const;
   const UnitIcon = unitIconKey ? unitIconMap[unitIconKey] : null;
   const unitTabletTheme = unitIconKey ? unitTabletThemeMap[unitIconKey] : "";
@@ -261,9 +269,9 @@ const Header: React.FC<HeaderProps> = ({
     return resolved === key ? fallback : resolved;
   };
 
-  const resolvedBrandName = brandName || text('app.brand', 'Acutis');
-  const resolvedBrandSubtitle = brandSubtitle || text('app.centre.bruree', 'Bruree Treatment Center');
-  const resolvedBrandLogoUrl = brandLogoUrl || "/acutis-icon.svg";
+  const resolvedBrandName = brandNameOverride ?? (brandName || text('app.brand', 'Acutis'));
+  const resolvedBrandSubtitle = brandSubtitleOverride ?? (brandSubtitle || text('app.centre.bruree', 'Bruree Treatment Center'));
+  const resolvedBrandLogoUrl = brandLogoUrlOverride ?? (brandLogoUrl || "/acutis-icon.svg");
   const canManageTheme =
     access.permissions.includes(THEME_MANAGE_PERMISSION) ||
     (resolvedUnitId

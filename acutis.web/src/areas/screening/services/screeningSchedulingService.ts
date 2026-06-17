@@ -1,6 +1,7 @@
 import { createAuthHeaders } from "@/lib/authMode";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
+import { createApiError } from "@/lib/apiError";
 
 export type ScreeningSchedulingAwaitingItem = {
   caseId: string;
@@ -62,7 +63,7 @@ const request = async <T>(
 
   if (!response.ok) {
     const bodyText = await response.text().catch(() => "");
-    const error = new Error(bodyText || `Request failed (${response.status}).`) as ApiError;
+    const error = createApiError(response.status, bodyText) as ApiError;
     error.status = response.status;
 
     if (bodyText) {

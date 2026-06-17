@@ -54,7 +54,7 @@ export const useResidents = (unitId: UnitId, initialRollCallView = false) => {
           prevSourceRef.current = newSource;
         }
       } catch (err) {
-        setError('Failed to load residents');
+        setError(err instanceof Error ? err.message : 'Failed to load residents');
       } finally {
         setLoading(false);
       }

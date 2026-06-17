@@ -1,5 +1,6 @@
 import { createAuthHeaders } from "@/lib/authMode";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 
 export type UnitConfigurationDto = {
   unitId: string;
@@ -357,8 +358,7 @@ async function request<T>(path: string, accessToken: string | undefined, init?: 
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(body || `Request failed: ${response.status}`);
+    await throwApiError(response);
   }
 
   if (response.status === 204) {

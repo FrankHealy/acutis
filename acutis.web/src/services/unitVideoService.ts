@@ -1,6 +1,7 @@
 import { UNIT_GUIDS } from "./unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 
 export type VideoDto = {
   id: string;
@@ -25,9 +26,7 @@ export const unitVideoService = {
       headers: { Accept: "application/json" },
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to load videos (${response.status})`);
-    }
+    if (!response.ok) await throwApiError(response);
 
     return (await response.json()) as VideoDto[];
   },

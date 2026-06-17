@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CircleSlash,
   ClipboardCheck,
+  ClipboardList,
   Download,
   ExternalLink,
   FileText,
@@ -47,6 +48,9 @@ import {
 } from "@/services/ambulatoryService";
 import { JitsiSessionFrame } from "./JitsiSessionFrame";
 import groupTherapyTerms from "@/data/groupTherapyTerms.json";
+import AccessDeniedNotice from "@/areas/shared/AccessDeniedNotice";
+import { isForbiddenError } from "@/lib/apiError";
+import Header from "@/areas/shared/layout/Header";
 
 type AmbulatoryWorkspaceProps = {
   programme: AmbulatoryProgramme;
@@ -54,6 +58,7 @@ type AmbulatoryWorkspaceProps = {
 
 type DialogMode = "participant" | "assessment" | "care-plan" | "appointment" | "session" | null;
 type CalendarMode = "day" | "work-week" | "month";
+type CommunityView = "dashboard" | "service-users" | "operations";
 type AppointmentDraftDefaults = { startsAt: string; endsAt: string } | null;
 type ObservationTerm = { id: number; term: string; description: string; ratingId: number };
 
@@ -168,12 +173,14 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
   const [dashboard, setDashboard] = useState<AmbulatoryDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const accessDenied = isForbiddenError(error);
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [participantSearch, setParticipantSearch] = useState("");
   const [calendarMode, setCalendarMode] = useState<CalendarMode>(() => config.calendar.defaultMode === "month" || config.calendar.defaultMode === "day" ? config.calendar.defaultMode : "work-week");
+  const [communityView, setCommunityView] = useState<CommunityView>("dashboard");
   const [anchorDate, setAnchorDate] = useState(startOfDay(new Date()));
   const [appointmentDefaults, setAppointmentDefaults] = useState<AppointmentDraftDefaults>(null);
 
@@ -216,9 +223,14 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
     setError(null);
     try {
       const next = await ambulatoryService.getDashboard(programme, session?.accessToken);
-      setDashboard(next);
-      setSelectedParticipantId((current) => current ?? next.participants[0]?.id ?? null);
-      setSelectedAppointmentId((current) => current ?? next.appointments[0]?.id ?? null);
+      const safeDashboard = {
+        ...next,
+        participants: next.participants ?? [],
+        appointments: next.appointments ?? [],
+      };
+      setDashboard(safeDashboard);
+      setSelectedParticipantId((current) => current ?? safeDashboard.participants[0]?.id ?? null);
+      setSelectedAppointmentId((current) => current ?? safeDashboard.appointments[0]?.id ?? null);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -354,10 +366,146 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
     window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, "_blank", "noopener,noreferrer");
   };
 
+  const isCommunity = programme === "community";
+  const communityNavItems: { key: CommunityView | "configuration"; label: string }[] = [
+    { key: "dashboard", label: "Dashboard" },
+    { key: "service-users", label: "Service Users" },
+    { key: "operations", label: "Operations" },
+    { key: "configuration", label: "Configuration" },
+  ];
+  const serviceUserPanel = (
+    <ServiceUserPanel
+      config={config}
+      t={t}
+      participants={filteredParticipants}
+      totalParticipants={participants.length}
+      selectedParticipant={selectedParticipant}
+      search={participantSearch}
+      onSearch={setParticipantSearch}
+      onAdd={() => openDialog("participant")}
+      onSelect={(participant) => setSelectedParticipantId(participant.id)}
+      onAssessment={(participant) => openDialog("assessment", { participant })}
+      onCarePlan={(participant) => openDialog("care-plan", { participant })}
+      onAppointment={(participant) => openDialog("appointment", { participant })}
+    />
+  );
+  const calendarBoard = (
+    <CalendarBoard
+      config={config}
+      t={t}
+      mode={calendarMode}
+      anchorDate={anchorDate}
+      appointments={appointments}
+      onModeChange={setCalendarMode}
+      onAnchorChange={setAnchorDate}
+      onNewAppointment={() => openDialog("appointment")}
+      onOpenSession={(appointment) => openDialog("session", { appointment })}
+      onCreateAt={createAppointmentAt}
+      onMoveAppointment={(appointmentId, day, slotMinutes) => void moveAppointment(appointmentId, day, slotMinutes)}
+      onResizeAppointment={(appointment, deltaMinutes) => void resizeAppointment(appointment, deltaMinutes)}
+      onMarkMissed={(appointment) => void markAppointmentMissed(appointment)}
+      onExportOutlook={exportAppointments}
+      onExportGoogle={() => openGoogleCalendar(selectedAppointment)}
+    />
+  );
+  const communityWorkspace = communityView === "dashboard" ? (
+    <div className="mt-5 grid gap-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <CommunityShortcut
+          Icon={Users}
+          label="Service Users"
+          value={`${participants.length} active`}
+          onClick={() => setCommunityView("service-users")}
+        />
+        <CommunityShortcut
+          Icon={CalendarDays}
+          label="Appointment"
+          value={`${todayAppointments.length} today`}
+          onClick={() => openDialog("appointment")}
+        />
+        <CommunityShortcut
+          Icon={ClipboardCheck}
+          label="Assessment"
+          value="New"
+          onClick={() => openDialog("assessment", { participant: selectedParticipant ?? undefined })}
+        />
+        <CommunityShortcut
+          Icon={FileText}
+          label="Care Plan"
+          value={`${reportsDueToday} reports`}
+          onClick={() => openDialog("care-plan", { participant: selectedParticipant ?? undefined })}
+        />
+      </div>
+      {calendarBoard}
+    </div>
+  ) : communityView === "service-users" ? (
+    <div className="mt-5">
+      <ServiceUsersTable
+        config={config}
+        participants={filteredParticipants}
+        totalParticipants={participants.length}
+        selectedParticipant={selectedParticipant}
+        search={participantSearch}
+        onSearch={setParticipantSearch}
+        onAdd={() => openDialog("participant")}
+        onSelect={(participant) => setSelectedParticipantId(participant.id)}
+        onAssessment={(participant) => openDialog("assessment", { participant })}
+        onCarePlan={(participant) => openDialog("care-plan", { participant })}
+        onAppointment={(participant) => openDialog("appointment", { participant })}
+      />
+    </div>
+  ) : (
+    <div className="mt-5">
+      {calendarBoard}
+    </div>
+  );
+
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-950 sm:px-6">
+    <>
+      {isCommunity && (
+        <>
+          <Header
+            showCapacity={false}
+            unitName="Community"
+            unitLabel="Current Unit"
+            unitAccentClass="text-cyan-700"
+            unitIconKey="community"
+            brandNameOverride="Acutis"
+            brandSubtitleOverride="Arbour House"
+            brandLogoUrlOverride="/acutis-icon.svg"
+          />
+          <nav className="app-surface">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="flex h-14 items-center">
+                <div className="flex items-center gap-6">
+                  {communityNavItems.map((item) => {
+                    const active = item.key !== "configuration" && communityView === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => {
+                          if (item.key === "configuration") {
+                            router.push("/units/config");
+                            return;
+                          }
+                          setCommunityView(item.key);
+                        }}
+                        className={`text-sm font-medium ${active ? "text-[var(--app-primary)]" : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"}`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </nav>
+        </>
+      )}
+      <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-950 sm:px-6">
       <div className="mx-auto max-w-[1500px]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        {!isCommunity && <div className="flex flex-wrap items-center justify-between gap-3">
           <button type="button" onClick={() => router.push("/")} className="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -366,9 +514,9 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
             <RefreshCw className="h-4 w-4" />
             Refresh
           </button>
-        </div>
+        </div>}
 
-        <header className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        {!isCommunity && <header className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className={`h-1.5 ${config.primaryClass}`} />
           <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
             <div className="flex min-w-0 items-center gap-4">
@@ -387,45 +535,31 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
               <StatusPill Icon={FileText} label={`${reportsDueToday} reports`} />
             </div>
           </div>
-        </header>
+        </header>}
+        {isCommunity && (
+          <div className="flex flex-wrap justify-end gap-2">
+            <StatusPill Icon={CalendarDays} label={`${todayAppointments.length} appointments`} />
+            <StatusPill Icon={MapPin} label={`${outreachToday} outreach`} />
+            <StatusPill Icon={FileText} label={`${reportsDueToday} reports`} />
+          </div>
+        )}
 
-        {error && <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+        {accessDenied ? (
+          <div className="mt-4">
+            <AccessDeniedNotice message={error} />
+          </div>
+        ) : (
+          error && <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        )}
         {loading && <p className="mt-4 text-sm text-gray-500">Loading...</p>}
 
         {!loading && dashboard && (
-          <div className="mt-5 grid gap-4 xl:grid-cols-[310px_minmax(0,1fr)]">
-            <ServiceUserPanel
-              config={config}
-              t={t}
-              participants={filteredParticipants}
-              totalParticipants={participants.length}
-              selectedParticipant={selectedParticipant}
-              search={participantSearch}
-              onSearch={setParticipantSearch}
-              onAdd={() => openDialog("participant")}
-              onSelect={(participant) => setSelectedParticipantId(participant.id)}
-              onAssessment={(participant) => openDialog("assessment", { participant })}
-              onCarePlan={(participant) => openDialog("care-plan", { participant })}
-              onAppointment={(participant) => openDialog("appointment", { participant })}
-            />
-            <CalendarBoard
-              config={config}
-              t={t}
-              mode={calendarMode}
-              anchorDate={anchorDate}
-              appointments={appointments}
-              onModeChange={setCalendarMode}
-              onAnchorChange={setAnchorDate}
-              onNewAppointment={() => openDialog("appointment")}
-              onOpenSession={(appointment) => openDialog("session", { appointment })}
-              onCreateAt={createAppointmentAt}
-              onMoveAppointment={(appointmentId, day, slotMinutes) => void moveAppointment(appointmentId, day, slotMinutes)}
-              onResizeAppointment={(appointment, deltaMinutes) => void resizeAppointment(appointment, deltaMinutes)}
-              onMarkMissed={(appointment) => void markAppointmentMissed(appointment)}
-              onExportOutlook={exportAppointments}
-              onExportGoogle={() => openGoogleCalendar(selectedAppointment)}
-            />
-          </div>
+          isCommunity ? communityWorkspace : (
+            <div className="mt-5 grid gap-4 xl:grid-cols-[310px_minmax(0,1fr)]">
+              {serviceUserPanel}
+              {calendarBoard}
+            </div>
+          )
         )}
       </div>
 
@@ -444,7 +578,8 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
       <CarePlanDialog open={dialogMode === "care-plan"} participant={selectedParticipant} programme={programme} accessToken={session?.accessToken} error={dialogError} onError={setDialogError} onClose={closeDialog} onSaved={refresh} />
       <AppointmentDialog open={dialogMode === "appointment"} config={config} defaults={appointmentDefaults} participants={participants} selectedParticipant={selectedParticipant} programme={programme} accessToken={session?.accessToken} allowVideo error={dialogError} onError={setDialogError} onClose={closeDialog} onSaved={refresh} />
       <SessionDialog open={dialogMode === "session"} appointment={selectedAppointment} displayName={clinicalDisplayName} jwt={session?.accessToken} onClose={closeDialog} />
-    </main>
+      </main>
+    </>
   );
 }
 
@@ -454,6 +589,181 @@ function StatusPill({ label, Icon }: { label: string; Icon: LucideIcon }) {
       <Icon className="h-4 w-4 text-[var(--app-primary)]" />
       {label}
     </span>
+  );
+}
+
+function CommunityShortcut({ label, value, Icon, onClick }: { label: string; value: string; Icon: LucideIcon; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-20 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-cyan-700 text-white">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-bold text-slate-950">{label}</span>
+        <span className="mt-0.5 block truncate text-xs font-semibold uppercase tracking-wide text-slate-500">{value}</span>
+      </span>
+    </button>
+  );
+}
+
+function participantAvatarUrl(participant: AmbulatoryParticipant) {
+  return participant.photoUrl?.trim() || participant.photo?.trim() || "";
+}
+
+function ServiceUserAvatar({ participant }: { participant: AmbulatoryParticipant }) {
+  const [src, setSrc] = useState(participantAvatarUrl(participant));
+  const initials = participant.displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "SU";
+
+  useEffect(() => {
+    setSrc(participantAvatarUrl(participant));
+  }, [participant]);
+
+  return (
+    <span className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-cyan-100 text-sm font-bold text-cyan-800">
+      {initials}
+      {src && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={participant.displayName}
+          width={44}
+          height={44}
+          onError={() => setSrc("")}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+    </span>
+  );
+}
+
+function ServiceUsersTable({
+  config,
+  participants,
+  totalParticipants,
+  selectedParticipant,
+  search,
+  onSearch,
+  onAdd,
+  onSelect,
+  onAssessment,
+  onCarePlan,
+  onAppointment,
+}: {
+  config: AmbulatoryLocalConfig;
+  participants: AmbulatoryParticipant[];
+  totalParticipants: number;
+  selectedParticipant: AmbulatoryParticipant | null;
+  search: string;
+  onSearch: (value: string) => void;
+  onAdd: () => void;
+  onSelect: (participant: AmbulatoryParticipant) => void;
+  onAssessment: (participant: AmbulatoryParticipant) => void;
+  onCarePlan: (participant: AmbulatoryParticipant) => void;
+  onAppointment: (participant: AmbulatoryParticipant) => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className={`h-1 ${config.primaryClass}`} />
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
+        <div>
+          <h2 className="text-xl font-bold text-slate-950">Service Users</h2>
+          <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{totalParticipants} active</p>
+        </div>
+        <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+          <label className="flex h-11 min-w-56 max-w-sm flex-1 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-500 focus-within:border-cyan-600 focus-within:ring-2 focus-within:ring-cyan-600/10">
+            <Search className="h-4 w-4" />
+            <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search" className="min-w-0 flex-1 bg-transparent font-medium text-slate-900 outline-none placeholder:text-slate-400" />
+          </label>
+          <button type="button" onClick={onAdd} className={`inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-white ${config.primaryClass}`}>
+            <UserPlus className="h-4 w-4" />
+            Service User
+          </button>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[980px]">
+          <thead className="bg-slate-50">
+            <tr>
+              {["Photo", "Service User", "Status", "Referral", "Care Plan", "Contact", "Counsellor", "Actions"].map((heading) => (
+                <th key={heading} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {heading}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200 bg-white">
+            {participants.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-5 py-8 text-center text-sm font-medium text-slate-500">
+                  No service users found.
+                </td>
+              </tr>
+            ) : (
+              participants.map((participant) => {
+                const selected = selectedParticipant?.id === participant.id;
+                return (
+                  <tr
+                    key={participant.id}
+                    onClick={() => onSelect(participant)}
+                    className={`cursor-pointer transition ${selected ? "bg-cyan-50" : "hover:bg-slate-50"}`}
+                  >
+                    <td className="px-5 py-4">
+                      <ServiceUserAvatar participant={participant} />
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="font-semibold text-slate-950">{participant.displayName}</div>
+                      <div className="mt-0.5 text-xs text-slate-500">{participant.preferredName || participant.id}</div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase text-slate-700">{participant.status}</span>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-slate-600">{participant.referralSource || "Community referral"}</td>
+                    <td className="px-5 py-4 text-sm font-medium text-slate-700">{participant.currentCarePlan?.status ?? "Plan needed"}</td>
+                    <td className="px-5 py-4 text-sm text-slate-600">
+                      <div>{participant.phone || "No phone"}</div>
+                      <div className="mt-0.5 text-xs text-slate-500">{participant.email || "No email"}</div>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-slate-600">{participant.counsellorDisplayName || "Not assigned"}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <TableAction label="Assess" Icon={ClipboardCheck} onClick={() => onAssessment(participant)} />
+                        <TableAction label="Plan" Icon={ClipboardList} onClick={() => onCarePlan(participant)} />
+                        <TableAction label="Appointment" Icon={CalendarDays} onClick={() => onAppointment(participant)} />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function TableAction({ label, Icon, onClick }: { label: string; Icon: LucideIcon; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+    >
+      <Icon className="h-3.5 w-3.5 text-cyan-700" />
+      {label}
+    </button>
   );
 }
 
@@ -822,7 +1132,7 @@ function Dialog({ open, title, children, onClose }: { open: boolean; title: stri
       <div className="max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
           <h2 className="text-lg font-semibold text-gray-950">{title}</h2>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900"><X className="h-5 w-5" /></button>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900"><X className="h-5 w-5" /></button>
         </div>
         <div className="max-h-[calc(92vh-72px)] overflow-y-auto p-5">{children}</div>
       </div>

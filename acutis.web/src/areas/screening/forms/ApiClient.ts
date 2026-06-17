@@ -154,6 +154,14 @@ export type UpsertFormDefinitionRequest = {
 };
 
 const formatApiErrorMessage = (status: number, bodyText: string): string => {
+  if (status === 401) {
+    return "Your session has expired. Please sign in again.";
+  }
+
+  if (status === 403) {
+    return "You do not have permission to access this area. Ask an administrator to update your role or unit access.";
+  }
+
   if (!bodyText) {
     return `Request failed (${status}).`;
   }

@@ -1,6 +1,7 @@
 import { createAuthHeaders } from "@/lib/authMode";
 import type { AppAccess } from "@/lib/adminAccess";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 
 export const appAccessService = {
   async getCurrent(accessToken?: string): Promise<AppAccess> {
@@ -10,8 +11,7 @@ export const appAccessService = {
     });
 
     if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      throw new Error(body || `Failed to load app access (${response.status})`);
+      await throwApiError(response);
     }
 
     return (await response.json()) as AppAccess;

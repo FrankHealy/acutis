@@ -1,5 +1,6 @@
 import { createAuthHeaders } from "@/lib/authMode";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 
 export type AmbulatoryProgramme = "community" | "practitioner";
 export type AmbulatoryProgrammeType = "Community" | "Practitioner";
@@ -38,6 +39,8 @@ export type AmbulatoryParticipant = {
   preferredName?: string | null;
   phone?: string | null;
   email?: string | null;
+  photoUrl?: string | null;
+  photo?: string | null;
   referralSource?: string | null;
   status: string;
   counsellorUserId: string;
@@ -138,8 +141,7 @@ async function request<T>(path: string, accessToken?: string | null, init?: Requ
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(body || `Request failed (${response.status})`);
+    await throwApiError(response);
   }
 
   return (await response.json()) as T;

@@ -98,7 +98,7 @@ export const ambulatoryLocalConfigs: Record<AmbulatoryProgramme, AmbulatoryLocal
 export const ambulatoryLocalTranslations: Record<string, string> = {
   "ambulatory.community.title": "Acutis Community",
   "ambulatory.community.eyebrow": "Community recovery",
-  "ambulatory.community.participant_label": "Client",
+  "ambulatory.community.participant_label": "Service User",
   "ambulatory.practitioner.title": "Acutis Practitioner",
   "ambulatory.practitioner.eyebrow": "Private practice",
   "ambulatory.practitioner.participant_label": "Participant",

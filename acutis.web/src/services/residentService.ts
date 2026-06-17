@@ -2,6 +2,7 @@ import { type Resident } from "./mockDataService";
 import { UNIT_GUIDS } from "./unitIdentity";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 import { createClientId } from "@/lib/createClientId";
+import { throwApiError } from "@/lib/apiError";
 
 export type AttendanceRecord = {
   residentId: number;
@@ -165,7 +166,7 @@ const fetchResidentsFromApi = async (unit: Resident["unit"], accessToken?: strin
   });
 
   if (!response.ok) {
-    throw new Error(`Residents API failed (${response.status})`);
+    await throwApiError(response);
   }
 
   const data = (await response.json()) as ResidentListItemDto[];

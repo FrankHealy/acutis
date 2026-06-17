@@ -1,5 +1,6 @@
 import { createAuthHeaders } from "@/lib/authMode";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 import { UNIT_GUIDS } from "./unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 
@@ -122,8 +123,7 @@ async function fetchJson<T>(path: string, accessToken?: string | null, init?: Re
   });
 
   if (!response.ok) {
-    const bodyText = await response.text().catch(() => "");
-    throw new Error(bodyText ? `Request failed (${response.status}): ${bodyText}` : `Request failed (${response.status})`);
+    await throwApiError(response);
   }
 
   if (response.status === 204) {

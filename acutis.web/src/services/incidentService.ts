@@ -2,6 +2,7 @@ import { createAuthHeaders } from "@/lib/authMode";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { UNIT_GUIDS } from "./unitIdentity";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 
 export type IncidentTypeRecord = {
   id: number;
@@ -51,8 +52,7 @@ async function request<T>(path: string, accessToken?: string | null, init?: Requ
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(body || `Request failed: ${response.status}`);
+    await throwApiError(response);
   }
 
   return (await response.json()) as T;

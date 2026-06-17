@@ -2,6 +2,7 @@ import { createAuthHeaders } from "@/lib/authMode";
 import { UNIT_GUIDS } from "@/services/unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 const DEFAULT_CENTRE_ID = "aaaaaaaa-1111-1111-1111-111111111111";
 
 export type IntakeBacklogItem = {
@@ -66,8 +67,7 @@ async function request<T>(path: string, accessToken?: string | null, init?: Requ
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(body || `Request failed (${response.status})`);
+    await throwApiError(response);
   }
 
   const payload = (await response.json()) as ApiEnvelope<T>;

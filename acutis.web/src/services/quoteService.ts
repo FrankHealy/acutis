@@ -2,6 +2,7 @@ import { UNIT_GUIDS } from "./unitIdentity";
 import type { UnitId } from "@/areas/shared/unit/unitTypes";
 import { createAuthHeaders } from "@/lib/authMode";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { throwApiError } from "@/lib/apiError";
 
 export type QuoteOfDay = {
   date: string;
@@ -44,9 +45,7 @@ export const quoteService = {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
-    if (!response.ok) {
-      throw new Error(`Failed to load quote of the day (${response.status})`);
-    }
+    if (!response.ok) await throwApiError(response);
     return (await response.json()) as QuoteOfDay;
   },
 
@@ -63,7 +62,7 @@ export const quoteService = {
       cache: "no-store",
       headers: createAuthHeaders(accessToken),
     });
-    if (!response.ok) throw new Error(`Failed to load quotes (${response.status})`);
+    if (!response.ok) await throwApiError(response);
     return (await response.json()) as QuoteRecord[];
   },
 
@@ -73,7 +72,7 @@ export const quoteService = {
       headers: { ...createAuthHeaders(accessToken), "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error(`Failed to create quote (${response.status})`);
+    if (!response.ok) await throwApiError(response);
     return (await response.json()) as QuoteRecord;
   },
 
@@ -83,7 +82,7 @@ export const quoteService = {
       headers: { ...createAuthHeaders(accessToken), "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error(`Failed to update quote (${response.status})`);
+    if (!response.ok) await throwApiError(response);
     return (await response.json()) as QuoteRecord;
   },
 
@@ -92,7 +91,7 @@ export const quoteService = {
       method: "DELETE",
       headers: createAuthHeaders(accessToken),
     });
-    if (!response.ok && response.status !== 204) throw new Error(`Failed to delete quote (${response.status})`);
+    if (!response.ok && response.status !== 204) await throwApiError(response);
   },
 
   async getUnitCuration(unitId: UnitId, accessToken?: string | null): Promise<UnitQuoteCuration[]> {
@@ -101,7 +100,7 @@ export const quoteService = {
       cache: "no-store",
       headers: createAuthHeaders(accessToken),
     });
-    if (!response.ok) throw new Error(`Failed to load unit curation (${response.status})`);
+    if (!response.ok) await throwApiError(response);
     return (await response.json()) as UnitQuoteCuration[];
   },
 
@@ -116,7 +115,7 @@ export const quoteService = {
       headers: { ...createAuthHeaders(accessToken), "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error(`Failed to save unit curation (${response.status})`);
+    if (!response.ok) await throwApiError(response);
     return (await response.json()) as UnitQuoteCuration;
   },
 
@@ -126,6 +125,6 @@ export const quoteService = {
       `${getApiBaseUrl()}/api/units/${encodeURIComponent(unitGuid)}/quote-curation/${encodeURIComponent(curationId)}`,
       { method: "DELETE", headers: createAuthHeaders(accessToken) }
     );
-    if (!response.ok && response.status !== 204) throw new Error(`Failed to delete curation row (${response.status})`);
+    if (!response.ok && response.status !== 204) await throwApiError(response);
   },
 };
