@@ -190,6 +190,8 @@ const common = {
       startDictation: "Dictate",
       stopDictation: "Stop",
       dictationDenied: "Microphone permission is required for dictation.",
+      offlineDictationUnavailable: "On-device dictation is not available on this tablet.",
+      offlineDictationDownload: "Irish English dictation is being prepared on this tablet. Try dictation again once the language pack finishes installing.",
       notesPlaceholder: "Type or dictate arrival notes, risks and immediate needs.",
       photoTitle: "Admission Photo",
       takePhoto: "Take Photo",

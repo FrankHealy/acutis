@@ -8,6 +8,7 @@ import {
   Image,
   LayoutChangeEvent,
   PanResponder,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -18,7 +19,10 @@ import {
 import { t } from "../../i18n";
 import { colors, spacing } from "../../theme/tokens";
 
-type Point = { x: number; y: number };
+const DICTATION_LOCALE = "en-IE";
+const ANDROID_ON_DEVICE_SPEECH_SERVICE = "com.google.android.as";
+
+type Point = { x: number; y: number; pressure?: number; capturedAt: number };
 export type SignatureStroke = Point[];
 
 type DictationNotesProps = {
@@ -55,6 +59,37 @@ export function DictationNotes({ value, onChange }: DictationNotesProps) {
     onChange(value.trim() ? `${value.trim()}\n${transcript}` : transcript);
   });
 
+  const ensureOfflineDictationReady = async () => {
+    if (Platform.OS !== "android") {
+      return true;
+    }
+
+    if (!ExpoSpeechRecognitionModule.supportsOnDeviceRecognition()) {
+      setError(t("admissions.capture.offlineDictationUnavailable", "On-device dictation is not available on this tablet."));
+      return false;
+    }
+
+    try {
+      const locales = await ExpoSpeechRecognitionModule.getSupportedLocales({
+        androidRecognitionServicePackage: ANDROID_ON_DEVICE_SPEECH_SERVICE,
+      });
+      const installedLocales = locales.installedLocales.map((locale) => locale.toLowerCase());
+
+      if (installedLocales.includes(DICTATION_LOCALE.toLowerCase())) {
+        return true;
+      }
+
+      await ExpoSpeechRecognitionModule.androidTriggerOfflineModelDownload({
+        locale: DICTATION_LOCALE,
+      });
+      setError(t("admissions.capture.offlineDictationDownload", "Irish English dictation is being prepared on this tablet. Try dictation again once the language pack finishes installing."));
+      return false;
+    } catch {
+      setError(t("admissions.capture.offlineDictationUnavailable", "On-device dictation is not available on this tablet."));
+      return false;
+    }
+  };
+
   const startDictation = async () => {
     const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
     if (!permission.granted) {
@@ -62,10 +97,25 @@ export function DictationNotes({ value, onChange }: DictationNotesProps) {
       return;
     }
 
+    const offlineReady = await ensureOfflineDictationReady();
+    if (!offlineReady) {
+      return;
+    }
+
     ExpoSpeechRecognitionModule.start({
-      lang: "en-IE",
+      lang: DICTATION_LOCALE,
       interimResults: false,
       continuous: false,
+      addsPunctuation: true,
+      requiresOnDeviceRecognition: Platform.OS === "android",
+      androidRecognitionServicePackage: Platform.OS === "android" ? ANDROID_ON_DEVICE_SPEECH_SERVICE : undefined,
+      androidIntentOptions: Platform.OS === "android"
+        ? {
+            EXTRA_LANGUAGE_MODEL: "free_form",
+            EXTRA_PREFER_OFFLINE: true,
+            EXTRA_SECURE: true,
+          }
+        : undefined,
     });
   };
 
@@ -145,6 +195,8 @@ export function SignaturePad({ strokes, onChange }: SignaturePadProps) {
         const point = {
           x: event.nativeEvent.locationX,
           y: event.nativeEvent.locationY,
+          pressure: event.nativeEvent.touches[0]?.force,
+          capturedAt: Date.now(),
         };
         currentStroke.current = [point];
         onChange([...strokes, currentStroke.current]);
@@ -153,6 +205,8 @@ export function SignaturePad({ strokes, onChange }: SignaturePadProps) {
         const point = {
           x: Math.max(0, Math.min(padSize.width, event.nativeEvent.locationX)),
           y: Math.max(0, Math.min(padSize.height, event.nativeEvent.locationY)),
+          pressure: event.nativeEvent.touches[0]?.force,
+          capturedAt: Date.now(),
         };
         currentStroke.current = [...currentStroke.current, point];
         onChange([...strokes, currentStroke.current]);

@@ -14,7 +14,16 @@ module.exports = {
     plugins: [
       "expo-router",
       "expo-localization",
-      "expo-speech-recognition",
+      [
+        "expo-speech-recognition",
+        {
+          androidSpeechServicePackages: [
+            "com.google.android.as",
+            "com.google.android.tts",
+            "com.google.android.googlequicksearchbox",
+          ],
+        },
+      ],
       [
         "expo-image-picker",
         {
@@ -36,6 +45,11 @@ module.exports = {
       },
       development: {
         authorizationDisabled: boolFromEnv(process.env.ACUTIS_TAB_AUTH_DISABLED),
+      },
+      security: {
+        requireHardwareBackedKeystore: process.env.ACUTIS_TAB_REQUIRE_HARDWARE_KEYSTORE
+          ? boolFromEnv(process.env.ACUTIS_TAB_REQUIRE_HARDWARE_KEYSTORE)
+          : true,
       },
       eas: {
         projectId: "b5f5142e-085e-4803-b48a-e4fd3e53a80d",

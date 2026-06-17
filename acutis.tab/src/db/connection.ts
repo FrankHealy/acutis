@@ -1,29 +1,29 @@
 ﻿import * as SQLite from "expo-sqlite";
-import * as SecureStore from "expo-secure-store";
+import { getRandomBytesAsync } from "expo-crypto";
+
+import {
+  migrateSecureStoreSecret,
+  setHardwareSecret,
+} from "../services/security/hardwareKeychain";
 
 const DB_NAME = "acutis.db";
 const DB_KEY_STORAGE_KEY = "acutis.db.encryptionKey";
+const DB_KEY_SERVICE = "acutis.db.encryptionKey";
 type SqlParam = string | number | null;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-function randomKey(length = 64): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+async function randomKey(byteLength = 32): Promise<string> {
+  const bytes = await getRandomBytesAsync(byteLength);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export async function getDatabaseKey(): Promise<string> {
-  const existing = await SecureStore.getItemAsync(DB_KEY_STORAGE_KEY);
+  const existing = await migrateSecureStoreSecret(DB_KEY_SERVICE, DB_KEY_STORAGE_KEY);
   if (existing) return existing;
 
-  const generated = randomKey();
-  await SecureStore.setItemAsync(DB_KEY_STORAGE_KEY, generated, {
-    keychainAccessible: SecureStore.WHEN_UNLOCKED,
-  });
+  const generated = await randomKey();
+  await setHardwareSecret(DB_KEY_SERVICE, generated);
   return generated;
 }
 

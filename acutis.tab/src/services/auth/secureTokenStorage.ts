@@ -1,8 +1,16 @@
-import * as SecureStore from "expo-secure-store";
 import { getKeycloakConfig } from "../../constants/runtimeConfig";
+import {
+  deleteLegacySecureStoreSecret,
+  deleteHardwareSecret,
+  getHardwareSecret,
+  migrateSecureStoreSecret,
+  setHardwareSecret,
+} from "../security/hardwareKeychain";
 
 const ACCESS_TOKEN_KEY = "acutis.accessToken";
 const REFRESH_TOKEN_KEY = "acutis.refreshToken";
+const ACCESS_TOKEN_SERVICE = "acutis.oidc.accessToken";
+const REFRESH_TOKEN_SERVICE = "acutis.oidc.refreshToken";
 
 type TokenPair = {
   accessToken?: string;
@@ -27,27 +35,36 @@ function decodeJwtPayload(token: string): { exp?: number } | null {
 }
 
 export async function setAuthTokens(accessToken: string, refreshToken: string): Promise<void> {
-  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken, {
-    keychainAccessible: SecureStore.WHEN_UNLOCKED,
-  });
-  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken, {
-    keychainAccessible: SecureStore.WHEN_UNLOCKED,
-  });
+  try {
+    await setHardwareSecret(ACCESS_TOKEN_SERVICE, accessToken);
+    await setHardwareSecret(REFRESH_TOKEN_SERVICE, refreshToken);
+    await deleteLegacySecureStoreSecret(ACCESS_TOKEN_KEY);
+    await deleteLegacySecureStoreSecret(REFRESH_TOKEN_KEY);
+  } catch (error) {
+    await clearAuthTokens();
+    throw error;
+  }
 }
 
 export async function getAuthTokens(): Promise<TokenPair> {
-  const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
-  const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  const accessToken =
+    await getHardwareSecret(ACCESS_TOKEN_SERVICE) ??
+    await migrateSecureStoreSecret(ACCESS_TOKEN_SERVICE, ACCESS_TOKEN_KEY);
+  const refreshToken =
+    await getHardwareSecret(REFRESH_TOKEN_SERVICE) ??
+    await migrateSecureStoreSecret(REFRESH_TOKEN_SERVICE, REFRESH_TOKEN_KEY);
 
   return {
-    accessToken: accessToken ?? undefined,
-    refreshToken: refreshToken ?? undefined,
+    accessToken,
+    refreshToken,
   };
 }
 
 export async function clearAuthTokens(): Promise<void> {
-  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  await deleteHardwareSecret(ACCESS_TOKEN_SERVICE);
+  await deleteHardwareSecret(REFRESH_TOKEN_SERVICE);
+  await deleteLegacySecureStoreSecret(ACCESS_TOKEN_KEY);
+  await deleteLegacySecureStoreSecret(REFRESH_TOKEN_KEY);
 }
 
 export function isAccessTokenValid(token: string): boolean {

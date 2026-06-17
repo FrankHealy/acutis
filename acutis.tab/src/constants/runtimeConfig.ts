@@ -13,6 +13,9 @@ export type RuntimeExtraConfig = {
   development?: {
     authorizationDisabled?: boolean;
   };
+  security?: {
+    requireHardwareBackedKeystore?: boolean;
+  };
 };
 
 export function getRuntimeExtra(): RuntimeExtraConfig {
@@ -33,6 +36,11 @@ export function getRuntimeExtra(): RuntimeExtraConfig {
 export function isDevelopmentAuthorizationDisabled(): boolean {
   const configured = getRuntimeExtra().development?.authorizationDisabled;
   return typeof configured === "boolean" ? configured : false;
+}
+
+export function isHardwareBackedKeystoreRequired(): boolean {
+  const configured = getRuntimeExtra().security?.requireHardwareBackedKeystore;
+  return typeof configured === "boolean" ? configured : true;
 }
 
 export function getApiBaseUrl(): string {
