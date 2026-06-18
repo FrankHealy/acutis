@@ -1546,16 +1546,16 @@ export const HSE_INITIAL_ASSESSMENT_FORM: HseAssessmentFormDefinition = {
         "maxLength": 4000
       },
       "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.signatures.service_user": {
-        "type": "string",
-        "maxLength": 240
+        "type": "text",
+        "maxLength": 200000
       },
       "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.signatures.previous_case_manager": {
-        "type": "string",
-        "maxLength": 240
+        "type": "text",
+        "maxLength": 200000
       },
       "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.signatures.new_case_manager": {
-        "type": "string",
-        "maxLength": 240
+        "type": "text",
+        "maxLength": 200000
       }
     },
     "required": [
@@ -2731,9 +2731,9 @@ export const HSE_INITIAL_ASSESSMENT_FORM: HseAssessmentFormDefinition = {
       "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.newly_agreed_case_manager": "input",
       "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.new_agency": "input",
       "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.statement": "textarea",
-      "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.signatures.service_user": "input",
-      "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.signatures.previous_case_manager": "input",
-      "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.signatures.new_case_manager": "input"
+      "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.signatures.service_user": "signature",
+      "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.signatures.previous_case_manager": "signature",
+      "assessment_form.consent_and_sign_offs.care_plan_case_manager_transfer.signatures.new_case_manager": "signature"
     },
     "labelKeys": {
       "assessment_form.metadata.form_title": "Form Title",

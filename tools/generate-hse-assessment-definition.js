@@ -175,7 +175,7 @@ const flatten = (value, parts, collector) => {
     collector.push(addField(parts, "string", "input", null, { maxLength: 40, format: "phone" }));
     return;
   }
-  if (/signature/i.test(key)) {
+  if (/signature/i.test(key) || parts.some((part) => /^signatures$/i.test(part))) {
     collector.push(addField(parts, "text", "signature", null, { maxLength: 200000 }));
     return;
   }
