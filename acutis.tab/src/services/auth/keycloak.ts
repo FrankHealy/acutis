@@ -2,6 +2,8 @@ import * as AuthSession from "expo-auth-session";
 import { getKeycloakConfig } from "../../constants/runtimeConfig";
 import { clearAuthTokens, getAuthTokens, setAuthTokens } from "./secureTokenStorage";
 
+export const NATIVE_AUTH_REDIRECT_URI = "acutis-tab://redirect";
+
 async function getDiscovery(): Promise<AuthSession.DiscoveryDocument> {
   const { issuer } = getKeycloakConfig();
   if (!issuer) {
@@ -10,13 +12,17 @@ async function getDiscovery(): Promise<AuthSession.DiscoveryDocument> {
   return AuthSession.fetchDiscoveryAsync(issuer);
 }
 
+export function getNativeAuthRedirectUri(): string {
+  return getKeycloakConfig().redirectUri || NATIVE_AUTH_REDIRECT_URI;
+}
+
 export async function signInWithKeycloak(): Promise<void> {
-  const { clientId, redirectUri: configuredRedirectUri } = getKeycloakConfig();
+  const { clientId } = getKeycloakConfig();
   if (!clientId) {
     throw new Error("Missing Keycloak clientId in Expo runtime config");
   }
 
-  const redirectUri = configuredRedirectUri || AuthSession.makeRedirectUri({ scheme: "acutis-tab" });
+  const redirectUri = getNativeAuthRedirectUri();
   const discovery = await getDiscovery();
 
   const request = new AuthSession.AuthRequest({
