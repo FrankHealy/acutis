@@ -419,8 +419,27 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
       onExportGoogle={() => openGoogleCalendar(selectedAppointment)}
     />
   );
+  const assessmentParticipant = selectedParticipant ?? participants[0] ?? undefined;
   const communityWorkspace = communityView === "dashboard" ? (
     <div className="mt-5 grid gap-4">
+      <button
+        type="button"
+        onClick={() => openDialog("assessment", { participant: assessmentParticipant })}
+        className="flex items-center gap-4 rounded-xl border border-cyan-800 bg-cyan-950 px-5 py-5 text-left text-white shadow-sm transition hover:bg-cyan-900"
+      >
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-cyan-100 text-sm font-black text-cyan-800">
+          HSE
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-xl font-black">HSE Initial Assessment</span>
+          <span className="mt-1 block text-sm font-medium text-cyan-100">
+            Open the full bounded Community assessment and consent form.
+          </span>
+        </span>
+        <span className="rounded-lg bg-white px-4 py-2 text-sm font-black text-cyan-900">
+          Start
+        </span>
+      </button>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <CommunityShortcut
           Icon={Users}
@@ -436,9 +455,9 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
         />
         <CommunityShortcut
           Icon={ClipboardCheck}
-          label="Assessment"
-          value="New"
-          onClick={() => openDialog("assessment", { participant: selectedParticipant ?? undefined })}
+          label="HSE Initial Assessment"
+          value="Bounded form"
+          onClick={() => openDialog("assessment", { participant: assessmentParticipant })}
         />
         <CommunityShortcut
           Icon={FileText}

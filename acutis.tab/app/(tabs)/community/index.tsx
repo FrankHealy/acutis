@@ -230,6 +230,18 @@ export default function CommunityScreen() {
             <MetricCard label={t("community.outreach", "Outreach")} value={outreach} accent="#16A34A" />
             <MetricCard label={t("community.reports", "Reports")} value={reportsDue} accent="#B45309" />
           </View>
+          <Link href="/(tabs)/community/initial-assessment" asChild>
+            <Pressable style={styles.assessmentHero}>
+              <View style={styles.assessmentHeroIcon}>
+                <Text style={styles.assessmentHeroIconText}>HSE</Text>
+              </View>
+              <View style={styles.assessmentHeroText}>
+                <Text style={styles.assessmentHeroTitle}>HSE Initial Assessment</Text>
+                <Text style={styles.assessmentHeroSubtitle}>Open the full bounded Community assessment and consent form.</Text>
+              </View>
+              <Text style={styles.assessmentHeroAction}>Start</Text>
+            </Pressable>
+          </Link>
           <View style={styles.card}>
             <View style={styles.sectionHead}>
               <View>
@@ -239,11 +251,6 @@ export default function CommunityScreen() {
               <Link href={{ pathname: "/(tabs)/admissions/[episodeId]", params: { episodeId: "new", unit: "community" } }} asChild>
                 <Pressable style={styles.smallButton}>
                   <Text style={styles.smallButtonText}>{t("admissions.detox.startAdmission", "Start Admission")}</Text>
-                </Pressable>
-              </Link>
-              <Link href="/(tabs)/community/initial-assessment" asChild>
-                <Pressable style={styles.smallButton}>
-                  <Text style={styles.smallButtonText}>Initial Assessment</Text>
                 </Pressable>
               </Link>
             </View>
@@ -344,6 +351,13 @@ const styles = StyleSheet.create({
   metricCard: { flexGrow: 1, minWidth: 180, backgroundColor: colors.surface, borderRadius: 18, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
   metricLabel: { color: colors.textMuted, fontSize: 13, marginBottom: spacing.sm },
   metricValue: { fontSize: 32, fontWeight: "900" },
+  assessmentHero: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: "#083344", borderRadius: 18, padding: spacing.lg, marginBottom: spacing.lg },
+  assessmentHeroIcon: { width: 64, height: 64, borderRadius: 14, backgroundColor: "#ECFEFF", alignItems: "center", justifyContent: "center" },
+  assessmentHeroIconText: { color: "#0E7490", fontSize: 16, fontWeight: "900" },
+  assessmentHeroText: { flex: 1 },
+  assessmentHeroTitle: { color: colors.surface, fontSize: 22, fontWeight: "900", marginBottom: 4 },
+  assessmentHeroSubtitle: { color: "#BAE6FD", fontSize: 14, lineHeight: 20 },
+  assessmentHeroAction: { color: colors.surface, fontSize: 16, fontWeight: "900" },
   card: { backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginBottom: spacing.lg },
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: spacing.md, marginBottom: spacing.md },
   sectionTitle: { color: colors.text, fontSize: 20, fontWeight: "900" },
