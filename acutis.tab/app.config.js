@@ -50,7 +50,7 @@ module.exports = {
       security: {
         requireHardwareBackedKeystore: process.env.ACUTIS_TAB_REQUIRE_HARDWARE_KEYSTORE
           ? boolFromEnv(process.env.ACUTIS_TAB_REQUIRE_HARDWARE_KEYSTORE)
-          : true,
+          : false,
       },
       eas: {
         projectId: "b5f5142e-085e-4803-b48a-e4fd3e53a80d",

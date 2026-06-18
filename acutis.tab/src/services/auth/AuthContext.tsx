@@ -56,9 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithKeycloak();
       await checkAuth();
-    } catch {
+    } catch (error) {
+      console.warn("Keycloak sign-in failed", error);
       setState("unauthenticated");
-      throw new Error("Keycloak sign-in was not completed");
+      throw error instanceof Error ? error : new Error("Keycloak sign-in was not completed");
     }
   }
 

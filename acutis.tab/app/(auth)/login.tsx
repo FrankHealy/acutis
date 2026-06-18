@@ -1,4 +1,5 @@
 import { Redirect } from "expo-router";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { t } from "../../src/i18n";
@@ -7,6 +8,8 @@ import { colors, spacing } from "../../src/theme/tokens";
 
 export default function LoginScreen() {
   const { state, signIn } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const signingIn = state === "checking";
 
   if (state === "authenticated") {
     return <Redirect href="/(tabs)/community" />;
@@ -16,9 +19,19 @@ export default function LoginScreen() {
     <View style={styles.screen}>
       <View style={styles.card}>
         <Text style={styles.title}>{t("auth.loginTitle", "Acutis Tablet")}</Text>
-        <Text style={styles.subtitle}>{state === "checking" ? t("auth.checking", "Checking session...") : t("auth.loginSubtitle", "Sign in with Keycloak to continue.")}</Text>
-        <Pressable style={styles.button} onPress={() => void signIn()}>
-          <Text style={styles.buttonText}>{t("auth.signIn", "Sign in")}</Text>
+        <Text style={styles.subtitle}>{signingIn ? t("auth.checking", "Opening Keycloak...") : t("auth.loginSubtitle", "Sign in with Keycloak to continue.")}</Text>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Pressable
+          disabled={signingIn}
+          style={[styles.button, signingIn ? styles.buttonDisabled : null]}
+          onPress={() => {
+            setError(null);
+            void signIn().catch((signInError) => {
+              setError(signInError instanceof Error ? signInError.message : "Keycloak sign-in was not completed.");
+            });
+          }}
+        >
+          <Text style={styles.buttonText}>{signingIn ? "Opening..." : t("auth.signIn", "Sign in")}</Text>
         </Pressable>
       </View>
     </View>
@@ -60,8 +73,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
+  buttonDisabled: {
+    opacity: 0.55,
+  },
   buttonText: {
     color: colors.surface,
     fontWeight: "800",
+  },
+  error: {
+    color: "#B91C1C",
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: spacing.md,
   },
 });
