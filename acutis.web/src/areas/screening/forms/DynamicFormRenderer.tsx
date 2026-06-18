@@ -310,8 +310,8 @@ export default function DynamicFormRenderer({
   const progressPercent = totalSections === 0 ? 0 : Math.round(((currentSectionIndex + 1) / totalSections) * 100);
   const voiceAssistEnabled =
     enableVoiceAssistAdmissions &&
-    subjectType === "admission" &&
-    form.code === "admission_detox";
+    (subjectType === "admission" || subjectType === "resident" || subjectType === "anonymous_call") &&
+    (form.code === "admission_detox" || form.code === "alcohol_screening_call");
   const getCurrentRuleState = () => applyRules(form.rules, answersRef.current);
   const buildVisibleValidationErrors = (
     nextAnswers: Record<string, JsonValue>,

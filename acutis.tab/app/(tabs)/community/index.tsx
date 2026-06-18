@@ -241,6 +241,11 @@ export default function CommunityScreen() {
                   <Text style={styles.smallButtonText}>{t("admissions.detox.startAdmission", "Start Admission")}</Text>
                 </Pressable>
               </Link>
+              <Link href="/(tabs)/community/initial-assessment" asChild>
+                <Pressable style={styles.smallButton}>
+                  <Text style={styles.smallButtonText}>Initial Assessment</Text>
+                </Pressable>
+              </Link>
             </View>
           </View>
           <View style={styles.card}>

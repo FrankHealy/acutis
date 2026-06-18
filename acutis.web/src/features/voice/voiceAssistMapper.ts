@@ -674,16 +674,32 @@ export const mapTranscriptToSectionFields = (
     }
 
     const options = getOptions(sectionDefinition, fieldKey);
-    if ((schemaProperty.type === "enum" || widget === "select") && options.length > 0) {
+    if ((schemaProperty.type === "enum" || schemaProperty.type === "multiEnum" || widget === "select") && options.length > 0) {
       const labelledText = extractBetweenAliases(transcript, aliases, allAliases);
       const optionSearchText = labelledText ?? transcript;
       const normalizedOptionSearchText = normalize(optionSearchText);
-      const matchedOption = options.find((option) => {
+      const matchedOptions = options.filter((option) => {
         const normalizedOptionLabel = normalize(option.label);
         const normalizedOptionValue = normalize(option.value);
         return normalizedOptionSearchText.includes(normalizedOptionLabel) ||
           normalizedOptionSearchText.includes(normalizedOptionValue);
       });
+      const matchedOption = matchedOptions[0];
+      if (schemaProperty.type === "multiEnum" && matchedOptions.length > 0) {
+        const proposedValue = matchedOptions.map((option) => option.value);
+        if (JSON.stringify(currentValue) !== JSON.stringify(proposedValue)) {
+          upsertPatch(patches, {
+            fieldKey,
+            proposedValue,
+            confidence: 0.5,
+            rationale: labelledText
+              ? `Matched ${matchedOptions.length} option(s) after "${label}".`
+              : `Matched ${matchedOptions.length} option(s) in the transcript.`,
+            requiresReview: true,
+          });
+        }
+        continue;
+      }
       if (matchedOption && currentValue !== matchedOption.value) {
         upsertPatch(patches, {
           fieldKey,

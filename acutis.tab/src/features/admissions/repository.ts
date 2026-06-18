@@ -47,6 +47,10 @@ export interface AdmissionSignatureRecord {
   signerName: string;
   signaturePayload: Record<string, unknown>;
   capturedAtClient: string;
+  formCode?: string;
+  formVersion?: number;
+  sectionKey?: string;
+  fieldKey?: string;
 }
 
 export interface AdmissionRoomAssignmentRecord {
@@ -198,13 +202,21 @@ export async function saveAdmissionSignature(
   await bootstrapDatabase();
   const db = await openEncryptedDatabase();
   const now = new Date().toISOString();
-  const id = `${input.draftId}-${input.signerRole}-signature`;
+  const signatureScope = input.fieldKey?.replace(/[^a-zA-Z0-9._-]+/g, "_") ?? input.signerRole;
+  const id = `${input.draftId}-${signatureScope}-signature`;
+  const signaturePayload = {
+    ...input.signaturePayload,
+    formCode: input.formCode,
+    formVersion: input.formVersion,
+    sectionKey: input.sectionKey,
+    fieldKey: input.fieldKey,
+  };
 
   await executeSql(
     db,
     "INSERT OR REPLACE INTO admission_signatures (id, draftId, signerRole, signerName, signaturePayload, capturedAtClient) VALUES (?, ?, ?, ?, ?, ?)",
-    [id, input.draftId, input.signerRole, input.signerName, JSON.stringify(input.signaturePayload), now]
+    [id, input.draftId, input.signerRole, input.signerName, JSON.stringify(signaturePayload), now]
   );
 
-  return { ...input, id, capturedAtClient: now };
+  return { ...input, signaturePayload, id, capturedAtClient: now };
 }
