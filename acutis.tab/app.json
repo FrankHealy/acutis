@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "acutis.tab",
+    "name": "Acutis",
     "slug": "acutis-tab",
     "scheme": "acutis-tab",
+    "icon": "./assets/icon.png",
     "platforms": [
       "android"
     ],
@@ -50,6 +51,10 @@
     },
     "android": {
       "package": "com.salientrecovery.acutis.tab",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#023C69"
+      },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"

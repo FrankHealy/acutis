@@ -7,9 +7,10 @@ const boolFromEnv = (value) => String(value ?? "").toLowerCase() === "true";
 
 module.exports = {
   expo: {
-    name: "acutis.tab",
+    name: "Acutis",
     slug: "acutis-tab",
     scheme,
+    icon: "./assets/icon.png",
     platforms: ["android"],
     plugins: [
       "expo-router",
@@ -57,6 +58,10 @@ module.exports = {
     },
     android: {
       package: "com.salientrecovery.acutis.tab",
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#023C69",
+      },
       permissions: [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
