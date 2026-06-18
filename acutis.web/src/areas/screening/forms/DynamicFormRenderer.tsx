@@ -28,7 +28,7 @@ type DynamicFormRendererProps = {
   initialSubmissionId: string | null;
   initialSubmissionStatus?: "in_progress" | "submitted" | null;
   initialAnswers: Record<string, JsonValue>;
-  subjectType: "anonymous_call" | "resident" | "admission";
+  subjectType: "anonymous_call" | "resident" | "admission" | "participant";
   subjectId: string | null;
   renderMode?: "accordion" | "wizard";
   onSaveProgress: (payload: {
@@ -310,8 +310,8 @@ export default function DynamicFormRenderer({
   const progressPercent = totalSections === 0 ? 0 : Math.round(((currentSectionIndex + 1) / totalSections) * 100);
   const voiceAssistEnabled =
     enableVoiceAssistAdmissions &&
-    (subjectType === "admission" || subjectType === "resident" || subjectType === "anonymous_call") &&
-    (form.code === "admission_detox" || form.code === "alcohol_screening_call");
+    (subjectType === "admission" || subjectType === "resident" || subjectType === "anonymous_call" || subjectType === "participant") &&
+    (form.code === "admission_detox" || form.code === "alcohol_screening_call" || form.code === "community_initial_assessment");
   const getCurrentRuleState = () => applyRules(form.rules, answersRef.current);
   const buildVisibleValidationErrors = (
     nextAnswers: Record<string, JsonValue>,

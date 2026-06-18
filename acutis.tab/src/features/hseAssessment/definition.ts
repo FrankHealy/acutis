@@ -35,8 +35,8 @@ export type HseAssessmentFormDefinition = {
 };
 
 export const HSE_INITIAL_ASSESSMENT_FORM: HseAssessmentFormDefinition = {
-  "code": "alcohol_screening_call",
-  "version": 6,
+  "code": "community_initial_assessment",
+  "version": 1,
   "status": "published",
   "titleKey": "Initial Assessment and Service User Consent Form",
   "descriptionKey": "HSE Addiction and Primary Homeless Services bounded initial assessment.",
@@ -3508,4 +3508,4 @@ export const HSE_INITIAL_ASSESSMENT_FORM: HseAssessmentFormDefinition = {
   "rules": []
 };
 
-export const HSE_INITIAL_ASSESSMENT_FORM_CODE = "alcohol_screening_call";
+export const HSE_INITIAL_ASSESSMENT_FORM_CODE = "community_initial_assessment";

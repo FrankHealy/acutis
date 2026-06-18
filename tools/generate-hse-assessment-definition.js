@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const sourcePath = "c:/work/Acutis HSE Application Form/HSE.json";
+const communityFormCode = "community_initial_assessment";
 const outputJsonPath = path.join(__dirname, "..", "resources", "forms", "hse_initial_assessment.generated.json");
 const outputTsPath = path.join(__dirname, "..", "acutis.tab", "src", "features", "hseAssessment", "definition.ts");
 const outputMigrationPayloadPath = path.join(__dirname, "..", "tmp", "hse_initial_assessment_migration_payload.json");
@@ -222,8 +223,8 @@ const requiredHints = [
 schema.required = requiredHints.filter((key) => schema.properties[key]);
 
 const definition = {
-  code: "alcohol_screening_call",
-  version: 6,
+  code: communityFormCode,
+  version: 1,
   status: "published",
   titleKey: "Initial Assessment and Service User Consent Form",
   descriptionKey: "HSE Addiction and Primary Homeless Services bounded initial assessment.",
@@ -278,7 +279,7 @@ export type HseAssessmentFormDefinition = {
 
 export const HSE_INITIAL_ASSESSMENT_FORM: HseAssessmentFormDefinition = ${JSON.stringify(definition, null, 2)};
 
-export const HSE_INITIAL_ASSESSMENT_FORM_CODE = "alcohol_screening_call";
+export const HSE_INITIAL_ASSESSMENT_FORM_CODE = "${communityFormCode}";
 `
 );
 

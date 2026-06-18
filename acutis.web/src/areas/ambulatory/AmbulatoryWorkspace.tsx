@@ -51,6 +51,16 @@ import groupTherapyTerms from "@/data/groupTherapyTerms.json";
 import AccessDeniedNotice from "@/areas/shared/AccessDeniedNotice";
 import { isForbiddenError } from "@/lib/apiError";
 import Header from "@/areas/shared/layout/Header";
+import DynamicFormRenderer from "@/areas/screening/forms/DynamicFormRenderer";
+import {
+  getActiveForm,
+  save,
+  saveProgress,
+  type GetActiveFormResponse,
+  type JsonValue,
+  type SaveProgressResponse,
+  type SaveResponse,
+} from "@/areas/screening/forms/ApiClient";
 
 type AmbulatoryWorkspaceProps = {
   programme: AmbulatoryProgramme;
@@ -61,6 +71,7 @@ type CalendarMode = "day" | "work-week" | "month";
 type CommunityView = "dashboard" | "service-users" | "operations";
 type AppointmentDraftDefaults = { startsAt: string; endsAt: string } | null;
 type ObservationTerm = { id: number; term: string; description: string; ratingId: number };
+const COMMUNITY_INITIAL_ASSESSMENT_FORM_CODE = "community_initial_assessment";
 
 const appointmentTypes = [
   { value: "individual-therapy", label: "One to One Therapy" },
@@ -1199,6 +1210,20 @@ function AssessmentDialog({ open, participant, programme, accessToken, error, on
   const [outcome, setOutcome] = useState("");
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (open) { setAssessmentType("initial"); setPresentingNeeds(""); setRiskSummary(""); setStrengths(""); setSummary(""); setGoalsDiscussed(""); setOutcome(""); } }, [open]);
+  if (programme === "community") {
+    return (
+      <CommunityInitialAssessmentDialog
+        open={open}
+        participant={participant}
+        accessToken={accessToken}
+        error={error}
+        onError={onError}
+        onClose={onClose}
+        onSaved={onSaved}
+      />
+    );
+  }
+
   return (
     <Dialog open={open} title={`${assessmentType === "initial" ? "Initial" : "Full"} Assessment${participant ? `: ${participant.displayName}` : ""}`} onClose={onClose}>
       <form className="grid gap-4" onSubmit={async (event) => { event.preventDefault(); if (!participant) return; try { onError(null); await ambulatoryService.addAssessment(programme, participant.id, { assessmentType, presentingNeeds, riskSummary, strengths, substanceOrBehaviourSummary: summary, goalsDiscussed, outcome }, accessToken); await onSaved(); onClose(); } catch (e) { onError((e as Error).message); } }}>
@@ -1212,6 +1237,112 @@ function AssessmentDialog({ open, participant, programme, accessToken, error, on
         <TextArea label="Outcome" value={outcome} onChange={setOutcome} />
         <button type="submit" className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">Save Assessment</button>
       </form>
+    </Dialog>
+  );
+}
+
+function CommunityInitialAssessmentDialog({ open, participant, accessToken, error, onError, onClose, onSaved }: { open: boolean; participant: AmbulatoryParticipant | null; accessToken?: string | null; error: string | null; onError: (value: string | null) => void; onClose: () => void; onSaved: () => Promise<void> }) {
+  const { locale, mergeTranslations } = useLocalization();
+  const [formData, setFormData] = useState<GetActiveFormResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const subjectId = participant?.id ?? null;
+
+  useEffect(() => {
+    let active = true;
+    if (!open || !subjectId) {
+      setFormData(null);
+      return;
+    }
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        onError(null);
+        const response = await getActiveForm(
+          accessToken ?? undefined,
+          locale,
+          "participant",
+          subjectId,
+          COMMUNITY_INITIAL_ASSESSMENT_FORM_CODE
+        );
+        if (!active) return;
+        mergeTranslations(response.translations);
+        setFormData(response);
+      } catch (loadError) {
+        if (!active) return;
+        setFormData(null);
+        onError(loadError instanceof Error ? loadError.message : "Unable to load Community Initial Assessment.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [accessToken, locale, mergeTranslations, onError, open, subjectId]);
+
+  const handleSaveProgress = async (payload: { submissionId: string | null; answers: Record<string, JsonValue> }): Promise<SaveProgressResponse> => {
+    if (!participant || !formData) {
+      throw new Error("No Community participant or assessment form is loaded.");
+    }
+
+    return saveProgress(accessToken ?? undefined, {
+      formCode: formData.form.code,
+      formVersion: formData.form.version,
+      locale,
+      subjectType: "participant",
+      subjectId: participant.id,
+      submissionId: payload.submissionId,
+      answers: payload.answers,
+    });
+  };
+
+  const handleSave = async (payload: { submissionId: string | null; answers: Record<string, JsonValue> }): Promise<SaveResponse> => {
+    if (!participant || !formData) {
+      throw new Error("No Community participant or assessment form is loaded.");
+    }
+
+    const response = await save(accessToken ?? undefined, {
+      formCode: formData.form.code,
+      formVersion: formData.form.version,
+      locale,
+      subjectType: "participant",
+      subjectId: participant.id,
+      submissionId: payload.submissionId,
+      answers: payload.answers,
+    });
+    await onSaved();
+    onClose();
+    return response;
+  };
+
+  return (
+    <Dialog open={open} title={`Community Initial Assessment${participant ? `: ${participant.displayName}` : ""}`} onClose={onClose}>
+      {!participant && <p className="text-sm text-gray-500">Select a Community service user before starting an assessment.</p>}
+      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {loading && <p className="text-sm text-gray-500">Loading HSE Initial Assessment...</p>}
+      {participant && formData && (
+        <DynamicFormRenderer
+          form={formData.form}
+          optionSets={formData.optionSets}
+          locale={locale}
+          initialSubmissionId={formData.submissionId}
+          initialSubmissionStatus={formData.submissionStatus}
+          initialAnswers={formData.draftAnswers}
+          subjectType="participant"
+          subjectId={participant.id}
+          renderMode="wizard"
+          onSaveProgress={handleSaveProgress}
+          onSave={handleSave}
+          submitLabel="Confirm Assessment"
+          submittingLabel="Confirming..."
+          submittedLabel="Community Initial Assessment saved."
+        />
+      )}
     </Dialog>
   );
 }

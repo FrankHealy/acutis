@@ -99,7 +99,7 @@ export type SaveProgressRequest = {
   formCode: string;
   formVersion: number;
   locale: string;
-  subjectType: "anonymous_call" | "resident" | "admission";
+  subjectType: "anonymous_call" | "resident" | "admission" | "participant";
   subjectId: string | null;
   submissionId: string | null;
   answers: Record<string, JsonValue>;
