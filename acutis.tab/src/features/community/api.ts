@@ -29,6 +29,7 @@ export type CommunityAssessment = {
 
 export type CommunityParticipant = {
   id: string;
+  internalIdentifier?: string | null;
   programmeType: string;
   displayName: string;
   preferredName?: string | null;
@@ -41,6 +42,7 @@ export type CommunityParticipant = {
   counsellorUserId: string;
   counsellorDisplayName: string;
   currentCarePlan?: CommunityCarePlan | null;
+  carePlans?: CommunityCarePlan[];
   assessments: CommunityAssessment[];
 };
 

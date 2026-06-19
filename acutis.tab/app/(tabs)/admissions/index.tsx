@@ -228,7 +228,6 @@ export default function AdmissionsIndexScreen() {
           </View>
 
           <View style={styles.unitPill}>
-            <Text style={styles.unitPillLabel}>{t("admissions.detox.currentUnitLabel", "Current Unit")}</Text>
             <Text style={styles.unitPillValue}>{unitName}</Text>
           </View>
         </View>

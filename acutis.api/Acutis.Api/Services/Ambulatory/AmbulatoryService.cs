@@ -2,6 +2,7 @@ using Acutis.Api.Contracts;
 using Acutis.Domain.Entities;
 using Acutis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -59,7 +60,7 @@ public sealed class AmbulatoryService : IAmbulatoryService
             ProgrammeType = programmeType,
             ProgrammeName = programmeType == AmbulatoryProgrammeType.Community ? "Acutis Community" : "Acutis Practitioner",
             CounsellorUserId = userId,
-            Participants = participants.Select(MapParticipant).ToList(),
+            Participants = participants.Select((participant, index) => MapParticipant(participant, BuildInternalIdentifier(participant, index + 1))).ToList(),
             Appointments = appointments.Select(MapAppointment).ToList(),
             ProgrammeOfferings = BuildProgrammeOfferings(programmeType)
         };
@@ -91,7 +92,9 @@ public sealed class AmbulatoryService : IAmbulatoryService
 
         _dbContext.Participants.Add(participant);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapParticipant(participant);
+        var sequence = await _dbContext.Participants
+            .CountAsync(x => x.ProgrammeType == programmeType && x.CounsellorUserId == participant.CounsellorUserId, cancellationToken);
+        return MapParticipant(participant, BuildInternalIdentifier(participant, sequence));
     }
 
     public async Task<AmbulatoryAssessmentDto> AddAssessmentAsync(AmbulatoryProgrammeType programmeType, Guid participantId, UpsertAmbulatoryAssessmentRequest request, ClaimsPrincipal user, CancellationToken cancellationToken = default)
@@ -569,22 +572,47 @@ public sealed class AmbulatoryService : IAmbulatoryService
             ?? "Counsellor";
     }
 
-    private static AmbulatoryParticipantDto MapParticipant(AmbulatoryParticipant participant)
+    private string BuildInternalIdentifier(AmbulatoryParticipant participant, int sequence)
     {
+        var prefix = _configuration["Acutis:InternalIdentifierPrefix"];
+        if (string.IsNullOrWhiteSpace(prefix))
+        {
+            prefix = _configuration["Centre:InternalIdentifierPrefix"];
+        }
+
+        prefix = string.IsNullOrWhiteSpace(prefix) ? "AH" : prefix.Trim().ToUpperInvariant();
+        var createdAt = participant.CreatedAtUtc == default ? DateTime.UtcNow : participant.CreatedAtUtc;
+        var year = ISOWeek.GetYear(createdAt);
+        var week = ISOWeek.GetWeekOfYear(createdAt);
+        return $"{prefix}-{year}W{week:00}-{sequence:000}";
+    }
+
+    private static string BuildPhotoUrl(AmbulatoryParticipant participant)
+    {
+        var seed = Uri.EscapeDataString($"{participant.ProgrammeType}-{participant.Id:N}");
+        return $"https://i.pravatar.cc/160?u={seed}";
+    }
+
+    private static AmbulatoryParticipantDto MapParticipant(AmbulatoryParticipant participant, string internalIdentifier)
+    {
+        var carePlans = participant.CarePlans.OrderByDescending(x => x.UpdatedAtUtc).Select(MapCarePlan).ToList();
         return new AmbulatoryParticipantDto
         {
             Id = participant.Id,
+            InternalIdentifier = internalIdentifier,
             ProgrammeType = participant.ProgrammeType,
             DisplayName = participant.DisplayName,
             PreferredName = participant.PreferredName,
             Phone = participant.Phone,
             Email = participant.Email,
+            PhotoUrl = BuildPhotoUrl(participant),
             ReferralSource = participant.ReferralSource,
             Status = participant.Status,
             CounsellorUserId = participant.CounsellorUserId,
             CounsellorDisplayName = participant.CounsellorDisplayName,
             Assessments = participant.Assessments.OrderByDescending(x => x.CompletedAtUtc).Select(MapAssessment).ToList(),
-            CurrentCarePlan = participant.CarePlans.OrderByDescending(x => x.UpdatedAtUtc).Select(MapCarePlan).FirstOrDefault()
+            CarePlans = carePlans,
+            CurrentCarePlan = carePlans.FirstOrDefault()
         };
     }
 

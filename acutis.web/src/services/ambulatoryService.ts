@@ -34,6 +34,7 @@ export type AmbulatoryCarePlan = {
 
 export type AmbulatoryParticipant = {
   id: string;
+  internalIdentifier?: string | null;
   programmeType: AmbulatoryProgrammeType;
   displayName: string;
   preferredName?: string | null;
@@ -46,6 +47,7 @@ export type AmbulatoryParticipant = {
   counsellorUserId: string;
   counsellorDisplayName: string;
   currentCarePlan?: AmbulatoryCarePlan | null;
+  carePlans?: AmbulatoryCarePlan[];
   assessments: AmbulatoryAssessment[];
 };
 

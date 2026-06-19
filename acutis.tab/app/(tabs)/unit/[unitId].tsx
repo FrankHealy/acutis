@@ -149,7 +149,6 @@ export default function UnitDashboardScreen() {
           </View>
 
           <View style={[styles.unitPill, { borderColor: `${unit.accentColor}33`, backgroundColor: unit.surfaceColor }]}>
-            <Text style={styles.unitPillLabel}>{t(`units.${rawUnitId}.currentUnitLabel`)}</Text>
             <Text style={[styles.unitPillValue, { color: unit.accentColor }]}>{unit.name}</Text>
           </View>
         </View>

@@ -1,6 +1,6 @@
 import { Link, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   fetchCommunityParticipantDetail,
@@ -25,6 +25,29 @@ function formatDate(value?: string | null) {
 
 function formatSession(value: string) {
   return new Date(value).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "SU";
+}
+
+function serviceUserIdentifier(participant: CommunityParticipant | null, fallback: string) {
+  return participant?.internalIdentifier?.trim() || fallback;
+}
+
+function ParticipantAvatar({ participant }: { participant: CommunityParticipant }) {
+  const photoUrl = participant.photoUrl?.trim() || participant.photo?.trim();
+  return (
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>{initials(participant.displayName)}</Text>
+      {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.avatarImage} /> : null}
+    </View>
+  );
 }
 
 function Info({ label, value }: { label: string; value?: string | null }) {
@@ -74,6 +97,7 @@ export default function CommunityParticipantDetailScreen() {
     () => [...(participant?.assessments ?? [])].sort((left, right) => right.completedAtUtc.localeCompare(left.completedAtUtc))[0],
     [participant?.assessments],
   );
+  const carePlans = participant?.carePlans?.length ? participant.carePlans : carePlan ? [carePlan] : [];
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
@@ -86,8 +110,29 @@ export default function CommunityParticipantDetailScreen() {
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <View style={styles.card}>
-        <Text style={styles.title}>{participant?.displayName ?? participantId}</Text>
-        <Text style={styles.subtitle}>{participant?.referralSource || t("community.communityReferral", "Community referral")}</Text>
+        <View style={styles.profileHead}>
+          {participant ? <ParticipantAvatar participant={participant} /> : null}
+          <View style={styles.profileText}>
+            <Text style={styles.title}>{participant?.displayName ?? participantId}</Text>
+            <Text style={styles.identifier}>{serviceUserIdentifier(participant, participantId)}</Text>
+            <Text style={styles.subtitle}>{participant?.referralSource || t("community.communityReferral", "Community referral")}</Text>
+          </View>
+        </View>
+        {participant ? (
+          <View style={styles.actionRow}>
+            <Link
+              href={{
+                pathname: "/(tabs)/community/initial-assessment",
+                params: { participantId: participant.id, resident: participant.displayName },
+              }}
+              asChild
+            >
+              <Pressable style={styles.primaryButton}>
+                <Text style={styles.primaryButtonText}>{latestAssessment ? "Open Assessment" : "New Assessment"}</Text>
+              </Pressable>
+            </Link>
+          </View>
+        ) : null}
         <View style={styles.grid}>
           <Info label={t("community.status", "Status")} value={participant?.status} />
           <Info label={t("community.preferredName", "Preferred Name")} value={participant?.preferredName} />
@@ -115,7 +160,21 @@ export default function CommunityParticipantDetailScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>{t("community.sessions", "Sessions")}</Text>
+        <Text style={styles.sectionTitle}>Care Plan History</Text>
+        {carePlans.length === 0 ? (
+          <Text style={styles.mutedText}>{t("community.noCarePlan", "No care plan has been returned by the API.")}</Text>
+        ) : (
+          carePlans.map((plan) => (
+            <View key={plan.id} style={styles.historyRow}>
+              <Text style={styles.sessionTitle}>{plan.status} · review {formatDate(plan.reviewDate)}</Text>
+              <Text style={styles.sessionMeta}>{plan.goals || plan.needs || "No care-plan narrative captured."}</Text>
+            </View>
+          ))
+        )}
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Therapy History</Text>
         {appointments.length === 0 ? (
           <Text style={styles.mutedText}>{t("community.noParticipantSessions", "No sessions returned for this service user.")}</Text>
         ) : (
@@ -124,14 +183,14 @@ export default function CommunityParticipantDetailScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>{t("community.latestAssessment", "Latest Assessment")}</Text>
-        {latestAssessment ? (
-          <View style={styles.grid}>
-            <Info label={t("community.assessmentType", "Type")} value={latestAssessment.assessmentType} />
-            <Info label={t("community.completed", "Completed")} value={formatDate(latestAssessment.completedAtUtc)} />
-            <Info label={t("community.outcome", "Outcome")} value={latestAssessment.outcome} />
-            <Info label={t("community.riskSummary", "Risk Summary")} value={latestAssessment.riskSummary} />
-          </View>
+        <Text style={styles.sectionTitle}>Assessment History</Text>
+        {(participant?.assessments ?? []).length > 0 ? (
+          (participant?.assessments ?? []).map((assessment) => (
+            <View key={assessment.id} style={styles.historyRow}>
+              <Text style={styles.sessionTitle}>{assessment.assessmentType} · {formatDate(assessment.completedAtUtc)}</Text>
+              <Text style={styles.sessionMeta}>{assessment.outcome || assessment.riskSummary || "Assessment details available in the assessment screen."}</Text>
+            </View>
+          ))
         ) : (
           <Text style={styles.mutedText}>{t("community.noAssessment", "No assessment has been returned by the API.")}</Text>
         )}
@@ -145,14 +204,24 @@ const styles = StyleSheet.create({
   backButton: { alignSelf: "flex-start", backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.md },
   backButtonText: { color: colors.primary, fontWeight: "800" },
   card: { backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: spacing.xl, marginBottom: spacing.lg },
+  profileHead: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.md },
+  profileText: { flex: 1 },
+  avatar: { width: 72, height: 72, borderRadius: 16, backgroundColor: "#CFFAFE", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatarText: { color: "#0E7490", fontSize: 20, fontWeight: "900" },
+  avatarImage: { ...StyleSheet.absoluteFillObject },
   title: { color: colors.text, fontSize: 28, fontWeight: "900", marginBottom: spacing.sm },
+  identifier: { color: "#0E7490", fontSize: 13, fontWeight: "900", marginBottom: 4 },
   subtitle: { color: colors.textMuted, marginBottom: spacing.lg },
+  actionRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.lg },
+  primaryButton: { backgroundColor: "#083344", borderRadius: 10, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  primaryButtonText: { color: colors.surface, fontWeight: "900" },
   sectionTitle: { color: colors.text, fontSize: 20, fontWeight: "900", marginBottom: spacing.md },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   info: { minWidth: 220, flexGrow: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: spacing.md },
   infoLabel: { color: colors.textMuted, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: spacing.sm },
   infoValue: { color: colors.text, fontSize: 15, fontWeight: "800", lineHeight: 21 },
   sessionRow: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: spacing.md, marginBottom: spacing.md },
+  historyRow: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: spacing.md, marginBottom: spacing.md },
   sessionTitle: { color: colors.text, fontWeight: "900", marginBottom: 4 },
   sessionMeta: { color: colors.textMuted },
   mutedText: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },

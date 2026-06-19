@@ -27,16 +27,19 @@ public sealed class AmbulatoryProgrammeOfferingDto
 public sealed class AmbulatoryParticipantDto
 {
     public Guid Id { get; set; }
+    public string InternalIdentifier { get; set; } = string.Empty;
     public AmbulatoryProgrammeType ProgrammeType { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string? PreferredName { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
+    public string? PhotoUrl { get; set; }
     public string? ReferralSource { get; set; }
     public string Status { get; set; } = string.Empty;
     public string CounsellorUserId { get; set; } = string.Empty;
     public string CounsellorDisplayName { get; set; } = string.Empty;
     public AmbulatoryCarePlanDto? CurrentCarePlan { get; set; }
+    public IReadOnlyList<AmbulatoryCarePlanDto> CarePlans { get; set; } = Array.Empty<AmbulatoryCarePlanDto>();
     public IReadOnlyList<AmbulatoryAssessmentDto> Assessments { get; set; } = Array.Empty<AmbulatoryAssessmentDto>();
 }
 

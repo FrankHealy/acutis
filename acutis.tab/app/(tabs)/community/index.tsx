@@ -1,6 +1,6 @@
 import { Link } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   fetchCommunityDashboard,
@@ -22,6 +22,20 @@ function initials(name: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("") || "SU";
+}
+
+function serviceUserIdentifier(participant: CommunityParticipant) {
+  return participant.internalIdentifier?.trim() || participant.id;
+}
+
+function ParticipantAvatar({ participant }: { participant: CommunityParticipant }) {
+  const photoUrl = participant.photoUrl?.trim() || participant.photo?.trim();
+  return (
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>{initials(participant.displayName)}</Text>
+      {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.avatarImage} /> : null}
+    </View>
+  );
 }
 
 function formatTime(value: string) {
@@ -73,7 +87,6 @@ function CommunityHeader({ onLogout }: { onLogout: () => void }) {
           <Text style={styles.brandSubtitle}>{t("community.centre", "Arbour House")}</Text>
         </View>
         <View style={styles.unitPill}>
-          <Text style={styles.unitPillLabel}>{t("community.currentUnitLabel", "Current Unit")}</Text>
           <Text style={styles.unitPillValue}>{t("community.unitName", "Community")}</Text>
         </View>
         <Pressable onPress={onLogout} style={styles.logoutButton}>
@@ -141,11 +154,10 @@ function ParticipantRow({ participant }: { participant: CommunityParticipant }) 
       asChild
     >
       <Pressable style={styles.participantRow}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials(participant.displayName)}</Text>
-        </View>
+        <ParticipantAvatar participant={participant} />
         <View style={styles.rowMain}>
           <Text style={styles.rowTitle}>{participant.displayName}</Text>
+          <Text style={styles.identifier}>{serviceUserIdentifier(participant)}</Text>
           <Text style={styles.rowMeta}>{participant.referralSource || t("community.communityReferral", "Community referral")}</Text>
           <Text style={styles.rowMeta}>{participant.phone || participant.email || t("community.noContact", "No contact details")}</Text>
         </View>
@@ -230,7 +242,16 @@ export default function CommunityScreen() {
             <MetricCard label={t("community.outreach", "Outreach")} value={outreach} accent="#16A34A" />
             <MetricCard label={t("community.reports", "Reports")} value={reportsDue} accent="#B45309" />
           </View>
-          <Link href="/(tabs)/community/initial-assessment" asChild>
+          <Link
+            href={{
+              pathname: "/(tabs)/community/initial-assessment",
+              params: {
+                participantId: participants[0]?.id ?? "new",
+                resident: participants[0]?.displayName ?? "Community Service User",
+              },
+            }}
+            asChild
+          >
             <Pressable style={styles.assessmentHero}>
               <View style={styles.assessmentHeroIcon}>
                 <Text style={styles.assessmentHeroIconText}>HSE</Text>
@@ -334,8 +355,7 @@ const styles = StyleSheet.create({
   brandBadgeText: { color: colors.surface, fontSize: 26, fontWeight: "900" },
   brandTitle: { fontSize: 26, fontWeight: "900", color: colors.text },
   brandSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
-  unitPill: { marginLeft: "auto", minWidth: 170, borderWidth: 1, borderRadius: 18, borderColor: "#BAE6FD", backgroundColor: "#ECFEFF", paddingHorizontal: 14, paddingVertical: 10 },
-  unitPillLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: 1.1, color: colors.textMuted, fontWeight: "700", marginBottom: 2 },
+  unitPill: { marginLeft: "auto", minWidth: 150, borderWidth: 1, borderRadius: 18, borderColor: "#BAE6FD", backgroundColor: "#ECFEFF", paddingHorizontal: 14, paddingVertical: 10 },
   unitPillValue: { fontSize: 16, fontWeight: "900", color: "#0E7490" },
   logoutButton: { borderRadius: 8, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.surface },
   logoutText: { color: colors.primary, fontWeight: "800" },
@@ -366,11 +386,13 @@ const styles = StyleSheet.create({
   smallButtonText: { color: "#0E7490", fontWeight: "800" },
   participantRow: { flexDirection: "row", gap: spacing.md, alignItems: "center", borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.md },
   sessionRow: { flexDirection: "row", gap: spacing.md, alignItems: "center", borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.md },
-  avatar: { width: 52, height: 52, borderRadius: 12, backgroundColor: "#CFFAFE", alignItems: "center", justifyContent: "center" },
+  avatar: { width: 52, height: 52, borderRadius: 12, backgroundColor: "#CFFAFE", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   avatarText: { color: "#0E7490", fontWeight: "900" },
+  avatarImage: { ...StyleSheet.absoluteFillObject },
   rowMain: { flex: 1 },
   rowSide: { alignItems: "flex-end", gap: 6 },
   rowTitle: { color: colors.text, fontSize: 16, fontWeight: "900", marginBottom: 4 },
+  identifier: { color: "#0E7490", fontSize: 12, fontWeight: "900", marginBottom: 4 },
   rowMeta: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
   carePlanText: { color: colors.textMuted, fontSize: 12, fontWeight: "800" },
   statusPill: { borderRadius: 999, backgroundColor: "#F1F5F9", paddingHorizontal: spacing.md, paddingVertical: 6 },

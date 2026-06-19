@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({
   showCapacity = true,
   unitCode,
   unitName,
-  unitLabel = "Current Unit",
+  unitLabel = "",
   unitAccentClass,
   unitIconKey,
   onOpenIncidentCapture,
@@ -315,7 +315,7 @@ const Header: React.FC<HeaderProps> = ({
                   <UnitIcon className={`h-5 w-5 ${unitAccentClass ?? ""}`} />
                 </div>
                 <div className="leading-tight">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--app-text-muted)]">{unitLabel}</p>
+                  {unitLabel && <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--app-text-muted)]">{unitLabel}</p>}
                   <p className={`text-base font-bold sm:text-lg ${unitAccentClass ?? ""}`}>{unitName}</p>
                 </div>
               </div>

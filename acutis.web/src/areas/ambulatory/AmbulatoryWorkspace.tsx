@@ -176,6 +176,10 @@ function hasReportDue(appointment: AmbulatoryAppointment) {
   return /report due/i.test(appointment.notes ?? "") || /meeting/i.test(appointment.title);
 }
 
+function serviceUserIdentifier(participant: AmbulatoryParticipant | null | undefined) {
+  return participant?.internalIdentifier?.trim() || participant?.id || "";
+}
+
 export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspaceProps) {
   const config = ambulatoryLocalConfigs[programme];
   const { t, mergeTranslations } = useLocalization();
@@ -469,7 +473,7 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
       {calendarBoard}
     </div>
   ) : communityView === "service-users" ? (
-    <div className="mt-5">
+    <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
       <ServiceUsersTable
         config={config}
         participants={filteredParticipants}
@@ -479,6 +483,13 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
         onSearch={setParticipantSearch}
         onAdd={() => openDialog("participant")}
         onSelect={(participant) => setSelectedParticipantId(participant.id)}
+        onAssessment={(participant) => openDialog("assessment", { participant })}
+        onCarePlan={(participant) => openDialog("care-plan", { participant })}
+        onAppointment={(participant) => openDialog("appointment", { participant })}
+      />
+      <ServiceUserCasePanel
+        participant={selectedParticipant}
+        appointments={appointments.filter((appointment) => appointment.participantId === selectedParticipant?.id)}
         onAssessment={(participant) => openDialog("assessment", { participant })}
         onCarePlan={(participant) => openDialog("care-plan", { participant })}
         onAppointment={(participant) => openDialog("appointment", { participant })}
@@ -497,7 +508,6 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
           <Header
             showCapacity={false}
             unitName="Community"
-            unitLabel="Current Unit"
             unitAccentClass="text-cyan-700"
             unitIconKey="community"
             brandNameOverride="Acutis"
@@ -723,7 +733,7 @@ function ServiceUsersTable({
         <table className="w-full min-w-[980px]">
           <thead className="bg-slate-50">
             <tr>
-              {["Photo", "Service User", "Status", "Referral", "Care Plan", "Contact", "Counsellor", "Actions"].map((heading) => (
+              {["Photo", "Service User", "Internal ID", "Status", "Referral", "Care Plan", "Contact", "Counsellor", "Actions"].map((heading) => (
                 <th key={heading} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {heading}
                 </th>
@@ -733,7 +743,7 @@ function ServiceUsersTable({
           <tbody className="divide-y divide-slate-200 bg-white">
             {participants.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-5 py-8 text-center text-sm font-medium text-slate-500">
+                <td colSpan={9} className="px-5 py-8 text-center text-sm font-medium text-slate-500">
                   No service users found.
                 </td>
               </tr>
@@ -751,7 +761,12 @@ function ServiceUsersTable({
                     </td>
                     <td className="px-5 py-4">
                       <div className="font-semibold text-slate-950">{participant.displayName}</div>
-                      <div className="mt-0.5 text-xs text-slate-500">{participant.preferredName || participant.id}</div>
+                      <div className="mt-0.5 text-xs text-slate-500">{participant.preferredName || "No preferred name"}</div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-bold text-slate-700">
+                        {serviceUserIdentifier(participant)}
+                      </span>
                     </td>
                     <td className="px-5 py-4">
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase text-slate-700">{participant.status}</span>
@@ -794,6 +809,131 @@ function TableAction({ label, Icon, onClick }: { label: string; Icon: LucideIcon
       <Icon className="h-3.5 w-3.5 text-cyan-700" />
       {label}
     </button>
+  );
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("en-IE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function formatShortDate(value?: string | null) {
+  if (!value) return "Not set";
+  return new Date(value).toLocaleDateString("en-IE", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function DetailItem({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-900">{value || "Not set"}</p>
+    </div>
+  );
+}
+
+function ServiceUserCasePanel({
+  participant,
+  appointments,
+  onAssessment,
+  onCarePlan,
+  onAppointment,
+}: {
+  participant: AmbulatoryParticipant | null;
+  appointments: AmbulatoryAppointment[];
+  onAssessment: (participant: AmbulatoryParticipant) => void;
+  onCarePlan: (participant: AmbulatoryParticipant) => void;
+  onAppointment: (participant: AmbulatoryParticipant) => void;
+}) {
+  if (!participant) {
+    return (
+      <aside className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-sm font-semibold text-slate-600">Select a service user to view their details and history.</p>
+      </aside>
+    );
+  }
+
+  const carePlans = participant.carePlans?.length ? participant.carePlans : participant.currentCarePlan ? [participant.currentCarePlan] : [];
+  const assessments = participant.assessments ?? [];
+
+  return (
+    <aside className="rounded-xl border border-slate-200 bg-white shadow-sm xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
+      <div className="border-b border-slate-200 p-5">
+        <div className="flex items-start gap-4">
+          <ServiceUserAvatar participant={participant} />
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-xl font-black text-slate-950">{participant.displayName}</h2>
+            <p className="mt-1 font-mono text-xs font-bold text-cyan-800">{serviceUserIdentifier(participant)}</p>
+            <p className="mt-1 text-sm text-slate-500">{participant.referralSource || "Community referral"}</p>
+          </div>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase text-slate-700">{participant.status}</span>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <PanelAction label={assessments.length ? "Open assessment" : "New assessment"} Icon={ClipboardCheck} onClick={() => onAssessment(participant)} />
+          <PanelAction label="Care plan" Icon={FileText} onClick={() => onCarePlan(participant)} />
+          <PanelAction label="Session" Icon={CalendarDays} onClick={() => onAppointment(participant)} />
+        </div>
+      </div>
+
+      <div className="space-y-5 p-5">
+        <section>
+          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Full details</h3>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <DetailItem label="Preferred name" value={participant.preferredName} />
+            <DetailItem label="Phone" value={participant.phone} />
+            <DetailItem label="Email" value={participant.email} />
+            <DetailItem label="Counsellor" value={participant.counsellorDisplayName} />
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Therapy history</h3>
+          <div className="mt-3 space-y-2">
+            {appointments.length === 0 ? (
+              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">No therapy sessions returned for this service user.</p>
+            ) : (
+              appointments.map((appointment) => (
+                <article key={appointment.id} className="rounded-lg border border-slate-200 px-3 py-3">
+                  <p className="text-sm font-bold text-slate-950">{appointment.title}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{formatDateTime(appointment.startsAtUtc)} · {appointment.deliveryMode} · {appointment.status}</p>
+                  {appointment.notes && <p className="mt-2 text-sm text-slate-600">{appointment.notes}</p>}
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Care plan history</h3>
+          <div className="mt-3 space-y-2">
+            {carePlans.length === 0 ? (
+              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">No care plans returned for this service user.</p>
+            ) : (
+              carePlans.map((plan) => (
+                <article key={plan.id} className="rounded-lg border border-slate-200 px-3 py-3">
+                  <p className="text-sm font-bold text-slate-950">{plan.status} · review {formatShortDate(plan.reviewDate)}</p>
+                  <p className="mt-1 text-sm text-slate-600">{plan.goals || plan.needs || "No care-plan narrative captured."}</p>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Assessment history</h3>
+          <div className="mt-3 space-y-2">
+            {assessments.length === 0 ? (
+              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">No completed assessment returned. Use New assessment to start the canonical HSE form.</p>
+            ) : (
+              assessments.map((assessment) => (
+                <article key={assessment.id} className="rounded-lg border border-slate-200 px-3 py-3">
+                  <p className="text-sm font-bold text-slate-950">{assessment.assessmentType} assessment · {formatShortDate(assessment.completedAtUtc)}</p>
+                  <p className="mt-1 text-sm text-slate-600">{assessment.outcome || assessment.riskSummary || "Assessment details available in the assessment screen."}</p>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
+    </aside>
   );
 }
 
@@ -852,6 +992,7 @@ function ServiceUserPanel({
                 <span className="flex items-start justify-between gap-2">
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-bold text-slate-950">{participant.displayName}</span>
+                    <span className="mt-0.5 block truncate font-mono text-xs font-semibold text-slate-500">{serviceUserIdentifier(participant)}</span>
                     <span className="mt-0.5 block truncate text-xs text-slate-500">{participant.referralSource || participant.preferredName || "Community referral"}</span>
                   </span>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase text-slate-600">{participant.status}</span>
