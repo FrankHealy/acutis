@@ -61,6 +61,7 @@ builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<IAdmissionCompletionService, AdmissionCompletionService>();
 builder.Services.AddScoped<IFormValidationService, FormValidationService>();
+builder.Services.AddScoped<CanonicalHseFormSeeder>();
 builder.Services.AddScoped<IScreeningControlService, ScreeningControlService>();
 builder.Services.AddScoped<IGlobalConfigurationService, GlobalConfigurationService>();
 builder.Services.AddScoped<IFormConfigurationService, FormConfigurationService>();
@@ -244,6 +245,12 @@ if (applyMigrationsOnStartup)
     {
         throw new InvalidOperationException("Failed to apply database migrations during startup.", lastException);
     }
+}
+
+{
+    using var scope = app.Services.CreateScope();
+    var hseFormSeeder = scope.ServiceProvider.GetRequiredService<CanonicalHseFormSeeder>();
+    await hseFormSeeder.EnsureSeededAsync();
 }
 
 if (app.Environment.IsDevelopment())
