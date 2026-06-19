@@ -18,6 +18,8 @@ public sealed class FormService : IFormService
     private const string StatusDraft = "draft";
     private const string StatusActive = "active";
     private const string StatusPublished = "published";
+    private const string CanonicalHseFormCode = "community_initial_assessment";
+    private const string LegacyHseFormCode = "alcohol_screening_call";
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -32,6 +34,55 @@ public sealed class FormService : IFormService
     }
 
     public async Task<FormDefinitionDto?> GetLatestPublishedAsync(string formCode, CancellationToken cancellationToken = default)
+    {
+        FormDefinition? definition = null;
+
+        if (TryGetAliasSourceCode(formCode, out var sourceCode))
+        {
+            definition = await FindLatestPublishedEntityAsync(sourceCode, cancellationToken);
+            definition ??= await FindLatestPublishedEntityAsync(LegacyHseFormCode, cancellationToken);
+        }
+
+        definition ??= await FindLatestPublishedEntityAsync(formCode, cancellationToken);
+
+        return definition is null ? null : Map(definition, formCode);
+    }
+
+    public async Task<FormDefinition?> GetPublishedAsync(string formCode, int version, CancellationToken cancellationToken = default)
+    {
+        FormDefinition? definition = null;
+
+        if (TryGetAliasSourceCode(formCode, out var sourceCode))
+        {
+            definition = await _dbContext.FormDefinitions
+                .FirstOrDefaultAsync(
+                    form => form.Code == sourceCode
+                        && form.Version == version
+                        && form.Status != StatusDeleted
+                        && form.Status != StatusDraft,
+                    cancellationToken);
+
+            definition ??= await _dbContext.FormDefinitions
+                .FirstOrDefaultAsync(
+                    form => form.Code == LegacyHseFormCode
+                        && form.Version == version
+                        && form.Status != StatusDeleted
+                        && form.Status != StatusDraft,
+                    cancellationToken);
+        }
+
+        definition ??= await _dbContext.FormDefinitions
+            .FirstOrDefaultAsync(
+                form => form.Code == formCode
+                    && form.Version == version
+                    && form.Status != StatusDeleted
+                    && form.Status != StatusDraft,
+                cancellationToken);
+
+        return definition;
+    }
+
+    private async Task<FormDefinition?> FindLatestPublishedEntityAsync(string formCode, CancellationToken cancellationToken)
     {
         var active = await _dbContext.FormDefinitions
             .AsNoTracking()
@@ -49,21 +100,28 @@ public sealed class FormService : IFormService
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
-        return definition is null ? null : Map(definition);
+        return definition;
     }
 
-    public async Task<FormDefinition?> GetPublishedAsync(string formCode, int version, CancellationToken cancellationToken = default)
+    private static bool TryGetAliasSourceCode(string formCode, out string sourceCode)
     {
-        return await _dbContext.FormDefinitions
-            .FirstOrDefaultAsync(
-                form => form.Code == formCode
-                    && form.Version == version
-                    && form.Status != StatusDeleted
-                    && form.Status != StatusDraft,
-                cancellationToken);
+        sourceCode = string.Empty;
+        if (string.IsNullOrWhiteSpace(formCode))
+        {
+            return false;
+        }
+
+        var normalized = formCode.Trim().ToLowerInvariant();
+        if (normalized is "community_initial_assessment" or "admission_alcohol" or "admission_detox" or "admission_drugs" or "admission_ladies")
+        {
+            sourceCode = CanonicalHseFormCode;
+            return true;
+        }
+
+        return false;
     }
 
-    public static FormDefinitionDto Map(FormDefinition definition)
+    public static FormDefinitionDto Map(FormDefinition definition, string? codeOverride = null)
     {
         var schema = JsonSerializer.Deserialize<JsonSchemaDto>(definition.SchemaJson, JsonOptions) ?? new JsonSchemaDto
         {
@@ -85,7 +143,7 @@ public sealed class FormService : IFormService
 
         return new FormDefinitionDto
         {
-            Code = definition.Code,
+            Code = string.IsNullOrWhiteSpace(codeOverride) ? definition.Code : codeOverride,
             Version = definition.Version,
             Status = definition.Status,
             TitleKey = definition.TitleKey,
