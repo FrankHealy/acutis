@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   CalendarDays,
@@ -10,7 +10,6 @@ import {
   ChevronRight,
   CircleSlash,
   ClipboardCheck,
-  ClipboardList,
   Download,
   ExternalLink,
   FileText,
@@ -64,6 +63,7 @@ import {
 
 type AmbulatoryWorkspaceProps = {
   programme: AmbulatoryProgramme;
+  recordParticipantId?: string;
 };
 
 type DialogMode = "participant" | "assessment" | "care-plan" | "appointment" | "session" | null;
@@ -72,6 +72,7 @@ type CommunityView = "dashboard" | "service-users" | "operations";
 type AppointmentDraftDefaults = { startsAt: string; endsAt: string } | null;
 type ObservationTerm = { id: number; term: string; description: string; ratingId: number };
 const COMMUNITY_INITIAL_ASSESSMENT_FORM_CODE = "community_initial_assessment";
+const EMPTY_FORM_ANSWERS: Record<string, JsonValue> = {};
 
 const appointmentTypes = [
   { value: "individual-therapy", label: "One to One Therapy" },
@@ -82,8 +83,6 @@ const appointmentTypes = [
 const observationTerms = (groupTherapyTerms as ObservationTerm[])
   .filter((term) => term.ratingId <= 2)
   .slice(0, 24);
-
-const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function startOfDay(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
@@ -144,16 +143,16 @@ function toUtc(localDateTime: string) {
   return new Date(localDateTime).toISOString();
 }
 
-function formatTime(value: string) {
-  return new Date(value).toLocaleTimeString("en-IE", { hour: "2-digit", minute: "2-digit" });
+function formatTime(value: string, locale = "en-IE") {
+  return new Date(value).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
 
 function formatSlot(minutes: number) {
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 }
 
-function formatDate(value: Date) {
-  return value.toLocaleDateString("en-IE", { weekday: "short", day: "2-digit", month: "short" });
+function formatDate(value: Date, locale = "en-IE") {
+  return value.toLocaleDateString(locale, { weekday: "short", day: "2-digit", month: "short" });
 }
 
 function appointmentTypeLabel(value: string) {
@@ -165,6 +164,13 @@ function isSameDate(value: string, date: Date) {
   return candidate.getFullYear() === date.getFullYear() &&
     candidate.getMonth() === date.getMonth() &&
     candidate.getDate() === date.getDate();
+}
+
+function isCurrentDay(date: Date) {
+  const today = new Date();
+  return today.getFullYear() === date.getFullYear() &&
+    today.getMonth() === date.getMonth() &&
+    today.getDate() === date.getDate();
 }
 
 function locationFromNotes(notes?: string | null) {
@@ -180,10 +186,15 @@ function serviceUserIdentifier(participant: AmbulatoryParticipant | null | undef
   return participant?.internalIdentifier?.trim() || participant?.id || "";
 }
 
-export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspaceProps) {
+function communityViewFromSearch(value: string | null): CommunityView {
+  return value === "service-users" || value === "operations" ? value : "dashboard";
+}
+
+export default function AmbulatoryWorkspace({ programme, recordParticipantId }: AmbulatoryWorkspaceProps) {
   const config = ambulatoryLocalConfigs[programme];
-  const { t, mergeTranslations } = useLocalization();
+  const { t, mergeTranslations, locale } = useLocalization();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [dashboard, setDashboard] = useState<AmbulatoryDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -195,13 +206,19 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [participantSearch, setParticipantSearch] = useState("");
   const [calendarMode, setCalendarMode] = useState<CalendarMode>(() => config.calendar.defaultMode === "month" || config.calendar.defaultMode === "day" ? config.calendar.defaultMode : "work-week");
-  const [communityView, setCommunityView] = useState<CommunityView>("dashboard");
+  const [communityView, setCommunityView] = useState<CommunityView>(() => communityViewFromSearch(searchParams.get("view")));
   const [anchorDate, setAnchorDate] = useState(startOfDay(new Date()));
   const [appointmentDefaults, setAppointmentDefaults] = useState<AppointmentDraftDefaults>(null);
 
   useEffect(() => {
     mergeTranslations(ambulatoryLocalTranslations);
   }, [mergeTranslations]);
+
+  useEffect(() => {
+    if (!recordParticipantId) {
+      setCommunityView(communityViewFromSearch(searchParams.get("view")));
+    }
+  }, [recordParticipantId, searchParams]);
 
   const participants = useMemo(() => dashboard?.participants ?? [], [dashboard?.participants]);
   const appointments = useMemo(() => dashboard?.appointments ?? [], [dashboard?.appointments]);
@@ -219,8 +236,10 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
     ].some((value) => value?.toLowerCase().includes(query)));
   }, [participantSearch, participants]);
   const selectedParticipant = useMemo(
-    () => participants.find((participant) => participant.id === selectedParticipantId) ?? participants[0] ?? null,
-    [participants, selectedParticipantId],
+    () => recordParticipantId
+      ? participants.find((participant) => participant.id === recordParticipantId) ?? null
+      : participants.find((participant) => participant.id === selectedParticipantId) ?? participants[0] ?? null,
+    [participants, recordParticipantId, selectedParticipantId],
   );
   const selectedAppointment = useMemo(
     () => appointments.find((appointment) => appointment.id === selectedAppointmentId) ?? appointments[0] ?? null,
@@ -382,6 +401,35 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
   };
 
   const isCommunity = programme === "community";
+  const isCommunityRecord = isCommunity && Boolean(recordParticipantId);
+  const isInitialAssessmentOpen = isCommunity && (
+    dialogMode === "assessment" || searchParams.get("assessment") === "initial"
+  );
+
+  useEffect(() => {
+    if (isInitialAssessmentOpen) {
+      setDialogMode("assessment");
+    }
+  }, [isInitialAssessmentOpen]);
+
+  const openCommunityInitialAssessment = () => {
+    if (!assessmentParticipant) {
+      openDialog("assessment");
+      return;
+    }
+
+    router.push(`/units/community/service-users/${assessmentParticipant.id}?assessment=initial`);
+  };
+
+  const closeCommunityInitialAssessment = () => {
+    if (isCommunityRecord && recordParticipantId) {
+      router.push(`/units/community/service-users/${recordParticipantId}`);
+      return;
+    }
+
+    closeDialog();
+  };
+
   const communityNavItems: { key: CommunityView | "configuration"; label: string }[] = [
     { key: "dashboard", label: "Dashboard" },
     { key: "service-users", label: "Service Users" },
@@ -398,7 +446,7 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
       search={participantSearch}
       onSearch={setParticipantSearch}
       onAdd={() => openDialog("participant")}
-      onSelect={(participant) => setSelectedParticipantId(participant.id)}
+      onSelect={(participant) => router.push(`/units/community/service-users/${participant.id}`)}
       onAssessment={(participant) => openDialog("assessment", { participant })}
       onCarePlan={(participant) => openDialog("care-plan", { participant })}
       onAppointment={(participant) => openDialog("appointment", { participant })}
@@ -408,6 +456,7 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
     <CalendarBoard
       config={config}
       t={t}
+      locale={locale}
       mode={calendarMode}
       anchorDate={anchorDate}
       appointments={appointments}
@@ -426,24 +475,6 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
   const assessmentParticipant = selectedParticipant ?? participants[0] ?? undefined;
   const communityWorkspace = communityView === "dashboard" ? (
     <div className="mt-5 grid gap-4">
-      <button
-        type="button"
-        onClick={() => openDialog("assessment", { participant: assessmentParticipant })}
-        className="flex items-center gap-4 rounded-xl border border-cyan-800 bg-cyan-950 px-5 py-5 text-left text-white shadow-sm transition hover:bg-cyan-900"
-      >
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-cyan-100 text-sm font-black text-cyan-800">
-          HSE
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-xl font-black">HSE Initial Assessment</span>
-          <span className="mt-1 block text-sm font-medium text-cyan-100">
-            Open the full bounded Community assessment and consent form.
-          </span>
-        </span>
-        <span className="rounded-lg bg-white px-4 py-2 text-sm font-black text-cyan-900">
-          Start
-        </span>
-      </button>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <CommunityShortcut
           Icon={Users}
@@ -461,7 +492,7 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
           Icon={ClipboardCheck}
           label="HSE Initial Assessment"
           value="Bounded form"
-          onClick={() => openDialog("assessment", { participant: assessmentParticipant })}
+          onClick={openCommunityInitialAssessment}
         />
         <CommunityShortcut
           Icon={FileText}
@@ -473,26 +504,18 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
       {calendarBoard}
     </div>
   ) : communityView === "service-users" ? (
-    <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
-      <ServiceUsersTable
-        config={config}
-        participants={filteredParticipants}
-        totalParticipants={participants.length}
-        selectedParticipant={selectedParticipant}
-        search={participantSearch}
+    <div className="mt-5">
+        <ServiceUsersTable
+          config={config}
+          participants={filteredParticipants}
+          appointments={appointments}
+          totalParticipants={participants.length}
+          locale={locale}
+          t={t}
+          search={participantSearch}
         onSearch={setParticipantSearch}
         onAdd={() => openDialog("participant")}
-        onSelect={(participant) => setSelectedParticipantId(participant.id)}
-        onAssessment={(participant) => openDialog("assessment", { participant })}
-        onCarePlan={(participant) => openDialog("care-plan", { participant })}
-        onAppointment={(participant) => openDialog("appointment", { participant })}
-      />
-      <ServiceUserCasePanel
-        participant={selectedParticipant}
-        appointments={appointments.filter((appointment) => appointment.participantId === selectedParticipant?.id)}
-        onAssessment={(participant) => openDialog("assessment", { participant })}
-        onCarePlan={(participant) => openDialog("care-plan", { participant })}
-        onAppointment={(participant) => openDialog("appointment", { participant })}
+        onSelect={(participant) => router.push(`/units/community/service-users/${participant.id}`)}
       />
     </div>
   ) : (
@@ -500,6 +523,27 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
       {calendarBoard}
     </div>
   );
+  const communityAssessment = isInitialAssessmentOpen ? (
+    <CommunityInitialAssessmentInline
+      participant={selectedParticipant}
+      accessToken={session?.accessToken}
+      error={dialogError}
+      onError={setDialogError}
+      onSaved={refresh}
+      onClose={closeCommunityInitialAssessment}
+    />
+  ) : null;
+  const communityRecord = isCommunityRecord ? (
+    <CommunityServiceUserRecord
+      participant={selectedParticipant}
+      appointments={appointments.filter((appointment) => appointment.participantId === selectedParticipant?.id)}
+      locale={locale}
+      t={t}
+      onAssessment={(participant) => openDialog("assessment", { participant })}
+      onCarePlan={(participant) => openDialog("care-plan", { participant })}
+      onAppointment={(participant) => openDialog("appointment", { participant })}
+    />
+  ) : null;
 
   return (
     <>
@@ -527,6 +571,10 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
                         onClick={() => {
                           if (item.key === "configuration") {
                             router.push("/units/config");
+                            return;
+                          }
+                          if (isCommunityRecord) {
+                            router.push(item.key === "dashboard" ? "/units/community" : `/units/community?view=${item.key}`);
                             return;
                           }
                           setCommunityView(item.key);
@@ -594,7 +642,11 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
         {loading && <p className="mt-4 text-sm text-gray-500">Loading...</p>}
 
         {!loading && dashboard && (
-          isCommunity ? communityWorkspace : (
+          isCommunityRecord ? (
+            isInitialAssessmentOpen ? communityAssessment : communityRecord
+          ) : isCommunity ? (
+            isInitialAssessmentOpen ? communityAssessment : communityWorkspace
+          ) : (
             <div className="mt-5 grid gap-4 xl:grid-cols-[310px_minmax(0,1fr)]">
               {serviceUserPanel}
               {calendarBoard}
@@ -614,7 +666,7 @@ export default function AmbulatoryWorkspace({ programme }: AmbulatoryWorkspacePr
           setDialogError((e as Error).message);
         }
       }} />
-      <AssessmentDialog open={dialogMode === "assessment"} participant={selectedParticipant} programme={programme} accessToken={session?.accessToken} error={dialogError} onError={setDialogError} onClose={closeDialog} onSaved={refresh} />
+      {!isCommunity && <AssessmentDialog open={dialogMode === "assessment"} participant={selectedParticipant} programme={programme} accessToken={session?.accessToken} error={dialogError} onError={setDialogError} onClose={closeDialog} onSaved={refresh} />}
       <CarePlanDialog open={dialogMode === "care-plan"} participant={selectedParticipant} programme={programme} accessToken={session?.accessToken} error={dialogError} onError={setDialogError} onClose={closeDialog} onSaved={refresh} />
       <AppointmentDialog open={dialogMode === "appointment"} config={config} defaults={appointmentDefaults} participants={participants} selectedParticipant={selectedParticipant} programme={programme} accessToken={session?.accessToken} allowVideo error={dialogError} onError={setDialogError} onClose={closeDialog} onSaved={refresh} />
       <SessionDialog open={dialogMode === "session"} appointment={selectedAppointment} displayName={clinicalDisplayName} jwt={session?.accessToken} onClose={closeDialog} />
@@ -685,37 +737,71 @@ function ServiceUserAvatar({ participant }: { participant: AmbulatoryParticipant
   );
 }
 
+type ServiceUserSortKey = "name" | "startDate" | "nextAppointment";
+
+function SortableServiceUserHeading({ label, sortKey, sort, onSort, t }: { label: string; sortKey: ServiceUserSortKey; sort: { key: ServiceUserSortKey; direction: "asc" | "desc" }; onSort: (key: ServiceUserSortKey) => void; t: (key: string) => string }) {
+  const active = sort.key === sortKey;
+  return <button type="button" onClick={() => onSort(sortKey)} className="inline-flex items-center gap-1 hover:text-[var(--app-text)]" aria-label={`${label}: ${active && sort.direction === "asc" ? t("ambulatory.service_users.sort_descending") : t("ambulatory.service_users.sort_ascending")}`}>
+    {label}<span aria-hidden="true">{active ? (sort.direction === "asc" ? "↑" : "↓") : "↕"}</span>
+  </button>;
+}
+
 function ServiceUsersTable({
   config,
   participants,
+  appointments,
   totalParticipants,
-  selectedParticipant,
+  locale,
+  t,
   search,
   onSearch,
   onAdd,
   onSelect,
-  onAssessment,
-  onCarePlan,
-  onAppointment,
 }: {
   config: AmbulatoryLocalConfig;
   participants: AmbulatoryParticipant[];
+  appointments: AmbulatoryAppointment[];
   totalParticipants: number;
-  selectedParticipant: AmbulatoryParticipant | null;
+  locale: string;
+  t: (key: string) => string;
   search: string;
   onSearch: (value: string) => void;
   onAdd: () => void;
   onSelect: (participant: AmbulatoryParticipant) => void;
-  onAssessment: (participant: AmbulatoryParticipant) => void;
-  onCarePlan: (participant: AmbulatoryParticipant) => void;
-  onAppointment: (participant: AmbulatoryParticipant) => void;
 }) {
+  const [sort, setSort] = useState<{ key: ServiceUserSortKey; direction: "asc" | "desc" }>({ key: "name", direction: "asc" });
+  const [now] = useState(() => Date.now());
+  const upcomingAppointmentByParticipant = useMemo(() => {
+    return appointments.reduce<Map<string, AmbulatoryAppointment>>((next, appointment) => {
+      if (!appointment.participantId || new Date(appointment.startsAtUtc).getTime() < now) return next;
+      const current = next.get(appointment.participantId);
+      if (!current || new Date(appointment.startsAtUtc).getTime() < new Date(current.startsAtUtc).getTime()) {
+        next.set(appointment.participantId, appointment);
+      }
+      return next;
+    }, new Map());
+  }, [appointments, now]);
+  const sortedParticipants = useMemo(() => participants
+    .map((participant, index) => ({ participant, index, nextAppointment: upcomingAppointmentByParticipant.get(participant.id) }))
+    .sort((left, right) => {
+      let comparison = 0;
+      if (sort.key === "name") {
+        comparison = left.participant.displayName.localeCompare(right.participant.displayName, locale, { sensitivity: "base" });
+      } else {
+        const leftValue = sort.key === "startDate" ? new Date(left.participant.startDateUtc).getTime() : left.nextAppointment ? new Date(left.nextAppointment.startsAtUtc).getTime() : Number.POSITIVE_INFINITY;
+        const rightValue = sort.key === "startDate" ? new Date(right.participant.startDateUtc).getTime() : right.nextAppointment ? new Date(right.nextAppointment.startsAtUtc).getTime() : Number.POSITIVE_INFINITY;
+        comparison = leftValue - rightValue;
+      }
+      return comparison === 0 ? left.index - right.index : sort.direction === "asc" ? comparison : -comparison;
+    }), [locale, participants, sort, upcomingAppointmentByParticipant]);
+  const toggleSort = (key: ServiceUserSortKey) => setSort((current) => ({ key, direction: current.key === key && current.direction === "asc" ? "desc" : "asc" }));
+
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className={`h-1 ${config.primaryClass}`} />
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
         <div>
-          <h2 className="text-xl font-bold text-slate-950">Service Users</h2>
+          <h2 className="text-xl font-bold text-slate-950">{t("ambulatory.service_users.title")}</h2>
           <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{totalParticipants} active</p>
         </div>
         <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
@@ -730,31 +816,35 @@ function ServiceUsersTable({
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px]">
+        <table className="w-full min-w-[1100px]">
           <thead className="bg-slate-50">
             <tr>
-              {["Photo", "Service User", "Internal ID", "Status", "Referral", "Care Plan", "Contact", "Counsellor", "Actions"].map((heading) => (
-                <th key={heading} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {heading}
-                </th>
-              ))}
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Photo</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"><SortableServiceUserHeading label={t("ambulatory.community.participant_label")} sortKey="name" sort={sort} onSort={toggleSort} t={t} /></th>
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Internal ID</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"><SortableServiceUserHeading label={t("ambulatory.service_users.start_date")} sortKey="startDate" sort={sort} onSort={toggleSort} t={t} /></th>
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"><SortableServiceUserHeading label={t("ambulatory.service_users.next_appointment_date")} sortKey="nextAppointment" sort={sort} onSort={toggleSort} t={t} /></th>
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Referral</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Care Plan</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Contact</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Counsellor</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
             {participants.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-5 py-8 text-center text-sm font-medium text-slate-500">
+                <td colSpan={10} className="px-5 py-8 text-center text-sm font-medium text-slate-500">
                   No service users found.
                 </td>
               </tr>
             ) : (
-              participants.map((participant) => {
-                const selected = selectedParticipant?.id === participant.id;
+              sortedParticipants.map(({ participant, nextAppointment }) => {
                 return (
                   <tr
                     key={participant.id}
                     onClick={() => onSelect(participant)}
-                    className={`cursor-pointer transition ${selected ? "bg-cyan-50" : "hover:bg-slate-50"}`}
+                    className="cursor-pointer transition hover:bg-slate-50"
                   >
                     <td className="px-5 py-4">
                       <ServiceUserAvatar participant={participant} />
@@ -768,6 +858,8 @@ function ServiceUsersTable({
                         {serviceUserIdentifier(participant)}
                       </span>
                     </td>
+                    <td className="px-5 py-4 text-sm text-slate-600">{formatShortDate(participant.startDateUtc, locale)}</td>
+                    <td className="px-5 py-4 text-sm text-slate-600">{nextAppointment ? formatShortDate(nextAppointment.startsAtUtc, locale) : t("ambulatory.service_users.tbc")}</td>
                     <td className="px-5 py-4">
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase text-slate-700">{participant.status}</span>
                     </td>
@@ -778,13 +870,6 @@ function ServiceUsersTable({
                       <div className="mt-0.5 text-xs text-slate-500">{participant.email || "No email"}</div>
                     </td>
                     <td className="px-5 py-4 text-sm text-slate-600">{participant.counsellorDisplayName || "Not assigned"}</td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <TableAction label="Assess" Icon={ClipboardCheck} onClick={() => onAssessment(participant)} />
-                        <TableAction label="Plan" Icon={ClipboardList} onClick={() => onCarePlan(participant)} />
-                        <TableAction label="Appointment" Icon={CalendarDays} onClick={() => onAppointment(participant)} />
-                      </div>
-                    </td>
                   </tr>
                 );
               })
@@ -796,29 +881,13 @@ function ServiceUsersTable({
   );
 }
 
-function TableAction({ label, Icon, onClick }: { label: string; Icon: LucideIcon; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-    >
-      <Icon className="h-3.5 w-3.5 text-cyan-700" />
-      {label}
-    </button>
-  );
+function formatDateTime(value: string, locale: string) {
+  return new Date(value).toLocaleString(locale, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("en-IE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
-function formatShortDate(value?: string | null) {
+function formatShortDate(value?: string | null, locale = "en-IE") {
   if (!value) return "Not set";
-  return new Date(value).toLocaleDateString("en-IE", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(value).toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function DetailItem({ label, value }: { label: string; value?: string | null }) {
@@ -830,24 +899,30 @@ function DetailItem({ label, value }: { label: string; value?: string | null }) 
   );
 }
 
-function ServiceUserCasePanel({
+function CommunityServiceUserRecord({
   participant,
   appointments,
+  locale,
+  t,
   onAssessment,
   onCarePlan,
   onAppointment,
+  children,
 }: {
   participant: AmbulatoryParticipant | null;
   appointments: AmbulatoryAppointment[];
+  locale: string;
+  t: (key: string) => string;
   onAssessment: (participant: AmbulatoryParticipant) => void;
   onCarePlan: (participant: AmbulatoryParticipant) => void;
   onAppointment: (participant: AmbulatoryParticipant) => void;
+  children?: React.ReactNode;
 }) {
   if (!participant) {
     return (
-      <aside className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold text-slate-600">Select a service user to view their details and history.</p>
-      </aside>
+      <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-sm font-semibold text-slate-600">Service user not found.</p>
+      </section>
     );
   }
 
@@ -855,37 +930,45 @@ function ServiceUserCasePanel({
   const assessments = participant.assessments ?? [];
 
   return (
-    <aside className="rounded-xl border border-slate-200 bg-white shadow-sm xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
-      <div className="border-b border-slate-200 p-5">
-        <div className="flex items-start gap-4">
-          <ServiceUserAvatar participant={participant} />
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-xl font-black text-slate-950">{participant.displayName}</h2>
-            <p className="mt-1 font-mono text-xs font-bold text-cyan-800">{serviceUserIdentifier(participant)}</p>
-            <p className="mt-1 text-sm text-slate-500">{participant.referralSource || "Community referral"}</p>
+    <section className="mt-5 space-y-5">
+      <header className="sticky top-3 z-20 rounded-xl border border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+        <div className="p-5">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)] xl:items-start">
+            <div>
+              <div className="flex items-start gap-4">
+                <ServiceUserAvatar participant={participant} />
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-xl font-black text-slate-950">{participant.displayName}</h2>
+                  <p className="mt-1 font-mono text-xs font-bold text-cyan-800">{serviceUserIdentifier(participant)}</p>
+                  <p className="mt-1 text-sm text-slate-500">{participant.referralSource || "Community referral"}</p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase text-slate-700">{participant.status}</span>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <PanelAction label={assessments.length ? "Open assessment" : "New assessment"} Icon={ClipboardCheck} onClick={() => onAssessment(participant)} />
+                <PanelAction label="Care plan" Icon={FileText} onClick={() => onCarePlan(participant)} />
+                <PanelAction label="Session" Icon={CalendarDays} onClick={() => onAppointment(participant)} />
+                <PanelAction label="Appointment" Icon={CalendarDays} onClick={() => onAppointment(participant)} />
+              </div>
+            </div>
+            <section>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">{t("ambulatory.service_users.full_details")}</h3>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <DetailItem label="Preferred name" value={participant.preferredName} />
+                <DetailItem label="Phone" value={participant.phone} />
+                <DetailItem label="Email" value={participant.email} />
+                <DetailItem label="Counsellor" value={participant.counsellorDisplayName} />
+              </div>
+            </section>
           </div>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase text-slate-700">{participant.status}</span>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <PanelAction label={assessments.length ? "Open assessment" : "New assessment"} Icon={ClipboardCheck} onClick={() => onAssessment(participant)} />
-          <PanelAction label="Care plan" Icon={FileText} onClick={() => onCarePlan(participant)} />
-          <PanelAction label="Session" Icon={CalendarDays} onClick={() => onAppointment(participant)} />
-        </div>
-      </div>
+      </header>
 
-      <div className="space-y-5 p-5">
-        <section>
-          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Full details</h3>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <DetailItem label="Preferred name" value={participant.preferredName} />
-            <DetailItem label="Phone" value={participant.phone} />
-            <DetailItem label="Email" value={participant.email} />
-            <DetailItem label="Counsellor" value={participant.counsellorDisplayName} />
-          </div>
-        </section>
+      {children}
 
+      <div className="grid gap-5 xl:grid-cols-2">
         <section>
-          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Therapy history</h3>
+          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">{t("ambulatory.service_users.therapy_history")}</h3>
           <div className="mt-3 space-y-2">
             {appointments.length === 0 ? (
               <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">No therapy sessions returned for this service user.</p>
@@ -893,7 +976,7 @@ function ServiceUserCasePanel({
               appointments.map((appointment) => (
                 <article key={appointment.id} className="rounded-lg border border-slate-200 px-3 py-3">
                   <p className="text-sm font-bold text-slate-950">{appointment.title}</p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">{formatDateTime(appointment.startsAtUtc)} · {appointment.deliveryMode} · {appointment.status}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{formatDateTime(appointment.startsAtUtc, locale)} · {appointment.deliveryMode} · {appointment.status}</p>
                   {appointment.notes && <p className="mt-2 text-sm text-slate-600">{appointment.notes}</p>}
                 </article>
               ))
@@ -902,14 +985,14 @@ function ServiceUserCasePanel({
         </section>
 
         <section>
-          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Care plan history</h3>
+          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">{t("ambulatory.service_users.care_plan_history")}</h3>
           <div className="mt-3 space-y-2">
             {carePlans.length === 0 ? (
               <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">No care plans returned for this service user.</p>
             ) : (
               carePlans.map((plan) => (
                 <article key={plan.id} className="rounded-lg border border-slate-200 px-3 py-3">
-                  <p className="text-sm font-bold text-slate-950">{plan.status} · review {formatShortDate(plan.reviewDate)}</p>
+                  <p className="text-sm font-bold text-slate-950">{plan.status} · review {formatShortDate(plan.reviewDate, locale)}</p>
                   <p className="mt-1 text-sm text-slate-600">{plan.goals || plan.needs || "No care-plan narrative captured."}</p>
                 </article>
               ))
@@ -925,7 +1008,7 @@ function ServiceUserCasePanel({
             ) : (
               assessments.map((assessment) => (
                 <article key={assessment.id} className="rounded-lg border border-slate-200 px-3 py-3">
-                  <p className="text-sm font-bold text-slate-950">{assessment.assessmentType} assessment · {formatShortDate(assessment.completedAtUtc)}</p>
+                  <p className="text-sm font-bold text-slate-950">{assessment.assessmentType} assessment · {formatShortDate(assessment.completedAtUtc, locale)}</p>
                   <p className="mt-1 text-sm text-slate-600">{assessment.outcome || assessment.riskSummary || "Assessment details available in the assessment screen."}</p>
                 </article>
               ))
@@ -933,7 +1016,7 @@ function ServiceUserCasePanel({
           </div>
         </section>
       </div>
-    </aside>
+    </section>
   );
 }
 
@@ -1056,12 +1139,14 @@ function getAppointmentVisual(appointment: AmbulatoryAppointment): {
 
 function CalendarAppointmentCard({
   appointment,
+  locale,
   slotMinutes,
   onOpen,
   onResize,
   onMarkMissed,
 }: {
   appointment: AmbulatoryAppointment;
+  locale: string;
   slotMinutes: number;
   onOpen: () => void;
   onResize: (deltaMinutes: number) => void;
@@ -1089,7 +1174,7 @@ function CalendarAppointmentCard({
       <span className="flex items-center justify-between gap-1 pl-1 text-[11px] font-bold leading-none">
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <Icon className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{formatTime(appointment.startsAtUtc)} · {duration}m</span>
+          <span className="truncate">{formatTime(appointment.startsAtUtc, locale)} · {duration}m</span>
         </span>
         {appointment.isFixed && <Lock className="h-3.5 w-3.5 shrink-0" />}
       </span>
@@ -1115,6 +1200,7 @@ function CalendarAppointmentCard({
 function CalendarBoard({
   config,
   t,
+  locale,
   mode,
   anchorDate,
   appointments,
@@ -1131,6 +1217,7 @@ function CalendarBoard({
 }: {
   config: AmbulatoryLocalConfig;
   t: (key: string) => string;
+  locale: string;
   mode: CalendarMode;
   anchorDate: Date;
   appointments: AmbulatoryAppointment[];
@@ -1158,11 +1245,11 @@ function CalendarBoard({
   const step = mode === "month" ? 30 : mode === "work-week" ? config.calendar.workWeekDays : 1;
   const title = mode === "month"
     ? anchorDate.toLocaleDateString("en-IE", { month: "long", year: "numeric" })
-    : `${formatDate(visibleDays[0])} - ${formatDate(visibleDays[visibleDays.length - 1])}`;
+    : `${formatDate(visibleDays[0], locale)} - ${formatDate(visibleDays[visibleDays.length - 1], locale)}`;
   const modeLabels: Record<CalendarMode, string> = {
-    day: "Day",
-    "work-week": `${config.calendar.workWeekDays} Day`,
-    month: "Month",
+    day: t("ambulatory.calendar.day"),
+    "work-week": t("ambulatory.calendar.work_week").replace("{{count}}", String(config.calendar.workWeekDays)),
+    month: t("ambulatory.calendar.month"),
   };
   const slotHeight = 34;
   const dayHeight = slots.length * slotHeight;
@@ -1177,9 +1264,9 @@ function CalendarBoard({
           <p className="mt-1 text-sm font-medium text-slate-500">{title}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => onAnchorChange(addDays(anchorDate, -step))} className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50" aria-label="Previous"><ChevronLeft className="h-4 w-4" /></button>
+          <button type="button" onClick={() => onAnchorChange(addDays(anchorDate, -step))} className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50" aria-label={t("ambulatory.calendar.previous")}><ChevronLeft className="h-4 w-4" /></button>
           <button type="button" onClick={() => onAnchorChange(startOfDay(new Date()))} className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50" aria-label={t("ambulatory.calendar.today")}><CalendarDays className="h-4 w-4" /></button>
-          <button type="button" onClick={() => onAnchorChange(addDays(anchorDate, step))} className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50" aria-label="Next"><ChevronRight className="h-4 w-4" /></button>
+          <button type="button" onClick={() => onAnchorChange(addDays(anchorDate, step))} className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50" aria-label={t("ambulatory.calendar.next")}><ChevronRight className="h-4 w-4" /></button>
           <div className="ml-1 inline-flex overflow-hidden rounded-lg border border-slate-300 bg-slate-50">
             {(["day", "work-week", "month"] as CalendarMode[]).map((item) => (
               <button key={item} type="button" onClick={() => onModeChange(item)} className={`px-3 py-2 text-sm font-semibold ${mode === item ? config.selectedClass : "text-slate-500"}`}>{modeLabels[item]}</button>
@@ -1204,10 +1291,10 @@ function CalendarBoard({
         <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <div className="min-w-[920px]">
             <div className="grid border-b border-slate-200 bg-slate-100" style={{ gridTemplateColumns: `76px repeat(${visibleDays.length}, minmax(168px, 1fr))` }}>
-              <div className="px-3 py-3 text-xs font-bold uppercase text-slate-500">Time</div>
+              <div className="px-3 py-3 text-xs font-bold uppercase text-slate-500">{t("ambulatory.calendar.time")}</div>
               {visibleDays.map((day) => (
-                <div key={dateKeyLocal(day)} className="border-l border-slate-200 px-3 py-3">
-                  <p className="text-xs font-bold uppercase text-slate-500">{dayNames[day.getDay()]}</p>
+                <div key={dateKeyLocal(day)} className={`border-l border-slate-200 px-3 py-3 ${isCurrentDay(day) ? "border-b-2 border-[var(--app-primary)] bg-[var(--app-primary-soft)]" : ""}`}>
+                  <p className="text-xs font-bold uppercase text-slate-500">{day.toLocaleDateString(locale, { weekday: "short" })}</p>
                   <p className="text-sm font-bold text-slate-950">{day.getDate()}</p>
                 </div>
               ))}
@@ -1222,8 +1309,9 @@ function CalendarBoard({
               </div>
               {visibleDays.map((day) => {
                 const dayAppointments = appointments.filter((appointment) => isSameDate(appointment.startsAtUtc, day));
+                const isToday = isCurrentDay(day);
                 return (
-                  <div key={dateKeyLocal(day)} className="relative border-l border-slate-200 bg-white" style={{ height: dayHeight }}>
+                  <div key={dateKeyLocal(day)} className={`relative border-l border-slate-200 ${isToday ? "bg-[var(--app-primary-soft)]" : "bg-white"}`} style={{ height: dayHeight }}>
                     {slots.map((slot) => (
                       <div
                         key={`${dateKeyLocal(day)}-${slot}`}
@@ -1248,6 +1336,7 @@ function CalendarBoard({
                         <div key={appointment.id} className="absolute left-1.5 right-1.5 z-10" style={{ top: top + 2, height }}>
                           <CalendarAppointmentCard
                             appointment={appointment}
+                            locale={locale}
                             slotMinutes={config.calendar.slotMinutes}
                             onOpen={() => onOpenSession(appointment)}
                             onResize={(deltaMinutes) => onResizeAppointment(appointment, deltaMinutes)}
@@ -1268,10 +1357,12 @@ function CalendarBoard({
             const dateKey = dateKeyLocal(day);
             const dayAppointments = appointments.filter((appointment) => isSameDate(appointment.startsAtUtc, day));
             const isCurrentMonth = day.getMonth() === anchorDate.getMonth();
+            const isToday = isCurrentDay(day);
+            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
             return (
-              <div key={dateKey} onContextMenu={(event) => { event.preventDefault(); onCreateAt(day, config.calendar.startHour * 60); }} className={`min-h-40 rounded-lg border p-2 ${isCurrentMonth ? "border-slate-200 bg-white" : "border-slate-200 bg-slate-50 opacity-70"}`}>
+              <div key={dateKey} onContextMenu={(event) => { event.preventDefault(); onCreateAt(day, config.calendar.startHour * 60); }} className={`min-h-40 rounded-lg border p-2 ${isCurrentMonth ? isWeekend ? "border-slate-200 bg-[color:color-mix(in_srgb,var(--app-surface)_70%,var(--app-primary-soft))]" : "border-slate-200 bg-white" : "border-slate-200 bg-slate-50 opacity-70"} ${isToday ? "ring-2 ring-[var(--app-primary)] ring-inset" : ""}`}>
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-xs font-bold uppercase text-slate-500">{dayNames[day.getDay()]}</span>
+                  <span className="text-xs font-bold uppercase text-slate-500">{day.toLocaleDateString(locale, { weekday: "short" })}</span>
                   <span className="text-sm font-bold text-slate-950">{day.getDate()}</span>
                 </div>
                 <div className="mt-2 space-y-1.5">
@@ -1279,6 +1370,7 @@ function CalendarBoard({
                     <div key={appointment.id} className="h-16">
                       <CalendarAppointmentCard
                         appointment={appointment}
+                        locale={locale}
                         slotMinutes={config.calendar.slotMinutes}
                         onOpen={() => onOpenSession(appointment)}
                         onResize={(deltaMinutes) => onResizeAppointment(appointment, deltaMinutes)}
@@ -1370,20 +1462,6 @@ function AssessmentDialog({ open, participant, programme, accessToken, error, on
   const [outcome, setOutcome] = useState("");
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (open) { setAssessmentType("initial"); setPresentingNeeds(""); setRiskSummary(""); setStrengths(""); setSummary(""); setGoalsDiscussed(""); setOutcome(""); } }, [open]);
-  if (programme === "community") {
-    return (
-      <CommunityInitialAssessmentDialog
-        open={open}
-        participant={participant}
-        accessToken={accessToken}
-        error={error}
-        onError={onError}
-        onClose={onClose}
-        onSaved={onSaved}
-      />
-    );
-  }
-
   return (
     <Dialog open={open} title={`${assessmentType === "initial" ? "Initial" : "Full"} Assessment${participant ? `: ${participant.displayName}` : ""}`} onClose={onClose}>
       <form className="grid gap-4" onSubmit={async (event) => { event.preventDefault(); if (!participant) return; try { onError(null); await ambulatoryService.addAssessment(programme, participant.id, { assessmentType, presentingNeeds, riskSummary, strengths, substanceOrBehaviourSummary: summary, goalsDiscussed, outcome }, accessToken); await onSaved(); onClose(); } catch (e) { onError((e as Error).message); } }}>
@@ -1401,7 +1479,7 @@ function AssessmentDialog({ open, participant, programme, accessToken, error, on
   );
 }
 
-function CommunityInitialAssessmentDialog({ open, participant, accessToken, error, onError, onClose, onSaved }: { open: boolean; participant: AmbulatoryParticipant | null; accessToken?: string | null; error: string | null; onError: (value: string | null) => void; onClose: () => void; onSaved: () => Promise<void> }) {
+function CommunityInitialAssessmentInline({ participant, accessToken, error, onError, onSaved, onClose }: { participant: AmbulatoryParticipant | null; accessToken?: string | null; error: string | null; onError: (value: string | null) => void; onSaved: () => Promise<void>; onClose: () => void }) {
   const { locale, mergeTranslations } = useLocalization();
   const [formData, setFormData] = useState<GetActiveFormResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1409,7 +1487,7 @@ function CommunityInitialAssessmentDialog({ open, participant, accessToken, erro
 
   useEffect(() => {
     let active = true;
-    if (!open || !subjectId) {
+    if (!subjectId) {
       setFormData(null);
       return;
     }
@@ -1443,7 +1521,7 @@ function CommunityInitialAssessmentDialog({ open, participant, accessToken, erro
     return () => {
       active = false;
     };
-  }, [accessToken, locale, mergeTranslations, onError, open, subjectId]);
+  }, [accessToken, locale, mergeTranslations, onError, subjectId]);
 
   const handleSaveProgress = async (payload: { submissionId: string | null; answers: Record<string, JsonValue> }): Promise<SaveProgressResponse> => {
     if (!participant || !formData) {
@@ -1476,12 +1554,20 @@ function CommunityInitialAssessmentDialog({ open, participant, accessToken, erro
       answers: payload.answers,
     });
     await onSaved();
-    onClose();
     return response;
   };
 
   return (
-    <Dialog open={open} title={`Community Initial Assessment${participant ? `: ${participant.displayName}` : ""}`} onClose={onClose}>
+    <section className="mt-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-950">HSE Initial Assessment</h1>
+          {participant && <p className="mt-1 text-sm text-slate-600">{participant.displayName}</p>}
+        </div>
+        <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          Back
+        </button>
+      </div>
       {!participant && <p className="text-sm text-gray-500">Select a Community service user before starting an assessment.</p>}
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
       {loading && <p className="text-sm text-gray-500">Loading HSE Initial Assessment...</p>}
@@ -1490,12 +1576,12 @@ function CommunityInitialAssessmentDialog({ open, participant, accessToken, erro
           form={formData.form}
           optionSets={formData.optionSets}
           locale={locale}
-          initialSubmissionId={formData.submissionId}
-          initialSubmissionStatus={formData.submissionStatus}
-          initialAnswers={formData.draftAnswers}
+          initialSubmissionId={null}
+          initialSubmissionStatus={null}
+          initialAnswers={EMPTY_FORM_ANSWERS}
           subjectType="participant"
           subjectId={participant.id}
-          renderMode="wizard"
+          renderMode="accordion"
           onSaveProgress={handleSaveProgress}
           onSave={handleSave}
           submitLabel="Confirm Assessment"
@@ -1503,7 +1589,7 @@ function CommunityInitialAssessmentDialog({ open, participant, accessToken, erro
           submittedLabel="Community Initial Assessment saved."
         />
       )}
-    </Dialog>
+    </section>
   );
 }
 

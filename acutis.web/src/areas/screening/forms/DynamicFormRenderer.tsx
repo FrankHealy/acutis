@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Mic, Square } from "lucide-react";
 import type {
   FormDefinitionDto,
   JsonValue,
@@ -20,6 +20,7 @@ import type { SuggestedPatch } from "@/features/voice/voiceAssistMapper";
 import { enableVoiceAssistAdmissions } from "@/lib/featureFlags";
 import Toast from "@/units/shared/ui/Toast";
 import InjectionBodyMap from "@/areas/shared/admissions/InjectionBodyMap";
+import { useSectionDictation } from "@/features/voice/useSectionDictation";
 
 type DynamicFormRendererProps = {
   form: FormDefinitionDto;
@@ -30,7 +31,7 @@ type DynamicFormRendererProps = {
   initialAnswers: Record<string, JsonValue>;
   subjectType: "anonymous_call" | "resident" | "admission" | "participant";
   subjectId: string | null;
-  renderMode?: "accordion" | "wizard";
+  renderMode?: "accordion" | "wizard" | "inline";
   onSaveProgress: (payload: {
     submissionId: string | null;
     answers: Record<string, JsonValue>;
@@ -114,9 +115,62 @@ const booleanStatementLabels: Record<string, string> = {
   comprehensive_assessment_arranged: "Comprehensive assessment arranged",
 };
 
+const communityPresentationLabels: Record<string, string> = {
+  "assessment_form.demographics_and_identity.gender_identity.selected_values": "Gender identity",
+  "assessment_form.demographics_and_identity.sexual_orientation.selected_values": "Sexual orientation",
+  "assessment_form.demographics_and_identity.background.country_of_birth": "Country of birth",
+  "assessment_form.demographics_and_identity.language.uses_other_language_at_home.selected_values": "Language other than English or Irish at Home",
+};
+
+const communitySingleChoiceFields = new Set([
+  "assessment_form.demographics_and_identity.gender_identity.selected_values",
+  "assessment_form.demographics_and_identity.sexual_orientation.selected_values",
+  "assessment_form.demographics_and_identity.language.uses_other_language_at_home.selected_values",
+]);
+
+const childrenFields = [
+  "assessment_form.family_and_social_environment.children_status.total_number_of_children",
+  "assessment_form.family_and_social_environment.children_status.demographics_matrix.living_with_you.under_5",
+  "assessment_form.family_and_social_environment.children_status.demographics_matrix.living_with_you.5_to_17",
+  "assessment_form.family_and_social_environment.children_status.demographics_matrix.living_with_you.18_and_over",
+];
+
 const getFirstError = (errors: ValidationErrors, fieldKey: string): string | null => {
   return errors[fieldKey]?.[0] ?? null;
 };
+
+function FieldDictationControl({ locale, disabled, onAppend }: { locale: string; disabled: boolean; onAppend: (addition: string) => void }) {
+  const dictation = useSectionDictation(locale);
+  const appliedTranscript = useRef("");
+
+  useEffect(() => {
+    if (!dictation.transcript || dictation.transcript === appliedTranscript.current) return;
+    const addition = dictation.transcript.startsWith(appliedTranscript.current)
+      ? dictation.transcript.slice(appliedTranscript.current.length).trim()
+      : dictation.transcript;
+    appliedTranscript.current = dictation.transcript;
+    if (addition) onAppend(addition);
+  }, [dictation.transcript, onAppend]);
+
+  const toggle = () => {
+    if (dictation.isListening) {
+      dictation.stop();
+      return;
+    }
+    appliedTranscript.current = "";
+    dictation.clear();
+    dictation.start();
+  };
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <button type="button" title={dictation.isListening ? "Stop dictation" : "Dictate this field"} aria-label={dictation.isListening ? "Stop dictation" : "Dictate this field"} className={`inline-flex h-8 w-8 items-center justify-center rounded border text-slate-700 hover:bg-slate-50 disabled:opacity-50 ${dictation.isListening ? "border-rose-300 bg-rose-50 text-rose-700" : "border-slate-300 bg-white"}`} onClick={toggle} disabled={disabled}>
+        {dictation.isListening ? <Square className="h-3.5 w-3.5" /> : <Mic className="h-4 w-4" />}
+      </button>
+      {dictation.error && <span className="text-xs text-rose-700">{dictation.error}</span>}
+    </span>
+  );
+}
 
 const parseValidationErrors = (error: unknown): ValidationErrors | null => {
   if (!(error instanceof Error)) {
@@ -196,7 +250,7 @@ export default function DynamicFormRenderer({
     answersRef.current = initialRuleState.answers;
     setSubmissionId(initialSubmissionId);
     setLastSavedSignature(JSON.stringify(initialRuleState.answers));
-    setExpandedSections(form.ui.sections.map((section) => section.titleKey));
+    setExpandedSections(form.code === "community_initial_assessment" ? [] : form.ui.sections.map((section) => section.titleKey));
     setCurrentSectionIndex(0);
     setValidationErrors({});
     setTouchedFields([]);
@@ -308,10 +362,26 @@ export default function DynamicFormRenderer({
   const formSectionCount = form.ui.sections.length;
   const totalSections = formSectionCount + (extraWizardStep ? 1 : 0);
   const progressPercent = totalSections === 0 ? 0 : Math.round(((currentSectionIndex + 1) / totalSections) * 100);
+  const applicableSections = form.ui.sections.filter((section) => {
+    const fieldKeys = [...(section.items ?? []), ...(section.groups ?? []).flatMap((group) => group.items)];
+    return fieldKeys.some((fieldKey) => !ruleState.hiddenFields.has(fieldKey));
+  });
+  const applicableSectionCount = applicableSections.length;
+  const completedApplicableSectionCount = applicableSections.filter((section) => {
+    const fieldKeys = [...(section.items ?? []), ...(section.groups ?? []).flatMap((group) => group.items)]
+      .filter((fieldKey) => !ruleState.hiddenFields.has(fieldKey));
+    return fieldKeys
+      .filter((fieldKey) => form.schema.required.includes(fieldKey))
+      .every((fieldKey) => {
+        const value = ruleState.answers[fieldKey];
+        return value !== null && value !== undefined && value !== "";
+      });
+  }).length;
+  const isCommunityAssessment = form.code === "community_initial_assessment";
   const voiceAssistEnabled =
-    enableVoiceAssistAdmissions &&
+    (enableVoiceAssistAdmissions || isCommunityAssessment) &&
     (subjectType === "admission" || subjectType === "resident" || subjectType === "anonymous_call" || subjectType === "participant") &&
-    (form.code === "admission_detox" || form.code === "alcohol_screening_call" || form.code === "community_initial_assessment");
+    (form.code === "admission_detox" || form.code === "alcohol_screening_call" || isCommunityAssessment);
   const getCurrentRuleState = () => applyRules(form.rules, answersRef.current);
   const buildVisibleValidationErrors = (
     nextAnswers: Record<string, JsonValue>,
@@ -544,6 +614,9 @@ export default function DynamicFormRenderer({
     return [...items, ...groupedItems].filter((fieldKey) => !ruleState.hiddenFields.has(fieldKey));
   };
 
+  const isGeneratedMetadataSection = (section: UiSectionDto) =>
+    isCommunityAssessment && section.titleKey === "Metadata";
+
   const handleNextSection = async () => {
     const currentRuleState = getCurrentRuleState();
     const currentSection = form.ui.sections[currentSectionIndex];
@@ -612,19 +685,25 @@ export default function DynamicFormRenderer({
     }
 
     const widget = form.ui.widgets[fieldKey] ?? "input";
-    const label = t(form.ui.labelKeys[fieldKey]);
+    const label = isCommunityAssessment
+      ? communityPresentationLabels[fieldKey] ?? t(form.ui.labelKeys[fieldKey])
+      : t(form.ui.labelKeys[fieldKey]);
     const helpText = t(form.ui.helpKeys[fieldKey]);
     const disabled = ruleState.disabledFields.has(fieldKey);
     const error = getFirstError(validationErrors, fieldKey);
     const value = ruleState.answers[fieldKey];
     const options = getFieldOptions(fieldKey);
-    const isMultiSelectField = widget === "checklist" || widget === "multi-checkbox" || schemaProperty.type === "multiEnum";
+    const isMultiSelectField = !communitySingleChoiceFields.has(fieldKey) && (widget === "checklist" || widget === "multi-checkbox" || schemaProperty.type === "multiEnum");
     const isInstructionField = widget === "instruction" || widget === "instructional-text";
     const isSignatureField = widget === "signature";
     const isMatrixField = widget === "matrix";
     const isBodyMapField = widget === "body-map";
     const isDrugTableField = widget === "drug-use-table";
     const isAlcoholTableField = widget === "alcohol-use-table";
+    const isTextEntryField =
+      (widget === "textarea" || schemaProperty.type === "text") ||
+      (widget === "input" && getInputType(schemaProperty.type, schemaProperty.format) === "text") ||
+      (isMultiSelectField && options.length === 0);
     const matrixValue = (() => {
       return parseJsonStringObject(value as JsonValue);
     })();
@@ -638,7 +717,22 @@ export default function DynamicFormRenderer({
         key={fieldKey}
         className={`space-y-1 rounded ${wasSuggestedByVoice ? "bg-amber-50 p-2 ring-2 ring-amber-300" : ""}`}
       >
-        {!isBooleanField && !isInstructionField && !isDrugTableField && !isAlcoholTableField && <label className="text-sm font-medium text-gray-800">{label}</label>}
+        {!isBooleanField && !isInstructionField && !isDrugTableField && !isAlcoholTableField && (
+          <div className="flex items-center justify-between gap-2">
+            <label className="text-sm font-medium text-gray-800">{label}</label>
+            {isCommunityAssessment && isTextEntryField && (
+              <FieldDictationControl
+                locale={locale}
+                disabled={disabled}
+                onAppend={(addition) => {
+                  const currentValue = answersRef.current[fieldKey];
+                  const currentText = typeof currentValue === "string" ? currentValue.trim() : "";
+                  handleChange(fieldKey, currentText ? `${currentText} ${addition}` : addition);
+                }}
+              />
+            )}
+          </div>
+        )}
 
         {isInstructionField && (
           <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
@@ -685,12 +779,12 @@ export default function DynamicFormRenderer({
           </div>
         )}
 
-        {isMultiSelectField && (
+        {(isMultiSelectField || communitySingleChoiceFields.has(fieldKey)) && (
           <div className="space-y-2">
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               {options.map((option) => {
                 const selectedValues = Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-                const checked = selectedValues.includes(option.value);
+                const checked = communitySingleChoiceFields.has(fieldKey) ? value === option.value : selectedValues.includes(option.value);
                 return (
                   <label
                     key={option.value}
@@ -699,7 +793,7 @@ export default function DynamicFormRenderer({
                     }`}
                   >
                     <input
-                      type="checkbox"
+                      type={communitySingleChoiceFields.has(fieldKey) ? "radio" : "checkbox"}
                       className="h-4 w-4 rounded border-slate-300"
                       checked={checked}
                       disabled={disabled}
@@ -707,7 +801,7 @@ export default function DynamicFormRenderer({
                         const nextSelectedValues = event.target.checked
                           ? [...selectedValues, option.value]
                           : selectedValues.filter((item) => item !== option.value);
-                        handleChange(fieldKey, nextSelectedValues);
+                        handleChange(fieldKey, communitySingleChoiceFields.has(fieldKey) ? option.value : nextSelectedValues);
                         void handleBlur(fieldKey);
                       }}
                     />
@@ -997,7 +1091,15 @@ export default function DynamicFormRenderer({
           />
         )}
 
-        {!isMultiSelectField && !isInstructionField && !isSignatureField && !isMatrixField && !isBodyMapField && !isDrugTableField && !isAlcoholTableField && widget === "input" &&
+        {isCommunityAssessment && fieldKey === "assessment_form.demographics_and_identity.background.country_of_birth" ? (
+          <input
+            list="iso-country-options"
+            className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+            value={typeof value === "string" ? value : ""}
+            onChange={(event) => handleChange(fieldKey, event.target.value)}
+            onBlur={() => void handleBlur(fieldKey)}
+          />
+        ) : !isMultiSelectField && !communitySingleChoiceFields.has(fieldKey) && !isInstructionField && !isSignatureField && !isMatrixField && !isBodyMapField && !isDrugTableField && !isAlcoholTableField && widget === "input" &&
           schemaProperty.type !== "integer" &&
           schemaProperty.type !== "number" &&
           schemaProperty.type !== "enum" &&
@@ -1040,7 +1142,7 @@ export default function DynamicFormRenderer({
 
     return (
       <div className="space-y-4">
-        {voiceAssistEnabled && (
+        {voiceAssistEnabled && renderMode !== "inline" && (
           <SectionDictationPanel
             key={`${form.code}:${form.version}:${section.titleKey}`}
             sectionDefinition={sectionDefinition}
@@ -1063,12 +1165,21 @@ export default function DynamicFormRenderer({
           >
             <div className="mb-3">
               <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                {getGroupTitle(group)}
+                {isCommunityAssessment && group.title === "Children Status" ? "Children" : getGroupTitle(group)}
               </h3>
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {group.items.map((fieldKey) => renderField(fieldKey))}
-            </div>
+            {isCommunityAssessment && group.title === "Children Status" ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-collapse text-sm">
+                  <thead><tr className="bg-slate-100 text-left text-slate-600"><th className="border border-slate-200 px-3 py-2">Number</th><th className="border border-slate-200 px-3 py-2">Under 5</th><th className="border border-slate-200 px-3 py-2">Number 5-17</th><th className="border border-slate-200 px-3 py-2">Number 18+</th></tr></thead>
+                  <tbody><tr>{childrenFields.map((fieldKey) => <td key={fieldKey} className="border border-slate-200 p-2">{renderField(fieldKey)}</td>)}</tr></tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {group.items.filter((fieldKey) => !childrenFields.includes(fieldKey)).map((fieldKey) => renderField(fieldKey))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -1080,7 +1191,7 @@ export default function DynamicFormRenderer({
       dir={isRtl ? "rtl" : "ltr"}
       className={`space-y-6 rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-6 ${isRtl ? "text-right" : "text-left"}`}
     >
-      <div className="border-b border-gray-100 pb-4">
+      <div className={`border-b border-gray-100 pb-4 ${(renderMode === "inline" || (renderMode === "accordion" && isCommunityAssessment)) ? "sticky top-3 z-20 -mx-6 -mt-6 border-b border-slate-200 bg-white/95 px-6 pt-6 shadow-sm backdrop-blur" : ""}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold text-gray-900">{t(form.titleKey)}</h1>
@@ -1090,9 +1201,38 @@ export default function DynamicFormRenderer({
             {form.code} v{form.version}
           </div>
         </div>
+        {renderMode === "inline" && (
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-slate-800 transition-[width] duration-300"
+                style={{ width: `${applicableSectionCount === 0 ? 0 : Math.round((completedApplicableSectionCount / applicableSectionCount) * 100)}%` }}
+              />
+            </div>
+            <span className="shrink-0 text-xs font-medium text-slate-500">
+              {completedApplicableSectionCount} of {applicableSectionCount}
+            </span>
+          </div>
+        )}
       </div>
 
-      {renderMode === "accordion" && (
+      {voiceAssistEnabled && renderMode === "inline" && (
+        <SectionDictationPanel
+          sectionDefinition={{
+            section: { titleKey: form.titleKey, items: applicableSections.flatMap((section) => [...(section.items ?? []), ...(section.groups ?? []).flatMap((group) => group.items)]) },
+            schema: form.schema,
+            labels: Object.fromEntries(Object.keys(form.schema.properties).map((fieldKey) => [fieldKey, t(form.ui.labelKeys[fieldKey] ?? fieldKey)])),
+            widgets: form.ui.widgets,
+            optionSets,
+            selectOptions: form.ui.selectOptions,
+          }}
+          currentValues={ruleState.answers}
+          locale={locale}
+          onApplyPatches={applyVoiceSuggestedPatches}
+        />
+      )}
+
+      {renderMode === "accordion" && !isCommunityAssessment && (
         <div className="flex flex-wrap items-center gap-2">
           {form.ui.sections.map((section, index) => {
             const isActive = index === currentSectionIndex;
@@ -1199,8 +1339,17 @@ export default function DynamicFormRenderer({
             </section>
           )}
         </>
+      ) : renderMode === "inline" ? (
+        applicableSections.map((section) => (
+          <section key={section.titleKey} className="rounded-lg border border-slate-200 bg-white">
+            <div className="border-b border-gray-100 px-4 py-3">
+              <h2 className="text-base font-semibold text-gray-900">{t(section.titleKey)}</h2>
+            </div>
+            <div className="p-4">{renderSectionBody(section)}</div>
+          </section>
+        ))
       ) : (
-        form.ui.sections.map((section) => {
+        form.ui.sections.filter((section) => !isGeneratedMetadataSection(section)).map((section) => {
           const isExpanded = expandedSections.includes(section.titleKey);
           return (
             <section key={section.titleKey} className="rounded-lg border border-slate-200 bg-white">

@@ -1343,27 +1343,27 @@ public sealed class AcutisDbContext : DbContext
 
             if (entityType.FindProperty(CreatedAtUtcPropertyName) is null)
             {
-                entity.Property<DateTime>(CreatedAtUtcPropertyName)
+                entity.Property<DateTime?>(CreatedAtUtcPropertyName)
                     .HasColumnType("datetime2")
                     .HasDefaultValueSql("SYSUTCDATETIME()");
             }
 
             if (entityType.FindProperty(UpdatedAtUtcPropertyName) is null)
             {
-                entity.Property<DateTime>(UpdatedAtUtcPropertyName)
+                entity.Property<DateTime?>(UpdatedAtUtcPropertyName)
                     .HasColumnType("datetime2")
                     .HasDefaultValueSql("SYSUTCDATETIME()");
             }
 
             if (entityType.FindProperty(CreatedByUserIdPropertyName) is null)
             {
-                entity.Property<Guid>(CreatedByUserIdPropertyName)
+                entity.Property<Guid?>(CreatedByUserIdPropertyName)
                     .HasDefaultValue(SystemActorUserId);
             }
 
             if (entityType.FindProperty(UpdatedByUserIdPropertyName) is null)
             {
-                entity.Property<Guid>(UpdatedByUserIdPropertyName)
+                entity.Property<Guid?>(UpdatedByUserIdPropertyName)
                     .HasDefaultValue(SystemActorUserId);
             }
         }

@@ -4,17 +4,17 @@
   "descriptor": {
     "name": "Detox Unit plus drug unit",
     "description": "Started the link to main house an med wing rooms",
-    "version": 21,
+    "version": 22,
     "dateCreated": "2026-04-07T08:52:14.751Z",
     "createdBy": "Unknown",
-    "updatedAt": "2026-05-30T14:36:59.518Z",
-    "updatedBy": "reception"
+    "updatedAt": "2026-06-22T21:14:12.262Z",
+    "updatedBy": "frankh"
   },
   "metadata": {
     "createdAt": "2026-04-07T08:52:14.751Z",
-    "updatedAt": "2026-05-30T14:36:59.518Z",
+    "updatedAt": "2026-06-22T21:14:12.262Z",
     "createdBy": "Unknown",
-    "updatedBy": "reception"
+    "updatedBy": "frankh"
   },
   "world": {
     "width": 4000,
@@ -2472,7 +2472,7 @@
       "type": "corridor",
       "geometry": {
         "kind": "rect",
-        "x": 1051,
+        "x": 1052,
         "y": 1757,
         "width": 337,
         "height": 36
@@ -2605,8 +2605,8 @@
       "type": "room",
       "geometry": {
         "kind": "rect",
-        "x": 807,
-        "y": 1539,
+        "x": 810,
+        "y": 1542,
         "width": 118,
         "height": 159
       },
@@ -2682,7 +2682,7 @@
       "type": "door",
       "geometry": {
         "kind": "point",
-        "x": 1053,
+        "x": 1054,
         "y": 1777,
         "size": 18
       },
@@ -2714,6 +2714,26 @@
         "fillColor": "rgb(215,215,215)",
         "borderColor": "#475569",
         "textColor": "#0f172a"
+      }
+    },
+    {
+      "id": "door_da938905",
+      "type": "door",
+      "geometry": {
+        "kind": "point",
+        "x": 929.1605694927139,
+        "y": 1857.1943430687038,
+        "size": 18
+      },
+      "wallAttachment": {
+        "hostId": "room_56654084",
+        "hostType": "room",
+        "edge": "top",
+        "offset": 92,
+        "width": 20
+      },
+      "metadata": {
+        "doorType": "internal"
       }
     }
   ]

@@ -38,6 +38,7 @@ public sealed class AmbulatoryParticipantDto
     public string Status { get; set; } = string.Empty;
     public string CounsellorUserId { get; set; } = string.Empty;
     public string CounsellorDisplayName { get; set; } = string.Empty;
+    public DateTime StartDateUtc { get; set; }
     public AmbulatoryCarePlanDto? CurrentCarePlan { get; set; }
     public IReadOnlyList<AmbulatoryCarePlanDto> CarePlans { get; set; } = Array.Empty<AmbulatoryCarePlanDto>();
     public IReadOnlyList<AmbulatoryAssessmentDto> Assessments { get; set; } = Array.Empty<AmbulatoryAssessmentDto>();

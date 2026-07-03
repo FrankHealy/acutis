@@ -41,6 +41,7 @@ export type CommunityParticipant = {
   status: string;
   counsellorUserId: string;
   counsellorDisplayName: string;
+  startDateUtc: string;
   currentCarePlan?: CommunityCarePlan | null;
   carePlans?: CommunityCarePlan[];
   assessments: CommunityAssessment[];

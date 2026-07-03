@@ -1,6 +1,7 @@
 using Acutis.Api.Contracts;
 using Acutis.Domain.Entities;
 using Acutis.Infrastructure.Data;
+using Acutis.Api.Services.TherapyScheduling;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Security.Claims;
@@ -25,11 +26,13 @@ public sealed class AmbulatoryService : IAmbulatoryService
     private static bool _databaseReady;
     private readonly AcutisAmbulatoryDbContext _dbContext;
     private readonly IConfiguration _configuration;
+    private readonly IAuditService _auditService;
 
-    public AmbulatoryService(AcutisAmbulatoryDbContext dbContext, IConfiguration configuration)
+    public AmbulatoryService(AcutisAmbulatoryDbContext dbContext, IConfiguration configuration, IAuditService auditService)
     {
         _dbContext = dbContext;
         _configuration = configuration;
+        _auditService = auditService;
     }
 
     public async Task<AmbulatoryDashboardDto> GetDashboardAsync(AmbulatoryProgrammeType programmeType, ClaimsPrincipal user, CancellationToken cancellationToken = default)
@@ -54,6 +57,17 @@ public sealed class AmbulatoryService : IAmbulatoryService
             .Include(x => x.Participant)
             .OrderBy(x => x.StartsAtUtc)
             .ToListAsync(cancellationToken);
+
+        await _auditService.WriteAsync(
+            null,
+            null,
+            "AmbulatoryDashboard",
+            $"{programmeType}:{userId}",
+            "Viewed",
+            null,
+            new { programmeType, participantCount = participants.Count, appointmentCount = appointments.Count },
+            null,
+            cancellationToken);
 
         return new AmbulatoryDashboardDto
         {
@@ -610,6 +624,7 @@ public sealed class AmbulatoryService : IAmbulatoryService
             Status = participant.Status,
             CounsellorUserId = participant.CounsellorUserId,
             CounsellorDisplayName = participant.CounsellorDisplayName,
+            StartDateUtc = participant.CreatedAtUtc,
             Assessments = participant.Assessments.OrderByDescending(x => x.CompletedAtUtc).Select(MapAssessment).ToList(),
             CarePlans = carePlans,
             CurrentCarePlan = carePlans.FirstOrDefault()

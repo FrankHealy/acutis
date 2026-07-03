@@ -182,6 +182,14 @@ const common = {
     outcome: "Outcome",
     riskSummary: "Risk Summary",
     noAssessment: "No assessment has been returned by the API.",
+    startDate: "Start Date",
+    nextAppointmentDate: "Next Appointment Date",
+    serviceUserName: "Name",
+    tbc: "TBC",
+    backToServiceUsers: "Back to Service Users",
+    fullDetails: "Full Details",
+    therapyHistory: "Therapy History",
+    carePlanHistory: "Care Plan History",
   },
   admissions: {
     capture: {

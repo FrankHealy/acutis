@@ -46,6 +46,7 @@ export type AmbulatoryParticipant = {
   status: string;
   counsellorUserId: string;
   counsellorDisplayName: string;
+  startDateUtc: string;
   currentCarePlan?: AmbulatoryCarePlan | null;
   carePlans?: AmbulatoryCarePlan[];
   assessments: AmbulatoryAssessment[];

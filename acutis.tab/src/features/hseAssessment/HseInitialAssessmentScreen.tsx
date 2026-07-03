@@ -14,6 +14,17 @@ const SERVICE_USER_SIGNATURE_FIELD =
   "assessment_form.consent_and_sign_offs.general_service_user_consent.service_user_signature";
 const STAFF_SIGNATURE_FIELD =
   "assessment_form.consent_and_sign_offs.general_service_user_consent.staff_signature";
+const SINGLE_CHOICE_FIELDS = new Set([
+  "assessment_form.demographics_and_identity.gender_identity.selected_values",
+  "assessment_form.demographics_and_identity.sexual_orientation.selected_values",
+  "assessment_form.demographics_and_identity.language.uses_other_language_at_home.selected_values",
+]);
+const PRESENTATION_LABELS: Record<string, string> = {
+  "assessment_form.demographics_and_identity.gender_identity.selected_values": "Gender identity",
+  "assessment_form.demographics_and_identity.sexual_orientation.selected_values": "Sexual orientation",
+  "assessment_form.demographics_and_identity.background.country_of_birth": "Country of birth",
+  "assessment_form.demographics_and_identity.language.uses_other_language_at_home.selected_values": "Language other than English or Irish at Home",
+};
 
 function takeFirst(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -45,6 +56,7 @@ export default function HseInitialAssessmentScreen() {
   const [transcripts, setTranscripts] = useState<Record<string, string>>({});
   const [signatureStrokes, setSignatureStrokes] = useState<Record<string, SignatureStroke[]>>({});
   const [saving, setSaving] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["Administrative Details"]);
 
   const validationErrors = useMemo(
     () => HSE_INITIAL_ASSESSMENT_FORM.schema.required.filter((fieldKey) => isEmpty(answers[fieldKey])),
@@ -134,7 +146,7 @@ export default function HseInitialAssessmentScreen() {
   const renderField = (fieldKey: string) => {
     const property = HSE_INITIAL_ASSESSMENT_FORM.schema.properties[fieldKey];
     const widget = HSE_INITIAL_ASSESSMENT_FORM.ui.widgets[fieldKey];
-    const label = HSE_INITIAL_ASSESSMENT_FORM.ui.labelKeys[fieldKey] ?? fieldKey;
+    const label = PRESENTATION_LABELS[fieldKey] ?? HSE_INITIAL_ASSESSMENT_FORM.ui.labelKeys[fieldKey] ?? fieldKey;
     const options = HSE_INITIAL_ASSESSMENT_FORM.ui.selectOptions?.[fieldKey] ?? [];
     const value = answers[fieldKey];
     const required = HSE_INITIAL_ASSESSMENT_FORM.schema.required.includes(fieldKey);
@@ -164,7 +176,7 @@ export default function HseInitialAssessmentScreen() {
       );
     }
 
-    if (property.type === "enum") {
+    if (property.type === "enum" || SINGLE_CHOICE_FIELDS.has(fieldKey)) {
       return (
         <View key={fieldKey} style={[styles.field, hasRequiredError ? styles.fieldError : null]}>
           <Text style={styles.label}>{label}{required ? " *" : ""}</Text>
@@ -218,26 +230,35 @@ export default function HseInitialAssessmentScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.screen}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{HSE_INITIAL_ASSESSMENT_FORM.titleKey}</Text>
-        <Text style={styles.subtitle}>Community Initial Assessment · {HSE_INITIAL_ASSESSMENT_FORM.code} v{HSE_INITIAL_ASSESSMENT_FORM.version}</Text>
+    <ScrollView contentContainerStyle={styles.screen} stickyHeaderIndices={[0]}>
+      <View style={styles.stickyHeader}>
+        <Text style={styles.screenTitle}>Community Initial Assessment</Text>
+        <Text style={styles.screenMeta}>{HSE_INITIAL_ASSESSMENT_FORM.code} v{HSE_INITIAL_ASSESSMENT_FORM.version}</Text>
       </View>
 
-      {HSE_INITIAL_ASSESSMENT_FORM.ui.sections.map((section) => (
+      {HSE_INITIAL_ASSESSMENT_FORM.ui.sections.filter((section) => section.titleKey !== "Metadata").map((section) => (
         <View key={section.titleKey} style={styles.section}>
-          <Text style={styles.sectionTitle}>{section.titleKey}</Text>
-          <DictationNotes
-            value={transcripts[section.titleKey] ?? ""}
-            onChange={(value) => setTranscripts((current) => ({ ...current, [section.titleKey]: value }))}
-          />
-          {section.items.map(renderField)}
-          {(section.groups ?? []).map((group) => (
-            <View key={`${section.titleKey}-${group.title ?? group.titleKey}`} style={styles.group}>
-              <Text style={styles.groupTitle}>{group.title ?? group.titleKey}</Text>
-              {group.items.map(renderField)}
-            </View>
-          ))}
+          <Pressable style={styles.sectionHeader} onPress={() => setExpandedSections((current) => current.includes(section.titleKey) ? current.filter((key) => key !== section.titleKey) : [...current, section.titleKey])}>
+            <Text style={styles.sectionTitle}>{section.titleKey}</Text>
+            <Text style={styles.sectionToggle}>{expandedSections.includes(section.titleKey) ? "-" : "+"}</Text>
+          </Pressable>
+          {expandedSections.includes(section.titleKey) ? <>
+            <DictationNotes
+              value={transcripts[section.titleKey] ?? ""}
+              onChange={(value) => setTranscripts((current) => ({ ...current, [section.titleKey]: value }))}
+              title="Dictation"
+              placeholder={`Type or dictate notes for ${section.titleKey.toLowerCase()}.`}
+            />
+            {section.items.map(renderField)}
+            {(section.groups ?? []).map((group) => (
+              <View key={`${section.titleKey}-${group.title ?? group.titleKey}`} style={styles.group}>
+                <Text style={styles.groupTitle}>{group.title === "Children Status" ? "Children" : group.title ?? group.titleKey}</Text>
+                <View style={section.titleKey === "Administrative Details" ? styles.twoColumnFields : undefined}>
+                  {group.items.map(renderField)}
+                </View>
+              </View>
+            ))}
+          </> : null}
         </View>
       ))}
 
@@ -255,14 +276,17 @@ export default function HseInitialAssessmentScreen() {
 
 const styles = StyleSheet.create({
   screen: { flexGrow: 1, padding: 20, backgroundColor: "#F4F8FF" },
-  header: { backgroundColor: "#FFFFFF", borderRadius: 18, borderWidth: 1, borderColor: "#D7E3F6", padding: 18, marginBottom: 16 },
-  title: { fontSize: 24, fontWeight: "900", color: "#0F172A", marginBottom: 6 },
-  subtitle: { color: "#64748B", fontSize: 13, fontWeight: "700" },
+  stickyHeader: { backgroundColor: "#F4F8FF", paddingTop: 20, paddingBottom: 12 },
+  screenTitle: { fontSize: 18, fontWeight: "900", color: "#0F172A", marginBottom: 2 },
+  screenMeta: { color: "#64748B", fontSize: 12, fontWeight: "700", marginBottom: 12 },
   section: { backgroundColor: "#FFFFFF", borderRadius: 18, borderWidth: 1, borderColor: "#D7E3F6", padding: 16, marginBottom: 16 },
   sectionTitle: { fontSize: 18, fontWeight: "900", color: "#0F172A", marginBottom: 12 },
+  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  sectionToggle: { fontSize: 22, fontWeight: "800", color: "#2563EB", marginBottom: 12 },
   group: { borderTopWidth: 1, borderTopColor: "#E2E8F0", paddingTop: 14, marginTop: 14 },
   groupTitle: { fontSize: 13, fontWeight: "900", color: "#475569", textTransform: "uppercase", marginBottom: 10 },
   field: { marginBottom: 12 },
+  twoColumnFields: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   fieldError: { borderLeftWidth: 3, borderLeftColor: "#DC2626", paddingLeft: 8 },
   label: { fontSize: 13, color: "#334155", fontWeight: "800", marginBottom: 6 },
   input: { borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#FFFFFF", color: "#0F172A" },

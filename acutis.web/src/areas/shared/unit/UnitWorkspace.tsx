@@ -225,7 +225,7 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
           showAdmissions={unit.admissionsEnabled}
         />
       </div>
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{renderStep()}</main>
+      <main className="mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">{renderStep()}</main>
       <IncidentCaptureModal
         open={incidentModalOpen}
         unitId={unitId}

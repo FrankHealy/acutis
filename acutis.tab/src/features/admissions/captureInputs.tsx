@@ -28,6 +28,8 @@ export type SignatureStroke = Point[];
 type DictationNotesProps = {
   value: string;
   onChange: (value: string) => void;
+  title?: string;
+  placeholder?: string;
 };
 
 type PhotoCaptureProps = {
@@ -40,7 +42,7 @@ type SignaturePadProps = {
   onChange: (strokes: SignatureStroke[]) => void;
 };
 
-export function DictationNotes({ value, onChange }: DictationNotesProps) {
+export function DictationNotes({ value, onChange, title, placeholder }: DictationNotesProps) {
   const [recognizing, setRecognizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,7 +124,7 @@ export function DictationNotes({ value, onChange }: DictationNotesProps) {
   return (
     <View style={styles.captureBlock}>
       <View style={styles.captureHeader}>
-        <Text style={styles.captureTitle}>{t("admissions.capture.dictationTitle", "Admission Notes")}</Text>
+        <Text style={styles.captureTitle}>{title ?? t("admissions.capture.dictationTitle", "Admission Notes")}</Text>
         <Pressable
           onPress={() => recognizing ? ExpoSpeechRecognitionModule.stop() : void startDictation()}
           style={[styles.captureButton, recognizing ? styles.captureButtonActive : null]}
@@ -136,7 +138,7 @@ export function DictationNotes({ value, onChange }: DictationNotesProps) {
         multiline
         value={value}
         onChangeText={onChange}
-        placeholder={t("admissions.capture.notesPlaceholder", "Type or dictate arrival notes, risks and immediate needs.")}
+        placeholder={placeholder ?? t("admissions.capture.notesPlaceholder", "Type or dictate arrival notes, risks and immediate needs.")}
         style={styles.notesInput}
         textAlignVertical="top"
       />

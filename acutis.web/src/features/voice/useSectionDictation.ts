@@ -37,6 +37,24 @@ const getSpeechRecognition = (): SpeechRecognitionConstructor | null => {
   return browserWindow.SpeechRecognition ?? browserWindow.webkitSpeechRecognition ?? null;
 };
 
+const getDictationErrorMessage = (error?: string) => {
+  switch (error) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Microphone access is blocked. Allow microphone access for this site and try again.";
+    case "audio-capture":
+      return "No microphone was found. Connect or enable a microphone and try again.";
+    case "network":
+      return "The speech-recognition service is unavailable. Check the network connection and try again.";
+    case "language-not-supported":
+      return "Irish English dictation is not available in this browser.";
+    case "no-speech":
+      return "No speech was heard. Try again and speak after the stop icon appears.";
+    default:
+      return error ? `Dictation stopped: ${error}.` : "Dictation stopped unexpectedly.";
+  }
+};
+
 export const useSectionDictation = (locale: string) => {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const finalTranscriptRef = useRef("");
@@ -89,7 +107,7 @@ export const useSectionDictation = (locale: string) => {
       setTranscript([nextFinalTranscript, interimTranscript].filter(Boolean).join(" "));
     };
     recognition.onerror = (event) => {
-      setError(event.error ? `Dictation stopped: ${event.error}.` : "Dictation stopped unexpectedly.");
+      setError(getDictationErrorMessage(event.error));
       setIsListening(false);
     };
     recognition.onend = () => {
@@ -98,8 +116,14 @@ export const useSectionDictation = (locale: string) => {
 
     recognitionRef.current = recognition;
     setError(null);
-    setIsListening(true);
-    recognition.start();
+    try {
+      recognition.start();
+      setIsListening(true);
+    } catch (startError) {
+      recognitionRef.current = null;
+      setIsListening(false);
+      setError(startError instanceof Error ? `Could not start dictation: ${startError.message}` : "Could not start dictation. Try again.");
+    }
   }, [locale]);
 
   useEffect(() => {

@@ -20,11 +20,11 @@ function takeFirst(value?: string | string[]) {
 
 function formatDate(value?: string | null) {
   if (!value) return t("community.notSet", "Not set");
-  return new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(value).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function formatSession(value: string) {
-  return new Date(value).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleString(undefined, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 function initials(name: string) {
@@ -100,16 +100,19 @@ export default function CommunityParticipantDetailScreen() {
   const carePlans = participant?.carePlans?.length ? participant.carePlans : carePlan ? [carePlan] : [];
 
   return (
-    <ScrollView contentContainerStyle={styles.screen}>
-      <Link href="/(tabs)/community" asChild>
-        <Pressable style={styles.backButton}>
-          <Text style={styles.backButtonText}>{t("community.backToCommunity", "Back to Community")}</Text>
-        </Pressable>
-      </Link>
+    <ScrollView contentContainerStyle={styles.screen} stickyHeaderIndices={[0]}>
+      <View style={styles.stickyHeader}>
+        <Link href="/(tabs)/community/participants" asChild>
+          <Pressable style={styles.backButton}>
+            <Text style={styles.backButtonText}>{t("community.backToServiceUsers", "Back to Service Users")}</Text>
+          </Pressable>
+        </Link>
+      </View>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <View style={styles.card}>
+        <Text style={styles.sectionTitle}>{t("community.fullDetails", "Full Details")}</Text>
         <View style={styles.profileHead}>
           {participant ? <ParticipantAvatar participant={participant} /> : null}
           <View style={styles.profileText}>
@@ -160,7 +163,7 @@ export default function CommunityParticipantDetailScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Care Plan History</Text>
+        <Text style={styles.sectionTitle}>{t("community.carePlanHistory", "Care Plan History")}</Text>
         {carePlans.length === 0 ? (
           <Text style={styles.mutedText}>{t("community.noCarePlan", "No care plan has been returned by the API.")}</Text>
         ) : (
@@ -174,7 +177,7 @@ export default function CommunityParticipantDetailScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Therapy History</Text>
+        <Text style={styles.sectionTitle}>{t("community.therapyHistory", "Therapy History")}</Text>
         {appointments.length === 0 ? (
           <Text style={styles.mutedText}>{t("community.noParticipantSessions", "No sessions returned for this service user.")}</Text>
         ) : (
@@ -200,7 +203,8 @@ export default function CommunityParticipantDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flexGrow: 1, padding: spacing.xl, backgroundColor: colors.surfaceMuted },
+  screen: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing.xl, backgroundColor: colors.surfaceMuted },
+  stickyHeader: { backgroundColor: colors.surfaceMuted, paddingTop: spacing.xl, paddingBottom: spacing.md },
   backButton: { alignSelf: "flex-start", backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.md },
   backButtonText: { color: colors.primary, fontWeight: "800" },
   card: { backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: spacing.xl, marginBottom: spacing.lg },
