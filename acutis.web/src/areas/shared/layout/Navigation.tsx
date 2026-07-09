@@ -6,12 +6,14 @@ interface NavigationProps {
   currentStep: string;
   setCurrentStep: (step: string) => void;
   showAdmissions: boolean;
+  showExtendedAssessment?: boolean;
 }
 
 const Navigation: React.FC<NavigationProps> = ({
   currentStep,
   setCurrentStep,
   showAdmissions,
+  showExtendedAssessment = false,
 }) => {
   return (
     <nav className="app-surface">
@@ -84,6 +86,9 @@ const Navigation: React.FC<NavigationProps> = ({
                 { key: 'operations/room-mapping', label: 'Room Assignments' },
                 { key: 'operations/ot-roles', label: 'OT Roles' },
                 { key: 'operations/therapy-schedule', label: 'Therapy Schedule' },
+                ...(showExtendedAssessment ? [{ key: 'operations/hse-extended-assessment', label: 'HSE Extended Assessment' }] : []),
+                { key: 'operations/care-plan-1', label: 'Comprehensive Care Plan' },
+                { key: 'operations/care-plan-2', label: 'Initial Care Plan' },
                 { key: 'operations/meditation', label: 'Meditation' },
               ].map(item => (
                 <button

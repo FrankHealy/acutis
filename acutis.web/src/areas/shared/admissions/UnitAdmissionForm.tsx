@@ -40,6 +40,14 @@ const iconByUnit: Record<UnitDefinition["iconKey"], React.ComponentType<{ classN
 };
 
 const PHOTO_ANSWER_KEY = "residentPhotoDataUrl";
+const INTERNAL_ADMISSIONS_FORM_CODES = new Set([
+  "community_initial_assessment",
+  "alcohol_screening_call",
+  "admission_alcohol",
+  "admission_detox",
+  "admission_drugs",
+  "admission_ladies",
+]);
 
 const omitPhotoAnswer = (answers: Record<string, JsonValue>): Record<string, JsonValue> => {
   const remainingAnswers = { ...answers };
@@ -115,6 +123,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
   );
   const Icon = iconByUnit[unitIconKey];
   const activeAdmissionSubjectId = admissionSource === "scheduled" ? selectedAdmissionCaseId : adHocAdmissionId;
+  const isInternalAdmissionsForm = formData ? INTERNAL_ADMISSIONS_FORM_CODES.has(formData.form.code) : false;
 
   useEffect(() => {
     void loadKeys([
@@ -940,7 +949,7 @@ const UnitAdmissionForm: React.FC<UnitAdmissionFormProps> = ({
         initialAnswers={mergedInitialAnswers}
         subjectType="admission"
         subjectId={activeAdmissionSubjectId}
-        renderMode="wizard"
+        renderMode={isInternalAdmissionsForm ? "accordion" : "wizard"}
         extraWizardStep={detoxRoomAssignmentStep}
         onSaveProgress={onSaveProgress}
         onSave={onSave}

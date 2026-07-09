@@ -3,10 +3,12 @@
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { getProviderForCallbackUrl } from "@/lib/authProviders";
 
 function SessionExpiredContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const providerId = getProviderForCallbackUrl(callbackUrl);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--app-surface-muted)] p-6">
@@ -18,7 +20,7 @@ function SessionExpiredContent() {
         </p>
         <button
           type="button"
-          onClick={() => void signIn("keycloak", { callbackUrl })}
+          onClick={() => void signIn(providerId, { callbackUrl })}
           className="mt-6 rounded-lg bg-[var(--app-primary)] px-4 py-2 font-semibold text-white"
         >
           Sign in again

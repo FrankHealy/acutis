@@ -57,11 +57,22 @@ const getDictationErrorMessage = (error?: string) => {
 
 export const useSectionDictation = (locale: string) => {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const baseTranscriptRef = useRef("");
   const finalTranscriptRef = useRef("");
+  const finalSegmentsRef = useRef<Map<number, string>>(new Map());
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [finalTranscript, setFinalTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
   const isSupported = Boolean(getSpeechRecognition());
+
+  const updateTranscript = useCallback((value: string) => {
+    finalTranscriptRef.current = value.trim();
+    baseTranscriptRef.current = value.trim();
+    finalSegmentsRef.current.clear();
+    setTranscript(value);
+    setFinalTranscript(value.trim());
+  }, []);
 
   const stop = useCallback(() => {
     recognitionRef.current?.stop();
@@ -71,8 +82,11 @@ export const useSectionDictation = (locale: string) => {
   const clear = useCallback(() => {
     recognitionRef.current?.abort();
     recognitionRef.current = null;
+    baseTranscriptRef.current = "";
     finalTranscriptRef.current = "";
+    finalSegmentsRef.current.clear();
     setTranscript("");
+    setFinalTranscript("");
     setError(null);
     setIsListening(false);
   }, []);
@@ -85,26 +99,36 @@ export const useSectionDictation = (locale: string) => {
     }
 
     recognitionRef.current?.abort();
+    baseTranscriptRef.current = finalTranscriptRef.current;
+    finalSegmentsRef.current.clear();
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = locale || "en-IE";
     recognition.onresult = (event) => {
       let interimTranscript = "";
-      let nextFinalTranscript = finalTranscriptRef.current;
 
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
         const result = event.results[index];
-        const resultTranscript = result[0]?.transcript ?? "";
+        const resultTranscript = (result[0]?.transcript ?? "").trim();
+        if (!resultTranscript) continue;
         if (result.isFinal) {
-          nextFinalTranscript = `${nextFinalTranscript} ${resultTranscript}`.trim();
+          finalSegmentsRef.current.set(index, resultTranscript);
         } else {
           interimTranscript = `${interimTranscript} ${resultTranscript}`.trim();
         }
       }
 
+      const sessionFinalTranscript = Array.from(finalSegmentsRef.current.entries())
+        .sort(([leftIndex], [rightIndex]) => leftIndex - rightIndex)
+        .map(([, value]) => value)
+        .join(" ")
+        .trim();
+      const nextFinalTranscript = [baseTranscriptRef.current, sessionFinalTranscript].filter(Boolean).join(" ").trim();
+
       finalTranscriptRef.current = nextFinalTranscript;
       setTranscript([nextFinalTranscript, interimTranscript].filter(Boolean).join(" "));
+      setFinalTranscript(nextFinalTranscript);
     };
     recognition.onerror = (event) => {
       setError(getDictationErrorMessage(event.error));
@@ -130,7 +154,9 @@ export const useSectionDictation = (locale: string) => {
     return () => {
       recognitionRef.current?.abort();
       recognitionRef.current = null;
+      baseTranscriptRef.current = "";
       finalTranscriptRef.current = "";
+      finalSegmentsRef.current.clear();
     };
   }, []);
 
@@ -138,8 +164,9 @@ export const useSectionDictation = (locale: string) => {
     isSupported,
     isListening,
     transcript,
+    finalTranscript,
     error,
-    setTranscript,
+    setTranscript: updateTranscript,
     start,
     stop,
     clear,

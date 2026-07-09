@@ -1,5 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
+import { ambulatoryKeycloakProviderId, defaultKeycloakProviderId } from "@/lib/authProviders";
 
 type KeycloakAccessTokenPayload = {
   iss?: string;
@@ -8,13 +9,31 @@ type KeycloakAccessTokenPayload = {
 
 const authSessionVersion = "2026-06-13-production-v1";
 
+const getKeycloakConfig = (providerId?: string) => {
+  if (providerId === ambulatoryKeycloakProviderId) {
+    return {
+      clientId: process.env.AUTH_AMBULATORY_KEYCLOAK_ID ?? process.env.AUTH_KEYCLOAK_ID!,
+      clientSecret: process.env.AUTH_AMBULATORY_KEYCLOAK_SECRET ?? process.env.AUTH_KEYCLOAK_SECRET!,
+      issuer: process.env.AUTH_AMBULATORY_KEYCLOAK_ISSUER ?? "http://localhost:8080/realms/acutis-ambulatory",
+    };
+  }
+
+  return {
+    clientId: process.env.AUTH_KEYCLOAK_ID!,
+    clientSecret: process.env.AUTH_KEYCLOAK_SECRET!,
+    issuer: process.env.AUTH_KEYCLOAK_ISSUER!,
+  };
+};
+
 const refreshAccessToken = async (token: import("next-auth/jwt").JWT) => {
   try {
     if (!token.refreshToken) {
       throw new Error("Missing refresh token.");
     }
 
-    const issuer = typeof token.issuer === "string" ? token.issuer : process.env.AUTH_KEYCLOAK_ISSUER;
+    const providerId = typeof token.authProvider === "string" ? token.authProvider : defaultKeycloakProviderId;
+    const keycloakConfig = getKeycloakConfig(providerId);
+    const issuer = typeof token.issuer === "string" ? token.issuer : keycloakConfig.issuer;
     if (!issuer) {
       throw new Error("Missing Keycloak issuer.");
     }
@@ -25,8 +44,8 @@ const refreshAccessToken = async (token: import("next-auth/jwt").JWT) => {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        client_id: process.env.AUTH_KEYCLOAK_ID!,
-        client_secret: process.env.AUTH_KEYCLOAK_SECRET!,
+        client_id: keycloakConfig.clientId,
+        client_secret: keycloakConfig.clientSecret,
         grant_type: "refresh_token",
         refresh_token: token.refreshToken,
       }),
@@ -55,6 +74,7 @@ const refreshAccessToken = async (token: import("next-auth/jwt").JWT) => {
       accessTokenExpires: Date.now() + ((refreshedTokens.expires_in ?? 60) - 10) * 1000,
       issuer: payload?.iss ?? token.issuer,
       username: payload?.preferred_username ?? token.username,
+      authProvider: providerId,
       error: undefined,
     };
   } catch {
@@ -85,9 +105,17 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     KeycloakProvider({
-      clientId: process.env.AUTH_KEYCLOAK_ID!,
-      clientSecret: process.env.AUTH_KEYCLOAK_SECRET!,
-      issuer: process.env.AUTH_KEYCLOAK_ISSUER!,
+      id: defaultKeycloakProviderId,
+      clientId: getKeycloakConfig(defaultKeycloakProviderId).clientId,
+      clientSecret: getKeycloakConfig(defaultKeycloakProviderId).clientSecret,
+      issuer: getKeycloakConfig(defaultKeycloakProviderId).issuer,
+    }),
+    KeycloakProvider({
+      id: ambulatoryKeycloakProviderId,
+      name: "Ambulatory Keycloak",
+      clientId: getKeycloakConfig(ambulatoryKeycloakProviderId).clientId,
+      clientSecret: getKeycloakConfig(ambulatoryKeycloakProviderId).clientSecret,
+      issuer: getKeycloakConfig(ambulatoryKeycloakProviderId).issuer,
     }),
   ],
   callbacks: {
@@ -122,6 +150,7 @@ export const authOptions: NextAuthOptions = {
         if (account.id_token) {
           token.idToken = account.id_token;
         }
+        token.authProvider = account.provider ?? defaultKeycloakProviderId;
         const payload = decodeJwtPayload(account.access_token);
         if (payload?.iss) {
           token.issuer = payload.iss;
@@ -163,6 +192,9 @@ export const authOptions: NextAuthOptions = {
       }
       if (token?.issuer) {
         session.issuer = token.issuer as string;
+      }
+      if (token?.authProvider) {
+        session.authProvider = token.authProvider as string;
       }
       if (token?.username) {
         session.username = token.username as string;

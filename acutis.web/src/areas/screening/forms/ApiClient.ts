@@ -142,6 +142,22 @@ export type FormConfigurationVersionDto = {
   titleKey: string;
   descriptionKey: string | null;
   createdAt: string;
+  isActive: boolean;
+  activeFrom: string;
+  activeTo: string | null;
+};
+
+export type FormCatalogueItemDto = {
+  code: string;
+  name: string;
+  version: number;
+  description: string | null;
+  isActive: boolean;
+  activeFrom: string;
+  activeTo: string | null;
+  status: string;
+  createdAt: string;
+  versionCount: number;
 };
 
 export type UpsertFormDefinitionRequest = {
@@ -151,6 +167,8 @@ export type UpsertFormDefinitionRequest = {
   uiJson: string;
   rulesJson: string;
   makeActive: boolean;
+  activeFrom?: string | null;
+  activeTo?: string | null;
 };
 
 const formatApiErrorMessage = (status: number, bodyText: string): string => {
@@ -295,6 +313,14 @@ export const getFormVersions = async (
       method: "GET",
     }
   );
+};
+
+export const getFormsCatalogue = async (
+  accessToken: string | undefined
+): Promise<FormCatalogueItemDto[]> => {
+  return request<FormCatalogueItemDto[]>("/api/configuration/forms", accessToken, {
+    method: "GET",
+  });
 };
 
 export const activateFormVersion = async (

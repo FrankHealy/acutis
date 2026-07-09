@@ -18,6 +18,7 @@ import {
   Minus,
   MousePointer2,
   PanelsTopLeft,
+  Pentagon,
   Plus,
   RotateCcw,
   RotateCw,
@@ -26,6 +27,7 @@ import {
   Slash,
   Square,
   Type,
+  Undo2,
   X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -79,7 +81,7 @@ type PointerDragState =
   | null;
 
 type OpeningPreview = {
-  type: "door" | "window" | "exit" | "fireExit";
+  type: "door" | "window" | "partition" | "exit" | "fireExit";
   point: WorldPoint;
   artefact: MapArtefact;
 };
@@ -108,6 +110,7 @@ const TOOL_ORDER: Array<{ id: MapTool; icon: React.ComponentType<{ className?: s
   { id: "select", icon: MousePointer2, fallbackLabel: "Select" },
   { id: "pan", icon: Hand, fallbackLabel: "Pan" },
   { id: "room", icon: Square, fallbackLabel: "Room" },
+  { id: "polygon", icon: Pentagon, fallbackLabel: "Polygon" },
   { id: "corridor", icon: MapIcon, fallbackLabel: "Corridor" },
   { id: "wall", icon: BrickWall, fallbackLabel: "Wall" },
   { id: "line", icon: Slash, fallbackLabel: "Line" },
@@ -125,6 +128,7 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
   select: "config.map_designer.tool.select",
   pan: "config.map_designer.tool.pan",
   room: "config.map_designer.tool.room",
+  polygon: "config.map_designer.tool.polygon",
   corridor: "config.map_designer.tool.corridor",
   wall: "config.map_designer.tool.wall",
   line: "config.map_designer.tool.line",
@@ -136,6 +140,24 @@ const TOOL_LABEL_KEYS: Record<MapTool, string> = {
   fireExit: "config.map_designer.tool.fire_exit",
   roundel: "config.map_designer.tool.roundel",
   label: "config.map_designer.tool.label",
+};
+
+const TOOL_HELP: Record<MapTool, string> = {
+  select: "Select, move, resize, and edit existing map items.",
+  pan: "Drag the canvas without changing the map.",
+  room: "Drag to draw a rectangular room.",
+  polygon: "Click points around an enclosed shape, then click the first point or press Enter to close.",
+  corridor: "Drag to draw a rectangular corridor.",
+  wall: "Click a start point and an end point to draw a thick wall.",
+  line: "Click a start point and an end point to draw a thin line.",
+  partition: "Click a start point and an end point to draw a dashed partition.",
+  stair: "Drag to draw a stair block.",
+  door: "Click near a wall or room edge to place a door.",
+  window: "Click near a wall or room edge to place a window.",
+  exit: "Click near a wall or room edge to place an exit marker.",
+  fireExit: "Click near a wall or room edge to place a fire exit marker.",
+  roundel: "Click inside a room to place a bed or numbered marker.",
+  label: "Click to place a free text label.",
 };
 
 const createId = (prefix: string) => `${prefix}_${createClientId().slice(0, 8)}`;
@@ -164,6 +186,7 @@ function findDuplicateHumanKey(artefacts: MapArtefact[], candidate: MapArtefact)
 const normalizeRect = (a: WorldPoint, b: WorldPoint) => ({ x: Math.round(Math.min(a.x, b.x)), y: Math.round(Math.min(a.y, b.y)), width: Math.round(Math.abs(b.x - a.x)), height: Math.round(Math.abs(b.y - a.y)) });
 const DEFAULT_WORLD = { width: 4000, height: 3000 };
 const SNAP_THRESHOLD = 16;
+const POLYGON_CLOSE_THRESHOLD = 18;
 
 function getArtefactZOrder(artefact: MapArtefact): number {
   return typeof artefact.metadata?.zOrder === "number" ? artefact.metadata.zOrder : 0;
@@ -204,6 +227,51 @@ function getStructuredRectBorderThickness(artefact: MapArtefact, side: "top" | "
   }
 
   return 2;
+}
+
+function getStructuredRectBorderColor(artefact: MapArtefact, side: "top" | "right" | "bottom" | "left"): string {
+  const specificKey =
+    side === "top"
+      ? "borderTopColor"
+      : side === "right"
+        ? "borderRightColor"
+        : side === "bottom"
+          ? "borderBottomColor"
+          : "borderLeftColor";
+  const specific = artefact.metadata?.[specificKey];
+  if (typeof specific === "string" && specific.length > 0) {
+    return specific;
+  }
+
+  return getMetadataColor(artefact, "borderColor") ?? "var(--app-border)";
+}
+
+function setArtefactMetadataValue(artefact: MapArtefact, key: string, value: string | number | boolean | null): MapArtefact {
+  return {
+    ...artefact,
+    metadata: {
+      ...(artefact.metadata ?? {}),
+      [key]: value,
+    },
+  };
+}
+
+function getPolygonEdgeThickness(artefact: MapArtefact, edgeIndex: number): number {
+  const specific = artefact.metadata?.[`polygonEdge${edgeIndex}Thickness`];
+  if (typeof specific === "number" && Number.isFinite(specific) && specific >= 0) {
+    return specific;
+  }
+
+  return getMetadataNumber(artefact, "borderThickness", 2);
+}
+
+function getPolygonEdgeColor(artefact: MapArtefact, edgeIndex: number): string {
+  const specific = artefact.metadata?.[`polygonEdge${edgeIndex}Color`];
+  if (typeof specific === "string" && specific.length > 0) {
+    return specific;
+  }
+
+  return getMetadataColor(artefact, "borderColor") ?? "var(--app-border)";
 }
 
 function getArtefactTextSize(artefact: MapArtefact): number {
@@ -256,6 +324,38 @@ function getLineResizeHandlePositions(geometry: Extract<MapGeometry, { kind: "li
 
 function getLineLength(geometry: Extract<MapGeometry, { kind: "line" }>): number {
   return Math.round(Math.hypot(geometry.x2 - geometry.x1, geometry.y2 - geometry.y1));
+}
+
+function getPointDistance(left: WorldPoint, right: WorldPoint): number {
+  return Math.hypot(left.x - right.x, left.y - right.y);
+}
+
+function getMetadataNumber(artefact: MapArtefact, key: string, fallback: number): number {
+  const candidate = artefact.metadata?.[key];
+  return typeof candidate === "number" && Number.isFinite(candidate) ? candidate : fallback;
+}
+
+type ToolbarButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  label: string;
+  active?: boolean;
+  tooltipPlacement?: "top" | "right";
+};
+
+function ToolbarButton({ label, active = false, tooltipPlacement: _tooltipPlacement = "top", className = "", children, ...props }: ToolbarButtonProps) {
+  return (
+    <button
+      {...props}
+      title={label}
+      aria-label={props["aria-label"] ?? label}
+      className={`group relative flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
+        active
+          ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]"
+          : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
+      } ${className}`}
+    >
+      {children}
+    </button>
+  );
 }
 
 function setLineLengthFromStart(geometry: Extract<MapGeometry, { kind: "line" }>, length: number): Extract<MapGeometry, { kind: "line" }> {
@@ -361,6 +461,10 @@ function cloneArtefact(artefact: MapArtefact): MapArtefact {
     wallAttachment: artefact.wallAttachment ? { ...artefact.wallAttachment } : undefined,
     metadata: artefact.metadata ? { ...artefact.metadata } : undefined,
   };
+}
+
+function cloneMapDocument(document: MapDocument): MapDocument {
+  return JSON.parse(JSON.stringify(document)) as MapDocument;
 }
 
 function offsetGeometry(geometry: MapGeometry, dx: number, dy: number): MapGeometry {
@@ -554,6 +658,9 @@ function getOpeningMaskStroke(artefact: MapArtefact, artefactsById?: Map<string,
     if (hostArtefact?.geometry.kind === "rect") {
       return getMetadataColor(hostArtefact, "fillColor") ?? getDefaultRectFill(hostArtefact);
     }
+    if (hostArtefact?.geometry.kind === "polygon") {
+      return getMetadataColor(hostArtefact, "fillColor") ?? "color-mix(in srgb, var(--app-accent) 12%, white)";
+    }
   }
 
   return "color-mix(in srgb, var(--app-surface-muted) 35%, white)";
@@ -571,7 +678,7 @@ function getAnchor(artefact: MapArtefact): WorldPoint {
 
 function getLabelPlacement(artefact: MapArtefact, artefactsById: Map<string, MapArtefact>) {
   const displayArtefact =
-    artefact.type === "door" || artefact.type === "window" || artefact.type === "exit" || artefact.type === "fireExit"
+    artefact.type === "door" || artefact.type === "window" || artefact.type === "partition" || artefact.type === "exit" || artefact.type === "fireExit"
       ? { ...artefact, geometry: resolveAttachedOpeningLine(artefact, artefactsById) ?? artefact.geometry }
       : artefact;
 
@@ -606,12 +713,13 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
   const geometry = displayGeometry ?? artefact.geometry;
   const fillOverride = getMetadataColor(artefact, "fillColor");
   const borderOverride = getMetadataColor(artefact, "borderColor");
+  const borderThickness = getMetadataNumber(artefact, "borderThickness", 2);
   if (geometry.kind === "rect") {
     const rotation = getRectRotation(geometry);
     const centerX = geometry.x + geometry.width / 2;
     const centerY = geometry.y + geometry.height / 2;
     const rectTransform = rotation ? `rotate(${rotation} ${centerX} ${centerY})` : undefined;
-    const isStructuredArea = artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair";
+    const isStructuredArea = artefact.type === "room" || artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair";
     const baseFill = fillOverride ?? getDefaultRectFill(artefact);
     const stroke = borderOverride ??
       (artefact.type === "corridor"
@@ -644,7 +752,30 @@ function renderArtefactShape(artefact: MapArtefact, selected: boolean, displayGe
     return <rect x={geometry.x} y={geometry.y} width={geometry.width} height={geometry.height} rx={getRectCornerRadius(artefact)} transform={rectTransform} fill={selected ? selectionFill : baseFill} stroke={selected ? selectionStroke : isStructuredArea ? "transparent" : stroke} strokeWidth={selected ? 4 : isStructuredArea ? 0 : 2} />;
   }
   if (geometry.kind === "polygon") {
-    return <polygon points={geometry.points.map((point) => `${point.x},${point.y}`).join(" ")} fill={selected ? selectionFill : fillOverride ?? "color-mix(in srgb, var(--app-warning) 12%, white)"} stroke={selected ? selectionStroke : borderOverride ?? "var(--app-border)"} strokeWidth={selected ? 4 : 2} />;
+    const points = geometry.points;
+    return (
+      <g>
+        <polygon points={points.map((point) => `${point.x},${point.y}`).join(" ")} fill={selected ? selectionFill : fillOverride ?? "color-mix(in srgb, var(--app-accent) 12%, white)"} stroke="none" />
+        {points.map((point, index) => {
+          const nextPoint = points[(index + 1) % points.length];
+          const edgeThickness = getPolygonEdgeThickness(artefact, index);
+          if (!nextPoint || edgeThickness <= 0) return null;
+          return (
+            <line
+              key={`polygon_edge_${index}`}
+              x1={point.x}
+              y1={point.y}
+              x2={nextPoint.x}
+              y2={nextPoint.y}
+              stroke={selected ? selectionStroke : getPolygonEdgeColor(artefact, index)}
+              strokeWidth={selected ? Math.max(4, edgeThickness) : edgeThickness}
+              strokeLinecap="square"
+              strokeLinejoin="round"
+            />
+          );
+        })}
+      </g>
+    );
   }
   if (geometry.kind === "line") {
     if (artefact.type === "wall") return <polygon points={createWallPolygonPoints(geometry)} fill={selected ? selectionStroke : borderOverride ?? "var(--app-text)"} />;
@@ -755,6 +886,8 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
   const [dragState, setDragState] = useState<PointerDragState>(null);
   const [pendingWallStart, setPendingWallStart] = useState<WorldPoint | null>(null);
   const [wallPreviewPoint, setWallPreviewPoint] = useState<WorldPoint | null>(null);
+  const [polygonDraftPoints, setPolygonDraftPoints] = useState<WorldPoint[]>([]);
+  const [polygonPreviewPoint, setPolygonPreviewPoint] = useState<WorldPoint | null>(null);
   const [openingPreview, setOpeningPreview] = useState<OpeningPreview | null>(null);
   const [clipboard, setClipboard] = useState<MapClipboard | null>(null);
   const [toolbarPlacement, setToolbarPlacement] = useState<ToolbarPlacement>("top");
@@ -762,11 +895,15 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
   const [saveDialogMode, setSaveDialogMode] = useState<SaveDialogMode | null>(null);
   const [saveDraftName, setSaveDraftName] = useState("");
   const [saveDraftDescription, setSaveDraftDescription] = useState("");
+  const [undoStack, setUndoStack] = useState<MapDocument[]>([]);
   const dragStateRef = useRef<PointerDragState>(null);
+  const documentModelRef = useRef<MapDocument>(documentModel);
+  const undoStackRef = useRef<MapDocument[]>([]);
   const surfaceRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const toolbarFrameRef = useRef<HTMLDivElement | null>(null);
   const toolbarBodyRef = useRef<HTMLDivElement | null>(null);
+  const canUndo = undoStack.length > 0;
 
   const createDocumentWithDescriptorDraft = (nameValue: string, descriptionValue: string) => {
     const name = nameValue.trim() || "Untitled Map";
@@ -790,6 +927,42 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
     setSaveDraftName(modeValue === "saveAs" ? `${documentModel.name} Copy` : documentModel.name);
     setSaveDraftDescription(documentModel.descriptor?.description ?? "");
     setIoError(null);
+  };
+
+  const recordUndoSnapshot = (snapshot: MapDocument = documentModelRef.current) => {
+    const nextStack = [...undoStackRef.current, cloneMapDocument(snapshot)].slice(-50);
+    undoStackRef.current = nextStack;
+    setUndoStack(nextStack);
+  };
+
+  const updateDocumentWithUndo = (updater: (current: MapDocument) => MapDocument) => {
+    const currentDocument = documentModelRef.current;
+    const nextDocument = updater(currentDocument);
+    recordUndoSnapshot(currentDocument);
+    documentModelRef.current = nextDocument;
+    setDocumentModel(nextDocument);
+  };
+
+  const undoLastChange = () => {
+    const previousDocument = undoStackRef.current[undoStackRef.current.length - 1];
+    if (!previousDocument) return;
+    const nextStack = undoStackRef.current.slice(0, -1);
+    const restoredDocument = cloneMapDocument(previousDocument);
+    undoStackRef.current = nextStack;
+    documentModelRef.current = restoredDocument;
+    setUndoStack(nextStack);
+    setDocumentModel(restoredDocument);
+    setSelectedArtefactId(null);
+    setSelectedRoomIds([]);
+    setPropertiesOpen(false);
+    setDraftArtefact(null);
+    setDraftRoomBatch(null);
+    setPendingWallStart(null);
+    setWallPreviewPoint(null);
+    setOpeningPreview(null);
+    setDragState(null);
+    dragStateRef.current = null;
+    resetPolygonDraft();
   };
 
   const handleFloatingToolbarPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -871,12 +1044,20 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
 
   useEffect(() => {
     if (!initialDocument) return;
-    setDocumentModel(normalizeImportedMapDocument(initialDocument as MapDocument & Record<string, unknown>));
+    const normalizedDocument = normalizeImportedMapDocument(initialDocument as MapDocument & Record<string, unknown>);
+    documentModelRef.current = normalizedDocument;
+    undoStackRef.current = [];
+    setDocumentModel(normalizedDocument);
+    setUndoStack([]);
     setCurrentFileName(initialFileName);
     setIoError(null);
     setIoNotice(null);
     setHasInitializedViewport(false);
   }, [initialDocument, initialFileName]);
+
+  useEffect(() => {
+    documentModelRef.current = documentModel;
+  }, [documentModel]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -903,7 +1084,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
   );
   const isRoomBatchSelection = selectedRooms.length > 1;
   const renderOrderedArtefacts = useMemo(() => {
-    const groups: Record<MapArtefact["type"], Array<{ artefact: MapArtefact; index: number }>> = { zone: [], corridor: [], room: [], wall: [], line: [], partition: [], stair: [], door: [], window: [], exit: [], fireExit: [], roundel: [], label: [] };
+    const groups: Record<MapArtefact["type"], Array<{ artefact: MapArtefact; index: number }>> = { zone: [], corridor: [], room: [], polygon: [], wall: [], line: [], partition: [], stair: [], door: [], window: [], exit: [], fireExit: [], roundel: [], label: [] };
     documentModel.artefacts.forEach((artefact, index) => {
       if (artefact.visible !== false) groups[artefact.type].push({ artefact, index });
     });
@@ -941,6 +1122,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       ...sortGroup(groups.zone),
       ...sortGroup(groups.corridor),
       ...sortGroup(groups.room),
+      ...sortGroup(groups.polygon),
       ...sortGroup(groups.stair),
       ...sortGroup(groups.wall),
       ...sortGroup(groups.line),
@@ -970,11 +1152,11 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
     [documentModel.artefacts, renderOrderedArtefacts],
   );
   const backgroundArtefacts = useMemo(
-    () => renderOrderedArtefacts.filter((artefact) => artefact.type === "room" || artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair"),
+    () => renderOrderedArtefacts.filter((artefact) => artefact.type === "room" || artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair" || artefact.type === "polygon"),
     [renderOrderedArtefacts],
   );
   const foregroundArtefacts = useMemo(
-    () => renderOrderedArtefacts.filter((artefact) => artefact.type !== "wall" && artefact.type !== "room" && artefact.type !== "corridor" && artefact.type !== "zone" && artefact.type !== "stair"),
+    () => renderOrderedArtefacts.filter((artefact) => artefact.type !== "wall" && artefact.type !== "room" && artefact.type !== "corridor" && artefact.type !== "zone" && artefact.type !== "stair" && artefact.type !== "polygon"),
     [renderOrderedArtefacts],
   );
   const selectedClusterIds = useMemo(() => {
@@ -1016,6 +1198,18 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return;
 
+      if (activeTool === "polygon" && polygonDraftPoints.length > 0 && event.key === "Escape") {
+        event.preventDefault();
+        resetPolygonDraft();
+        return;
+      }
+
+      if (activeTool === "polygon" && polygonDraftPoints.length >= 3 && event.key === "Enter") {
+        event.preventDefault();
+        finishPolygonDraft();
+        return;
+      }
+
       if (event.key === "F4") {
         event.preventDefault();
         if (selectedArtefactId) {
@@ -1029,6 +1223,12 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       }
 
       const metaPressed = event.ctrlKey || event.metaKey;
+      if (metaPressed && !event.shiftKey && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        undoLastChange();
+        return;
+      }
+
       if (metaPressed && selectedArtefact && event.key.toLowerCase() === "c") {
         event.preventDefault();
         const cluster = documentModel.artefacts
@@ -1045,7 +1245,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
           .filter((artefact) => clusterIds.has(artefact.id))
           .map((artefact) => cloneArtefact(artefact));
         setClipboard({ artefacts: cluster, rootId: selectedArtefact.id, pasteCount: 0 });
-        setDocumentModel((current) => ({
+        updateDocumentWithUndo((current) => ({
           ...current,
           artefacts: current.artefacts.filter((artefact) => !clusterIds.has(artefact.id)),
         }));
@@ -1075,7 +1275,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
             : undefined,
         }));
 
-        setDocumentModel((current) => ({
+        updateDocumentWithUndo((current) => ({
           ...current,
           artefacts: [...current.artefacts, ...pastedArtefacts],
         }));
@@ -1094,7 +1294,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       if (event.key !== "Delete" || (!selectedArtefactId && selectedRoomIds.length === 0)) return;
       event.preventDefault();
       const roomIds = new Set(selectedRoomIds);
-      setDocumentModel((current) => ({
+      updateDocumentWithUndo((current) => ({
         ...current,
         artefacts: current.artefacts.filter((artefact) => !selectedClusterIds.has(artefact.id) && !((artefact.type === "room" || artefact.type === "corridor") && roomIds.has(artefact.id))),
       }));
@@ -1103,7 +1303,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [clipboard, documentModel.artefacts, selectedArtefact, selectedArtefactId, selectedClusterIds, selectedRoomIds]);
+  }, [activeTool, clipboard, documentModel.artefacts, finishPolygonDraft, polygonDraftPoints.length, selectedArtefact, selectedArtefactId, selectedClusterIds, selectedRoomIds, undoLastChange, updateDocumentWithUndo]);
 
   const resetView = () => setViewport(createFitViewport(documentBounds, surfaceSize.width, surfaceSize.height));
   const zoomByFactor = (factor: number) => {
@@ -1133,7 +1333,37 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
     return alignPointToArtefactAxes(referenceAligned, otherArtefacts, SNAP_THRESHOLD);
   };
 
-  const createAttachedOpeningPreview = (type: "door" | "window" | "exit" | "fireExit", point: WorldPoint): OpeningPreview | null => {
+  function resetPolygonDraft() {
+    setPolygonDraftPoints([]);
+    setPolygonPreviewPoint(null);
+  }
+
+  function finishPolygonDraft(points: WorldPoint[] = polygonDraftPoints) {
+    if (points.length < 3) return;
+
+    const nextArtefact: MapArtefact = {
+      id: createId("polygon"),
+      type: "polygon",
+      geometry: {
+        kind: "polygon",
+        points: points.map((point) => ({ x: Math.round(point.x), y: Math.round(point.y) })),
+      },
+      labelOverride: "Polygon",
+      metadata: {
+        fillColor: "color-mix(in srgb, var(--app-accent) 12%, white)",
+        borderColor: "#2563eb",
+        borderThickness: 2,
+        textColor: "#0f172a",
+      },
+    };
+
+    updateDocumentWithUndo((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
+    setSelectedArtefactId(nextArtefact.id);
+    resetPolygonDraft();
+    setActiveTool("select");
+  }
+
+  const createAttachedOpeningPreview = (type: "door" | "window" | "partition" | "exit" | "fireExit", point: WorldPoint): OpeningPreview | null => {
     const attachment = findNearestWallAttachment(point, documentModel.artefacts);
     if (!attachment) return null;
     const normalizedAttachment = type === "door" && attachment.hostType !== "wall" ? { ...attachment, width: 20 } : attachment;
@@ -1156,7 +1386,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
     const currentDragState = dragStateRef.current;
     const worldPoint = getWorldPointFromClient(clientX, clientY);
 
-    if (activeTool === "door" || activeTool === "window" || activeTool === "exit" || activeTool === "fireExit") {
+    if (activeTool === "door" || activeTool === "window" || activeTool === "partition" || activeTool === "exit" || activeTool === "fireExit") {
       setOpeningPreview(worldPoint ? createAttachedOpeningPreview(activeTool, worldPoint) : null);
     }
 
@@ -1164,6 +1394,12 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       setWallPreviewPoint(getAlignedPoint(worldPoint, { referencePoint: pendingWallStart, shiftLock: shiftKey }));
     } else if (!currentDragState) {
       setWallPreviewPoint(null);
+    }
+
+    if (activeTool === "polygon" && polygonDraftPoints.length > 0 && worldPoint) {
+      setPolygonPreviewPoint(getAlignedPoint(worldPoint, { referencePoint: polygonDraftPoints[polygonDraftPoints.length - 1], shiftLock: shiftKey }));
+    } else if (activeTool !== "polygon" || polygonDraftPoints.length === 0) {
+      setPolygonPreviewPoint(null);
     }
 
     if (!currentDragState) return;
@@ -1219,7 +1455,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
     }
 
     const movingOpeningAttachment =
-      selectedArtefact?.id === currentDragState.artefactId && (selectedArtefact.type === "door" || selectedArtefact.type === "window" || selectedArtefact.type === "exit" || selectedArtefact.type === "fireExit")
+      selectedArtefact?.id === currentDragState.artefactId && (selectedArtefact.type === "door" || selectedArtefact.type === "window" || selectedArtefact.type === "partition" || selectedArtefact.type === "exit" || selectedArtefact.type === "fireExit")
         ? createAttachedOpeningPreview(selectedArtefact.type, { x: currentDragState.originWorld.x + deltaX, y: currentDragState.originWorld.y + deltaY })?.artefact.wallAttachment ?? null
         : null;
     setDocumentModel((current) => ({
@@ -1230,7 +1466,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
           return { ...artefact, geometry: moveGeometry(movingGeometry, deltaX, deltaY) };
         }
         if (artefact.id === currentDragState.artefactId) {
-          return movingOpeningAttachment && (artefact.type === "door" || artefact.type === "window" || artefact.type === "exit" || artefact.type === "fireExit")
+          return movingOpeningAttachment && (artefact.type === "door" || artefact.type === "window" || artefact.type === "partition" || artefact.type === "exit" || artefact.type === "fireExit")
             ? {
                 ...artefact,
                 geometry: { kind: "point", x: currentDragState.originWorld.x + deltaX, y: currentDragState.originWorld.y + deltaY, size: artefact.geometry.kind === "point" ? artefact.geometry.size : 18 },
@@ -1269,7 +1505,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
             textColor: "#0f172a",
           },
         };
-        setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
+        updateDocumentWithUndo((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
         setSelectedArtefactId(nextArtefact.id);
         shouldReturnToSelect = true;
       }
@@ -1303,7 +1539,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
             : undefined
           : selectedArtefact?.id,
     };
-    setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
+    updateDocumentWithUndo((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
     setPropertiesOpen(false);
     setSelectedArtefactId(nextArtefact.id);
     setActiveTool("select");
@@ -1346,6 +1582,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
         .filter((candidate) => candidate.parentId === artefact.id || candidate.wallAttachment?.hostId === artefact.id || candidate.wallAttachment?.wallId === artefact.id)
         .map((candidate) => ({ id: candidate.id, geometry: candidate.geometry })),
     };
+    recordUndoSnapshot();
     dragStateRef.current = nextDragState;
     setDragState(nextDragState);
     surfaceRef.current.setPointerCapture(event.pointerId);
@@ -1366,6 +1603,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       originWorld: worldPoint,
       originalGeometry: artefact.geometry,
     };
+    recordUndoSnapshot();
     dragStateRef.current = nextDragState;
     setDragState(nextDragState);
     surfaceRef.current.setPointerCapture(event.pointerId);
@@ -1386,6 +1624,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       originWorld: handle === "start" ? { x: artefact.geometry.x2, y: artefact.geometry.y2 } : { x: artefact.geometry.x1, y: artefact.geometry.y1 },
       originalGeometry: artefact.geometry,
     };
+    recordUndoSnapshot();
     dragStateRef.current = nextDragState;
     setDragState(nextDragState);
     surfaceRef.current.setPointerCapture(event.pointerId);
@@ -1415,6 +1654,27 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       return;
     }
     if ((activeTool === "wall" || activeTool === "line" || activeTool === "partition") && event.button === 0) {
+      if (activeTool === "partition" && !pendingWallStart) {
+        const attachedPreview = createAttachedOpeningPreview("partition", worldPoint);
+        if (attachedPreview?.artefact.wallAttachment?.hostType === "polygon") {
+          const nextArtefact: MapArtefact = {
+            id: createId("partition"),
+            type: "partition",
+            geometry: { kind: "point", x: Math.round(attachedPreview.point.x), y: Math.round(attachedPreview.point.y), size: 18 },
+            wallAttachment: { ...attachedPreview.artefact.wallAttachment, width: 42 },
+            labelOverride: "Partition",
+          };
+          updateDocumentWithUndo((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
+          setPropertiesOpen(false);
+          setSelectedArtefactId(nextArtefact.id);
+          setPendingWallStart(null);
+          setWallPreviewPoint(null);
+          setOpeningPreview(null);
+          setActiveTool("select");
+          return;
+        }
+      }
+
       const snappedPoint = getAlignedPoint(worldPoint, { referencePoint: pendingWallStart, shiftLock: event.shiftKey });
       if (!pendingWallStart) {
         setPropertiesOpen(false);
@@ -1429,11 +1689,29 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
           labelOverride: activeTool === "line" ? "Line" : activeTool === "partition" ? "Partition" : undefined,
           metadata: activeTool === "line" ? { borderColor: "#111827" } : undefined,
         };
-        setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
+        updateDocumentWithUndo((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
         setSelectedArtefactId(nextArtefact.id);
         setPendingWallStart(null);
         setWallPreviewPoint(null);
         setActiveTool("select");
+      }
+      return;
+    }
+    if (activeTool === "polygon" && event.button === 0) {
+      setPropertiesOpen(false);
+      setSelectedArtefactId(null);
+      const referencePoint = polygonDraftPoints[polygonDraftPoints.length - 1] ?? null;
+      const snappedPoint = getAlignedPoint(worldPoint, { referencePoint, shiftLock: event.shiftKey });
+      const firstPoint = polygonDraftPoints[0];
+      const shouldClose =
+        polygonDraftPoints.length >= 3 &&
+        ((firstPoint && getPointDistance(snappedPoint, firstPoint) <= POLYGON_CLOSE_THRESHOLD) || event.detail >= 2);
+
+      if (shouldClose) {
+        finishPolygonDraft(polygonDraftPoints);
+      } else {
+        setPolygonDraftPoints((current) => [...current, snappedPoint]);
+        setPolygonPreviewPoint(snappedPoint);
       }
       return;
     }
@@ -1452,7 +1730,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
               }
             : undefined,
       };
-      setDocumentModel((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
+      updateDocumentWithUndo((current) => ({ ...current, artefacts: [...current.artefacts, nextArtefact] }));
       setPropertiesOpen(false);
       setSelectedArtefactId(nextArtefact.id);
       setActiveTool("select");
@@ -1514,7 +1792,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
   const saveProperties = () => {
     if (selectedRooms.length > 1 && draftRoomBatch) {
       const roomIds = new Set(selectedRoomIds);
-      setDocumentModel((current) => ({
+      updateDocumentWithUndo((current) => ({
         ...current,
         artefacts: current.artefacts.map((artefact) =>
           (artefact.type === "room" || artefact.type === "corridor") && roomIds.has(artefact.id)
@@ -1550,7 +1828,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
       setIoError(`Human key "${draftArtefact.humanKey}" is already used by ${duplicateHumanKeyArtefact.id}.`);
       return;
     }
-    setDocumentModel((current) => ({
+    updateDocumentWithUndo((current) => ({
       ...current,
       artefacts: current.artefacts.map((artefact) => (artefact.id === selectedArtefactId ? draftArtefact : artefact)),
     }));
@@ -1572,7 +1850,10 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
     );
   };
   const handleNewMap = () => {
-    setDocumentModel(createBlankMapDocument("Untitled Map", currentActor));
+    const nextDocument = createBlankMapDocument("Untitled Map", currentActor);
+    recordUndoSnapshot();
+    documentModelRef.current = nextDocument;
+    setDocumentModel(nextDocument);
     setCurrentFileName(null);
     setActiveTool("select");
     setSelectedArtefactId(null);
@@ -1624,6 +1905,8 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
   const handleSaveDialogSubmit = async () => {
     if (!saveDialogMode) return;
     const nextDocument = createDocumentWithDescriptorDraft(saveDraftName, saveDraftDescription);
+    recordUndoSnapshot();
+    documentModelRef.current = nextDocument;
     setDocumentModel(nextDocument);
     setSaveDialogMode(null);
     await handleSave({ document: nextDocument, saveAs: saveDialogMode === "saveAs" });
@@ -1686,25 +1969,28 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
         <div data-map-designer-workspace className={`relative ${mode === "modal" ? "flex-1 overflow-auto p-4" : ""}`}>
           <div ref={toolbarFrameRef} className={toolbarFrameClass} style={toolbarFrameStyle}>
             <div ref={toolbarBodyRef} className={`${toolbarIsVertical ? "inline-flex max-h-[calc(100vh-12rem)] flex-col overflow-y-auto" : "inline-flex flex-wrap"} items-center gap-1 rounded-2xl border border-[var(--app-border)] bg-white/95 p-1.5 shadow-xl backdrop-blur`}>
-              <button
+              <ToolbarButton
                 type="button"
                 onPointerDown={handleFloatingToolbarPointerDown}
-                title="Drag toolbar. Drop near an edge to dock."
-                aria-label="Drag toolbar. Drop near an edge to dock."
-                className="flex h-9 w-9 cursor-grab items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] active:cursor-grabbing"
+                label="Drag toolbar. Drop near an edge to dock."
+                tooltipPlacement={toolbarIsVertical ? "right" : "top"}
+                className="cursor-grab bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] active:cursor-grabbing"
               >
                 <GripVertical className="h-4 w-4" />
-              </button>
+              </ToolbarButton>
               <div className={`${toolbarIsVertical ? "my-1 h-px w-8" : "mx-1 h-8 w-px"} bg-[var(--app-border)]`} />
-              <button type="button" onClick={handleNewMap} title={text("config.map_designer.io.new", "New Map")} aria-label={text("config.map_designer.io.new", "New Map")} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+              <ToolbarButton type="button" onClick={handleNewMap} label={text("config.map_designer.io.new", "New Map")} tooltipPlacement={toolbarIsVertical ? "right" : "top"}>
                 <FilePlus2 className="h-4 w-4" />
-              </button>
-              <button type="button" onClick={() => openSaveDialog("save")} disabled={isSaving} title={text("config.map_designer.io.save", "Save")} aria-label={text("config.map_designer.io.save", "Save")} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)] disabled:cursor-wait disabled:opacity-60">
+              </ToolbarButton>
+              <ToolbarButton type="button" onClick={() => openSaveDialog("save")} disabled={isSaving} label={text("config.map_designer.io.save", "Save")} tooltipPlacement={toolbarIsVertical ? "right" : "top"} className="disabled:cursor-wait disabled:opacity-60">
                 <Save className="h-4 w-4" />
-              </button>
-              <button type="button" onClick={() => openSaveDialog("saveAs")} disabled={isSaving} title="Save As" aria-label="Save As" className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[10px] font-bold text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)] disabled:cursor-wait disabled:opacity-60">
+              </ToolbarButton>
+              <ToolbarButton type="button" onClick={() => openSaveDialog("saveAs")} disabled={isSaving} label="Save As" tooltipPlacement={toolbarIsVertical ? "right" : "top"} className="text-[10px] font-bold disabled:cursor-wait disabled:opacity-60">
                 As
-              </button>
+              </ToolbarButton>
+              <ToolbarButton type="button" onClick={undoLastChange} disabled={!canUndo} label="Undo (Ctrl+Z)" tooltipPlacement={toolbarIsVertical ? "right" : "top"} className="disabled:cursor-not-allowed disabled:opacity-40">
+                <Undo2 className="h-4 w-4" />
+              </ToolbarButton>
               <div className={`${toolbarIsVertical ? "my-1 h-px w-8" : "mx-1 h-8 w-px"} bg-[var(--app-border)]`} />
               {TOOL_ORDER.map((tool) => {
                 const Icon = tool.icon;
@@ -1713,7 +1999,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                   <button
                     key={tool.id}
                     type="button"
-                    title={text(TOOL_LABEL_KEYS[tool.id], tool.fallbackLabel)}
+                    title={`${text(TOOL_LABEL_KEYS[tool.id], tool.fallbackLabel)} - ${TOOL_HELP[tool.id]}`}
                     aria-label={text(TOOL_LABEL_KEYS[tool.id], tool.fallbackLabel)}
                     onClick={() => {
                       setActiveTool(tool.id);
@@ -1721,11 +2007,14 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                         setPendingWallStart(null);
                         setWallPreviewPoint(null);
                       }
-                      if (tool.id !== "door" && tool.id !== "window" && tool.id !== "exit" && tool.id !== "fireExit") {
+                      if (tool.id !== "door" && tool.id !== "window" && tool.id !== "partition" && tool.id !== "exit" && tool.id !== "fireExit") {
                         setOpeningPreview(null);
                       }
+                      if (tool.id !== "polygon") {
+                        resetPolygonDraft();
+                      }
                     }}
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
+                    className={`group relative flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
                       isActive ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
                     }`}
                   >
@@ -1734,25 +2023,26 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                 );
               })}
               <div className={`${toolbarIsVertical ? "my-1 h-px w-8" : "mx-1 h-8 w-px"} bg-[var(--app-border)]`} />
-              <button type="button" title={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} aria-label={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} onClick={() => setLabelsVisible((current) => !current)} className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${labelsVisible ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
+              <ToolbarButton type="button" label={labelsVisible ? text("config.map_designer.labels.hide", "Hide Labels") : text("config.map_designer.labels.show", "Show Labels")} tooltipPlacement={toolbarIsVertical ? "right" : "top"} active={labelsVisible} onClick={() => setLabelsVisible((current) => !current)}>
                 <Type className="h-4 w-4" />
-              </button>
-              <button type="button" title={snapEnabled ? "Snap On" : "Snap Off"} aria-label={snapEnabled ? "Snap On" : "Snap Off"} onClick={() => setSnapEnabled((current) => !current)} className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${snapEnabled ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"}`}>
+              </ToolbarButton>
+              <ToolbarButton type="button" label={snapEnabled ? "Snap On" : "Snap Off"} tooltipPlacement={toolbarIsVertical ? "right" : "top"} active={snapEnabled} onClick={() => setSnapEnabled((current) => !current)}>
                 <Square className="h-4 w-4" />
-              </button>
-              <button type="button" title="Zoom Out" aria-label="Zoom Out" onClick={() => zoomByFactor(0.9)} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+              </ToolbarButton>
+              <ToolbarButton type="button" label="Zoom Out" tooltipPlacement={toolbarIsVertical ? "right" : "top"} onClick={() => zoomByFactor(0.9)}>
                 <Minus className="h-4 w-4" />
-              </button>
-              <button type="button" title="Zoom In" aria-label="Zoom In" onClick={() => zoomByFactor(1.1)} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+              </ToolbarButton>
+              <ToolbarButton type="button" label="Zoom In" tooltipPlacement={toolbarIsVertical ? "right" : "top"} onClick={() => zoomByFactor(1.1)}>
                 <Plus className="h-4 w-4" />
-              </button>
-              <button type="button" title={text("config.map_designer.zoom.fit", "Fit")} aria-label={text("config.map_designer.zoom.fit", "Fit")} onClick={resetView} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-white text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-muted)]">
+              </ToolbarButton>
+              <ToolbarButton type="button" label={text("config.map_designer.zoom.fit", "Fit")} tooltipPlacement={toolbarIsVertical ? "right" : "top"} onClick={resetView}>
                 <Eye className="h-4 w-4" />
-              </button>
-              <button
+              </ToolbarButton>
+              <ToolbarButton
                 type="button"
-                title={text("config.map_designer.properties.title", "Properties")}
-                aria-label={text("config.map_designer.properties.title", "Properties")}
+                label={text("config.map_designer.properties.title", "Properties")}
+                tooltipPlacement={toolbarIsVertical ? "right" : "top"}
+                active={propertiesOpen}
                 onClick={() => {
                   if (propertiesOpen) {
                     closeProperties();
@@ -1760,13 +2050,10 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                     openProperties();
                   }
                 }}
-                className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
-                  propertiesOpen ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]" : "border-[var(--app-border)] bg-white text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]"
-                }`}
               >
                 <PanelsTopLeft className="h-4 w-4" />
-              </button>
-              <div title={pendingWallStart ? text("config.map_designer.pending.wall", "Wall tool: click a second point to finish the segment.") : `${text("config.map_designer.field.active_tool", "Active tool")}: ${text(TOOL_LABEL_KEYS[activeTool], activeTool)}`} className={`${toolbarIsVertical ? "" : "ml-auto"} flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]`}>
+              </ToolbarButton>
+              <div title={pendingWallStart ? text("config.map_designer.pending.wall", "Wall tool: click a second point to finish the segment.") : polygonDraftPoints.length > 0 ? "Polygon tool: click points, then click the first point or press Enter to close." : `${text("config.map_designer.field.active_tool", "Active tool")}: ${text(TOOL_LABEL_KEYS[activeTool], activeTool)}`} className={`${toolbarIsVertical ? "" : "ml-auto"} flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]`}>
                 <Info className="h-4 w-4" />
               </div>
             </div>
@@ -1783,7 +2070,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
             <div ref={containerRef} className={`relative overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-canvas,#eef4fb)] ${mode === "modal" ? "h-[72vh] min-h-[640px]" : "h-[82vh] min-h-[760px]"}`}>
               <svg
                 ref={surfaceRef}
-                className={`h-full w-full ${activeTool === "pan" ? "cursor-grab" : activeTool === "room" || activeTool === "corridor" || activeTool === "stair" || activeTool === "wall" || activeTool === "line" || activeTool === "partition" ? "cursor-crosshair" : "cursor-default"}`}
+                className={`h-full w-full ${activeTool === "pan" ? "cursor-grab" : activeTool === "room" || activeTool === "corridor" || activeTool === "stair" || activeTool === "polygon" || activeTool === "wall" || activeTool === "line" || activeTool === "partition" ? "cursor-crosshair" : "cursor-default"}`}
                 style={{ touchAction: "none", userSelect: "none" }}
                 onPointerDown={handleSurfacePointerDown}
                 onPointerMove={handleSurfacePointerMove}
@@ -1816,7 +2103,6 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                   ))}
                   {containedStructuredRects.map((artefact) => {
                     const geometry = artefact.geometry as Extract<MapGeometry, { kind: "rect" }>;
-                    const stroke = getMetadataColor(artefact, "borderColor") ?? "var(--app-border)";
                     const top = getStructuredRectBorderThickness(artefact, "top");
                     const right = getStructuredRectBorderThickness(artefact, "right");
                     const bottom = getStructuredRectBorderThickness(artefact, "bottom");
@@ -1824,10 +2110,10 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
 
                     return (
                       <g key={`contained_border_${artefact.id}`}>
-                        {top > 0 && <line x1={geometry.x} y1={geometry.y} x2={geometry.x + geometry.width} y2={geometry.y} stroke={stroke} strokeWidth={top} strokeLinecap="square" />}
-                        {right > 0 && <line x1={geometry.x + geometry.width} y1={geometry.y} x2={geometry.x + geometry.width} y2={geometry.y + geometry.height} stroke={stroke} strokeWidth={right} strokeLinecap="square" />}
-                        {bottom > 0 && <line x1={geometry.x} y1={geometry.y + geometry.height} x2={geometry.x + geometry.width} y2={geometry.y + geometry.height} stroke={stroke} strokeWidth={bottom} strokeLinecap="square" />}
-                        {left > 0 && <line x1={geometry.x} y1={geometry.y} x2={geometry.x} y2={geometry.y + geometry.height} stroke={stroke} strokeWidth={left} strokeLinecap="square" />}
+                        {top > 0 && <line x1={geometry.x} y1={geometry.y} x2={geometry.x + geometry.width} y2={geometry.y} stroke={getStructuredRectBorderColor(artefact, "top")} strokeWidth={top} strokeLinecap="square" />}
+                        {right > 0 && <line x1={geometry.x + geometry.width} y1={geometry.y} x2={geometry.x + geometry.width} y2={geometry.y + geometry.height} stroke={getStructuredRectBorderColor(artefact, "right")} strokeWidth={right} strokeLinecap="square" />}
+                        {bottom > 0 && <line x1={geometry.x} y1={geometry.y + geometry.height} x2={geometry.x + geometry.width} y2={geometry.y + geometry.height} stroke={getStructuredRectBorderColor(artefact, "bottom")} strokeWidth={bottom} strokeLinecap="square" />}
+                        {left > 0 && <line x1={geometry.x} y1={geometry.y} x2={geometry.x} y2={geometry.y + geometry.height} stroke={getStructuredRectBorderColor(artefact, "left")} strokeWidth={left} strokeLinecap="square" />}
                       </g>
                     );
                   })}
@@ -1866,7 +2152,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                     </g>
                   ))}
                   {foregroundArtefacts.map((artefact) => {
-                    const displayGeometry = artefact.type === "door" || artefact.type === "window" || artefact.type === "exit" || artefact.type === "fireExit" ? resolveAttachedOpeningLine(artefact, artefactsById) ?? artefact.geometry : artefact.geometry;
+                    const displayGeometry = artefact.type === "door" || artefact.type === "window" || artefact.type === "partition" || artefact.type === "exit" || artefact.type === "fireExit" ? resolveAttachedOpeningLine(artefact, artefactsById) ?? artefact.geometry : artefact.geometry;
                     const isSelected = artefact.id === selectedArtefactId || ((artefact.type === "room" || artefact.type === "corridor") && selectedRoomIds.includes(artefact.id));
                     return (
                       <g key={artefact.id} data-artefact-id={artefact.id} className="cursor-pointer" onPointerDown={(event) => handleArtefactPointerDown(event, artefact)}>
@@ -1938,6 +2224,49 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                       strokeDasharray={activeTool === "partition" ? "10 6" : undefined}
                       opacity={0.85}
                     />
+                  )}
+                  {polygonDraftPoints.length > 0 && (
+                    <g opacity={0.95}>
+                      {polygonDraftPoints.length >= 2 && (
+                        <polyline
+                          points={polygonDraftPoints.map((point) => `${point.x},${point.y}`).join(" ")}
+                          fill="none"
+                          stroke="var(--app-primary)"
+                          strokeWidth={3}
+                          strokeDasharray="10 7"
+                          strokeLinejoin="round"
+                        />
+                      )}
+                      {polygonPreviewPoint && (
+                        <line
+                          x1={polygonDraftPoints[polygonDraftPoints.length - 1].x}
+                          y1={polygonDraftPoints[polygonDraftPoints.length - 1].y}
+                          x2={polygonPreviewPoint.x}
+                          y2={polygonPreviewPoint.y}
+                          stroke="var(--app-primary)"
+                          strokeWidth={3}
+                          strokeDasharray="10 7"
+                        />
+                      )}
+                      {polygonDraftPoints.length >= 3 && polygonPreviewPoint && (
+                        <polygon
+                          points={[...polygonDraftPoints, polygonPreviewPoint].map((point) => `${point.x},${point.y}`).join(" ")}
+                          fill="color-mix(in srgb, var(--app-primary) 10%, transparent)"
+                          stroke="none"
+                        />
+                      )}
+                      {polygonDraftPoints.map((point, index) => (
+                        <circle
+                          key={`polygon_draft_${index}`}
+                          cx={point.x}
+                          cy={point.y}
+                          r={index === 0 ? 9 : 6}
+                          fill={index === 0 ? "white" : "var(--app-primary)"}
+                          stroke="var(--app-primary)"
+                          strokeWidth={2}
+                        />
+                      ))}
+                    </g>
                   )}
                   {openingPreview && (() => {
                     const previewGeometry = resolveAttachedOpeningLine(openingPreview.artefact, artefactsById);
@@ -2073,16 +2402,25 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                             <NumberField label={text("config.map_designer.field.width", "Width")} value={editingArtefact.geometry.width} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, width: value } : geometry)} />
                             <NumberField label={text("config.map_designer.field.height", "Height")} value={editingArtefact.geometry.height} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, height: value } : geometry)} />
                             <NumberField label="Rotation" value={editingArtefact.geometry.rotation ?? 0} onChange={(value) => updateDraftGeometry((geometry) => geometry.kind === "rect" ? { ...geometry, rotation: value } : geometry)} />
-                            {(editingArtefact.type === "corridor" || editingArtefact.type === "zone" || editingArtefact.type === "stair") && (
+                            {(editingArtefact.type === "room" || editingArtefact.type === "corridor" || editingArtefact.type === "zone" || editingArtefact.type === "stair") && (
                               <>
-                                <NumberField label="Border Thickness" value={typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderThickness: value } } : current))} />
-                                <NumberField label="Top Border" value={typeof editingArtefact.metadata?.borderTopThickness === "number" ? editingArtefact.metadata.borderTopThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderTopThickness: value } } : current))} />
-                                <NumberField label="Right Border" value={typeof editingArtefact.metadata?.borderRightThickness === "number" ? editingArtefact.metadata.borderRightThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderRightThickness: value } } : current))} />
-                                <NumberField label="Bottom Border" value={typeof editingArtefact.metadata?.borderBottomThickness === "number" ? editingArtefact.metadata.borderBottomThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderBottomThickness: value } } : current))} />
-                                <NumberField label="Left Border" value={typeof editingArtefact.metadata?.borderLeftThickness === "number" ? editingArtefact.metadata.borderLeftThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderLeftThickness: value } } : current))} />
+                                <NumberField label="Border Thickness" value={typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, "borderThickness", value) : current))} />
+                                <NumberField label="Top Border" value={typeof editingArtefact.metadata?.borderTopThickness === "number" ? editingArtefact.metadata.borderTopThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, "borderTopThickness", value) : current))} />
+                                <NumberField label="Right Border" value={typeof editingArtefact.metadata?.borderRightThickness === "number" ? editingArtefact.metadata.borderRightThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, "borderRightThickness", value) : current))} />
+                                <NumberField label="Bottom Border" value={typeof editingArtefact.metadata?.borderBottomThickness === "number" ? editingArtefact.metadata.borderBottomThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, "borderBottomThickness", value) : current))} />
+                                <NumberField label="Left Border" value={typeof editingArtefact.metadata?.borderLeftThickness === "number" ? editingArtefact.metadata.borderLeftThickness : (typeof editingArtefact.metadata?.borderThickness === "number" ? editingArtefact.metadata.borderThickness : 2)} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, "borderLeftThickness", value) : current))} />
                               </>
                             )}
                           </div>
+                          {(editingArtefact.type === "room" || editingArtefact.type === "corridor" || editingArtefact.type === "zone" || editingArtefact.type === "stair") && (
+                            <div className="grid gap-2">
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">Border Colours</p>
+                              <ColorField label="Top Border" value={getStructuredRectBorderColor(editingArtefact, "top")} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, "borderTopColor", value) : current))} />
+                              <ColorField label="Right Border" value={getStructuredRectBorderColor(editingArtefact, "right")} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, "borderRightColor", value) : current))} />
+                              <ColorField label="Bottom Border" value={getStructuredRectBorderColor(editingArtefact, "bottom")} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, "borderBottomColor", value) : current))} />
+                              <ColorField label="Left Border" value={getStructuredRectBorderColor(editingArtefact, "left")} onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, "borderLeftColor", value) : current))} />
+                            </div>
+                          )}
                           <div className="grid grid-cols-2 gap-2">
                             <button
                               type="button"
@@ -2198,9 +2536,66 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                       </div>
 
                       {editingArtefact.geometry.kind === "polygon" && (
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.points", "Points")}</p>
-                          <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--app-surface-muted)] p-2 text-xs text-[var(--app-text)]">{JSON.stringify(editingArtefact.geometry.points, null, 2)}</pre>
+                        <div className="grid gap-2">
+                          <NumberField
+                            label="Border Thickness"
+                            value={getMetadataNumber(editingArtefact, "borderThickness", 2)}
+                            onChange={(value) => setDraftArtefact((current) => (current ? { ...current, metadata: { ...(current.metadata ?? {}), borderThickness: Math.max(0, value) } } : current))}
+                          />
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">Edge Borders</p>
+                            <div className="mt-2 grid gap-2">
+                              {editingArtefact.geometry.points.map((_, index) => (
+                                <div key={`polygon_edge_control_${index}`} className="rounded-lg border border-[var(--app-border)] bg-white px-3 py-2">
+                                  <p className="mb-2 text-xs font-semibold text-[var(--app-text-muted)]">Edge {index + 1}</p>
+                                  <div className="grid gap-2">
+                                    <NumberField
+                                      label="Thickness"
+                                      value={getPolygonEdgeThickness(editingArtefact, index)}
+                                      onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, `polygonEdge${index}Thickness`, Math.max(0, value)) : current))}
+                                    />
+                                    <ColorField
+                                      label="Colour"
+                                      value={getPolygonEdgeColor(editingArtefact, index)}
+                                      onChange={(value) => setDraftArtefact((current) => (current ? setArtefactMetadataValue(current, `polygonEdge${index}Color`, value) : current))}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">{text("config.map_designer.field.points", "Points")}</p>
+                            <div className="mt-2 grid gap-2">
+                              {editingArtefact.geometry.points.map((point, index) => (
+                                <div key={`polygon_point_${index}`} className="grid grid-cols-[auto_1fr_1fr] items-end gap-2">
+                                  <span className="pb-2 text-xs font-semibold text-[var(--app-text-muted)]">P{index + 1}</span>
+                                  <NumberField
+                                    label="X"
+                                    value={point.x}
+                                    onChange={(value) =>
+                                      updateDraftGeometry((geometry) =>
+                                        geometry.kind === "polygon"
+                                          ? { ...geometry, points: geometry.points.map((candidate, pointIndex) => (pointIndex === index ? { ...candidate, x: value } : candidate)) }
+                                          : geometry,
+                                      )
+                                    }
+                                  />
+                                  <NumberField
+                                    label="Y"
+                                    value={point.y}
+                                    onChange={(value) =>
+                                      updateDraftGeometry((geometry) =>
+                                        geometry.kind === "polygon"
+                                          ? { ...geometry, points: geometry.points.map((candidate, pointIndex) => (pointIndex === index ? { ...candidate, y: value } : candidate)) }
+                                          : geometry,
+                                      )
+                                    }
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -2221,7 +2616,7 @@ const MapDesigner: React.FC<MapDesignerProps> = ({
                       Save
                     </button>
                   </div>
-                  <button type="button" onClick={() => { setDocumentModel((current) => ({ ...current, artefacts: current.artefacts.filter((artefact) => isRoomBatchSelection ? !((artefact.type === "room" || artefact.type === "corridor") && selectedRoomIds.includes(artefact.id)) : artefact.id !== editingArtefact?.id) })); setSelectedArtefactId(null); setSelectedRoomIds([]); closeProperties(); }} className="w-full rounded-xl border border-[var(--app-danger)] px-4 py-2 text-sm font-semibold text-[var(--app-danger)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)]">
+                  <button type="button" onClick={() => { updateDocumentWithUndo((current) => ({ ...current, artefacts: current.artefacts.filter((artefact) => isRoomBatchSelection ? !((artefact.type === "room" || artefact.type === "corridor") && selectedRoomIds.includes(artefact.id)) : artefact.id !== editingArtefact?.id) })); setSelectedArtefactId(null); setSelectedRoomIds([]); closeProperties(); }} className="w-full rounded-xl border border-[var(--app-danger)] px-4 py-2 text-sm font-semibold text-[var(--app-danger)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--app-danger)_10%,white)]">
                     {text("config.map_designer.properties.delete", "Delete Selected")}
                   </button>
                 </div>

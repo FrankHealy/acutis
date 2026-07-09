@@ -915,30 +915,30 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen w-full max-w-full overflow-hidden bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <div className="bg-white border-b border-gray-200 px-4 py-4 sm:px-6">
+        <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
             <button
               onClick={() => router.push('/units/config/forms')}
-              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm font-semibold transition-colors"
+              className="mt-1 flex shrink-0 items-center gap-2 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
             >
-              <ArrowLeft className="h-6 w-6" />
-              <span>Back to Forms</span>
+              <ArrowLeft className="h-5 w-5" />
+              <span className="hidden sm:inline">Back to Forms</span>
             </button>
-            <div>
+            <div className="min-w-0">
               <input
                 type="text"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="text-2xl font-bold text-gray-900 bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none"
+                className="w-full min-w-0 max-w-[44rem] truncate bg-transparent text-xl font-bold text-gray-900 border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none sm:text-2xl"
               />
               <p className="text-sm text-gray-500 mt-1">Version {formVersion} - {isScreeningForm ? 'Screening' : 'Form'} Configuration</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 xl:justify-end">
             <select
               value={formType}
               onChange={(e) => {
@@ -952,7 +952,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                   setFormName('Admission Form v4');
                 }
               }}
-              className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium"
+              className="h-11 min-w-0 rounded-lg border-2 border-gray-200 px-3 py-2 font-medium focus:border-blue-500 focus:outline-none"
             >
               <option value="admission">Admission Form</option>
               <option value="screening">Screening Form</option>
@@ -964,14 +964,14 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                 type="text"
                 value={selectedUnit}
                 onChange={(e) => setSelectedUnit(e.target.value)}
-                className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium min-w-[220px]"
+                className="h-11 min-w-0 w-[min(17rem,100%)] rounded-lg border-2 border-gray-200 px-3 py-2 font-medium focus:border-blue-500 focus:outline-none"
                 placeholder="alcohol_screening_call"
               />
             ) : (
               <select
                 value={selectedUnit}
                 onChange={(e) => setSelectedUnit(e.target.value)}
-                className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium"
+                className="h-11 min-w-0 rounded-lg border-2 border-gray-200 px-3 py-2 font-medium focus:border-blue-500 focus:outline-none"
               >
                 <option value="all">All Units (Base Form)</option>
                 <option value="alcohol">Alcohol Unit</option>
@@ -985,7 +985,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
               <select
                 value={admissionType}
                 onChange={(e) => setAdmissionType(e.target.value as typeof admissionType)}
-                className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium"
+                className="h-11 min-w-0 rounded-lg border-2 border-gray-200 px-3 py-2 font-medium focus:border-blue-500 focus:outline-none"
               >
                 <option value="alcohol">Alcohol Admission</option>
                 <option value="drugs">Drugs Admission</option>
@@ -994,57 +994,57 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
             )}
 
             {/* View Mode Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <div className="flex shrink-0 items-center rounded-lg bg-gray-100 p-1">
               <button
                 onClick={() => setViewMode('designer')}
-                className={`px-4 py-2 rounded-md font-semibold transition-all ${
+                className={`inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition-all ${
                   viewMode === 'designer'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <Settings className="h-4 w-4 inline mr-2" />
-                Designer
+                <Settings className="h-4 w-4" />
+                <span>Designer</span>
               </button>
               <button
                 onClick={() => setViewMode('preview')}
-                className={`px-4 py-2 rounded-md font-semibold transition-all ${
+                className={`inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition-all ${
                   viewMode === 'preview'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <Eye className="h-4 w-4 inline mr-2" />
-                Preview
+                <Eye className="h-4 w-4" />
+                <span>Preview</span>
               </button>
             </div>
 
             <button
               onClick={() => setIsPanelOpen(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg bg-purple-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
             >
               <Package className="h-4 w-4" />
               <span>Elements Library</span>
             </button>
 
-            <button className="flex items-center space-x-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-semibold">
-              <History className="h-5 w-5" />
+            <button className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg bg-gray-100 px-3 text-sm font-semibold transition-colors hover:bg-gray-200">
+              <History className="h-4 w-4" />
               <span>Version History</span>
             </button>
 
             <button
               onClick={() => saveForm('draft')}
-              className="flex items-center space-x-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-semibold"
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg bg-gray-100 px-3 text-sm font-semibold transition-colors hover:bg-gray-200"
             >
-              <Save className="h-5 w-5" />
+              <Save className="h-4 w-4" />
               <span>Save Draft</span>
             </button>
 
             <button
               onClick={() => saveForm('active')}
-              className="flex items-center space-x-2 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors font-semibold shadow-md"
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg bg-blue-500 px-3 text-sm font-semibold text-white shadow-md transition-colors hover:bg-blue-600"
             >
-              <Upload className="h-5 w-5" />
+              <Upload className="h-4 w-4" />
               <span>Publish Version</span>
             </button>
           </div>
@@ -1053,9 +1053,9 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
 
       {/* Designer View */}
       {viewMode === 'designer' && (
-        <div className="flex h-[calc(100vh-88px)]">
+        <div className="flex h-[calc(100vh-220px)] min-h-[620px] min-w-0 overflow-hidden">
           {/* Sections List */}
-          <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+          <div className="w-72 shrink-0 overflow-y-auto border-r border-gray-200 bg-white xl:w-80">
             <div className="p-6 border-b border-gray-200">
               <button
                 onClick={addSection}
@@ -1118,7 +1118,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
 
           {/* Section Editor */}
           <div
-            className="flex-1 overflow-y-auto p-8"
+            className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-6 xl:p-8"
             onDragOver={(e) => {
               if (selectedSection) {
                 handleDragOver(e, selectedSection);
@@ -1132,11 +1132,11 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
             }}
           >
             {selectedSectionData ? (
-              <div className="max-w-4xl mx-auto">
+              <div className="mx-auto max-w-4xl min-w-0">
                 {/* Section Settings */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Section Settings</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Section Title</label>
                       <input
@@ -1164,7 +1164,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
                       />
                     </div>
-                    <div className="col-span-2">
+                    <div className="lg:col-span-2">
                       <label className="flex items-center space-x-3 cursor-pointer">
                         <input
                           type="checkbox"
@@ -1185,21 +1185,21 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                 {/* Fields */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                   <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                       <h3 className="text-lg font-bold text-gray-900">Fields ({selectedSectionData.fields.length})</h3>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {isScreeningForm && (
                           <button
                             onClick={applyScreeningTemplate}
-                            className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-semibold"
+                            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
                           >
                             <Package className="h-4 w-4" />
-                            <span>Apply HSE Screening Template</span>
+                            <span>Apply HSE Template</span>
                           </button>
                         )}
                         <button
                           onClick={() => addField(selectedSection!)}
-                          className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-semibold"
+                          className="flex items-center gap-2 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-600"
                         >
                           <Plus className="h-4 w-4" />
                           <span>Add Field</span>
@@ -1277,13 +1277,13 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-start space-x-3 flex-1">
+                            <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                              <div className="flex min-w-0 flex-1 items-start gap-3">
                                 <GripVertical className="h-5 w-5 text-gray-400 mt-1" />
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-2 mb-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
                                     <FieldIcon className="h-4 w-4 text-gray-600" />
-                                    <span className="font-bold text-gray-900">{field.label}</span>
+                                    <span className="break-words font-bold text-gray-900">{field.label}</span>
                                     {field.required && (
                                       <span className="text-red-500 font-bold">*</span>
                                     )}
@@ -1313,32 +1313,32 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                                     {groupName && (
                                       <p>Group: <span className="font-medium">{groupName}</span></p>
                                     )}
-                                    <p>Field Name: <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{field.fieldName}</span></p>
+                                    <p>Field Name: <span className="break-all rounded bg-gray-100 px-2 py-1 font-mono text-xs">{field.fieldName}</span></p>
                                     {(field.validation?.min !== undefined || field.validation?.max !== undefined) && (
                                       <p>
                                         Constraints: <span className="font-medium">{field.validation?.min ?? '-'} to {field.validation?.max ?? '-'}</span>
                                       </p>
                                     )}
                                     {field.validation?.pattern && (
-                                      <p>Regex: <span className="font-mono text-xs">{field.validation.pattern}</span></p>
+                                      <p>Regex: <span className="break-all font-mono text-xs">{field.validation.pattern}</span></p>
                                     )}
                                     {field.placeholder && (
                                       <p>Placeholder: <span className="italic">{field.placeholder}</span></p>
                                     )}
                                     {field.canonicalFieldKey && (
-                                      <p>Canonical Field: <span className="font-medium">{field.canonicalFieldKey}</span></p>
+                                      <p>Canonical Field: <span className="break-all font-medium">{field.canonicalFieldKey}</span></p>
                                     )}
                                     {field.optionSetKey && (
-                                      <p>Option Set: <span className="font-medium">{field.optionSetKey}</span></p>
+                                      <p>Option Set: <span className="break-all font-medium">{field.optionSetKey}</span></p>
                                     )}
                                     {field.sourceDocumentReference && (
-                                      <p>Source Document: <span className="font-medium">{field.sourceDocumentReference}</span></p>
+                                      <p>Source Document: <span className="break-all font-medium">{field.sourceDocumentReference}</span></p>
                                     )}
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="flex items-center space-x-2">
+                              <div className="flex shrink-0 items-center gap-1 self-start">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1399,7 +1399,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
 
           {/* Field Properties Panel */}
           {selectedFieldData && (
-            <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto p-6">
+            <div className="w-80 shrink-0 overflow-y-auto border-l border-gray-200 bg-white p-4 xl:w-96 xl:p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-6">Field Properties</h3>
               
               <div className="space-y-6">
@@ -1720,8 +1720,8 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
 
       {/* Preview Mode */}
       {viewMode === 'preview' && (
-        <div className="p-8">
-          <div className="max-w-5xl mx-auto">
+        <div className="min-w-0 overflow-x-hidden p-4 lg:p-6 xl:p-8">
+          <div className="mx-auto max-w-5xl min-w-0">
             <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
               <div className="flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -1767,7 +1767,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                     {!section.collapsed && (
                       <div className="p-6 border-t border-gray-200 bg-gray-50">
                         {ungroupedFields.length > 0 && (
-                          <div className="grid grid-cols-2 gap-6">
+                          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
                             {ungroupedFields.map((field) => renderPreviewField(field))}
                           </div>
                         )}
@@ -1779,7 +1779,7 @@ const FormDesigner = ({ initialFormType = 'admission' }: FormDesignerProps) => {
                                 <div className="mb-4">
                                   <h4 className="text-sm font-bold uppercase tracking-[0.18em] text-gray-500">{group.name}</h4>
                                 </div>
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
                                   {group.fields.map((field) => renderPreviewField(field))}
                                 </div>
                               </div>

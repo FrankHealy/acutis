@@ -7,6 +7,7 @@ export type UnitDefinition = {
   iconKey: "wine" | "shield" | "pill" | "venus";
   admissionsEnabled: boolean;
   admissionFormCode: string;
+  extendedAssessmentEnabled?: boolean;
 };
 
 export const UnitDefinitions: Record<UnitId, UnitDefinition> = {
@@ -25,6 +26,7 @@ export const UnitDefinitions: Record<UnitId, UnitDefinition> = {
     iconKey: "shield",
     admissionsEnabled: true,
     admissionFormCode: "admission_detox",
+    extendedAssessmentEnabled: true,
   },
   drugs: {
     id: "drugs",

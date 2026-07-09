@@ -4,11 +4,13 @@ import { useEffect, type ReactNode } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { isAuthorizationDisabled } from "@/lib/authMode";
+import { ambulatoryKeycloakProviderId, getProviderForPath, isAmbulatoryPath } from "@/lib/authProviders";
 
 export default function AuthGate({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const isAuthStatusPage = pathname.startsWith("/auth/");
+  const requiredProvider = getProviderForPath(pathname);
 
   useEffect(() => {
     if (isAuthorizationDisabled || isAuthStatusPage) {
@@ -25,10 +27,19 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (status === "unauthenticated") {
-      void signIn("keycloak", { callbackUrl: window.location.href });
+    if (
+      status === "authenticated" &&
+      isAmbulatoryPath(pathname) &&
+      session?.authProvider !== ambulatoryKeycloakProviderId
+    ) {
+      void signIn(ambulatoryKeycloakProviderId, { callbackUrl: window.location.href });
+      return;
     }
-  }, [isAuthStatusPage, session?.accessToken, session?.error, status]);
+
+    if (status === "unauthenticated") {
+      void signIn(requiredProvider, { callbackUrl: window.location.href });
+    }
+  }, [isAuthStatusPage, pathname, requiredProvider, session?.accessToken, session?.authProvider, session?.error, status]);
 
   if (isAuthorizationDisabled) {
     return <>{children}</>;

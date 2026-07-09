@@ -37,6 +37,14 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+@media print {
+  html,
+  body,
+  .app-page-shell {
+    background: #ffffff !important;
+  }
+}
+
 .app-page-shell {
   min-height: 100vh;
   background:

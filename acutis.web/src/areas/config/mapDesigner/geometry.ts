@@ -242,6 +242,30 @@ function getLineLength(geometry: Extract<MapGeometry, { kind: "line" }>): number
   return Math.hypot(geometry.x2 - geometry.x1, geometry.y2 - geometry.y1);
 }
 
+function projectPointToLineSegment(
+  point: { x: number; y: number },
+  line: Extract<MapGeometry, { kind: "line" }>,
+) {
+  const length = getLineLength(line);
+  if (length === 0) {
+    return null;
+  }
+
+  const dx = line.x2 - line.x1;
+  const dy = line.y2 - line.y1;
+  const projection = ((point.x - line.x1) * dx + (point.y - line.y1) * dy) / (length * length);
+  const clamped = Math.max(0, Math.min(1, projection));
+  const snappedX = line.x1 + dx * clamped;
+  const snappedY = line.y1 + dy * clamped;
+  return {
+    length,
+    clamped,
+    snappedX,
+    snappedY,
+    distance: Math.hypot(point.x - snappedX, point.y - snappedY),
+  };
+}
+
 export function mergeCollinearWallArtefacts(walls: MapArtefact[]): Array<Extract<MapGeometry, { kind: "line" }>> {
   const lineWalls = walls
     .filter((artefact): artefact is MapArtefact & { geometry: Extract<MapGeometry, { kind: "line" }> } => artefact.geometry.kind === "line")
@@ -365,6 +389,56 @@ export function resolveAttachedOpeningLine(
     };
   }
 
+  if (hostType === "polygon" && host.geometry.kind === "polygon") {
+    const edgeIndex = Number((opening.wallAttachment.edge ?? "").replace("segment-", ""));
+    const points = host.geometry.points;
+    if (!Number.isInteger(edgeIndex) || edgeIndex < 0 || edgeIndex >= points.length) {
+      return opening.geometry.kind === "line" ? opening.geometry : null;
+    }
+
+    const start = points[edgeIndex];
+    const end = points[(edgeIndex + 1) % points.length];
+    if (!start || !end) {
+      return opening.geometry.kind === "line" ? opening.geometry : null;
+    }
+
+    const edgeThicknessCandidate = host.metadata?.[`polygonEdge${edgeIndex}Thickness`];
+    const edgeThickness =
+      typeof edgeThicknessCandidate === "number"
+        ? edgeThicknessCandidate
+        : typeof host.metadata?.borderThickness === "number"
+          ? host.metadata.borderThickness
+          : 8;
+    const edgeLine: Extract<MapGeometry, { kind: "line" }> = {
+      kind: "line",
+      x1: start.x,
+      y1: start.y,
+      x2: end.x,
+      y2: end.y,
+      thickness: edgeThickness,
+    };
+    const length = getLineLength(edgeLine);
+    if (length === 0) {
+      return null;
+    }
+
+    const centerRatio = Math.max(0, Math.min(1, opening.wallAttachment.offset / length));
+    const centerX = edgeLine.x1 + (edgeLine.x2 - edgeLine.x1) * centerRatio;
+    const centerY = edgeLine.y1 + (edgeLine.y2 - edgeLine.y1) * centerRatio;
+    const tangentX = (edgeLine.x2 - edgeLine.x1) / length;
+    const tangentY = (edgeLine.y2 - edgeLine.y1) / length;
+    const half = openingWidth / 2;
+
+    return {
+      kind: "line",
+      x1: Math.round(centerX - tangentX * half),
+      y1: Math.round(centerY - tangentY * half),
+      x2: Math.round(centerX + tangentX * half),
+      y2: Math.round(centerY + tangentY * half),
+      thickness: Math.max(6, edgeLine.thickness ?? 8),
+    };
+  }
+
   if (host.geometry.kind !== "rect") {
     return opening.geometry.kind === "line" ? opening.geometry : null;
   }
@@ -404,16 +478,16 @@ export function findNearestWallAttachment(
 ): {
   wallId?: string;
   hostId?: string;
-  hostType?: "wall" | "room" | "corridor" | "zone" | "stair";
-  edge?: "top" | "right" | "bottom" | "left";
+  hostType?: "wall" | "room" | "corridor" | "zone" | "stair" | "polygon";
+  edge?: "top" | "right" | "bottom" | "left" | `segment-${number}`;
   offset: number;
   width: number;
 } | null {
   type Candidate = {
     wallId?: string;
     hostId?: string;
-    hostType?: "wall" | "room" | "corridor" | "zone" | "stair";
-    edge?: "top" | "right" | "bottom" | "left";
+    hostType?: "wall" | "room" | "corridor" | "zone" | "stair" | "polygon";
+    edge?: "top" | "right" | "bottom" | "left" | `segment-${number}`;
     offset: number;
     width: number;
     distance: number;
@@ -423,33 +497,55 @@ export function findNearestWallAttachment(
   walls.forEach((artefact) => {
     if (artefact.geometry.kind === "line") {
       const line = artefact.geometry;
-      const length = getLineLength(line);
-      if (length === 0) {
+      const projection = projectPointToLineSegment(point, line);
+      if (!projection) {
         return;
       }
 
-      const dx = line.x2 - line.x1;
-      const dy = line.y2 - line.y1;
-      const projection = ((point.x - line.x1) * dx + (point.y - line.y1) * dy) / (length * length);
-      const clamped = Math.max(0, Math.min(1, projection));
-      const snappedX = line.x1 + dx * clamped;
-      const snappedY = line.y1 + dy * clamped;
-      const distance = Math.hypot(point.x - snappedX, point.y - snappedY);
-
-      if (distance > 20) {
+      if (projection.distance > 20) {
         return;
       }
 
-      if (!best || distance < best.distance) {
+      if (!best || projection.distance < best.distance) {
         best = {
           wallId: artefact.id,
           hostId: artefact.id,
           hostType: "wall",
-          offset: Math.round(clamped * length),
+          offset: Math.round(projection.clamped * projection.length),
           width: 36,
-          distance,
+          distance: projection.distance,
         };
       }
+      return;
+    }
+
+    if (artefact.geometry.kind === "polygon" && artefact.type === "polygon") {
+      const points = artefact.geometry.points;
+      points.forEach((start, index) => {
+        const end = points[(index + 1) % points.length];
+        if (!end) return;
+        const projection = projectPointToLineSegment(point, {
+          kind: "line",
+          x1: start.x,
+          y1: start.y,
+          x2: end.x,
+          y2: end.y,
+        });
+        if (!projection || projection.distance > 20) {
+          return;
+        }
+
+        if (!best || projection.distance < best.distance) {
+          best = {
+            hostId: artefact.id,
+            hostType: "polygon",
+            edge: `segment-${index}`,
+            offset: Math.round(projection.clamped * projection.length),
+            width: 36,
+            distance: projection.distance,
+          };
+        }
+      });
       return;
     }
 
@@ -669,7 +765,20 @@ function getRoomBoundarySideThickness(
   return getRoomBoundaryThickness(artefact);
 }
 
-function getRoomBoundaryStroke(artefact: MapArtefact): string {
+function getRoomBoundaryStroke(artefact: MapArtefact, side?: "top" | "right" | "bottom" | "left"): string {
+  const sideKey =
+    side === "top"
+      ? "borderTopColor"
+      : side === "right"
+        ? "borderRightColor"
+        : side === "bottom"
+          ? "borderBottomColor"
+          : side === "left"
+            ? "borderLeftColor"
+            : null;
+  const sideCandidate = sideKey ? artefact.metadata?.[sideKey] : null;
+  if (typeof sideCandidate === "string" && sideCandidate.length > 0) return sideCandidate;
+
   const candidate = artefact.metadata?.borderColor;
   return typeof candidate === "string" && candidate.length > 0 ? candidate : "var(--app-border)";
 }
@@ -945,7 +1054,7 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundaryS
 
   artefacts
     .filter((artefact) => artefact.visible !== false)
-    .filter((artefact) => artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair")
+    .filter((artefact) => artefact.type === "room" || artefact.type === "corridor" || artefact.type === "zone" || artefact.type === "stair")
     .forEach((artefact) => {
       if (artefact.geometry.kind !== "rect") {
         return;
@@ -953,14 +1062,13 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundaryS
 
       if (artefact.geometry.rotation) {
         const points = getRotatedRectPoints(artefact.geometry);
-        const stroke = getRoomBoundaryStroke(artefact);
         const zOrder = getArtefactZOrder(artefact);
         const sourceArea = artefact.geometry.width * artefact.geometry.height;
         const sideSegments = [
-          { start: points[0], end: points[1], thickness: getRoomBoundarySideThickness(artefact, "top") },
-          { start: points[1], end: points[2], thickness: getRoomBoundarySideThickness(artefact, "right") },
-          { start: points[2], end: points[3], thickness: getRoomBoundarySideThickness(artefact, "bottom") },
-          { start: points[3], end: points[0], thickness: getRoomBoundarySideThickness(artefact, "left") },
+          { start: points[0], end: points[1], side: "top" as const, thickness: getRoomBoundarySideThickness(artefact, "top"), stroke: getRoomBoundaryStroke(artefact, "top") },
+          { start: points[1], end: points[2], side: "right" as const, thickness: getRoomBoundarySideThickness(artefact, "right"), stroke: getRoomBoundaryStroke(artefact, "right") },
+          { start: points[2], end: points[3], side: "bottom" as const, thickness: getRoomBoundarySideThickness(artefact, "bottom"), stroke: getRoomBoundaryStroke(artefact, "bottom") },
+          { start: points[3], end: points[0], side: "left" as const, thickness: getRoomBoundarySideThickness(artefact, "left"), stroke: getRoomBoundaryStroke(artefact, "left") },
         ];
 
         sideSegments
@@ -975,7 +1083,7 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundaryS
                 y2: segment.end.y,
                 thickness: segment.thickness,
               },
-              stroke,
+              stroke: segment.stroke,
               zOrder,
               sourceArea,
               artefactType: artefact.type,
@@ -987,14 +1095,13 @@ export function getRoomBoundarySegments(artefacts: MapArtefact[]): RoomBoundaryS
       }
 
       const { x, y, width, height } = artefact.geometry;
-      const stroke = getRoomBoundaryStroke(artefact);
       const zOrder = getArtefactZOrder(artefact);
       const sourceArea = width * height;
       const segments = [
-        { orientation: "horizontal", fixed: y, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "top"), stroke, zOrder, sourceArea, artefactType: artefact.type },
-        { orientation: "horizontal", fixed: y + height, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "bottom"), stroke, zOrder, sourceArea, artefactType: artefact.type },
-        { orientation: "vertical", fixed: x, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "left"), stroke, zOrder, sourceArea, artefactType: artefact.type },
-        { orientation: "vertical", fixed: x + width, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "right"), stroke, zOrder, sourceArea, artefactType: artefact.type },
+        { orientation: "horizontal", fixed: y, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "top"), stroke: getRoomBoundaryStroke(artefact, "top"), zOrder, sourceArea, artefactType: artefact.type },
+        { orientation: "horizontal", fixed: y + height, start: x, end: x + width, thickness: getRoomBoundarySideThickness(artefact, "bottom"), stroke: getRoomBoundaryStroke(artefact, "bottom"), zOrder, sourceArea, artefactType: artefact.type },
+        { orientation: "vertical", fixed: x, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "left"), stroke: getRoomBoundaryStroke(artefact, "left"), zOrder, sourceArea, artefactType: artefact.type },
+        { orientation: "vertical", fixed: x + width, start: y, end: y + height, thickness: getRoomBoundarySideThickness(artefact, "right"), stroke: getRoomBoundaryStroke(artefact, "right"), zOrder, sourceArea, artefactType: artefact.type },
       ] satisfies (AxisSegment & { artefactType: MapArtefact["type"] })[];
 
       segments

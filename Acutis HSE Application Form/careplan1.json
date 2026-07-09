@@ -1,0 +1,46 @@
+{
+  "schemaType": "COMPREHENSIVE CARE PLAN",
+  "instruction": "Please be SMART (Specific, Measurable, Achievable, Realistic, Time lined)",
+  "goalsAndActions": [
+    {
+      "domain": "Drug and Alcohol Use",
+      "actionsToBeUndertaken": [],
+      "byWhom": "",
+      "whenDate": "",
+      "outcomeToDate": ""
+    },
+    {
+      "domain": "Physical and Mental Health",
+      "actionsToBeUndertaken": [],
+      "byWhom": "",
+      "whenDate": "",
+      "outcomeToDate": ""
+    },
+    {
+      "domain": "Relationships, Children and Social Supports",
+      "actionsToBeUndertaken": [],
+      "byWhom": "",
+      "whenDate": "",
+      "outcomeToDate": ""
+    },
+    {
+      "domain": "Education & Accomodation",
+      "actionsToBeUndertaken": [],
+      "byWhom": "",
+      "whenDate": "",
+      "outcomeToDate": ""
+    },
+    {
+      "domain": "Financial & Legal",
+      "actionsToBeUndertaken": [],
+      "byWhom": "",
+      "whenDate": "",
+      "outcomeToDate": ""
+    }
+  ],
+  "signatures": {
+    "signatureOfServiceUser": "",
+    "signatureOfStaff": "",
+    "signDate": ""
+  }
+}

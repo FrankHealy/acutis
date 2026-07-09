@@ -38,6 +38,12 @@ type SubjectType = "anonymous_call" | "resident" | "admission";
 
 const DEFAULT_SUBJECT_TYPE: SubjectType = "anonymous_call";
 const DEFAULT_FORM_CODE = "alcohol_screening_call";
+const GENERAL_FORM_PRESETS = [
+  { code: DEFAULT_FORM_CODE, label: "Screening Call" },
+  { code: "hse_extended_assessment", label: "HSE Extended Assessment" },
+  { code: "care_plan_1", label: "Comprehensive Care Plan" },
+  { code: "care_plan_2", label: "Initial Care Plan" },
+] as const;
 type ConfigMode = "alcohol" | "admission" | "survey" | "unsupported";
 
 export default function ScreeningFormPage() {
@@ -481,6 +487,27 @@ export default function ScreeningFormPage() {
         <div className="mt-4 rounded-md bg-slate-50 p-3 text-sm text-slate-700">
           Loaded: <span className="font-semibold">{formData.form.code}</span> v
           <span className="font-semibold">{formData.form.version}</span> ({formData.form.status})
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {GENERAL_FORM_PRESETS.map((preset) => (
+            <button
+              key={preset.code}
+              type="button"
+              className={`rounded border px-3 py-2 text-sm font-semibold ${
+                normalizedFormCode === preset.code
+                  ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-primary)]"
+                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+              onClick={() => {
+                setFormCodeInput(preset.code);
+                setSelectedFormCode(preset.code);
+                setActivationError(null);
+              }}
+            >
+              {preset.label}
+            </button>
+          ))}
         </div>
 
         <div className="mt-3">

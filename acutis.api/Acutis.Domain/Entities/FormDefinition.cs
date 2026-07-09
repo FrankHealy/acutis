@@ -12,4 +12,6 @@ public sealed class FormDefinition
     public string UiJson { get; set; } = "{}";
     public string RulesJson { get; set; } = "[]";
     public DateTime CreatedAt { get; set; }
+    public DateTime ActiveFrom { get; set; }
+    public DateTime? ActiveTo { get; set; }
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
 import evaluationTemplate from "@/data/evaluationTemplate.json";
 import type { CallLog } from "@/data/mock/callLogs";
 import { useSession } from "next-auth/react";
@@ -77,7 +76,7 @@ const getEvaluationFormCode = (
 
 const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
   unitId = "alcohol",
-  renderMode = "wizard",
+  renderMode = "accordion",
 }) => {
   const { data: session, status } = useSession();
   const { locale, mergeTranslations, t, loadKeys } = useLocalization();
@@ -427,250 +426,246 @@ const EvaluationQueue: React.FC<EvaluationQueueProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="flex flex-wrap gap-2">
-          {queueFilters.map((queue) => (
+      {selectedCandidate ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">{selectedCandidate.name}</h2>
+              <p className="text-sm text-gray-500">
+                {text("evaluation.modal.subtitle", "Resident Case Assessment Form", "نموذج تقييم الحالة")}
+              </p>
+            </div>
             <button
-              key={queue.key}
               type="button"
-              onClick={() => setActiveQueue(queue.key)}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                activeQueue === queue.key
-                  ? "bg-slate-800 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+              onClick={() => setSelectedCandidate(null)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              <span>{queue.label}</span>
-              <span className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-xs ${
-                activeQueue === queue.key ? "bg-white/20 text-white" : "bg-white text-slate-700"
-              }`}>
-                {getQueueCount(queue.key)}
-              </span>
+              {text("evaluation.action.back", "Back to queue", "العودة إلى قائمة الانتظار")}
             </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 bg-slate-50/90 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-gray-900">{t("evaluation.queue.title")}</h2>
-            <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-200 px-2.5 py-1 text-sm font-semibold text-slate-700">
-              {visibleCandidates.length}
-            </span>
           </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="border-b border-slate-200 bg-slate-50/80">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("surname")}
-                    className="flex items-center gap-2 hover:text-gray-700"
-                  >
-                    {t("evaluation.table.surname")}
-                    <span className="text-[10px] text-gray-400">
-                      {sortConfig.key === "surname" && sortConfig.direction === "asc" ? "▲" : "▼"}
-                    </span>
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  {t("evaluation.table.name")}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  {text("evaluation.table.phone", "Phone Number", "رقم الهاتف")}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("queueType")}
-                    className="flex items-center gap-2 hover:text-gray-700"
-                  >
-                    {text("evaluation.table.queue", "Queue", "القائمة")}
-                    <span className="text-[10px] text-gray-400">
-                      {sortConfig.key === "queueType" && sortConfig.direction === "asc" ? "▲" : "▼"}
-                    </span>
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  {t("evaluation.table.source")}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("lastCallDate")}
-                    className="flex items-center gap-2 hover:text-gray-700"
-                  >
-                    {t("evaluation.table.last_call_date")}
-                    <span className="text-[10px] text-gray-400">
-                      {sortConfig.key === "lastCallDate" && sortConfig.direction === "asc" ? "▲" : "▼"}
-                    </span>
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  {t("evaluation.table.num_calls")}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  {text("evaluation.table.status", "Status", "الحالة")}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  {t("evaluation.table.action")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
-                    {t("evaluation.loading.queue")}
-                  </td>
-                </tr>
-              ) : errorMessage ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-red-600">
-                    {errorMessage}
-                  </td>
-                </tr>
-              ) : visibleCandidates.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
-                    {t("evaluation.empty.queue")}
-                  </td>
-                </tr>
-              ) : visibleCandidates.map((candidate) => (
-                <tr key={candidate.callId} className="transition-colors hover:bg-slate-50">
-                  {(() => {
-                    const { firstName, surname } = getCandidateNameParts(candidate);
-                    return (
-                      <>
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">{surname}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{firstName}</td>
-                      </>
-                    );
-                  })()}
-                  <td className="px-6 py-4 text-sm text-gray-700">{candidate.phoneNumber || "-"}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{getQueueLabel(candidate.queueType)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{getSourceLabel(candidate.intakeSource)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{formatDate(candidate.lastCallDate)}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-700">{candidate.numCalls}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{getStatusLabel(candidate.status)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => void handleOpenEvaluation(candidate)}
-                      disabled={startingCandidateId === candidate.callId}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors shadow-sm ${
-                        startingCandidateId === candidate.callId
-                          ? "cursor-wait bg-slate-200 text-slate-500 shadow-none"
-                          : candidate.canOpenEvaluation
-                            ? "bg-slate-700 text-white hover:bg-slate-800"
-                            : "bg-slate-200 text-slate-700 hover:bg-slate-300 shadow-none"
-                      }`}
-                    >
-                      {startingCandidateId === candidate.callId
-                        ? text("evaluation.loading.form", "Loading form...", "جاري تحميل النموذج...")
-                        : getActionLabel(candidate)}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {formLoading ? (
+            <div className="text-sm text-gray-500">{t("evaluation.loading.form")}</div>
+          ) : formError ? (
+            <div className="text-sm text-red-600">{formError}</div>
+          ) : formData && selectedCandidate.caseId ? (
+            <DynamicFormRenderer
+              form={formData.form}
+              optionSets={formData.optionSets}
+              locale={locale}
+              initialSubmissionId={formData.submissionId}
+              initialSubmissionStatus={formData.submissionStatus}
+              initialAnswers={initialAnswers}
+              subjectType="admission"
+              subjectId={selectedCandidate.caseId}
+              renderMode={renderMode}
+              onSaveProgress={async ({ submissionId, answers }) =>
+                saveEvaluationDraft({
+                  accessToken: session?.accessToken ?? "",
+                  locale,
+                  residentCaseId: selectedCandidate.caseId ?? "",
+                  formCode: formData.form.code,
+                  formVersion: formData.form.version,
+                  submissionId,
+                  answers,
+                })
+              }
+              onSave={async ({ submissionId, answers }) => {
+                const result = await submitEvaluationForm({
+                  accessToken: session?.accessToken ?? "",
+                  locale,
+                  residentCaseId: selectedCandidate.caseId ?? "",
+                  formCode: formData.form.code,
+                  formVersion: formData.form.version,
+                  submissionId,
+                  answers,
+                });
+                setSelectedCandidate(null);
+                setFormData(null);
+                await loadQueue();
+                return result;
+              }}
+              onReject={async ({ submissionId, answers, rejectionReason }) => {
+                const result = await rejectEvaluationForm({
+                  accessToken: session?.accessToken ?? "",
+                  locale,
+                  residentCaseId: selectedCandidate.caseId ?? "",
+                  formCode: formData.form.code,
+                  formVersion: formData.form.version,
+                  submissionId,
+                  answers,
+                  rejectionReason,
+                });
+                setSelectedCandidate(null);
+                setFormData(null);
+                await loadQueue();
+                return result;
+              }}
+              submitLabel={text("form.action.accept", "Accept", "قبول")}
+              submittingLabel={text("form.action.accepting", "Accepting...", "جار القبول...")}
+              submittedLabel={text("form.status.accepted", "Accepted.", "تم القبول.")}
+            />
+          ) : (
+            <div className="text-sm text-gray-500">{t("evaluation.empty.form")}</div>
+          )}
         </div>
-      </div>
-
-      {selectedCandidate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-8 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
-            <div className="border-b border-slate-200 bg-slate-50/80 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-semibold text-gray-900">{selectedCandidate.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {text("evaluation.modal.subtitle", "Resident Case Assessment Form", "نموذج تقييم الحالة")}
-                  </p>
-                </div>
+      ) : (
+        <>
+          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="flex flex-wrap gap-2">
+              {queueFilters.map((queue) => (
                 <button
+                  key={queue.key}
                   type="button"
-                  onClick={() => setSelectedCandidate(null)}
-                  className="rounded-lg p-2 transition-colors hover:bg-slate-200"
+                  onClick={() => setActiveQueue(queue.key)}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                    activeQueue === queue.key
+                      ? "bg-slate-800 text-white"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
                 >
-                  <X className="h-5 w-5 text-gray-600" />
+                  <span>{queue.label}</span>
+                  <span className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-xs ${
+                    activeQueue === queue.key ? "bg-white/20 text-white" : "bg-white text-slate-700"
+                  }`}>
+                    {getQueueCount(queue.key)}
+                  </span>
                 </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 bg-slate-50/90 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-gray-900">{t("evaluation.queue.title")}</h2>
+                <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-200 px-2.5 py-1 text-sm font-semibold text-slate-700">
+                  {visibleCandidates.length}
+                </span>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
-              {formLoading ? (
-                <div className="text-sm text-gray-500">{t("evaluation.loading.form")}</div>
-              ) : formError ? (
-                <div className="text-sm text-red-600">{formError}</div>
-              ) : formData && selectedCandidate.caseId ? (
-                <DynamicFormRenderer
-                  form={formData.form}
-                  optionSets={formData.optionSets}
-                  locale={locale}
-                  initialSubmissionId={formData.submissionId}
-                  initialSubmissionStatus={formData.submissionStatus}
-                  initialAnswers={initialAnswers}
-                  subjectType="admission"
-                  subjectId={selectedCandidate.caseId}
-                  renderMode={renderMode}
-                  onSaveProgress={async ({ submissionId, answers }) =>
-                    saveEvaluationDraft({
-                      accessToken: session?.accessToken ?? "",
-                      locale,
-                      residentCaseId: selectedCandidate.caseId ?? "",
-                      formCode: formData.form.code,
-                      formVersion: formData.form.version,
-                      submissionId,
-                      answers,
-                    })
-                  }
-                  onSave={async ({ submissionId, answers }) => {
-                    const result = await submitEvaluationForm({
-                      accessToken: session?.accessToken ?? "",
-                      locale,
-                      residentCaseId: selectedCandidate.caseId ?? "",
-                      formCode: formData.form.code,
-                      formVersion: formData.form.version,
-                      submissionId,
-                      answers,
-                    });
-                    setSelectedCandidate(null);
-                    setFormData(null);
-                    await loadQueue();
-                    return result;
-                  }}
-                  onReject={async ({ submissionId, answers, rejectionReason }) => {
-                    const result = await rejectEvaluationForm({
-                      accessToken: session?.accessToken ?? "",
-                      locale,
-                      residentCaseId: selectedCandidate.caseId ?? "",
-                      formCode: formData.form.code,
-                      formVersion: formData.form.version,
-                      submissionId,
-                      answers,
-                      rejectionReason,
-                    });
-                    setSelectedCandidate(null);
-                    setFormData(null);
-                    await loadQueue();
-                    return result;
-                  }}
-                  submitLabel={text("form.action.accept", "Accept", "قبول")}
-                  submittingLabel={text("form.action.accepting", "Accepting...", "جار القبول...")}
-                  submittedLabel={text("form.status.accepted", "Accepted.", "تم القبول.")}
-                />
-              ) : (
-                <div className="text-sm text-gray-500">{t("evaluation.empty.form")}</div>
-              )}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-slate-200 bg-slate-50/80">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("surname")}
+                        className="flex items-center gap-2 hover:text-gray-700"
+                      >
+                        {t("evaluation.table.surname")}
+                        <span className="text-[10px] text-gray-400">
+                          {sortConfig.key === "surname" && sortConfig.direction === "asc" ? "▲" : "▼"}
+                        </span>
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      {t("evaluation.table.name")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      {text("evaluation.table.phone", "Phone Number", "رقم الهاتف")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("queueType")}
+                        className="flex items-center gap-2 hover:text-gray-700"
+                      >
+                        {text("evaluation.table.queue", "Queue", "القائمة")}
+                        <span className="text-[10px] text-gray-400">
+                          {sortConfig.key === "queueType" && sortConfig.direction === "asc" ? "▲" : "▼"}
+                        </span>
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      {t("evaluation.table.source")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("lastCallDate")}
+                        className="flex items-center gap-2 hover:text-gray-700"
+                      >
+                        {t("evaluation.table.last_call_date")}
+                        <span className="text-[10px] text-gray-400">
+                          {sortConfig.key === "lastCallDate" && sortConfig.direction === "asc" ? "▲" : "▼"}
+                        </span>
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      {t("evaluation.table.num_calls")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      {text("evaluation.table.status", "Status", "الحالة")}
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      {t("evaluation.table.action")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
+                        {t("evaluation.loading.queue")}
+                      </td>
+                    </tr>
+                  ) : errorMessage ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-red-600">
+                        {errorMessage}
+                      </td>
+                    </tr>
+                  ) : visibleCandidates.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
+                        {t("evaluation.empty.queue")}
+                      </td>
+                    </tr>
+                  ) : visibleCandidates.map((candidate) => (
+                    <tr key={candidate.callId} className="transition-colors hover:bg-slate-50">
+                      {(() => {
+                        const { firstName, surname } = getCandidateNameParts(candidate);
+                        return (
+                          <>
+                            <td className="px-6 py-4 text-sm font-semibold text-gray-900">{surname}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{firstName}</td>
+                          </>
+                        );
+                      })()}
+                      <td className="px-6 py-4 text-sm text-gray-700">{candidate.phoneNumber || "-"}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{getQueueLabel(candidate.queueType)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{getSourceLabel(candidate.intakeSource)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{formatDate(candidate.lastCallDate)}</td>
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-700">{candidate.numCalls}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{getStatusLabel(candidate.status)}</td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => void handleOpenEvaluation(candidate)}
+                          disabled={startingCandidateId === candidate.callId}
+                          className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors shadow-sm ${
+                            startingCandidateId === candidate.callId
+                              ? "cursor-wait bg-slate-200 text-slate-500 shadow-none"
+                              : candidate.canOpenEvaluation
+                                ? "bg-slate-700 text-white hover:bg-slate-800"
+                                : "bg-slate-200 text-slate-700 hover:bg-slate-300 shadow-none"
+                          }`}
+                        >
+                          {startingCandidateId === candidate.callId
+                            ? text("evaluation.loading.form", "Loading form...", "جاري تحميل النموذج...")
+                            : getActionLabel(candidate)}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

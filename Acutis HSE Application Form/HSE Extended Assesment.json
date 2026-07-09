@@ -1,0 +1,242 @@
+{
+  "documentMetadata": {
+    "title": "COMPREHENSIVE ASSESSMENT AND CARE PLAN",
+    "frameworkContext": "National Drug Rehabilitation Framework 2010",
+    "initialFormCompletion": {
+      "completedBy": "",
+      "projectName": "",
+      "projectTelephone": "",
+      "referringAgency": "",
+      "assessmentDate": ""
+    },
+    "otherInvolvedOrganisations": [
+      { "rowId": 1, "signed": "", "service": "" },
+      { "rowId": 2, "signed": "", "service": "" },
+      { "rowId": 3, "signed": "", "service": "" }
+    ],
+    "caseManagementDetails": {
+      "caseManagementNeeded": null,
+      "caseConferenceRequired": null,
+      "assignedCaseManagerName": "",
+      "caseConferenceDate": "",
+      "keyWorkersOrAgenciesContacted": ""
+    }
+  },
+  "sections": {
+    "accommodation": {
+      "pageNumber": 17,
+      "hasSituationChangesSinceInitial": null,
+      "situationChangesDescription": "",
+      "currentAccommodationNeedsOrConcerns": "",
+      "suitability": {
+        "suitableForChildren": null,
+        "suitableForSpouseOrPartner": null,
+        "suitableForCarePlan": null
+      },
+      "homelessServicesHistoryDescription": "",
+      "maintainingHousingDifficulties": "",
+      "sleepingRoughHistoryDescription": "",
+      "hasHadLocalAuthorityTenancy": null,
+      "localAuthorityTenancyDetails": "",
+      "currentlyOwnsOrPartOwnsProperty": null,
+      "isRegisteredForSocialHousing": null,
+      "socialHousingLocalAuthorityName": "",
+      "isCurrentlyOrPastInReceiptOfHAPOrRentSupplement": null,
+      "hapOrRentSupplementDetails": "",
+      "hasReferencesBeenMadeToOtherHousingProviders": null,
+      "otherHousingProvidersReferencesDetails": "",
+      "previousAccommodationHistoryGrid": [
+        { "rowId": 1, "address": "", "type": "", "datesFromTo": "", "reasonForLeaving": "" },
+        { "rowId": 2, "address": "", "type": "", "datesFromTo": "", "reasonForLeaving": "" },
+        { "rowId": 3, "address": "", "type": "", "datesFromTo": "", "reasonForLeaving": "" },
+        { "rowId": 4, "address": "", "type": "", "datesFromTo": "", "reasonForLeaving": "" },
+        { "rowId": 5, "address": "", "type": "", "datesFromTo": "", "reasonForLeaving": "" }
+      ],
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }
+      ],
+      "crossImpacts": {
+        "substanceUseImpactsHousing": null,
+        "substanceUseImpactsHousingDetails": ""
+      }
+    },
+    "drugAndAlcoholUse": {
+      "pageNumber": 19,
+      "hasSubstanceUseChangesSinceInitial": null,
+      "substanceUseChangesDescription": "",
+      "currentNeedsInRelationToUse": "",
+      "hasOtherAddictionChangesSinceInitial": null,
+      "otherAddictionChangesDescription": "",
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }
+      ]
+    },
+    "physicalHealth": {
+      "pageNumber": null,
+      "hasPhysicalHealthChangesSinceInitial": null,
+      "physicalHealthChangesDescription": "",
+      "physicalHealthDiagnosisOrDisabilityDescription": "",
+      "seesNeedForMakingMedicalAppointments": "",
+      "hasSexualWellbeingChangesSinceInitial": null,
+      "sexualWellbeingChangesDescription": "",
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }
+      ],
+      "crossImpacts": {
+        "substanceUseImpactsPhysicalHealth": null,
+        "substanceUseImpactsPhysicalHealthDetails": "",
+        "housingSituationImpactsPhysicalHealth": null,
+        "housingSituationImpactsPhysicalHealthDetails": ""
+      }
+    },
+    "mentalHealth": {
+      "pageNumber": null,
+      "hasMentalHealthChangesSinceInitial": null,
+      "mentalHealthChangesDescription": "",
+      "hasMentalHealthConcerns": "",
+      "treatmentReceivedForDiagnosisOrCondition": "",
+      "hasMentalHealthDiagnosisOrCondition": "",
+      "seesNeedForDiscussingWithGPMentalHealthServiceAppointment": "",
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }
+      ],
+      "crossImpacts": {
+        "substanceUseImpactsMentalHealth": null,
+        "substanceUseImpactsMentalHealthDetails": "",
+        "housingSituationImpactsMentalHealth": null,
+        "housingSituationImpactsMentalHealthDetails": ""
+      }
+    },
+    "familyAndRelationships": {
+      "pageNumber": 22,
+      "hasFamilyOrRelationshipChangesSinceInitial": null,
+      "familyOrRelationshipChangesDescription": "",
+      "whoDidYouGrowUpWithInFamily": "",
+      "currentlyWhoAreSupportivePeopleInLife": "",
+      "friendOrFamilyMemberToInvolveInCarePlanDetails": "",
+      "relationshipsPosingRiskToSelfOrCarePlan": "",
+      "concernsWithRegardsToSignificantRelationship": "",
+      "seesNeedForAttendingSupportServiceForRelationships": "",
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }
+      ],
+      "crossImpacts": {
+        "substanceUseImpactsRelationships": null,
+        "substanceUseImpactsRelationshipsDetails": "",
+        "housingSituationImpactsRelationships": null,
+        "housingSituationImpactsRelationshipsDetails": ""
+      }
+    },
+    "childWelfare": {
+      "pageNumber": 23,
+      "hasSignificantChangeInRelationToChildrenSinceInitial": null,
+      "significantChangeInRelationToChildrenDescription": "",
+      "relationshipsPosingRiskToChildren": "",
+      "behavioursPosingRiskToChildren": "",
+      "seesNeedForAvailingOfFamilySupport": "",
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }
+      ],
+      "crossImpacts": {
+        "substanceUseImpactsChildren": null,
+        "substanceUseImpactsChildrenDetails": "",
+        "housingSituationImpactsChildren": null,
+        "housingSituationImpactsChildrenDetails": ""
+      }
+    },
+    "legalAndOffendingBehaviour": {
+      "pageNumber": 24,
+      "hasLegalOrOffendingBehaviourChangesSinceInitial": null,
+      "legalOrOffendingBehaviourChangesDescription": "",
+      "hasCurrentOrSuspectedOutstandingCharges": null,
+      "outstandingChargesDetails": "",
+      "hasCurrentOrSuspectedArrestWarrants": null,
+      "arrestWarrantsDetails": "",
+      "hasUpcomingCourtDates": null,
+      "upcomingCourtDatesDetails": "",
+      "mostSeriousChargeToDate": "",
+      "hasSpentTimeInPrison": null,
+      "prisonTimeDetails": "",
+      "hasHistoryOfSexualAssaultArsonFirearmsOrWeaponsCharges": null,
+      "weaponsOrAssaultChargesDetails": "",
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }
+      ],
+      "crossImpacts": {
+        "substanceUseImpactsLegalSituation": null,
+        "substanceUseImpactsLegalSituationDetails": "",
+        "housingSituationImpactsLegalSituation": null,
+        "housingSituationImpactsLegalSituationDetails": ""
+      }
+    },
+    "financialIssues": {
+      "pageNumber": 25,
+      "hasCurrentFinancialNeedsConcernsOrStressors": "",
+      "hasCurrentDebts": "",
+      "isInReceiptOfSocialWelfarePayment": null,
+      "socialWelfarePaymentDetails": "",
+      "hasAnyProblemsClaiming": "",
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }
+      ],
+      "crossImpacts": {
+        "substanceUseImpactsFinances": null,
+        "substanceUseImpactsFinancesDetails": "",
+        "housingSituationImpactsFinances": null,
+        "housingSituationImpactsFinancesDetails": ""
+      }
+    },
+    "hobbiesInterestsAndSocialSupports": {
+      "pageNumber": null,
+      "currentNonSubstanceHobbiesAndInterests": "",
+      "pastHobbiesAndInterests": "",
+      "desireToDevelopNewHobbiesOrSocialSupports": "",
+      "knownAvailableNonSubstanceActivitiesOrSocialSupports": "",
+      "attendsFellowshipOrFaithBasedSupport": "",
+      "hasSponsor": "",
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }
+      ],
+      "crossImpacts": {
+        "substanceUseImpactsHobbies": null,
+        "substanceUseImpactsHobbiesDetails": "",
+        "housingSituationImpactsHobbies": null,
+        "housingSituationImpactsHobbiesDetails": ""
+      }
+    },
+    "educationTrainingAndEmployment": {
+      "pageNumber": 10,
+      "hasChangesInTrainingOrEmploymentSinceInitial": null,
+      "trainingOrEmploymentChangesDescription": "",
+      "hasCompletedAnyEducationalOrTrainingCourses": null,
+      "completedCoursesDetails": "",
+      "hasAnyLearningDifficultiesIncludingReadingAndWriting": null,
+      "learningDifficultiesDetails": "",
+      "wouldLikeToDoMoreEducationOrTraining": null,
+      "desiredEducationOrTrainingDetails": "",
+      "isUnemployedAndHasBeenInPaidEmploymentPast": null,
+      "unemploymentAndPastEmploymentDetails": "",
+      "isInterestedInGettingAJob": null,
+      "kindOfJobInterestDetails": "",
+      "involvedServices": [
+        { "rowId": 1, "nameAndOrg": "", "phoneOrEmail": "" },
+        { "rowId": 2, "nameAndOrg": "", "phoneOrEmail": "" },
+{ "rowId": 3, "nameAndOrg": "", "phoneOrEmail": "" }],"crossImpacts": {"substanceUseImpactsEducationTrainingOrEmployment": null,"substanceUseImpactsEducationTrainingOrEmploymentDetails": "","housingSituationImpactsEducationTrainingOrEmployment": null,"housingSituationImpactsEducationTrainingOrEmploymentDetails": ""}},"otherResidentialAndIndependentLiving": {"pageNumber": null,"residentialHistory": {"hasBeenInResidentialCare": null,"hasBeenInFosterCare": null,"hasBeenInSpecialNeedsSchool": null,"hasBeenInResidentialSecureUnit": null,"hasBeenInArmedForces": null,"outsideIrelandHistoryDetails": ""},"independentLivingSkillsNeeds": {"shoppingSupportNeeded": null,"attendingCourseOrJob9To5SupportNeeded": null,"makingAndRememberingAppointmentsSupportNeeded": null,"findingOutAboutAndUsingLocalServicesSupportNeeded": null,"understandingTenantsRightsAndObligationsSupportNeeded": null,"caringForYourHealthSupportNeeded": null,"livingWithinABudgetSupportNeeded": null,"payingRentAndBillsSupportNeeded": null,"caringForYourPersonalHygieneSupportNeeded": null,"laundrySupportNeeded": null,"cookingOrNutritionSupportNeeded": null,"keepingAccommodationCleanSupportNeeded": null,"dealingWithLandlordOrHousingAuthoritiesSupportNeeded": null,"dealingWithBasicMaintenanceSupportNeeded": null,"commitmentsSeeingThingsThroughSupportNeeded": null,"dealingWithLonelinessOrIsolationSupportNeeded": null,"dealingWithDifficultOrStressfulSituationsSupportNeeded": null,"fillingYourDaySupportNeeded": null,"managingYourMedicationSupportNeeded": null},"assessmentOfPriorities": {"carePlanPrioritiesOverNextThreeMonths": "","otherRelevantInformationToAdd": ""},"assessorComments": ""}}

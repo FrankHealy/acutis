@@ -122,6 +122,18 @@ const communityPresentationLabels: Record<string, string> = {
   "assessment_form.demographics_and_identity.language.uses_other_language_at_home.selected_values": "Language other than English or Irish at Home",
 };
 
+// Codes the API resolves to the same canonical HSE form definition (see FormService.cs
+// TryGetAliasSourceCode). Keep in sync with that list so every alias gets the same
+// presentation as "community_initial_assessment", since they render identical schema/ui.
+const canonicalHseFormCodes = new Set([
+  "community_initial_assessment",
+  "alcohol_screening_call",
+  "admission_alcohol",
+  "admission_detox",
+  "admission_drugs",
+  "admission_ladies",
+]);
+
 const communitySingleChoiceFields = new Set([
   "assessment_form.demographics_and_identity.gender_identity.selected_values",
   "assessment_form.demographics_and_identity.sexual_orientation.selected_values",
@@ -144,13 +156,13 @@ function FieldDictationControl({ locale, disabled, onAppend }: { locale: string;
   const appliedTranscript = useRef("");
 
   useEffect(() => {
-    if (!dictation.transcript || dictation.transcript === appliedTranscript.current) return;
-    const addition = dictation.transcript.startsWith(appliedTranscript.current)
-      ? dictation.transcript.slice(appliedTranscript.current.length).trim()
-      : dictation.transcript;
-    appliedTranscript.current = dictation.transcript;
+    if (!dictation.finalTranscript || dictation.finalTranscript === appliedTranscript.current) return;
+    const addition = dictation.finalTranscript.startsWith(appliedTranscript.current)
+      ? dictation.finalTranscript.slice(appliedTranscript.current.length).trim()
+      : dictation.finalTranscript;
+    appliedTranscript.current = dictation.finalTranscript;
     if (addition) onAppend(addition);
-  }, [dictation.transcript, onAppend]);
+  }, [dictation.finalTranscript, onAppend]);
 
   const toggle = () => {
     if (dictation.isListening) {
@@ -250,7 +262,11 @@ export default function DynamicFormRenderer({
     answersRef.current = initialRuleState.answers;
     setSubmissionId(initialSubmissionId);
     setLastSavedSignature(JSON.stringify(initialRuleState.answers));
-    setExpandedSections(form.code === "community_initial_assessment" ? [] : form.ui.sections.map((section) => section.titleKey));
+    setExpandedSections(
+      canonicalHseFormCodes.has(form.code)
+        ? []
+        : form.ui.sections.filter((section) => section.titleKey !== "Metadata").map((section) => section.titleKey)
+    );
     setCurrentSectionIndex(0);
     setValidationErrors({});
     setTouchedFields([]);
@@ -359,10 +375,14 @@ export default function DynamicFormRenderer({
 
   const ruleState = useMemo(() => applyRules(form.rules, answers), [form.rules, answers]);
   const optionSetLookup = useMemo(() => new Map(optionSets.map((set) => [set.key, set])), [optionSets]);
-  const formSectionCount = form.ui.sections.length;
+  const visibleSections = useMemo(
+    () => form.ui.sections.filter((section) => section.titleKey !== "Metadata"),
+    [form.ui.sections]
+  );
+  const formSectionCount = visibleSections.length;
   const totalSections = formSectionCount + (extraWizardStep ? 1 : 0);
   const progressPercent = totalSections === 0 ? 0 : Math.round(((currentSectionIndex + 1) / totalSections) * 100);
-  const applicableSections = form.ui.sections.filter((section) => {
+  const applicableSections = visibleSections.filter((section) => {
     const fieldKeys = [...(section.items ?? []), ...(section.groups ?? []).flatMap((group) => group.items)];
     return fieldKeys.some((fieldKey) => !ruleState.hiddenFields.has(fieldKey));
   });
@@ -377,7 +397,7 @@ export default function DynamicFormRenderer({
         return value !== null && value !== undefined && value !== "";
       });
   }).length;
-  const isCommunityAssessment = form.code === "community_initial_assessment";
+  const isCommunityAssessment = canonicalHseFormCodes.has(form.code);
   const voiceAssistEnabled =
     (enableVoiceAssistAdmissions || isCommunityAssessment) &&
     (subjectType === "admission" || subjectType === "resident" || subjectType === "anonymous_call" || subjectType === "participant") &&
@@ -614,12 +634,9 @@ export default function DynamicFormRenderer({
     return [...items, ...groupedItems].filter((fieldKey) => !ruleState.hiddenFields.has(fieldKey));
   };
 
-  const isGeneratedMetadataSection = (section: UiSectionDto) =>
-    isCommunityAssessment && section.titleKey === "Metadata";
-
   const handleNextSection = async () => {
     const currentRuleState = getCurrentRuleState();
-    const currentSection = form.ui.sections[currentSectionIndex];
+    const currentSection = visibleSections[currentSectionIndex];
     if (!currentSection) {
       if (extraWizardStep) {
         setCurrentSectionIndex(Math.min(currentSectionIndex + 1, totalSections - 1));
@@ -720,7 +737,7 @@ export default function DynamicFormRenderer({
         {!isBooleanField && !isInstructionField && !isDrugTableField && !isAlcoholTableField && (
           <div className="flex items-center justify-between gap-2">
             <label className="text-sm font-medium text-gray-800">{label}</label>
-            {isCommunityAssessment && isTextEntryField && (
+            {voiceAssistEnabled && isTextEntryField && (
               <FieldDictationControl
                 locale={locale}
                 disabled={disabled}
@@ -1232,14 +1249,17 @@ export default function DynamicFormRenderer({
         />
       )}
 
-      {renderMode === "accordion" && !isCommunityAssessment && (
+      {renderMode === "accordion" && (
         <div className="flex flex-wrap items-center gap-2">
-          {form.ui.sections.map((section, index) => {
+          {[
+            ...visibleSections.map((section) => ({ title: t(section.titleKey), key: section.titleKey })),
+            ...(extraWizardStep ? [{ title: extraWizardStep.title, key: "__extra_wizard_step" }] : []),
+          ].map((section, index) => {
             const isActive = index === currentSectionIndex;
-            const isExpanded = expandedSections.includes(section.titleKey);
+            const isExpanded = expandedSections.includes(section.key);
             return (
               <button
-                key={section.titleKey}
+                key={section.key}
                 type="button"
                 className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                   isActive || isExpanded
@@ -1249,12 +1269,12 @@ export default function DynamicFormRenderer({
                 onClick={() => {
                   setCurrentSectionIndex(index);
                   setExpandedSections((previous) =>
-                    previous.includes(section.titleKey) ? previous : [...previous, section.titleKey]
+                    previous.includes(section.key) ? previous : [...previous, section.key]
                   );
                 }}
               >
                 <span>{index + 1}</span>
-                <span>{t(section.titleKey)}</span>
+                <span>{section.title}</span>
               </button>
             );
           })}
@@ -1289,7 +1309,7 @@ export default function DynamicFormRenderer({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {[
-              ...form.ui.sections.map((section) => ({ title: t(section.titleKey), key: section.titleKey })),
+              ...visibleSections.map((section) => ({ title: t(section.titleKey), key: section.titleKey })),
               ...(extraWizardStep ? [{ title: extraWizardStep.title, key: "__extra_wizard_step" }] : []),
             ].map((section, index) => {
               const isActive = index === currentSectionIndex;
@@ -1318,15 +1338,15 @@ export default function DynamicFormRenderer({
             })}
           </div>
 
-          {form.ui.sections[currentSectionIndex] && (
+          {visibleSections[currentSectionIndex] && (
             <section className="rounded-lg border border-slate-200 bg-white">
               <div className="border-b border-gray-100 px-4 py-3">
                 <h2 className="text-base font-semibold text-gray-900">
-                  {t(form.ui.sections[currentSectionIndex].titleKey)}
+                  {t(visibleSections[currentSectionIndex].titleKey)}
                 </h2>
               </div>
               <div className="p-4">
-                {renderSectionBody(form.ui.sections[currentSectionIndex])}
+                {renderSectionBody(visibleSections[currentSectionIndex])}
               </div>
             </section>
           )}
@@ -1349,7 +1369,8 @@ export default function DynamicFormRenderer({
           </section>
         ))
       ) : (
-        form.ui.sections.filter((section) => !isGeneratedMetadataSection(section)).map((section) => {
+        <>
+        {visibleSections.map((section) => {
           const isExpanded = expandedSections.includes(section.titleKey);
           return (
             <section key={section.titleKey} className="rounded-lg border border-slate-200 bg-white">
@@ -1357,7 +1378,7 @@ export default function DynamicFormRenderer({
                 type="button"
                 className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-slate-50"
                 onClick={() => {
-                  setCurrentSectionIndex(form.ui.sections.findIndex((item) => item.titleKey === section.titleKey));
+                  setCurrentSectionIndex(visibleSections.findIndex((item) => item.titleKey === section.titleKey));
                   toggleSection(section.titleKey);
                 }}
               >
@@ -1373,7 +1394,30 @@ export default function DynamicFormRenderer({
               </div>
             </section>
           );
-        })
+        })}
+        {extraWizardStep && (
+          <section className="rounded-lg border border-slate-200 bg-white">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-slate-50"
+              onClick={() => {
+                setCurrentSectionIndex(formSectionCount);
+                toggleSection("__extra_wizard_step");
+              }}
+            >
+              <h2 className="text-base font-semibold text-gray-900">{extraWizardStep.title}</h2>
+              {expandedSections.includes("__extra_wizard_step") ? (
+                <ChevronUp className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              )}
+            </button>
+            <div className={expandedSections.includes("__extra_wizard_step") ? "block border-t border-gray-100 p-4" : "hidden"}>
+              {extraWizardStep.render}
+            </div>
+          </section>
+        )}
+        </>
       )}
 
       {formError && <p className="text-sm text-red-600">{formError}</p>}

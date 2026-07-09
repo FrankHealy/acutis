@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CircleSlash,
   ClipboardCheck,
+  ClipboardList,
   Download,
   ExternalLink,
   FileText,
@@ -72,6 +73,7 @@ type CommunityView = "dashboard" | "service-users" | "operations";
 type AppointmentDraftDefaults = { startsAt: string; endsAt: string } | null;
 type ObservationTerm = { id: number; term: string; description: string; ratingId: number };
 const COMMUNITY_INITIAL_ASSESSMENT_FORM_CODE = "community_initial_assessment";
+const HSE_EXTENDED_ASSESSMENT_FORM_CODE = "hse_extended_assessment";
 const EMPTY_FORM_ANSWERS: Record<string, JsonValue> = {};
 
 const appointmentTypes = [
@@ -402,15 +404,18 @@ export default function AmbulatoryWorkspace({ programme, recordParticipantId }: 
 
   const isCommunity = programme === "community";
   const isCommunityRecord = isCommunity && Boolean(recordParticipantId);
+  const requestedAssessment = searchParams.get("assessment");
   const isInitialAssessmentOpen = isCommunity && (
-    dialogMode === "assessment" || searchParams.get("assessment") === "initial"
+    dialogMode === "assessment" || requestedAssessment === "initial"
   );
+  const isExtendedAssessmentOpen = isCommunity && requestedAssessment === "extended";
+  const isCommunityAssessmentOpen = isInitialAssessmentOpen || isExtendedAssessmentOpen;
 
   useEffect(() => {
-    if (isInitialAssessmentOpen) {
+    if (isCommunityAssessmentOpen) {
       setDialogMode("assessment");
     }
-  }, [isInitialAssessmentOpen]);
+  }, [isCommunityAssessmentOpen]);
 
   const openCommunityInitialAssessment = () => {
     if (!assessmentParticipant) {
@@ -421,7 +426,16 @@ export default function AmbulatoryWorkspace({ programme, recordParticipantId }: 
     router.push(`/units/community/service-users/${assessmentParticipant.id}?assessment=initial`);
   };
 
-  const closeCommunityInitialAssessment = () => {
+  const openCommunityExtendedAssessment = () => {
+    if (!assessmentParticipant) {
+      openDialog("assessment");
+      return;
+    }
+
+    router.push(`/units/community/service-users/${assessmentParticipant.id}?assessment=extended`);
+  };
+
+  const closeCommunityAssessment = () => {
     if (isCommunityRecord && recordParticipantId) {
       router.push(`/units/community/service-users/${recordParticipantId}`);
       return;
@@ -475,7 +489,7 @@ export default function AmbulatoryWorkspace({ programme, recordParticipantId }: 
   const assessmentParticipant = selectedParticipant ?? participants[0] ?? undefined;
   const communityWorkspace = communityView === "dashboard" ? (
     <div className="mt-5 grid gap-4">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <CommunityShortcut
           Icon={Users}
           label="Service Users"
@@ -490,9 +504,15 @@ export default function AmbulatoryWorkspace({ programme, recordParticipantId }: 
         />
         <CommunityShortcut
           Icon={ClipboardCheck}
-          label="HSE Initial Assessment"
+          label="Internal Admissions Form"
           value="Bounded form"
           onClick={openCommunityInitialAssessment}
+        />
+        <CommunityShortcut
+          Icon={ClipboardList}
+          label="HSE Extended Assessment"
+          value="Bounded form"
+          onClick={openCommunityExtendedAssessment}
         />
         <CommunityShortcut
           Icon={FileText}
@@ -523,14 +543,16 @@ export default function AmbulatoryWorkspace({ programme, recordParticipantId }: 
       {calendarBoard}
     </div>
   );
-  const communityAssessment = isInitialAssessmentOpen ? (
-    <CommunityInitialAssessmentInline
+  const communityAssessment = isCommunityAssessmentOpen ? (
+    <CommunityHseAssessmentInline
       participant={selectedParticipant}
+      formCode={isExtendedAssessmentOpen ? HSE_EXTENDED_ASSESSMENT_FORM_CODE : COMMUNITY_INITIAL_ASSESSMENT_FORM_CODE}
+      title={isExtendedAssessmentOpen ? "HSE Extended Assessment" : "Internal Admissions Form"}
       accessToken={session?.accessToken}
       error={dialogError}
       onError={setDialogError}
       onSaved={refresh}
-      onClose={closeCommunityInitialAssessment}
+      onClose={closeCommunityAssessment}
     />
   ) : null;
   const communityRecord = isCommunityRecord ? (
@@ -643,9 +665,9 @@ export default function AmbulatoryWorkspace({ programme, recordParticipantId }: 
 
         {!loading && dashboard && (
           isCommunityRecord ? (
-            isInitialAssessmentOpen ? communityAssessment : communityRecord
+            isCommunityAssessmentOpen ? communityAssessment : communityRecord
           ) : isCommunity ? (
-            isInitialAssessmentOpen ? communityAssessment : communityWorkspace
+            isCommunityAssessmentOpen ? communityAssessment : communityWorkspace
           ) : (
             <div className="mt-5 grid gap-4 xl:grid-cols-[310px_minmax(0,1fr)]">
               {serviceUserPanel}
@@ -1414,8 +1436,8 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
 function VoiceNotes({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const dictation = useSectionDictation("en-IE");
   useEffect(() => {
-    if (dictation.transcript) onChange(dictation.transcript);
-  }, [dictation.transcript, onChange]);
+    if (dictation.finalTranscript) onChange(dictation.finalTranscript);
+  }, [dictation.finalTranscript, onChange]);
   return (
     <div className="rounded-lg border border-sky-200 bg-sky-50 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1479,7 +1501,7 @@ function AssessmentDialog({ open, participant, programme, accessToken, error, on
   );
 }
 
-function CommunityInitialAssessmentInline({ participant, accessToken, error, onError, onSaved, onClose }: { participant: AmbulatoryParticipant | null; accessToken?: string | null; error: string | null; onError: (value: string | null) => void; onSaved: () => Promise<void>; onClose: () => void }) {
+function CommunityHseAssessmentInline({ participant, formCode, title, accessToken, error, onError, onSaved, onClose }: { participant: AmbulatoryParticipant | null; formCode: string; title: string; accessToken?: string | null; error: string | null; onError: (value: string | null) => void; onSaved: () => Promise<void>; onClose: () => void }) {
   const { locale, mergeTranslations } = useLocalization();
   const [formData, setFormData] = useState<GetActiveFormResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1501,7 +1523,7 @@ function CommunityInitialAssessmentInline({ participant, accessToken, error, onE
           locale,
           "participant",
           subjectId,
-          COMMUNITY_INITIAL_ASSESSMENT_FORM_CODE
+          formCode
         );
         if (!active) return;
         mergeTranslations(response.translations);
@@ -1509,7 +1531,7 @@ function CommunityInitialAssessmentInline({ participant, accessToken, error, onE
       } catch (loadError) {
         if (!active) return;
         setFormData(null);
-        onError(loadError instanceof Error ? loadError.message : "Unable to load Community Initial Assessment.");
+        onError(loadError instanceof Error ? loadError.message : `Unable to load ${title}.`);
       } finally {
         if (active) {
           setLoading(false);
@@ -1521,7 +1543,7 @@ function CommunityInitialAssessmentInline({ participant, accessToken, error, onE
     return () => {
       active = false;
     };
-  }, [accessToken, locale, mergeTranslations, onError, subjectId]);
+  }, [accessToken, formCode, locale, mergeTranslations, onError, subjectId, title]);
 
   const handleSaveProgress = async (payload: { submissionId: string | null; answers: Record<string, JsonValue> }): Promise<SaveProgressResponse> => {
     if (!participant || !formData) {
@@ -1561,7 +1583,7 @@ function CommunityInitialAssessmentInline({ participant, accessToken, error, onE
     <section className="mt-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-950">HSE Initial Assessment</h1>
+          <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
           {participant && <p className="mt-1 text-sm text-slate-600">{participant.displayName}</p>}
         </div>
         <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
@@ -1570,7 +1592,7 @@ function CommunityInitialAssessmentInline({ participant, accessToken, error, onE
       </div>
       {!participant && <p className="text-sm text-gray-500">Select a Community service user before starting an assessment.</p>}
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {loading && <p className="text-sm text-gray-500">Loading HSE Initial Assessment...</p>}
+      {loading && <p className="text-sm text-gray-500">Loading {title}...</p>}
       {participant && formData && (
         <DynamicFormRenderer
           form={formData.form}
@@ -1586,7 +1608,7 @@ function CommunityInitialAssessmentInline({ participant, accessToken, error, onE
           onSave={handleSave}
           submitLabel="Confirm Assessment"
           submittingLabel="Confirming..."
-          submittedLabel="Community Initial Assessment saved."
+          submittedLabel={`${title} saved.`}
         />
       )}
     </section>

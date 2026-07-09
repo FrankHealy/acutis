@@ -1,0 +1,825 @@
+{
+  "assessment_form": {
+    "metadata": {
+      "form_title": "Initial Assessment and Service User Consent Form",
+      "regulatory_context": "HSE Addiction and Primary Homeless Services",
+      "export_date_utc": "2026-06-18T15:24:00Z"
+    },
+    "administrative_details": {
+      "source_of_referral": "",
+      "date_of_referral": "",
+      "name_of_service_user": "",
+      "date_of_birth": "",
+      "age": null,
+      "reference_number": ""
+    },
+    "demographics_and_identity": {
+      "gender_identity": {
+        "options": [
+          {
+            "value": "Man (including trans man)",
+            "selected": false
+          },
+          {
+            "value": "Woman (including trans woman)",
+            "selected": false
+          },
+          {
+            "value": "Non-binary",
+            "selected": false
+          },
+          {
+            "value": "In another way",
+            "selected": false
+          },
+          {
+            "value": "My gender is not listed here (Please describe)",
+            "selected": false
+          }
+        ],
+        "custom_description": ""
+      },
+      "sexual_orientation": {
+        "options": [
+          {
+            "value": "Heterosexual or Straight",
+            "selected": false
+          },
+          {
+            "value": "Lesbian or Gay",
+            "selected": false
+          },
+          {
+            "value": "Bisexual",
+            "selected": false
+          },
+          {
+            "value": "Other sexual orientation not listed",
+            "selected": false
+          },
+          {
+            "value": "Client does not know or is unsure",
+            "selected": false
+          },
+          {
+            "value": "Client did not wish to answer this question",
+            "selected": false
+          },
+          {
+            "value": "Not known",
+            "selected": false
+          }
+        ]
+      },
+      "background": {
+        "country_of_birth": "",
+        "nationality": "",
+        "ethnicity": {
+          "categories": [
+            {
+              "group": "White",
+              "options": [
+                "Irish",
+                "Irish Traveller",
+                "Roma",
+                "Any other white background"
+              ]
+            },
+            {
+              "group": "Black or Black Irish",
+              "options": [
+                "Black",
+                "Any other black background"
+              ]
+            },
+            {
+              "group": "Asian or Asian Irish",
+              "options": [
+                "Chinese",
+                "Indian/Pakistani/Bangladeshi"
+              ]
+            },
+            {
+              "group": "Other",
+              "options": [
+                "Arab",
+                "Mixed, write in description",
+                "Other, write in description"
+              ]
+            }
+          ],
+          "selected_value": "",
+          "custom_description": ""
+        }
+      },
+      "language": {
+        "uses_other_language_at_home": {
+          "options": [
+            {
+              "value": "Yes",
+              "checked": false
+            },
+            {
+              "value": "No",
+              "checked": false
+            },
+            {
+              "value": "Not known",
+              "checked": false
+            }
+          ]
+        },
+        "specified_home_language": "",
+        "preferred_working_language": ""
+      }
+    },
+    "contact_and_living_details": {
+      "contact_information": {
+        "most_recent_address": "",
+        "phone_number": "",
+        "mobile_number": "",
+        "email_address": ""
+      },
+      "communication_permissions": {
+        "allow_contact_at_address": false,
+        "allow_contact_via_phone_text": false,
+        "allow_contact_via_email": false
+      },
+      "living_situation": {
+        "where": [
+          "Stable accommodation",
+          "Homeless",
+          "Other unstable accommodation",
+          "Domestic Violence refuge",
+          "Prison, Institution (residential care/halfway house)",
+          "Not known"
+        ],
+        "selected_where": "",
+        "with_whom": [
+          "Alone",
+          "Parents/Family",
+          "Friend(s)",
+          "Partner (alone)",
+          "Partner & Child(ren)",
+          "Alone & Child(ren)",
+          "Foster Care",
+          "Other",
+          "Not known"
+        ],
+        "selected_with_whom": ""
+      }
+    },
+    "education_and_employment": {
+      "education": {
+        "age_left_school": null,
+        "highest_level_achieved": [
+          "Primary level incomplete",
+          "Primary level",
+          "Junior cert",
+          "Leaving Cert",
+          "Third level",
+          "Never went to school",
+          "Not known"
+        ],
+        "selected_level": ""
+      },
+      "employment": {
+        "status": "",
+        "occupation": "",
+        "source_of_income": "",
+        "amount_of_income": "",
+        "days_worked": "",
+        "hours_worked": ""
+      }
+    },
+    "family_and_social_environment": {
+      "children_status": {
+        "total_number_of_children": null,
+        "demographics_matrix": {
+          "living_with_you": {
+            "under_5": 0,
+            "5_to_17": 0,
+            "18_and_over": 0
+          },
+          "living_with_other_parent": {
+            "under_5": 0,
+            "5_to_17": 0,
+            "18_and_over": 0
+          },
+          "in_care": {
+            "under_5": 0,
+            "5_to_17": 0,
+            "18_and_over": 0
+          },
+          "living_elsewhere": {
+            "under_5": 0,
+            "5_to_17": 0,
+            "18_and_over": 0
+          },
+          "living_status_unknown": {
+            "under_5": 0,
+            "5_to_17": 0,
+            "18_and_over": 0
+          }
+        }
+      },
+      "screening_and_support": {
+        "social_worker_involvement_recent": {
+          "status": null,
+          "details": ""
+        },
+        "living_with_active_addiction_users": false,
+        "family_history_of_substance_use": false,
+        "family_members_availing_family_support": {
+          "status": null,
+          "details": ""
+        }
+      },
+      "emergency_contacts": {
+        "next_of_kin": {
+          "name": "",
+          "relationship": "",
+          "aware_of_current_problems": null,
+          "contact_details": ""
+        },
+        "emergency_contact": {
+          "name": "",
+          "relationship": "",
+          "aware_of_current_problems": null,
+          "contact_details": ""
+        }
+      }
+    },
+    "housing_and_homelessness_history": {
+      "accommodation_type_checklist": {
+        "emergency_homeless_accommodation_sta": false,
+        "private_emergency_accommodation_pea": false,
+        "emergency_one_night_only_ea": false,
+        "long_term_accommodation_lta": false,
+        "sleeping_rough_outside": false,
+        "sleeping_unintended_place_squat_vehicle": false,
+        "couch_surfing_short_term": false,
+        "other_unstable_accommodation": false
+      },
+      "narratives": {
+        "current_housing_situation_description": "",
+        "main_reasons_for_homelessness_this_occasion": "",
+        "previously_homeless": {
+          "status": null,
+          "details": ""
+        },
+        "rough_sleeping_history": {
+          "status": null,
+          "timeframe_and_duration": ""
+        }
+      },
+      "records": {
+        "registered_with_local_authority": {
+          "status": null,
+          "authority_name": ""
+        },
+        "rent_arrears_with_local_authority": null,
+        "received_cwo_deposit_private_rented": {
+          "status": null,
+          "details": ""
+        },
+        "in_state_care_under_18": null,
+        "ever_lived_independently": null,
+        "difficulties_maintaining_accommodation": {
+          "status": null,
+          "details": ""
+        }
+      }
+    },
+    "substance_use_and_addiction_matrices": {
+      "alcohol_matrix": {
+        "beer": {
+          "route": "",
+          "frequency_last_month": "",
+          "qty_typical_day": "",
+          "duration_last_month": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "spirits": {
+          "route": "",
+          "frequency_last_month": "",
+          "qty_typical_day": "",
+          "duration_last_month": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "wine": {
+          "route": "",
+          "frequency_last_month": "",
+          "qty_typical_day": "",
+          "duration_last_month": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "fortified_wine": {
+          "route": "",
+          "frequency_last_month": "",
+          "qty_typical_day": "",
+          "duration_last_month": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "cider": {
+          "route": "",
+          "frequency_last_month": "",
+          "qty_typical_day": "",
+          "duration_last_month": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "alcopops": {
+          "route": "",
+          "frequency_last_month": "",
+          "qty_typical_day": "",
+          "duration_last_month": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "others": {
+          "route": "",
+          "frequency_last_month": "",
+          "qty_typical_day": "",
+          "duration_last_month": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        }
+      },
+      "drinking_problem_categorisation": {
+        "options": [
+          "Hazardous",
+          "Harmful",
+          "Dependent",
+          "Not known"
+        ],
+        "selected": ""
+      },
+      "drug_and_behavioral_matrix": {
+        "cannabis": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "hallucinogens": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "benzodiazepines": {
+          "sources": [
+            "Prescribed",
+            "Street",
+            "Internet",
+            "Multiple",
+            "Other"
+          ],
+          "selected_sources": [],
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "heroin": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "methadone": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "other_opiates": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "cocaine_powder": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "cocaine_crack": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "cocaine_other": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "amphetamine": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "ecstasy_mdma": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "over_the_counter_drugs": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "any_other_drugs": {
+          "route": "",
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "gambling": {
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        },
+        "eating_disorders": {
+          "frequency": "",
+          "quantity": "",
+          "duration": "",
+          "age_first_use": null,
+          "date_last_use": ""
+        }
+      },
+      "evaluation": {
+        "difficult_to_assess_main_problem_drug": null
+      }
+    },
+    "risk_behaviours_and_harm_reduction": {
+      "injection_history": {
+        "ever_injected": {
+          "options": [
+            "Injected in last 30 days",
+            "Injected in last 12 months but not in last 30 days",
+            "Injected but not in the last 12 months",
+            "Client did not wish to answer"
+          ],
+          "selected": ""
+        },
+        "ever_shared_needles_syringes": {
+          "options": [
+            "Never shared",
+            "Shared in last 30 days",
+            "Shared in last 12 months but not last 30 days",
+            "Shared but not in last 12 months",
+            "Shared but time period not known",
+            "Client did not wish to answer",
+            "Not known if client ever shared",
+            "N/A"
+          ],
+          "selected": ""
+        },
+        "ever_shared_other_paraphernalia": {
+          "options": [
+            "Never shared",
+            "Shared in last 30 days",
+            "Shared in last 12 months but not last 30 days",
+            "Shared but not in last 12 months",
+            "Shared but time period not known",
+            "Client did not wish to answer",
+            "Not known if client ever shared",
+            "N/A"
+          ],
+          "selected": ""
+        },
+        "age_first_injected": null,
+        "primary_injection_body_parts": ""
+      },
+      "harm_reduction_advice_given": {
+        "logistics": {
+          "how_iv_needles_are_obtained": "",
+          "how_iv_needles_are_disposed": "",
+          "needle_exchange_time_and_places": ""
+        },
+        "checklist": {
+          "drug_use": false,
+          "drug_interactions": false,
+          "alcohol_use": false,
+          "overdose_prevention": false,
+          "access_to_naloxone": false,
+          "safe_injecting_practice": false,
+          "sexual_activity": false
+        },
+        "other_details": ""
+      }
+    },
+    "treatment_history": {
+      "previous_treatment_engagement": {
+        "ever_treated_for_substance_use": null,
+        "ever_treated_for_alcohol": null,
+        "ever_treated_for_gambling": null,
+        "total_number_of_previous_treatments": null,
+        "age_first_treated": null,
+        "treatment_types": ""
+      },
+      "support_groups_and_detox": {
+        "attends_aa_na_or_self_help_group": null,
+        "total_medically_supervised_alcohol_only_detoxes": {
+          "count": null,
+          "last_date": ""
+        },
+        "longest_time_abstinent": "",
+        "previous_treatment_providers": "",
+        "reason_for_leaving_previous_treatment": ""
+      },
+      "opiate_substitution_history": {
+        "current_opiate_agonist_treatment": null,
+        "other_current_treatments_or_prescribed_medications": {
+          "status": null,
+          "details": ""
+        },
+        "previous_methadone_maintenance": null,
+        "age_first_received_opiate_substitution": null
+      }
+    },
+    "health_and_wellbeing": {
+      "physical_health": {
+        "any_physical_health_concerns": null,
+        "known_allergies": {
+          "status": null,
+          "details": ""
+        },
+        "history_of_head_injury": null,
+        "last_gp_checkup_date_or_timeframe": "",
+        "relevant_medical_history_description": "",
+        "currently_prescribed_medications": "",
+        "can_access_medication": null,
+        "adheres_to_medication": null,
+        "history_of_seizures": null,
+        "yes_responses_combined_details": ""
+      },
+      "medical_provider_details": {
+        "gp_name": "",
+        "gp_address": "",
+        "gp_phone": "",
+        "gp_aware_of_alcohol_drug_use": null,
+        "medical_card_status": {
+          "options": [
+            "Yes",
+            "No",
+            "Applying for"
+          ],
+          "selected": ""
+        },
+        "medical_card_number": "",
+        "medical_card_expiry_date": ""
+      },
+      "viral_screening": {
+        "never_screened": {
+          "hep_c": false,
+          "hep_b": false,
+          "hiv": false
+        },
+        "screened_in_last_12_months": {
+          "hep_c": false,
+          "hep_b": false,
+          "hiv": false
+        },
+        "screened_but_not_in_last_12_months": {
+          "hep_c": false,
+          "hep_b": false,
+          "hiv": false
+        },
+        "client_does_not_wish_to_answer": {
+          "hep_c": false,
+          "hep_b": false,
+          "hiv": false
+        }
+      },
+      "mental_health": {
+        "concerns_around_mental_health": null,
+        "ever_seen_or_currently_seeing_mental_health_professional": null,
+        "history_of_psychiatric_care": null,
+        "history_of_self_harm_or_suicidal_thoughts": null,
+        "mood_rating_last_month": {
+          "options": [
+            "Very low",
+            "Low",
+            "Reasonable",
+            "Good"
+          ],
+          "selected": ""
+        },
+        "description_notes": ""
+      },
+      "sexual_wellbeing": {
+        "concerns_about_sexual_health_and_wellbeing": null,
+        "uses_condoms_or_physical_barriers": null,
+        "knows_where_condoms_are_freely_available_via_hse": null,
+        "ever_screened_tested_for_sti": null,
+        "notes": ""
+      },
+      "national_screening_service_registration": {
+        "wishes_to_access_screening_and_join_register": null
+      }
+    },
+    "happiness_scale": {
+      "instructions": "Evaluate current feelings of today independently on a scale of 1 to 10.",
+      "scores": {
+        "drug_alcohol_use": null,
+        "care_or_education_progress": null,
+        "life_skills": null,
+        "social_life": null,
+        "physical_health": null,
+        "mental_health": null,
+        "relationship": null,
+        "family": null,
+        "legal_issues": null,
+        "emotional_life": null,
+        "communication_skills": null,
+        "housing": null,
+        "community": null,
+        "spirituality": null,
+        "other": {
+          "specification": "",
+          "score": null
+        }
+      }
+    },
+    "domestic_violence_justice_safety": {
+      "domestic_violence": {
+        "feels_safe_in_current_relationship": null,
+        "ever_abused_physically_mentally_sexually_by_partner_or_household": null,
+        "details": ""
+      },
+      "justice": {
+        "engaged_with_probation_services": null,
+        "served_custodial_sentence_in_prison_or_detention": null,
+        "court_cases_pending": null,
+        "has_solicitor": null,
+        "details": ""
+      },
+      "health_and_safety": {
+        "history_of_behaviour_impacting_treatment_plan": null,
+        "details": ""
+      },
+      "additional_comments": {
+        "any_other_important_information_to_add": null,
+        "details": ""
+      }
+    },
+    "assessor_actions_and_outcomes": {
+      "checklist": {
+        "children_first_child_protection_social_work_referral": false,
+        "medical_assessment": false,
+        "psychiatric_assessment": false,
+        "nursing_viral_testing_or_review": false,
+        "progress_to_opiate_substitution_protocols": false,
+        "register_with_national_screening_service": false,
+        "referral_to_homeless_action_team": false,
+        "key_working_toward_another_service_provider": false,
+        "other_action_waiting_list_placement": false
+      },
+      "comprehensive_assessment_requirements": {
+        "needed": null,
+        "arranged": null
+      },
+      "declaration_of_completion": {
+        "statement": "I am satisfied that this assessment has been completed in full.",
+        "assessor_signature": "",
+        "date": "",
+        "organisation": ""
+      }
+    },
+    "consent_and_sign_offs": {
+      "general_service_user_consent": {
+        "date_of_birth_verified": "",
+        "confirmed_conditions_explained_and_agreed": false,
+        "service_user_signature": "",
+        "staff_signature": "",
+        "date_signed": ""
+      },
+      "mental_health_shared_record_consent": {
+        "statement": "I consent to a shared health record between Mental Health Service and HSE Addiction Service...",
+        "service_user_signature": "",
+        "service_name_user": "",
+        "staff_signature": "",
+        "staff_role_service": "",
+        "staff_printed_name": ""
+      },
+      "homeless_services_pass_database_consent": {
+        "client_signature": "",
+        "client_sign_date": "",
+        "witness_signature": "",
+        "witness_sign_date": ""
+      },
+      "additional_consents_granted": {
+        "statement": "I give consent to communicate with the below named people/family member/service provider (the Care Team)",
+        "authorized_entities": [
+          {
+            "name": "",
+            "service": ""
+          },
+          {
+            "name": "",
+            "service": ""
+          },
+          {
+            "name": "",
+            "service": ""
+          },
+          {
+            "name": "",
+            "service": ""
+          }
+        ],
+        "client_signature": "",
+        "client_date": "",
+        "witness_signature": "",
+        "witness_date": ""
+      },
+      "additional_consents_withdrawn": {
+        "statement": "I withdraw consent to communicate with the below named people/service provider",
+        "revoked_entities": [
+          {
+            "name": "",
+            "service": ""
+          },
+          {
+            "name": "",
+            "service": ""
+          },
+          {
+            "name": "",
+            "service": ""
+          },
+          {
+            "name": "",
+            "service": ""
+          }
+        ],
+        "client_signature": "",
+        "client_date": "",
+        "witness_signature": "",
+        "witness_date": ""
+      },
+      "hse_opiate_treatment_national_waiting_list_consent": {
+        "client_name_block_capitals": "",
+        "date_of_birth": "",
+        "agreed_to_validation_and_removal_rules": false,
+        "service_user_signature": "",
+        "service_user_sign_date": "",
+        "staff_signature": "",
+        "staff_sign_date": ""
+      },
+      "care_plan_case_manager_transfer": {
+        "previous_case_manager": "",
+        "previous_agency": "",
+        "newly_agreed_case_manager": "",
+        "new_agency": "",
+        "statement": "I am satisfied with the manner in which this review has been conducted...",
+        "signatures": {
+          "service_user": "",
+          "previous_case_manager": "",
+          "new_case_manager": ""
+        }
+      }
+    }
+  }
+}

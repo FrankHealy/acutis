@@ -11,7 +11,8 @@ export type MapArtefactType =
   | "fireExit"
   | "roundel"
   | "label"
-  | "zone";
+  | "zone"
+  | "polygon";
 
 export type MapGeometry =
   | {
@@ -51,8 +52,8 @@ export type MapArtefact = {
   wallAttachment?: {
     wallId?: string;
     hostId?: string;
-    hostType?: "wall" | "room" | "corridor" | "zone" | "stair";
-    edge?: "top" | "right" | "bottom" | "left";
+    hostType?: "wall" | "room" | "corridor" | "zone" | "stair" | "polygon";
+    edge?: "top" | "right" | "bottom" | "left" | `segment-${number}`;
     offset: number;
     width: number;
   };
@@ -91,6 +92,7 @@ export type MapTool =
   | "select"
   | "pan"
   | "room"
+  | "polygon"
   | "corridor"
   | "wall"
   | "line"

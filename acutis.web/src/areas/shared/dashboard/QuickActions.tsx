@@ -1,12 +1,13 @@
 import React from 'react';
-import { UserPlus, MapPin, Users, Settings as SettingsIcon } from 'lucide-react';
+import { ClipboardCheck, UserPlus, MapPin, Users, Settings as SettingsIcon } from 'lucide-react';
 
 interface QuickActionsProps {
   setCurrentStep: (step: string) => void;
   showAdmissions: boolean;
+  showExtendedAssessment?: boolean;
 }
 
-const QuickActions: React.FC<QuickActionsProps> = ({ setCurrentStep, showAdmissions }) => {
+const QuickActions: React.FC<QuickActionsProps> = ({ setCurrentStep, showAdmissions, showExtendedAssessment = false }) => {
   const actions = [
     ...(showAdmissions
       ? [{
@@ -40,6 +41,18 @@ const QuickActions: React.FC<QuickActionsProps> = ({ setCurrentStep, showAdmissi
       },
       onClick: () => setCurrentStep('residents'),
     },
+    ...(showExtendedAssessment
+      ? [{
+          icon: ClipboardCheck,
+          label: 'HSE Extended',
+          styles: {
+            button: 'bg-cyan-50 hover:bg-cyan-100',
+            icon: 'text-cyan-600',
+            text: 'text-cyan-800',
+          },
+          onClick: () => setCurrentStep('operations/hse-extended-assessment'),
+        }]
+      : []),
     {
       icon: SettingsIcon,
       label: 'Settings',
@@ -51,6 +64,13 @@ const QuickActions: React.FC<QuickActionsProps> = ({ setCurrentStep, showAdmissi
       onClick: () => setCurrentStep('configuration'),
     },
   ];
+  const gridClass = showAdmissions && showExtendedAssessment
+    ? "md:grid-cols-5"
+    : showAdmissions
+      ? "md:grid-cols-4"
+      : showExtendedAssessment
+        ? "md:grid-cols-4"
+        : "md:grid-cols-3";
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -58,7 +78,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ setCurrentStep, showAdmissi
         <UserPlus className="mr-2 h-5 w-5 text-blue-500" />
         Quick Actions
       </h2>
-      <div className={`grid grid-cols-2 ${showAdmissions ? "md:grid-cols-4" : "md:grid-cols-3"} gap-3`}>
+      <div className={`grid grid-cols-2 ${gridClass} gap-3`}>
         {actions.map((action, index) => (
           <button
             key={index}

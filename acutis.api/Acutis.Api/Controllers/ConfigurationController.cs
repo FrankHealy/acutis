@@ -232,6 +232,12 @@ public sealed class ConfigurationController : ControllerBase
             await _formConfigurationService.ActivateVersionAsync(formCode, version, cancellationToken));
     }
 
+    [HttpGet("forms")]
+    public async Task<ActionResult<IReadOnlyList<FormCatalogueItemDto>>> GetForms(CancellationToken cancellationToken = default)
+    {
+        return await Execute(async () => await _formConfigurationService.GetCatalogueAsync(cancellationToken));
+    }
+
     [HttpGet("forms/{formCode}/versions")]
     public async Task<ActionResult<IReadOnlyList<FormConfigurationVersionDto>>> GetFormVersions(
         string formCode,
@@ -700,7 +706,9 @@ public sealed class ConfigurationController : ControllerBase
             SchemaJson = request.SchemaJson,
             UiJson = request.UiJson,
             RulesJson = request.RulesJson,
-            MakeActive = false
+            MakeActive = false,
+            ActiveFrom = request.ActiveFrom,
+            ActiveTo = request.ActiveTo
         };
     }
 }

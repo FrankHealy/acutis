@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using Acutis.Api.Middleware;
 using Acutis.Api.Security;
 using Acutis.Api.Services.Configuration;
@@ -154,18 +155,62 @@ if (!authorizationOptions.Disabled)
 {
     var jwtSection = builder.Configuration.GetSection("Jwt");
     var jwtIssuer = jwtSection["Issuer"] ?? jwtSection["Authority"];
+    var jwtAuthority = jwtSection["Authority"] ?? jwtIssuer;
     var jwtAudience = jwtSection["Audience"];
+    var ambulatoryJwtIssuer = jwtSection["AmbulatoryIssuer"] ?? jwtSection["AmbulatoryAuthority"];
+    var ambulatoryJwtAuthority = jwtSection["AmbulatoryAuthority"] ?? ambulatoryJwtIssuer;
+    var ambulatoryJwtAudience = jwtSection["AmbulatoryAudience"] ?? jwtAudience;
 
     if (string.IsNullOrWhiteSpace(jwtIssuer))
     {
         throw new InvalidOperationException("Jwt:Issuer or Jwt:Authority is required for Keycloak.");
     }
 
+    if (string.IsNullOrWhiteSpace(jwtAuthority))
+    {
+        throw new InvalidOperationException("Jwt:Authority is required for Keycloak metadata.");
+    }
+
+    if (string.IsNullOrWhiteSpace(ambulatoryJwtIssuer) || string.IsNullOrWhiteSpace(ambulatoryJwtAuthority))
+    {
+        throw new InvalidOperationException("Jwt:AmbulatoryIssuer or Jwt:AmbulatoryAuthority is required for ambulatory Keycloak.");
+    }
+
+    const string acutisKeycloakScheme = "AcutisKeycloak";
+    const string ambulatoryKeycloakScheme = "AmbulatoryKeycloak";
+    var tokenHandler = new JwtSecurityTokenHandler();
+
     builder.Services
-        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
+        .AddAuthentication(options =>
         {
-            options.Authority = jwtIssuer;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddPolicyScheme(JwtBearerDefaults.AuthenticationScheme, "Keycloak realm selector", options =>
+        {
+            options.ForwardDefaultSelector = context =>
+            {
+                var authorization = context.Request.Headers.Authorization.ToString();
+                if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    return acutisKeycloakScheme;
+                }
+
+                var token = authorization["Bearer ".Length..].Trim();
+                if (!tokenHandler.CanReadToken(token))
+                {
+                    return acutisKeycloakScheme;
+                }
+
+                var jwtToken = tokenHandler.ReadJwtToken(token);
+                return string.Equals(jwtToken.Issuer, ambulatoryJwtIssuer, StringComparison.OrdinalIgnoreCase)
+                    ? ambulatoryKeycloakScheme
+                    : acutisKeycloakScheme;
+            };
+        })
+        .AddJwtBearer(acutisKeycloakScheme, options =>
+        {
+            options.Authority = jwtAuthority;
             options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
             options.TokenValidationParameters = new TokenValidationParameters
             {
@@ -174,6 +219,19 @@ if (!authorizationOptions.Disabled)
                 ValidateLifetime = true,
                 ValidIssuer = jwtIssuer,
                 ValidAudiences = new[] { jwtAudience }
+            };
+        })
+        .AddJwtBearer(ambulatoryKeycloakScheme, options =>
+        {
+            options.Authority = ambulatoryJwtAuthority;
+            options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidIssuer = ambulatoryJwtIssuer,
+                ValidAudiences = new[] { ambulatoryJwtAudience }
             };
         });
 
@@ -225,7 +283,9 @@ if (applyMigrationsOnStartup)
         {
             using var scope = app.Services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AcutisDbContext>();
+            var ambulatoryDbContext = scope.ServiceProvider.GetRequiredService<AcutisAmbulatoryDbContext>();
             await dbContext.Database.MigrateAsync();
+            await ambulatoryDbContext.Database.MigrateAsync();
             lastException = null;
             break;
         }

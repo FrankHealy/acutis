@@ -1141,6 +1141,8 @@ public sealed class AcutisDbContext : DbContext
             entity.Property(form => form.UiJson).HasColumnType("nvarchar(max)").IsRequired();
             entity.Property(form => form.RulesJson).HasColumnType("nvarchar(max)").IsRequired();
             entity.Property(form => form.CreatedAt).HasColumnType("datetime2").IsRequired();
+            entity.Property(form => form.ActiveFrom).HasColumnType("datetime2").IsRequired();
+            entity.Property(form => form.ActiveTo).HasColumnType("datetime2");
             entity.HasIndex(form => new { form.Code, form.Version }).IsUnique();
             entity.HasIndex(form => new { form.Code, form.Status });
         });
@@ -2040,7 +2042,8 @@ public sealed class AcutisDbContext : DbContext
                 SchemaJson = SchemaJson,
                 UiJson = UiJson,
                 RulesJson = RulesJson,
-                CreatedAt = SeedCreatedAt
+                CreatedAt = SeedCreatedAt,
+                ActiveFrom = SeedCreatedAt
             },
             new FormDefinition
             {
@@ -2053,7 +2056,8 @@ public sealed class AcutisDbContext : DbContext
                 SchemaJson = SchemaJsonV2,
                 UiJson = UiJsonV2,
                 RulesJson = RulesJson,
-                CreatedAt = SeedCreatedAt.AddDays(1)
+                CreatedAt = SeedCreatedAt.AddDays(1),
+                ActiveFrom = SeedCreatedAt.AddDays(1)
             },
             new FormDefinition
             {
@@ -2066,7 +2070,8 @@ public sealed class AcutisDbContext : DbContext
                 SchemaJson = SchemaJsonV3,
                 UiJson = UiJsonV3,
                 RulesJson = RulesJson,
-                CreatedAt = SeedCreatedAt.AddDays(2)
+                CreatedAt = SeedCreatedAt.AddDays(2),
+                ActiveFrom = SeedCreatedAt.AddDays(2)
             },
             new FormDefinition
             {
@@ -2079,7 +2084,8 @@ public sealed class AcutisDbContext : DbContext
                 SchemaJson = SchemaJsonV4,
                 UiJson = UiJsonV4,
                 RulesJson = RulesJsonV4,
-                CreatedAt = SeedCreatedAt.AddDays(3)
+                CreatedAt = SeedCreatedAt.AddDays(3),
+                ActiveFrom = SeedCreatedAt.AddDays(3)
             },
             new FormDefinition
             {
@@ -2092,7 +2098,8 @@ public sealed class AcutisDbContext : DbContext
                 SchemaJson = SchemaJsonV5,
                 UiJson = UiJsonV5,
                 RulesJson = RulesJsonV5,
-                CreatedAt = SeedCreatedAt.AddDays(4)
+                CreatedAt = SeedCreatedAt.AddDays(4),
+                ActiveFrom = SeedCreatedAt.AddDays(4)
             });
     }
 

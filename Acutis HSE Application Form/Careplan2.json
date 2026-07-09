@@ -1,0 +1,39 @@
+{
+  "schemaType": "INITIAL CARE PLAN",
+  "instruction": "Please be SMART (Specific, Measurable, Achievable, Realistic, Time lined)",
+  "objectives": [
+    {
+      "objectiveId": 1,
+      "inTheAreaOf": "",
+      "iAimTo": "",
+      "timeScale": "",
+      "actionsNeeded": "",
+      "otherServicesRequired": "",
+      "howWillIMeasureMyProgress": "",
+      "outcome": "",
+      "whatWentWellOrNotWell": ""
+    },
+    {
+      "objectiveId": 2,
+      "inTheAreaOf": "",
+      "iAimTo": "",
+      "timeScale": "",
+      "actionsNeeded": "",
+      "otherServicesRequired": "",
+      "howWillIMeasureMyProgress": "",
+      "outcome": "",
+      "whatWentWellOrNotWell": ""
+    },
+    {
+      "objectiveId": 3,
+      "inTheAreaOf": "",
+      "iAimTo": "",
+      "timeScale": "",
+      "actionsNeeded": "",
+      "otherServicesRequired": "",
+      "howWillIMeasureMyProgress": "",
+      "outcome": "",
+      "whatWentWellOrNotWell": ""
+    }
+  ]
+}

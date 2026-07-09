@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
+  ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 import { getUnitTimeline, takeUnitTimelineEvent } from "@/services/unitTimelineService";
@@ -52,6 +53,7 @@ type UnitDailyTimelineProps = {
   unitName: string;
   onOpenGroupTherapy: (moduleKey?: string) => void;
   onOpenRollCall: () => void;
+  onOpenCarePlan: () => void;
 };
 
 const fullDayStartMinutes = 5 * 60;
@@ -60,7 +62,7 @@ const fullDayPixelsPerHour = 112;
 const fullDayLabelWidth = 16;
 const fullDayWidth = ((fullDayEndMinutes - fullDayStartMinutes) / 60) * fullDayPixelsPerHour;
 
-const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName, onOpenGroupTherapy, onOpenRollCall }) => {
+const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName, onOpenGroupTherapy, onOpenRollCall, onOpenCarePlan }) => {
   const { data: session, status } = useSession();
   const { loadKeys, t } = useLocalization();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -120,6 +122,10 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
       case "Focus Meeting":
       case "OT/Focus":
         return Target;
+      case "Weekly Care Plan Capture":
+      case "Careplan":
+      case "Care Plan":
+        return ClipboardCheck;
       case "Group A":
       case "Group B":
       case "Group C":
@@ -159,6 +165,10 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
       case "Focus Meeting":
       case "OT/Focus":
         return "bg-cyan-500";
+      case "Weekly Care Plan Capture":
+      case "Careplan":
+      case "Care Plan":
+        return "bg-cyan-600";
       case "Group A":
         return "bg-pink-500";
       case "Group B":
@@ -251,6 +261,11 @@ const UnitDailyTimeline: React.FC<UnitDailyTimelineProps> = ({ unitId, unitName,
   const handleEventClick = (event: ScheduleEvent) => {
     if (event.title === "Roll Call") {
       onOpenRollCall();
+      return;
+    }
+
+    if (event.title.toLowerCase().replace(/\s+/g, "").includes("careplan")) {
+      onOpenCarePlan();
       return;
     }
 

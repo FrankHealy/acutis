@@ -11,6 +11,7 @@ import UnitAdmissionForm from "@/areas/shared/admissions/UnitAdmissionForm";
 import RoomAssignments from "@/areas/shared/RoomAssignments";
 import OperationsSection from "@/areas/shared/OperationsSection";
 import GroupTherapySection from "@/areas/shared/GroupTherapySection";
+import BoundedFormRunner from "@/areas/screening/forms/BoundedFormRunner";
 import ResidentsSection from "@/areas/shared/ResidentsSection";
 import MeditationSection from "@/areas/shared/MeditationSection";
 import IncidentsSection from "@/areas/shared/incidents/IncidentsSection";
@@ -33,6 +34,9 @@ type Step =
   | "operations/room-mapping"
   | "operations/ot-roles"
   | "operations/therapy-schedule"
+  | "operations/hse-extended-assessment"
+  | "operations/care-plan-1"
+  | "operations/care-plan-2"
   | "operations/meditation";
 
 type UnitWorkspaceProps = {
@@ -77,6 +81,9 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
 
     openIncidentCapture({ scope: resident.residentGuid ? "resident" : "unit", resident });
   };
+  const openCarePlanEventForm = () => {
+    setCurrentStep("operations/care-plan-2");
+  };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -87,8 +94,10 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
             unitId={unitId}
             unitName={unit.name}
             showAdmissions={unit.admissionsEnabled}
+            showExtendedAssessment={unit.extendedAssessmentEnabled}
             onOpenGroupTherapy={openGroupTherapy}
             onOpenRollCall={openRollCall}
+            onOpenCarePlan={openCarePlanEventForm}
           />
         );
       case "new-admission":
@@ -201,6 +210,39 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
         return <OperationsSection unitId={unitId} />;
       case "operations/therapy-schedule":
         return <GroupTherapySection initialModuleKey={therapyModuleKey} unitId={unitId} />;
+      case "operations/hse-extended-assessment":
+        return unit.extendedAssessmentEnabled ? (
+          <BoundedFormRunner
+            formCode="hse_extended_assessment"
+            subjectType="anonymous_call"
+            title="HSE Extended Assessment"
+            description={`${unit.name} session assessment using the bounded HSE form elements.`}
+            submitLabel="Confirm Extended Assessment"
+            submittedLabel="HSE Extended Assessment submitted."
+          />
+        ) : null;
+      case "operations/care-plan-1":
+        return (
+          <BoundedFormRunner
+            formCode="care_plan_1"
+            subjectType="resident"
+            title="Comprehensive Care Plan"
+            description={`${unit.name} comprehensive care plan using bounded form elements.`}
+            submitLabel="Confirm Care Plan"
+            submittedLabel="Comprehensive Care Plan submitted."
+          />
+        );
+      case "operations/care-plan-2":
+        return (
+          <BoundedFormRunner
+            formCode="care_plan_2"
+            subjectType="resident"
+            title="Initial Care Plan"
+            description={`${unit.name} Careplan event generated form.`}
+            submitLabel="Confirm Initial Care Plan"
+            submittedLabel="Initial Care Plan submitted."
+          />
+        );
       case "operations/meditation":
         return <MeditationSection unitId={unitId} unitName={unit.name} />;
       default:
@@ -223,6 +265,7 @@ export default function UnitWorkspace({ unitId }: UnitWorkspaceProps) {
           currentStep={currentStep}
           setCurrentStep={goTo}
           showAdmissions={unit.admissionsEnabled}
+          showExtendedAssessment={unit.extendedAssessmentEnabled}
         />
       </div>
       <main className="mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">{renderStep()}</main>

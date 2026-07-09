@@ -9,6 +9,7 @@ namespace Acutis.Api.Services.Forms;
 
 public interface IFormConfigurationService
 {
+    Task<IReadOnlyList<FormCatalogueItemDto>> GetCatalogueAsync(CancellationToken cancellationToken = default);
     Task<FormConfigurationVersionDto> CreateVersionAsync(string formCode, UpsertFormDefinitionRequest request, CancellationToken cancellationToken = default);
     Task<FormConfigurationVersionDto> EditVersionAsync(string formCode, int sourceVersion, UpsertFormDefinitionRequest request, CancellationToken cancellationToken = default);
     Task<FormConfigurationVersionDto> ActivateVersionAsync(string formCode, int version, CancellationToken cancellationToken = default);
@@ -28,6 +29,41 @@ public sealed class FormConfigurationService : IFormConfigurationService
     public FormConfigurationService(AcutisDbContext dbContext)
     {
         _dbContext = dbContext;
+    }
+
+    public async Task<IReadOnlyList<FormCatalogueItemDto>> GetCatalogueAsync(CancellationToken cancellationToken = default)
+    {
+        var definitions = await _dbContext.FormDefinitions
+            .AsNoTracking()
+            .Where(form => form.Status != StatusDeleted)
+            .ToListAsync(cancellationToken);
+
+        return definitions
+            .GroupBy(form => form.Code)
+            .Select(group =>
+            {
+                var selected = group
+                    .OrderByDescending(form => IsActiveStatus(form.Status))
+                    .ThenByDescending(form => form.Version)
+                    .First();
+
+                return new FormCatalogueItemDto
+                {
+                    Code = selected.Code,
+                    Name = selected.TitleKey,
+                    Version = selected.Version,
+                    Description = selected.DescriptionKey,
+                    IsActive = IsActiveStatus(selected.Status),
+                    ActiveFrom = selected.ActiveFrom == default ? selected.CreatedAt : selected.ActiveFrom,
+                    ActiveTo = selected.ActiveTo,
+                    Status = selected.Status,
+                    CreatedAt = selected.CreatedAt,
+                    VersionCount = group.Count()
+                };
+            })
+            .OrderByDescending(form => form.IsActive)
+            .ThenBy(form => form.Name)
+            .ToList();
     }
 
     public async Task<FormConfigurationVersionDto> CreateVersionAsync(
@@ -61,7 +97,9 @@ public sealed class FormConfigurationService : IFormConfigurationService
                 SchemaJson = request.SchemaJson,
                 UiJson = request.UiJson,
                 RulesJson = request.RulesJson,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                ActiveFrom = request.ActiveFrom ?? DateTime.UtcNow,
+                ActiveTo = request.ActiveTo
             };
 
             _dbContext.FormDefinitions.Add(definition);
@@ -174,7 +212,10 @@ public sealed class FormConfigurationService : IFormConfigurationService
                 Status = form.Status,
                 TitleKey = form.TitleKey,
                 DescriptionKey = form.DescriptionKey,
-                CreatedAt = form.CreatedAt
+                CreatedAt = form.CreatedAt,
+                ActiveFrom = form.ActiveFrom == default ? form.CreatedAt : form.ActiveFrom,
+                ActiveTo = form.ActiveTo,
+                IsActive = IsActiveStatus(form.Status)
             })
             .ToListAsync(cancellationToken);
     }
@@ -260,7 +301,16 @@ public sealed class FormConfigurationService : IFormConfigurationService
             Status = definition.Status,
             TitleKey = definition.TitleKey,
             DescriptionKey = definition.DescriptionKey,
-            CreatedAt = definition.CreatedAt
+            CreatedAt = definition.CreatedAt,
+            ActiveFrom = definition.ActiveFrom == default ? definition.CreatedAt : definition.ActiveFrom,
+            ActiveTo = definition.ActiveTo,
+            IsActive = IsActiveStatus(definition.Status)
         };
+    }
+
+    private static bool IsActiveStatus(string status)
+    {
+        return string.Equals(status, StatusActive, StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(status, "published", StringComparison.OrdinalIgnoreCase);
     }
 }

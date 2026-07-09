@@ -8,13 +8,23 @@ namespace Acutis.Api.Services.Screening;
 public sealed class CanonicalHseFormSeeder
 {
     private const string SeedDirectory = "SeedData/Forms/HseInitialAssessment";
+    private const string ExtendedSeedDirectory = "SeedData/Forms/HseExtendedAssessment";
+    private const string CarePlan1SeedDirectory = "SeedData/Forms/CarePlan1";
+    private const string CarePlan2SeedDirectory = "SeedData/Forms/CarePlan2";
     private const string CanonicalCode = "community_initial_assessment";
+    private const string ExtendedCode = "hse_extended_assessment";
+    private const string CarePlan1Code = "care_plan_1";
+    private const string CarePlan2Code = "care_plan_2";
     private const string LegacyCode = "alcohol_screening_call";
     private const int CanonicalVersion = 1;
+    private const int ExtendedVersion = 1;
     private const int LegacyVersion = 6;
     private const string CanonicalStatus = "active";
 
     private static readonly Guid CanonicalId = Guid.Parse("8fc0426a-1a3c-41c1-b7a4-9867801efa8d");
+    private static readonly Guid ExtendedId = Guid.Parse("0936ac8c-e0d3-47ce-92b7-2ddcf7f0f42a");
+    private static readonly Guid CarePlan1Id = Guid.Parse("ae2fe179-2f7d-4b1a-a0c3-6ddcd61a5895");
+    private static readonly Guid CarePlan2Id = Guid.Parse("a6cd92f7-73a6-49f7-97de-3bbf21c1ab87");
     private static readonly Guid LegacyId = Guid.Parse("6d433f0d-7701-49db-adc4-71fb6557f6a6");
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -41,7 +51,7 @@ public sealed class CanonicalHseFormSeeder
         var rulesJson = await ReadTextAsync(seedRoot, "rules.json", cancellationToken);
 
         var titleKey = string.IsNullOrWhiteSpace(meta.TitleKey)
-            ? "Initial Assessment and Service User Consent Form"
+            ? "Internal Admissions Form"
             : meta.TitleKey;
         var descriptionKey = string.IsNullOrWhiteSpace(meta.DescriptionKey)
             ? "HSE Addiction and Primary Homeless Services bounded initial assessment."
@@ -81,8 +91,61 @@ public sealed class CanonicalHseFormSeeder
             .Where(form => form.Code == LegacyCode && form.Version != LegacyVersion && form.Status == CanonicalStatus)
             .ExecuteUpdateAsync(updates => updates.SetProperty(form => form.Status, "published"), cancellationToken);
 
+        await SeedStandaloneFormAsync(
+            ExtendedSeedDirectory,
+            ExtendedId,
+            ExtendedCode,
+            new DateTime(2026, 7, 4, 12, 0, 0, DateTimeKind.Utc),
+            cancellationToken);
+
+        await SeedStandaloneFormAsync(
+            CarePlan1SeedDirectory,
+            CarePlan1Id,
+            CarePlan1Code,
+            new DateTime(2026, 7, 4, 13, 0, 0, DateTimeKind.Utc),
+            cancellationToken);
+
+        await SeedStandaloneFormAsync(
+            CarePlan2SeedDirectory,
+            CarePlan2Id,
+            CarePlan2Code,
+            new DateTime(2026, 7, 4, 13, 15, 0, DateTimeKind.Utc),
+            cancellationToken);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Canonical HSE assessment form is seeded as {Code} v{Version} and legacy alias {LegacyCode} v{LegacyVersion}.", CanonicalCode, CanonicalVersion, LegacyCode, LegacyVersion);
+        _logger.LogInformation("Canonical HSE assessment form is seeded as {Code} v{Version}, extended form {ExtendedCode} v{ExtendedVersion}, and legacy alias {LegacyCode} v{LegacyVersion}.", CanonicalCode, CanonicalVersion, ExtendedCode, ExtendedVersion, LegacyCode, LegacyVersion);
+    }
+
+    private async Task SeedStandaloneFormAsync(
+        string seedDirectory,
+        Guid id,
+        string expectedCode,
+        DateTime createdAt,
+        CancellationToken cancellationToken)
+    {
+        var seedRoot = Path.Combine(_environment.ContentRootPath, seedDirectory);
+        var meta = await ReadJsonAsync<FormSeedMetadata>(seedRoot, "meta.json", cancellationToken);
+        var schemaJson = await ReadTextAsync(seedRoot, "schema.json", cancellationToken);
+        var uiJson = await ReadTextAsync(seedRoot, "ui.json", cancellationToken);
+        var rulesJson = await ReadTextAsync(seedRoot, "rules.json", cancellationToken);
+        var code = string.IsNullOrWhiteSpace(meta.Code) ? expectedCode : meta.Code;
+
+        await UpsertFormDefinitionAsync(
+            id,
+            code,
+            meta.Version,
+            string.IsNullOrWhiteSpace(meta.Status) ? CanonicalStatus : meta.Status,
+            createdAt,
+            meta.TitleKey,
+            meta.DescriptionKey ?? string.Empty,
+            schemaJson,
+            uiJson,
+            rulesJson,
+            cancellationToken);
+
+        await _dbContext.FormDefinitions
+            .Where(form => form.Code == code && form.Version != meta.Version && form.Status == CanonicalStatus)
+            .ExecuteUpdateAsync(updates => updates.SetProperty(form => form.Status, "published"), cancellationToken);
     }
 
     private async Task UpsertFormDefinitionAsync(
@@ -119,7 +182,8 @@ public sealed class CanonicalHseFormSeeder
                 SchemaJson = schemaJson,
                 UiJson = uiJson,
                 RulesJson = rulesJson,
-                CreatedAt = createdAt
+                CreatedAt = createdAt,
+                ActiveFrom = createdAt
             });
         }
         else
@@ -130,6 +194,10 @@ public sealed class CanonicalHseFormSeeder
             existing.SchemaJson = schemaJson;
             existing.UiJson = uiJson;
             existing.RulesJson = rulesJson;
+            if (existing.ActiveFrom == default)
+            {
+                existing.ActiveFrom = existing.CreatedAt == default ? createdAt : existing.CreatedAt;
+            }
         }
     }
 
