@@ -13,6 +13,8 @@ public sealed class AcutisAmbulatoryDbContext : DbContext
     public DbSet<AmbulatoryAssessment> Assessments => Set<AmbulatoryAssessment>();
     public DbSet<AmbulatoryCarePlan> CarePlans => Set<AmbulatoryCarePlan>();
     public DbSet<AmbulatoryAppointment> Appointments => Set<AmbulatoryAppointment>();
+    public DbSet<VideoConsultation> VideoConsultations => Set<VideoConsultation>();
+    public DbSet<VideoConsultationInvitation> VideoConsultationInvitations => Set<VideoConsultationInvitation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -76,6 +78,33 @@ public sealed class AcutisAmbulatoryDbContext : DbContext
                 .WithMany(x => x.Appointments)
                 .HasForeignKey(x => x.ParticipantId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<VideoConsultation>(entity =>
+        {
+            entity.ToTable("VideoConsultation");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.RoomName).HasMaxLength(96);
+            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+            entity.HasIndex(x => x.AppointmentId).IsUnique();
+            entity.HasIndex(x => x.RoomName).IsUnique();
+            entity.HasOne(x => x.Appointment)
+                .WithOne(x => x.VideoConsultation)
+                .HasForeignKey<VideoConsultation>(x => x.AppointmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<VideoConsultationInvitation>(entity =>
+        {
+            entity.ToTable("VideoConsultationInvitation");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TokenHash).HasMaxLength(32).IsRequired();
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.HasIndex(x => new { x.VideoConsultationId, x.ExpiresAtUtc });
+            entity.HasOne(x => x.VideoConsultation)
+                .WithMany(x => x.Invitations)
+                .HasForeignKey(x => x.VideoConsultationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
