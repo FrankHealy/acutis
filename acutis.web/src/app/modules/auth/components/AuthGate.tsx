@@ -10,10 +10,11 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const isAuthStatusPage = pathname.startsWith("/auth/");
+  const isExternalVideoInvitation = pathname.startsWith("/vc/join/");
   const requiredProvider = getProviderForPath(pathname);
 
   useEffect(() => {
-    if (isAuthorizationDisabled || isAuthStatusPage) {
+    if (isAuthorizationDisabled || isAuthStatusPage || isExternalVideoInvitation) {
       return;
     }
 
@@ -39,13 +40,9 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     if (status === "unauthenticated") {
       void signIn(requiredProvider, { callbackUrl: window.location.href });
     }
-  }, [isAuthStatusPage, pathname, requiredProvider, session?.accessToken, session?.authProvider, session?.error, status]);
+  }, [isAuthStatusPage, isExternalVideoInvitation, pathname, requiredProvider, session?.accessToken, session?.authProvider, session?.error, status]);
 
-  if (isAuthorizationDisabled) {
-    return <>{children}</>;
-  }
-
-  if (isAuthStatusPage) {
+  if (isAuthorizationDisabled || isAuthStatusPage || isExternalVideoInvitation) {
     return <>{children}</>;
   }
 
