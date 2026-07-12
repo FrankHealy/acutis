@@ -8,10 +8,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 $webDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repoRoot = Split-Path -Parent $webDir
-$apiDir = Join-Path $repoRoot "acutis.api"
-$apiProject = Join-Path $apiDir "Acutis.Api\Acutis.Api.csproj"
-$apiExeDir = Join-Path $apiDir "Acutis.Api\bin\Debug\net8.0"
+$centreRoot = Split-Path -Parent $webDir
+$repoRoot = Split-Path -Parent $centreRoot
+$apiDir = Join-Path $repoRoot "acutis.centre\acutis.centre.api\src\Acutis.Api"
+$apiProject = Join-Path $apiDir "Acutis.Api.csproj"
+$apiExeDir = Join-Path $apiDir "bin\Debug\net8.0"
 $apiExePath = Join-Path $apiExeDir "Acutis.Api.exe"
 
 if (-not (Test-Path $apiDir)) {

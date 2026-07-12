@@ -15,9 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Acutis.Api\Acutis.Api.csproj" />
-    <ProjectReference Include="..\Acutis.Infrastructure\Acutis.Infrastructure.csproj" />
-    <ProjectReference Include="..\Acutis.Domain\Acutis.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Acutis.Api\Acutis.Api.csproj" />
+    <ProjectReference Include="..\..\..\acutis.centre.db\Acutis.Infrastructure\Acutis.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Acutis.Domain\Acutis.Domain.csproj" />
   </ItemGroup>
 
 </Project>

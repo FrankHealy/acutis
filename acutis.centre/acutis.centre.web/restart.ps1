@@ -12,13 +12,14 @@ param(
 $ErrorActionPreference = "Stop"
 
 $webDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repoRoot = Split-Path -Parent $webDirectory
-$apiProject = Join-Path $repoRoot "acutis.api\Acutis.Api\Acutis.Api.csproj"
+$centreRoot = Split-Path -Parent $webDirectory
+$repoRoot = Split-Path -Parent $centreRoot
+$apiProject = Join-Path $repoRoot "acutis.centre\acutis.centre.api\src\Acutis.Api\Acutis.Api.csproj"
 $apiDirectory = Split-Path -Parent $apiProject
-$practitionerApiProject = Join-Path $repoRoot "acutis.api\Acutis.Practitioner.Api\Acutis.Practitioner.Api.csproj"
-$communityApiProject = Join-Path $repoRoot "acutis.api\Acutis.Community.Api\Acutis.Community.Api.csproj"
-$practitionerWebDirectory = Join-Path $repoRoot "apps\practitioner-web"
-$communityWebDirectory = Join-Path $repoRoot "apps\community-web"
+$practitionerApiProject = Join-Path $repoRoot "acutis.practitioner\acutis.practitioner.api\src\Acutis.Practitioner.Api\Acutis.Practitioner.Api.csproj"
+$communityApiProject = Join-Path $repoRoot "acutis.community\acutis.community.api\src\Acutis.Community.Api\Acutis.Community.Api.csproj"
+$practitionerWebDirectory = Join-Path $repoRoot "acutis.practitioner\acutis.practitioner.web"
+$communityWebDirectory = Join-Path $repoRoot "acutis.community\acutis.community.web"
 
 if (-not (Test-Path -LiteralPath $apiProject)) {
     throw "API project not found: $apiProject"

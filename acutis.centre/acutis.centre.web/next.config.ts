@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@acutis/telemetry"],
   output: "standalone",
   turbopack: {
-    root: resolve(projectRoot, ".."),
+    root: resolve(projectRoot, "../.."),
   },
   images: {
     remotePatterns: [

@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Acutis.Domain\Acutis.Domain.csproj" />
-    <ProjectReference Include="..\Acutis.Application\Acutis.Application.csproj" />
+    <ProjectReference Include="..\..\acutis.centre.api\src\Acutis.Domain\Acutis.Domain.csproj" />
+    <ProjectReference Include="..\..\acutis.centre.api\src\Acutis.Application\Acutis.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

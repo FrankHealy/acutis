@@ -2,8 +2,8 @@
   "name": "acutis",
   "private": true,
   "workspaces": [
-    "acutis.web",
-    "acutis.tab",
+    "acutis.centre/acutis.centre.web",
+    "acutis.centre/acutis.centre.tab",
     "apps/*-web",
     "apps/*-mobile",
     "acutis.shared/acutis.shared.web/packages/*",
@@ -12,8 +12,8 @@
     "acutis.shared/acutis.shared.resources/packages/*"
   ],
   "scripts": {
-    "web": "npm --prefix acutis.web run dev",
-    "api": "dotnet watch --project acutis.api run",
+    "web": "npm --prefix acutis.centre/acutis.centre.web run dev",
+    "api": "dotnet watch --project acutis.centre/acutis.centre.api/src/Acutis.Api run",
     "mob": "powershell -NoProfile -Command \"Set-Location 'acutis.mob'; npm run start\"",
     "dev": "npm run web",
     "build:centre-web": "npm --workspace acutis.web run build",

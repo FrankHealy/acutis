@@ -7,7 +7,7 @@
     "build": "next build",
     "postbuild": "node scripts/copy-standalone-assets.mjs",
     "start": "next start",
-    "lint": "node ../node_modules/eslint/bin/eslint.js --cache --cache-location .eslintcache src"
+    "lint": "node ../../node_modules/eslint/bin/eslint.js --cache --cache-location .eslintcache src"
   },
   "dependencies": {
     "@livekit/components-react": "2.9.23",

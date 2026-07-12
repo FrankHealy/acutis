@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Acutis.Application\Acutis.Application.csproj" />
-    <ProjectReference Include="..\Acutis.Infrastructure\Acutis.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\acutis.centre.db\Acutis.Infrastructure\Acutis.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
