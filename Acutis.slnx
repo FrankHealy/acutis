@@ -9,5 +9,5 @@
   <Project Path="acutis.shared/acutis.shared.api/Acutis.Forms.Schema/Acutis.Forms.Schema.csproj" />
   <Project Path="acutis.practitioner/acutis.practitioner.api/src/Acutis.Practitioner.Api/Acutis.Practitioner.Api.csproj" />
   <Project Path="acutis.community/acutis.community.api/src/Acutis.Community.Api/Acutis.Community.Api.csproj" />
-  <Project Path="acutis.api/Acutis.Outreach.Api/Acutis.Outreach.Api.csproj" />
+  <Project Path="acutis.outreach/acutis.outreach.api/src/Acutis.Outreach.Api/Acutis.Outreach.Api.csproj" />
 </Solution>
