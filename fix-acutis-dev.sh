@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+require_env() {
+    local variable_name="$1"
+
+    if [ -z "${!variable_name:-}" ]; then
+        echo "Required environment variable is not set: ${variable_name}" >&2
+        exit 1
+    fi
+}
+
+require_env AUTH_KEYCLOAK_SECRET
+require_env NEXTAUTH_SECRET
+
 APP_ROOT="/opt/acutis/acutis"
 WEB_ENV="$APP_ROOT/acutis.web/.env.local"
 APP_IP="167.233.16.141"
@@ -14,10 +26,10 @@ cp "$WEB_ENV" "$WEB_ENV.backup.$(date +%F-%H%M%S)"
 echo "== Rewrite web env =="
 cat > "$WEB_ENV" <<EOF
 AUTH_KEYCLOAK_ID=web-client
-AUTH_KEYCLOAK_SECRET=DFqF6P3hiKf6ieX14gni8QPRdCz9Wgcp
+AUTH_KEYCLOAK_SECRET="${AUTH_KEYCLOAK_SECRET}"
 AUTH_KEYCLOAK_ISSUER=$KC_URL/realms/$REALM
 NEXTAUTH_URL=http://$APP_IP:3000
-NEXTAUTH_SECRET=acutis-dev-secret-key-change-in-production-12345
+NEXTAUTH_SECRET="${NEXTAUTH_SECRET}"
 NEXT_PUBLIC_DISABLE_AUTH=false
 NEXT_PUBLIC_API_BASE_URL=/api-proxy
 INTERNAL_API_BASE_URL=$API_URL
@@ -45,7 +57,7 @@ grep -R "localhost:8080" "$APP_ROOT" -n \
   --exclude-dir=.git || true
 
 echo "== Current env =="
-cat "$WEB_ENV"
+sed -E 's/^((AUTH_KEYCLOAK_SECRET|NEXTAUTH_SECRET)=).*/\1<redacted>/' "$WEB_ENV"
 
 echo "== Start Next =="
 cd "$APP_ROOT"
