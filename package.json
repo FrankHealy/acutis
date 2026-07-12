@@ -6,6 +6,8 @@
     "acutis.centre/acutis.centre.tab",
     "acutis.community/acutis.community.web",
     "acutis.community/acutis.community.tab",
+    "acutis.practitioner/acutis.practitioner.web",
+    "acutis.practitioner/acutis.practitioner.tab",
     "apps/*-web",
     "apps/*-mobile",
     "acutis.shared/acutis.shared.web/packages/*",

@@ -7,7 +7,7 @@
   <Project Path="acutis.centre/acutis.centre.db/Acutis.Infrastructure/Acutis.Infrastructure.csproj" />
   <Project Path="acutis.shared/acutis.shared.api/Acutis.Platform.Contracts/Acutis.Platform.Contracts.csproj" />
   <Project Path="acutis.shared/acutis.shared.api/Acutis.Forms.Schema/Acutis.Forms.Schema.csproj" />
-  <Project Path="acutis.api/Acutis.Practitioner.Api/Acutis.Practitioner.Api.csproj" />
+  <Project Path="acutis.practitioner/acutis.practitioner.api/src/Acutis.Practitioner.Api/Acutis.Practitioner.Api.csproj" />
   <Project Path="acutis.community/acutis.community.api/src/Acutis.Community.Api/Acutis.Community.Api.csproj" />
   <Project Path="acutis.api/Acutis.Outreach.Api/Acutis.Outreach.Api.csproj" />
 </Solution>
