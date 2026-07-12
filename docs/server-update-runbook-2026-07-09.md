@@ -112,9 +112,9 @@ Then restart the API and it will apply both contexts.
 If running migrations manually:
 
 ```bash
-cd /path/to/acutis/acutis.api
-dotnet ef database update --context AcutisDbContext --project Acutis.Infrastructure --startup-project Acutis.Api
-dotnet ef database update --context AcutisAmbulatoryDbContext --project Acutis.Infrastructure --startup-project Acutis.Api
+cd /path/to/acutis
+dotnet ef database update --context AcutisDbContext --project acutis.centre/acutis.centre.db/Acutis.Infrastructure/Acutis.Infrastructure.csproj --startup-project acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj
+dotnet ef database update --context AcutisAmbulatoryDbContext --project acutis.centre/acutis.centre.db/Acutis.Infrastructure/Acutis.Infrastructure.csproj --startup-project acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj
 ```
 
 On Ubuntu Docker deployments, prefer startup migrations unless you are deliberately running the API project directly on the host. Set:
@@ -126,6 +126,34 @@ Database__ApplyMigrationsOnStartup=true
 Then start the API container and watch its logs. Once migrations have completed successfully, you can set it back to `false` if that is your normal production preference.
 
 ## 5. Restart Services
+
+### Reverse-proxy access-log protection for video invitations
+
+Invitation credentials are path segments. Application redaction does not protect nginx, Caddy, a load balancer, CDN, WAF, ingress controller, or hosting-provider request logs. Before exposing video invitations, configure every proxy layer to exclude these requests from access logging. For nginx, add this `map` in the `http` context (not inside `server`):
+
+```nginx
+map $uri $acutis_access_loggable {
+    default 1;
+    ~^/vc/join/[^/]+(?:/)?$ 0;
+    ~^/api/video-consultations/invitations/[^/]+(?:/credentials)?(?:/)?$ 0;
+    ~^/api-proxy/api/video-consultations/invitations/[^/]+(?:/credentials)?(?:/)?$ 0;
+}
+```
+
+Apply the condition to each Acutis access log in the relevant `server` block:
+
+```nginx
+access_log /var/log/nginx/acutis-access.log combined if=$acutis_access_loggable;
+```
+
+Reload and verify the configuration before deployment:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Make one request to each invitation route using a disposable token, then confirm that token is absent from nginx, CDN/WAF, container-platform and hosting-provider logs. If the deployed proxy is not nginx, implement the equivalent route exclusion there before enabling invitations. Do not rely on the API's application-level redaction for proxy logs.
 
 Docker example:
 

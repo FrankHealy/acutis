@@ -1,0 +1,9 @@
+export type FormFieldType="text"|"longText"|"integer"|"decimal"|"boolean"|"date"|"dateTime"|"singleChoice"|"multipleChoice"|"signature"|"repeatingGroup";
+export type LocalizedText={key:string;defaultText:string};
+export type FormOption={value:string;label:LocalizedText};
+export type FormField={key:string;type:FormFieldType;label:LocalizedText;instructions?:LocalizedText;required:boolean;options?:FormOption[];visibilityExpression?:string;scoreExpression?:string;children?:FormField[]};
+export type FormSection={key:string;title:LocalizedText;repeatable?:boolean;fields:FormField[]};
+export type CanonicalFormSchema={code:string;version:number;title:LocalizedText;sections:FormSection[]};
+export type FormResponseValue=string|number|boolean|string[]|null|FormResponseRecord[];
+export type FormResponseRecord=Record<string,FormResponseValue>;
+export type FormResponseEnvelope={definitionCode:string;definitionVersion:number;status:"draft"|"submitted"|"reviewed"|"cancelled";answers:FormResponseRecord;updatedAtUtc:string};

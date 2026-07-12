@@ -6,7 +6,7 @@ a GitHub issue in the configured feedback repository.
 
 ## Configuration
 
-Set these values for the `acutis.web` process:
+Set these values for the Centre web process in `acutis.centre/acutis.centre.web`:
 
 ```env
 NEXT_PUBLIC_FEEDBACK_ENABLED=true
@@ -43,6 +43,6 @@ blocks accidental repeat submits for 60 seconds.
 ## Required npm Packages
 
 ```powershell
-cd acutis.web
+cd acutis.centre/acutis.centre.web
 npm install html2canvas
 ```

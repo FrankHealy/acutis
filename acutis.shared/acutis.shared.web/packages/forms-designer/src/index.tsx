@@ -1,0 +1,2 @@
+import type{CanonicalFormSchema}from"@acutis/forms-schema";
+export function FormDesigner({schema,onChange,labels}:{schema:CanonicalFormSchema;onChange:(schema:CanonicalFormSchema)=>void;labels:{title:string;version:string}}){return <section><label>{labels.title}<input value={schema.title.defaultText} onChange={e=>onChange({...schema,title:{...schema.title,defaultText:e.target.value}})}/></label><p>{labels.version}: {schema.version}</p></section>}

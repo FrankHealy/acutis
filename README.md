@@ -19,8 +19,8 @@ Working command:
 ```powershell
 $env:ASPNETCORE_URLS='http://localhost:5010'
 $env:ASPNETCORE_ENVIRONMENT='Development'
-Start-Process -FilePath 'C:\Acutis\acutis.api\Acutis.Api\bin\Debug\net8.0\Acutis.Api.exe' `
-  -WorkingDirectory 'C:\Acutis\acutis.api\Acutis.Api\bin\Debug\net8.0'
+Start-Process -FilePath 'C:\Acutis\acutis.centre\acutis.centre.api\src\Acutis.Api\bin\Debug\net8.0\Acutis.Api.exe' `
+  -WorkingDirectory 'C:\Acutis\acutis.centre\acutis.centre.api\src\Acutis.Api\bin\Debug\net8.0'
 ```
 
 Verification:
@@ -44,17 +44,17 @@ Related notes:
 
 This repo now includes conservative Docker support for:
 
-- `acutis.api` (`Acutis.Api.csproj`)
-- `acutis.web` (Next.js standalone output)
+- `acutis.centre/acutis.centre.api` (`Acutis.Api.csproj`)
+- `acutis.centre/acutis.centre.web` (Next.js standalone output)
 
-It does **not** add Docker support for `acutis.tab`, and it does **not** replace any existing VPS compose file automatically.
+It does **not** add Docker support for the Centre tablet at `acutis.centre/acutis.centre.tab`, and it does **not** replace any existing VPS compose file automatically.
 
-New deployment files live under [`deploy/`](c:/Acutis/deploy):
+New deployment files live under `deploy/`:
 
-- [`api.Dockerfile`](c:/Acutis/deploy/api.Dockerfile)
-- [`web.Dockerfile`](c:/Acutis/deploy/web.Dockerfile)
-- [`.env.example`](c:/Acutis/deploy/.env.example)
-- [`docker-compose.example.yml`](c:/Acutis/deploy/docker-compose.example.yml)
+- `deploy/api.Dockerfile`
+- `deploy/web.Dockerfile`
+- `deploy/.env.example`
+- `deploy/docker-compose.example.yml`
 
 ### Assumptions
 

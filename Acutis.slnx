@@ -1,0 +1,13 @@
+<Solution>
+  <Project Path="acutis.centre/acutis.centre.api/tests/Acutis.Api.Tests/Acutis.Api.Tests.csproj" />
+  <Project Path="acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj" />
+  <Project Path="acutis.centre/acutis.centre.api/src/Acutis.Application/Acutis.Application.csproj" />
+  <Project Path="acutis.centre/acutis.centre.api/src/Acutis.Domain/Acutis.Domain.csproj" />
+  <Project Path="acutis.centre/acutis.centre.api/functions/Acutis.Functions/Acutis.Functions.csproj" />
+  <Project Path="acutis.centre/acutis.centre.db/Acutis.Infrastructure/Acutis.Infrastructure.csproj" />
+  <Project Path="acutis.shared/acutis.shared.api/Acutis.Platform.Contracts/Acutis.Platform.Contracts.csproj" />
+  <Project Path="acutis.shared/acutis.shared.api/Acutis.Forms.Schema/Acutis.Forms.Schema.csproj" />
+  <Project Path="acutis.practitioner/acutis.practitioner.api/src/Acutis.Practitioner.Api/Acutis.Practitioner.Api.csproj" />
+  <Project Path="acutis.community/acutis.community.api/src/Acutis.Community.Api/Acutis.Community.Api.csproj" />
+  <Project Path="acutis.outreach/acutis.outreach.api/src/Acutis.Outreach.Api/Acutis.Outreach.Api.csproj" />
+</Solution>

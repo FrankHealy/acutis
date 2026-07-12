@@ -35,7 +35,7 @@ The container will expose Keycloak at `http://localhost:8080`. Admin UI credenti
 
 4. Update API configuration (.env or environment variables):
 
-Create a `.env` file in `acutis.api` (or set env vars):
+Create an ignored `.env` file at the repository root or in `acutis.centre/acutis.centre.api/src/Acutis.Api` (or set environment variables):
 
 ```
 ASPNETCORE_URLS=http://localhost:5009

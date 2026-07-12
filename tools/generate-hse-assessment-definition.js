@@ -4,7 +4,7 @@ const path = require("path");
 const sourcePath = "c:/work/Acutis HSE Application Form/HSE.json";
 const communityFormCode = "community_initial_assessment";
 const outputJsonPath = path.join(__dirname, "..", "resources", "forms", "hse_initial_assessment.generated.json");
-const outputTsPath = path.join(__dirname, "..", "acutis.tab", "src", "features", "hseAssessment", "definition.ts");
+const outputTsPath = path.join(__dirname, "..", "acutis.centre", "acutis.centre.tab", "src", "features", "hseAssessment", "definition.ts");
 const outputMigrationPayloadPath = path.join(__dirname, "..", "tmp", "hse_initial_assessment_migration_payload.json");
 
 const source = JSON.parse(fs.readFileSync(sourcePath, "utf8"));

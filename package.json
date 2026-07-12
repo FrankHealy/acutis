@@ -1,11 +1,33 @@
 {
   "name": "acutis",
   "private": true,
+  "workspaces": [
+    "acutis.centre/acutis.centre.web",
+    "acutis.centre/acutis.centre.tab",
+    "acutis.community/acutis.community.web",
+    "acutis.community/acutis.community.tab",
+    "acutis.practitioner/acutis.practitioner.web",
+    "acutis.practitioner/acutis.practitioner.tab",
+    "acutis.outreach/acutis.outreach.web",
+    "acutis.outreach/acutis.outreach.mob",
+    "acutis.shared/acutis.shared.web/packages/*",
+    "acutis.shared/acutis.shared.tab/packages/*",
+    "acutis.shared/acutis.shared.api/packages/*",
+    "acutis.shared/acutis.shared.resources/packages/*"
+  ],
   "scripts": {
-    "web": "npm --prefix acutis.web run dev",
-    "api": "dotnet watch --project acutis.api run",
-    "mob": "powershell -NoProfile -Command \"Set-Location 'acutis.mob'; npm run start\"",
-    "dev": "npm run web"
+    "web": "npm --prefix acutis.centre/acutis.centre.web run dev",
+    "api": "dotnet watch --project acutis.centre/acutis.centre.api/src/Acutis.Api run",
+    "mob": "powershell -NoProfile -Command \"Set-Location 'acutis.centre/acutis.centre.tab'; npm run start\"",
+    "dev": "npm run web",
+    "build:centre-web": "npm --workspace acutis.web run build",
+    "build:practitioner-web": "npm --workspace @acutis/practitioner-web run build",
+    "build:community-web": "npm --workspace @acutis/community-web run build",
+    "build:outreach-web": "npm --workspace @acutis/outreach-web run build",
+    "typecheck:shared": "npm run typecheck --workspaces --if-present",
+    "test:shared": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:all": "npm run lint"
   },
   "dependencies": {
     "expo": "^55.0.9"

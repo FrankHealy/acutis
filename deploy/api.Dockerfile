@@ -1,16 +1,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY acutis.api/Acutis.Api/Acutis.Api.csproj acutis.api/Acutis.Api/
-COPY acutis.api/Acutis.Application/Acutis.Application.csproj acutis.api/Acutis.Application/
-COPY acutis.api/Acutis.Domain/Acutis.Domain.csproj acutis.api/Acutis.Domain/
-COPY acutis.api/Acutis.Infrastructure/Acutis.Infrastructure.csproj acutis.api/Acutis.Infrastructure/
+COPY acutis.centre/acutis.centre.api/ acutis.centre/acutis.centre.api/
+COPY acutis.centre/acutis.centre.db/ acutis.centre/acutis.centre.db/
 
-RUN dotnet restore acutis.api/Acutis.Api/Acutis.Api.csproj
+RUN dotnet restore acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj
 
-COPY acutis.api/ acutis.api/
-
-RUN dotnet publish acutis.api/Acutis.Api/Acutis.Api.csproj \
+RUN dotnet publish acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false

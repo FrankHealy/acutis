@@ -1,0 +1,106 @@
+name: Validate Acutis platform
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      shared: ${{ steps.filter.outputs.shared }}
+      centre: ${{ steps.filter.outputs.centre }}
+      practitioner: ${{ steps.filter.outputs.practitioner }}
+      community: ${{ steps.filter.outputs.community }}
+      outreach: ${{ steps.filter.outputs.outreach }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared: ['acutis.shared/**', 'package*.json', '.github/workflows/**', 'infrastructure/deployment/**', 'infrastructure/keycloak/**']
+            centre: ['acutis.centre/**', 'deploy/**']
+            practitioner: ['acutis.practitioner/**']
+            community: ['acutis.community/**']
+            outreach: ['acutis.outreach/**']
+  shared:
+    needs: changes
+    if: needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck:shared
+      - run: npm run test:shared
+      - run: npm run lint
+  centre-web:
+    needs: changes
+    if: needs.changes.outputs.centre == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-node-validation.yml
+    with: { workspace: acutis.web }
+  centre-mobile:
+    needs: changes
+    if: needs.changes.outputs.centre == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-node-validation.yml
+    with: { workspace: acutis.tab, run-build: true }
+  practitioner-web:
+    needs: changes
+    if: needs.changes.outputs.practitioner == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-node-validation.yml
+    with: { workspace: '@acutis/practitioner-web' }
+  practitioner-mobile:
+    needs: changes
+    if: needs.changes.outputs.practitioner == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-node-validation.yml
+    with: { workspace: '@acutis/practitioner-mobile', run-build: true }
+  community-web:
+    needs: changes
+    if: needs.changes.outputs.community == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-node-validation.yml
+    with: { workspace: '@acutis/community-web' }
+  community-mobile:
+    needs: changes
+    if: needs.changes.outputs.community == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-node-validation.yml
+    with: { workspace: '@acutis/community-mobile', run-build: true }
+  outreach-web:
+    needs: changes
+    if: needs.changes.outputs.outreach == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-node-validation.yml
+    with: { workspace: '@acutis/outreach-web' }
+  outreach-mobile:
+    needs: changes
+    if: needs.changes.outputs.outreach == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-node-validation.yml
+    with: { workspace: '@acutis/outreach-mobile', run-build: true }
+  centre-api:
+    needs: changes
+    if: needs.changes.outputs.centre == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-dotnet-validation.yml
+    with: { project: acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj }
+  practitioner-api:
+    needs: changes
+    if: needs.changes.outputs.practitioner == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-dotnet-validation.yml
+    with: { project: acutis.practitioner/acutis.practitioner.api/src/Acutis.Practitioner.Api/Acutis.Practitioner.Api.csproj, context: PractitionerDbContext }
+  community-api:
+    needs: changes
+    if: needs.changes.outputs.community == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-dotnet-validation.yml
+    with: { project: acutis.community/acutis.community.api/src/Acutis.Community.Api/Acutis.Community.Api.csproj, context: CommunityDbContext }
+  outreach-api:
+    needs: changes
+    if: needs.changes.outputs.outreach == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/reusable-dotnet-validation.yml
+    with: { project: acutis.outreach/acutis.outreach.api/src/Acutis.Outreach.Api/Acutis.Outreach.Api.csproj }
+  dotnet-tests:
+    needs: changes
+    if: needs.changes.outputs.centre == 'true' || needs.changes.outputs.practitioner == 'true' || needs.changes.outputs.community == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 8.0.x }
+      - run: dotnet test acutis.centre/acutis.centre.api/tests/Acutis.Api.Tests/Acutis.Api.Tests.csproj --configuration Release

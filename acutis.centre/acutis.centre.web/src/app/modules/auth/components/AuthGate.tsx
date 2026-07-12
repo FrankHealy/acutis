@@ -1,0 +1,62 @@
+"use client";
+
+import { useEffect, type ReactNode } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
+import { isAuthorizationDisabled } from "@/lib/authMode";
+import { ambulatoryKeycloakProviderId, getProviderForPath, isAmbulatoryPath } from "@/lib/authProviders";
+
+export default function AuthGate({ children }: { children: ReactNode }) {
+  const { data: session, status } = useSession();
+  const pathname = usePathname();
+  const isAuthStatusPage = pathname.startsWith("/auth/");
+  const isExternalVideoInvitation = pathname.startsWith("/vc/join/");
+  const requiredProvider = getProviderForPath(pathname);
+
+  useEffect(() => {
+    if (isAuthorizationDisabled || isAuthStatusPage || isExternalVideoInvitation) {
+      return;
+    }
+
+    const sessionIsUnusable =
+      status === "authenticated" &&
+      (!session?.accessToken || session.error === "RefreshAccessTokenError");
+
+    if (sessionIsUnusable) {
+      const callbackUrl = `${window.location.pathname}${window.location.search}`;
+      window.location.replace(`/auth/session-expired?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      return;
+    }
+
+    if (
+      status === "authenticated" &&
+      isAmbulatoryPath(pathname) &&
+      session?.authProvider !== ambulatoryKeycloakProviderId
+    ) {
+      void signIn(ambulatoryKeycloakProviderId, { callbackUrl: window.location.href });
+      return;
+    }
+
+    if (status === "unauthenticated") {
+      void signIn(requiredProvider, { callbackUrl: window.location.href });
+    }
+  }, [isAuthStatusPage, isExternalVideoInvitation, pathname, requiredProvider, session?.accessToken, session?.authProvider, session?.error, status]);
+
+  if (isAuthorizationDisabled) {
+    return <>{children}</>;
+  }
+
+  if (isAuthStatusPage || isExternalVideoInvitation) {
+    return <>{children}</>;
+  }
+
+  if (
+    status !== "authenticated" ||
+    !session?.accessToken ||
+    session.error === "RefreshAccessTokenError"
+  ) {
+    return null;
+  }
+
+  return <>{children}</>;
+}

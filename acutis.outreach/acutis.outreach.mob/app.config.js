@@ -1,0 +1,1 @@
+module.exports={expo:{name:"Acutis Outreach",slug:"acutis-outreach",scheme:process.env.ACUTIS_OUTREACH_SCHEME||"acutis-outreach",plugins:["expo-router"],extra:{apiBaseUrl:process.env.ACUTIS_OUTREACH_API_URL||"http://localhost:5030"},android:{package:"com.salientrecovery.acutis.outreach"},ios:{bundleIdentifier:"com.salientrecovery.acutis.outreach"}}};

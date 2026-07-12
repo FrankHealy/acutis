@@ -1,0 +1,1 @@
+import test from "node:test";import assert from "node:assert/strict";test("form responses remain product-neutral JSON",()=>assert.deepEqual(JSON.parse(JSON.stringify({definitionCode:"demo",definitionVersion:1,status:"draft",answers:{mood:5}})).answers,{mood:5}));

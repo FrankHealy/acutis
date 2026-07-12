@@ -1,0 +1,33 @@
+services:
+  practitioner-api:
+    build: { context: ../.., dockerfile: infrastructure/deployment/product-api.Dockerfile, args: { PROJECT: Acutis.Practitioner.Api, PROJECT_PATH: acutis.practitioner/acutis.practitioner.api/src/Acutis.Practitioner.Api/Acutis.Practitioner.Api.csproj } }
+    environment:
+      ASPNETCORE_URLS: http://+:5010
+      ConnectionStrings__Practitioner: ${PRACTITIONER_CONNECTION_STRING}
+      Identity__Authority: ${PRACTITIONER_KEYCLOAK_ISSUER}
+      Identity__Audience: practitioner-api
+    ports: ["${PRACTITIONER_API_PORT:-5010}:5010"]
+  community-api:
+    build: { context: ../.., dockerfile: infrastructure/deployment/product-api.Dockerfile, args: { PROJECT: Acutis.Community.Api, PROJECT_PATH: acutis.community/acutis.community.api/src/Acutis.Community.Api/Acutis.Community.Api.csproj } }
+    environment:
+      ASPNETCORE_URLS: http://+:5020
+      ConnectionStrings__Community: ${COMMUNITY_CONNECTION_STRING}
+      Identity__Authority: ${COMMUNITY_KEYCLOAK_ISSUER}
+      Identity__Audience: community-api
+    ports: ["${COMMUNITY_API_PORT:-5020}:5020"]
+  outreach-api:
+    build: { context: ../.., dockerfile: infrastructure/deployment/product-api.Dockerfile, args: { PROJECT: Acutis.Outreach.Api, PROJECT_PATH: acutis.outreach/acutis.outreach.api/src/Acutis.Outreach.Api/Acutis.Outreach.Api.csproj } }
+    environment: { ASPNETCORE_URLS: http://+:5030 }
+    ports: ["${OUTREACH_API_PORT:-5030}:5030"]
+  practitioner-web:
+    build: { context: ../.., dockerfile: infrastructure/deployment/product-web.Dockerfile, args: { WORKSPACE: "@acutis/practitioner-web" } }
+    environment: { PORT: 3010, NEXTAUTH_URL: "${PRACTITIONER_WEB_URL}", NEXTAUTH_SECRET: "${PRACTITIONER_NEXTAUTH_SECRET}", KEYCLOAK_CLIENT_SECRET: "${PRACTITIONER_WEB_CLIENT_SECRET}" }
+    ports: ["${PRACTITIONER_WEB_PORT:-3010}:3010"]
+  community-web:
+    build: { context: ../.., dockerfile: infrastructure/deployment/product-web.Dockerfile, args: { WORKSPACE: "@acutis/community-web" } }
+    environment: { PORT: 3020, NEXTAUTH_URL: "${COMMUNITY_WEB_URL}", NEXTAUTH_SECRET: "${COMMUNITY_NEXTAUTH_SECRET}", KEYCLOAK_CLIENT_SECRET: "${COMMUNITY_WEB_CLIENT_SECRET}" }
+    ports: ["${COMMUNITY_WEB_PORT:-3020}:3020"]
+  outreach-web:
+    build: { context: ../.., dockerfile: infrastructure/deployment/product-web.Dockerfile, args: { WORKSPACE: "@acutis/outreach-web" } }
+    environment: { PORT: 3030, NEXTAUTH_URL: "${OUTREACH_WEB_URL}", NEXTAUTH_SECRET: "${OUTREACH_NEXTAUTH_SECRET}", KEYCLOAK_CLIENT_SECRET: "${OUTREACH_WEB_CLIENT_SECRET}" }
+    ports: ["${OUTREACH_WEB_PORT:-3030}:3030"]

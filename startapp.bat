@@ -2,9 +2,9 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "ROOT=C:\Acutis"
-set "API_DIR=%ROOT%\acutis.api"
-set "WEB_DIR=%ROOT%\acutis.web"
-set "API_EXE=%API_DIR%\Acutis.Api\bin\Debug\net8.0\Acutis.Api.exe"
+set "API_DIR=%ROOT%\acutis.centre\acutis.centre.api"
+set "WEB_DIR=%ROOT%\acutis.centre\acutis.centre.web"
+set "API_EXE=%API_DIR%\src\Acutis.Api\bin\Debug\net8.0\Acutis.Api.exe"
 set "API_PORT=5009"
 set "WEB_PORT=3000"
 set "KEYCLOAK_URL=http://localhost:8080/"
@@ -33,7 +33,7 @@ exit /b 1
 
 :args_done
 if not defined SQL_SERVER (
-    for /f "tokens=1,* delims=|" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$dev = Join-Path '%ROOT%' 'acutis.api\Acutis.Api\appsettings.Development.json'; $base = Join-Path '%ROOT%' 'acutis.api\Acutis.Api\appsettings.json'; $items = @($dev, $base) | Where-Object { Test-Path $_ } | ForEach-Object { $json = Get-Content $_ -Raw | ConvertFrom-Json; $cs = [string]$json.ConnectionStrings.DefaultConnection; $server = ''; if ($cs -match '(?i)(Server|Data Source)\s*=\s*([^;]+)') { $server = $matches[2] }; [pscustomobject]@{ Server = $server; Connection = $cs } }; $local = $items | Where-Object { $_.Server -match ('^(localhost|127\.0\.0\.1|\.|' + [regex]::Escape($env:COMPUTERNAME) + ')(\\|,|$)') } | Select-Object -First 1; $pick = if ($local) { $local } else { $items | Select-Object -First 1 }; if ($pick) { Write-Output ($pick.Server + '|' + $pick.Connection) }"') do (
+    for /f "tokens=1,* delims=|" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$dev = Join-Path '%ROOT%' 'acutis.centre\acutis.centre.api\src\Acutis.Api\appsettings.Development.json'; $base = Join-Path '%ROOT%' 'acutis.centre\acutis.centre.api\src\Acutis.Api\appsettings.json'; $items = @($dev, $base) | Where-Object { Test-Path $_ } | ForEach-Object { $json = Get-Content $_ -Raw | ConvertFrom-Json; $cs = [string]$json.ConnectionStrings.DefaultConnection; $server = ''; if ($cs -match '(?i)(Server|Data Source)\s*=\s*([^;]+)') { $server = $matches[2] }; [pscustomobject]@{ Server = $server; Connection = $cs } }; $local = $items | Where-Object { $_.Server -match ('^(localhost|127\.0\.0\.1|\.|' + [regex]::Escape($env:COMPUTERNAME) + ')(\\|,|$)') } | Select-Object -First 1; $pick = if ($local) { $local } else { $items | Select-Object -First 1 }; if ($pick) { Write-Output ($pick.Server + '|' + $pick.Connection) }"') do (
         set "SQL_SERVER=%%A"
         set "SQL_CONNECTION=%%B"
     )
@@ -177,7 +177,7 @@ echo Starting API...
 if exist "%API_EXE%" (
     start "Acutis API" powershell -NoExit -ExecutionPolicy Bypass -Command "$env:ASPNETCORE_URLS='http://localhost:%API_PORT%'; $env:ASPNETCORE_ENVIRONMENT='Development'; $env:ConnectionStrings__DefaultConnection='%SQL_CONNECTION%'; & '%API_EXE%'"
 ) else (
-    start "Acutis API" powershell -NoExit -ExecutionPolicy Bypass -Command "$env:ASPNETCORE_URLS='http://localhost:%API_PORT%'; $env:ASPNETCORE_ENVIRONMENT='Development'; $env:ConnectionStrings__DefaultConnection='%SQL_CONNECTION%'; dotnet run --project '%API_DIR%\Acutis.Api\Acutis.Api.csproj' --urls 'http://localhost:%API_PORT%'"
+    start "Acutis API" powershell -NoExit -ExecutionPolicy Bypass -Command "$env:ASPNETCORE_URLS='http://localhost:%API_PORT%'; $env:ASPNETCORE_ENVIRONMENT='Development'; $env:ConnectionStrings__DefaultConnection='%SQL_CONNECTION%'; dotnet run --project '%API_DIR%\src\Acutis.Api\Acutis.Api.csproj' --urls 'http://localhost:%API_PORT%'"
 )
 
 call :wait_port %API_PORT% 90 "API"

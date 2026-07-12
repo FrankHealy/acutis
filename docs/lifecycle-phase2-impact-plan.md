@@ -46,9 +46,9 @@ Real cutover impact begins when these overloaded `Resident` fields stop being au
 
 Primary files:
 
-- [ResidentService.cs](/c:/Acutis/acutis.api/Acutis.Api/Services/Residents/ResidentService.cs)
-- [ResidentContracts.cs](/c:/Acutis/acutis.api/Acutis.Api/Contracts/ResidentContracts.cs)
-- [ResidentsController.cs](/c:/Acutis/acutis.api/Acutis.Api/Controllers/ResidentsController.cs)
+- [ResidentService.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Api/Services/Residents/ResidentService.cs)
+- [ResidentContracts.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Api/Contracts/ResidentContracts.cs)
+- [ResidentsController.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Api/Controllers/ResidentsController.cs)
 
 Current behavior:
 
@@ -83,9 +83,9 @@ Risk:
 
 Primary files:
 
-- [UnitOperationsService.cs](/c:/Acutis/acutis.api/Acutis.Api/Services/Units/UnitOperationsService.cs)
-- [UnitOperationsContracts.cs](/c:/Acutis/acutis.api/Acutis.Api/Contracts/UnitOperationsContracts.cs)
-- [UnitOperationsController.cs](/c:/Acutis/acutis.api/Acutis.Api/Controllers/UnitOperationsController.cs)
+- [UnitOperationsService.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Api/Services/Units/UnitOperationsService.cs)
+- [UnitOperationsContracts.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Api/Contracts/UnitOperationsContracts.cs)
+- [UnitOperationsController.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Api/Controllers/UnitOperationsController.cs)
 
 Current behavior:
 
@@ -105,8 +105,8 @@ Risk:
 
 Primary files:
 
-- [ResidentService.cs](/c:/Acutis/acutis.api/Acutis.Api/Services/Residents/ResidentService.cs#L73)
-- [TherapySchedulingService.cs](/c:/Acutis/acutis.api/Acutis.Api/Services/TherapyScheduling/TherapySchedulingService.cs)
+- [ResidentService.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Api/Services/Residents/ResidentService.cs#L73)
+- [TherapySchedulingService.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Api/Services/TherapyScheduling/TherapySchedulingService.cs)
 
 Current behavior:
 
@@ -128,8 +128,8 @@ Risk:
 
 Primary files:
 
-- [SubmissionService.cs](/c:/Acutis/acutis.api/Acutis.Api/Services/Screening/SubmissionService.cs)
-- [FormSubmission.cs](/c:/Acutis/acutis.api/Acutis.Domain/Entities/FormSubmission.cs)
+- [SubmissionService.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Api/Services/Screening/SubmissionService.cs)
+- [FormSubmission.cs](/c:/Acutis/acutis.centre/acutis.centre.api/src/Acutis.Domain/Entities/FormSubmission.cs)
 
 Current behavior:
 
@@ -158,9 +158,9 @@ Risk:
 
 Primary files:
 
-- [useResidents.ts](/c:/Acutis/acutis.web/src/areas/shared/hooks/useResidents.ts)
-- [ResidentsSection.tsx](/c:/Acutis/acutis.web/src/areas/shared/ResidentsSection.tsx)
-- [residentService.ts](/c:/Acutis/acutis.web/src/services/residentService.ts)
+- [useResidents.ts](/c:/Acutis/acutis.centre/acutis.centre.web/src/areas/shared/hooks/useResidents.ts)
+- [ResidentsSection.tsx](/c:/Acutis/acutis.centre/acutis.centre.web/src/areas/shared/ResidentsSection.tsx)
+- [residentService.ts](/c:/Acutis/acutis.centre/acutis.centre.web/src/services/residentService.ts)
 
 Current behavior:
 
@@ -197,8 +197,8 @@ Risk:
 
 Primary files:
 
-- [RoomAssignments.tsx](/c:/Acutis/acutis.web/src/areas/shared/RoomAssignments.tsx)
-- [operationsService.ts](/c:/Acutis/acutis.web/src/services/operationsService.ts)
+- [RoomAssignments.tsx](/c:/Acutis/acutis.centre/acutis.centre.web/src/areas/shared/RoomAssignments.tsx)
+- [operationsService.ts](/c:/Acutis/acutis.centre/acutis.centre.web/src/services/operationsService.ts)
 
 Current behavior:
 
@@ -218,8 +218,8 @@ Risk:
 
 Primary files:
 
-- [UnitAdmissionForm.tsx](/c:/Acutis/acutis.web/src/areas/shared/admissions/UnitAdmissionForm.tsx)
-- [NewAdmissionForm.tsx](/c:/Acutis/acutis.web/src/areas/alcohol/components/NewAdmissionForm.tsx)
+- [UnitAdmissionForm.tsx](/c:/Acutis/acutis.centre/acutis.centre.web/src/areas/shared/admissions/UnitAdmissionForm.tsx)
+- [NewAdmissionForm.tsx](/c:/Acutis/acutis.centre/acutis.centre.web/src/areas/alcohol/components/NewAdmissionForm.tsx)
 - dynamic form renderer/service files already in the codebase
 
 Current behavior:

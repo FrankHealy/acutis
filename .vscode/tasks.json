@@ -5,14 +5,14 @@
       "label": "Web: install",
       "type": "shell",
       "command": "npm install",
-      "options": { "cwd": "${workspaceFolder}/acutis.web" },
+      "options": { "cwd": "${workspaceFolder}/acutis.centre/acutis.centre.web" },
       "problemMatcher": []
     },
     {
       "label": "Web: dev",
       "type": "shell",
       "command": "npm run dev",
-      "options": { "cwd": "${workspaceFolder}/acutis.web" },
+      "options": { "cwd": "${workspaceFolder}/acutis.centre/acutis.centre.web" },
       "isBackground": true,
       "problemMatcher": []
     },
@@ -21,14 +21,14 @@
       "label": "API: restore",
       "type": "shell",
       "command": "dotnet restore",
-      "options": { "cwd": "${workspaceFolder}/acutis.api" },
+      "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": "$msCompile"
     },
     {
       "label": "API: watch",
       "type": "shell",
-      "command": "dotnet watch run",
-      "options": { "cwd": "${workspaceFolder}/acutis.api" },
+      "command": "dotnet watch run --project acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj",
+      "options": { "cwd": "${workspaceFolder}" },
       "isBackground": true,
       "problemMatcher": "$msCompile"
     },
@@ -37,14 +37,14 @@
       "label": "Mobile: install",
       "type": "shell",
       "command": "npm install",
-      "options": { "cwd": "${workspaceFolder}/acutis.mob" },
+      "options": { "cwd": "${workspaceFolder}/acutis.centre/acutis.centre.tab" },
       "problemMatcher": []
     },
     {
       "label": "Mobile: start",
       "type": "shell",
       "command": "npx expo start",
-      "options": { "cwd": "${workspaceFolder}/acutis.mob" },
+      "options": { "cwd": "${workspaceFolder}/acutis.centre/acutis.centre.tab" },
       "isBackground": true,
       "problemMatcher": []
     },
