@@ -12,7 +12,7 @@ desktop.ini
 !.vscode/launch.json
 
 ############################
-# Node / Next.js (acutis.web)
+# Node / Next.js
 ############################
 node_modules/
 .next/
@@ -27,7 +27,7 @@ pnpm-debug.log*
 !.env.example
 
 ############################
-# Expo / React Native (acutis.mob)
+# Expo / React Native
 ############################
 .expo/
 .expo-shared/
@@ -41,7 +41,7 @@ yarn-debug.log*
 !.env.example
 
 ############################
-# .NET / ASP.NET Core (acutis.api)
+# .NET / ASP.NET Core
 ############################
 bin/
 obj/
@@ -72,8 +72,8 @@ logs/
 ############################
 coverage/
 reports/
-acutis.api/artifacts/
-acutis.tab/builds/
+acutis.centre/acutis.centre.api/artifacts/
+acutis.centre/acutis.centre.tab/builds/
 *.apk
 
 ############################
@@ -97,9 +97,9 @@ media/**
 
 .dotnet/
 
-acutis.web/.next/
+acutis.centre/acutis.centre.web/.next/
 
-acutis.web/node_modules/
+acutis.centre/acutis.centre.web/node_modules/
 
 media/**/*.mp4
 
@@ -109,6 +109,6 @@ media/**/*.mkv
 
 media/**/*.mp3
 
-acutis.web/GitPush.ps1
+acutis.centre/acutis.centre.web/GitPush.ps1
 
 media/

@@ -1,8 +1,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG PROJECT
+ARG PROJECT_PATH
 WORKDIR /src
-COPY acutis.api/ acutis.api/
-RUN dotnet publish "acutis.api/${PROJECT}/${PROJECT}.csproj" -c Release -o /publish /p:UseAppHost=false
+COPY acutis.community/ acutis.community/
+COPY acutis.practitioner/ acutis.practitioner/
+COPY acutis.outreach/ acutis.outreach/
+COPY acutis.shared/ acutis.shared/
+RUN dotnet publish "${PROJECT_PATH}" -c Release -o /publish /p:UseAppHost=false
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 ARG PROJECT
 WORKDIR /app

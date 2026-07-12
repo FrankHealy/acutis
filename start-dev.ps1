@@ -5,10 +5,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$apiDir = Join-Path $repoRoot "acutis.api"
-$webDir = Join-Path $repoRoot "acutis.web"
-$apiProjectPath = Join-Path $apiDir "Acutis.Api\Acutis.Api.csproj"
-$apiExeDir = Join-Path $apiDir "Acutis.Api\bin\Debug\net8.0"
+$apiDir = Join-Path $repoRoot "acutis.centre\acutis.centre.api"
+$webDir = Join-Path $repoRoot "acutis.centre\acutis.centre.web"
+$apiProjectPath = Join-Path $apiDir "src\Acutis.Api\Acutis.Api.csproj"
+$apiExeDir = Join-Path $apiDir "src\Acutis.Api\bin\Debug\net8.0"
 $apiExePath = Join-Path $apiExeDir "Acutis.Api.exe"
 $codeSigningSubject = "CN=Acutis Local Dev Code Signing"
 
@@ -100,7 +100,7 @@ if ($NoNewWindow) {
 Write-Host ""
 Write-Host "Started:"
 Write-Host "- API: signed built executable (http://localhost:5009)"
-Write-Host "- UI : npm run dev (acutis.web)"
+Write-Host "- UI : npm run dev (acutis.centre/acutis.centre.web)"
 Write-Host ""
 Write-Host "Default URLs:"
 Write-Host "- API: http://localhost:5009"

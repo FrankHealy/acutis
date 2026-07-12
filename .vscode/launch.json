@@ -5,8 +5,8 @@
       "name": "Debug: API (.NET)",
       "type": "coreclr",
       "request": "launch",
-      "cwd": "${workspaceFolder}/acutis.api",
-      "program": "${workspaceFolder}/acutis.api/bin/Debug/net8.0/acutis.api.dll",
+      "cwd": "${workspaceFolder}/acutis.centre/acutis.centre.api/src/Acutis.Api",
+      "program": "${workspaceFolder}/acutis.centre/acutis.centre.api/src/Acutis.Api/bin/Debug/net8.0/Acutis.Api.dll",
       "preLaunchTask": "API: restore",
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development"
@@ -17,7 +17,7 @@
       "type": "pwa-chrome",
       "request": "launch",
       "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}/acutis.web"
+      "webRoot": "${workspaceFolder}/acutis.centre/acutis.centre.web"
     }
   ],
   "compounds": [

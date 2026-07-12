@@ -4,13 +4,13 @@
 
 ### Web lint entrypoint
 
-`acutis.web/package.json` now runs ESLint via:
+`acutis.centre/acutis.centre.web/package.json` now runs ESLint via:
 
 `node .\node_modules\eslint\bin\eslint.js`
 
 There is also a local helper:
 
-`acutis.web/eslint.cmd`
+`acutis.centre/acutis.centre.web/eslint.cmd`
 
 Reason:
 In the Codex sandbox, the global `npm`/`npx` shim attempted to resolve paths under `C:\Users\frank`, which was not accessible and caused `EPERM` failures before ESLint started.
@@ -25,7 +25,7 @@ If CI or production build agents rely on `npm run lint`, verify that invoking ES
 
 Development config currently disables API authorization in:
 
-`acutis.api/Acutis.Api/appsettings.Development.json`
+`acutis.centre/acutis.centre.api/src/Acutis.Api/appsettings.Development.json`
 
 Production impact:
 This is scoped to the Development environment only. Do not copy the `Authorization.Disabled: true` setting into production configuration.

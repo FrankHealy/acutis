@@ -55,13 +55,13 @@ Ensure-Client "acutisrealm" "outreach-web" $false @("http://localhost:3030/*") |
 Ensure-ProductRealm "acutis-practitioner" "Acutis Practitioner" 3010 "practitioner-api" "practitioner-mobile" "acutis-practitioner" "practitioner-identity-broker"
 Ensure-ProductRealm "acutis-community" "Acutis Community" 3020 "community-api" "community-mobile" "acutis-community" "community-identity-broker"
 $repoRoot=(Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-foreach($item in @(@{realm="acutis-practitioner";app="practitioner-web";port=3010},@{realm="acutis-community";app="community-web";port=3020})) {
+foreach($item in @(@{realm="acutis-practitioner";app="acutis.practitioner\acutis.practitioner.web";port=3010},@{realm="acutis-community";app="acutis.community\acutis.community.web";port=3020})) {
     $clientId="$($item.realm)-web"; $client=@(Invoke-RestMethod -Uri "$BaseUrl/admin/realms/$($item.realm)/clients?clientId=$clientId" -Headers $headers)|Select-Object -First 1
     $secret=(Invoke-RestMethod -Uri "$BaseUrl/admin/realms/$($item.realm)/clients/$($client.id)/client-secret" -Headers $headers).value
-    @("KEYCLOAK_CLIENT_ID=$clientId","KEYCLOAK_CLIENT_SECRET=$secret","KEYCLOAK_ISSUER=$BaseUrl/realms/$($item.realm)","NEXTAUTH_URL=http://localhost:$($item.port)","NEXTAUTH_SECRET=$(New-LocalSecret)") | Set-Content (Join-Path $repoRoot "apps\$($item.app)\.env.local")
+    @("KEYCLOAK_CLIENT_ID=$clientId","KEYCLOAK_CLIENT_SECRET=$secret","KEYCLOAK_ISSUER=$BaseUrl/realms/$($item.realm)","NEXTAUTH_URL=http://localhost:$($item.port)","NEXTAUTH_SECRET=$(New-LocalSecret)") | Set-Content (Join-Path $repoRoot "$($item.app)\.env.local")
 }
 $outreach=@(Invoke-RestMethod -Uri "$BaseUrl/admin/realms/acutisrealm/clients?clientId=outreach-web" -Headers $headers)|Select-Object -First 1
 $outreachSecret=(Invoke-RestMethod -Uri "$BaseUrl/admin/realms/acutisrealm/clients/$($outreach.id)/client-secret" -Headers $headers).value
-@("KEYCLOAK_CLIENT_ID=outreach-web","KEYCLOAK_CLIENT_SECRET=$outreachSecret","KEYCLOAK_ISSUER=$BaseUrl/realms/acutisrealm","NEXTAUTH_URL=http://localhost:3030","NEXTAUTH_SECRET=$(New-LocalSecret)") | Set-Content (Join-Path $repoRoot "apps\outreach-web\.env.local")
+@("KEYCLOAK_CLIENT_ID=outreach-web","KEYCLOAK_CLIENT_SECRET=$outreachSecret","KEYCLOAK_ISSUER=$BaseUrl/realms/acutisrealm","NEXTAUTH_URL=http://localhost:3030","NEXTAUTH_SECRET=$(New-LocalSecret)") | Set-Content (Join-Path $repoRoot "acutis.outreach\acutis.outreach.web\.env.local")
 Write-Output "Local Acutis product realms, clients, broker identity providers, coarse roles, and the fictional demo identity are configured."
 Write-Output "Demo central subject: $($demoUser.id)"

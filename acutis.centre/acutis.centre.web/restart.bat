@@ -7,8 +7,8 @@ rem second, each in its own window.
 
 for %%I in ("%~dp0") do set "WEB_DIR=%%~fI"
 for %%I in ("%~dp0..") do set "ROOT=%%~fI"
-set "API_DIR=%ROOT%\acutis.api"
-set "API_EXE=%API_DIR%\Acutis.Api\bin\Debug\net8.0\Acutis.Api.exe"
+set "API_DIR=%ROOT%\acutis.centre.api"
+set "API_EXE=%API_DIR%\src\Acutis.Api\bin\Debug\net8.0\Acutis.Api.exe"
 set "API_PORT=5009"
 set "WEB_PORT=3000"
 
@@ -21,7 +21,7 @@ echo Starting API...
 if exist "%API_EXE%" (
     start "Acutis API" powershell -NoExit -ExecutionPolicy Bypass -Command "$env:ASPNETCORE_URLS='http://localhost:%API_PORT%'; $env:ASPNETCORE_ENVIRONMENT='Development'; & '%API_EXE%'"
 ) else (
-    start "Acutis API" powershell -NoExit -ExecutionPolicy Bypass -Command "$env:ASPNETCORE_URLS='http://localhost:%API_PORT%'; $env:ASPNETCORE_ENVIRONMENT='Development'; dotnet run --project '%API_DIR%\Acutis.Api\Acutis.Api.csproj' --urls 'http://localhost:%API_PORT%'"
+    start "Acutis API" powershell -NoExit -ExecutionPolicy Bypass -Command "$env:ASPNETCORE_URLS='http://localhost:%API_PORT%'; $env:ASPNETCORE_ENVIRONMENT='Development'; dotnet run --project '%API_DIR%\src\Acutis.Api\Acutis.Api.csproj' --urls 'http://localhost:%API_PORT%'"
 )
 
 call :wait_port %API_PORT% 90 "API"

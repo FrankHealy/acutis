@@ -10,14 +10,11 @@ docs
 resources
 maps
 media
-node_modules
-acutis.web/node_modules
-acutis.web/.next
-acutis.api/bin
-acutis.api/obj
-acutis.api/**/bin
-acutis.api/**/obj
-acutis.tab
+**/node_modules
+**/.next
+**/bin
+**/obj
+**/.expo
 HSE Refactor
 *.log
 *.tmp

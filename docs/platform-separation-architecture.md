@@ -4,10 +4,10 @@
 
 | Product | Web | Mobile | API | Database | Migration owner |
 |---|---|---|---|---|---|
-| Centre | `acutis.web` | `acutis.tab` | `Acutis.Api` | `AcutisCentre` (current Centre database during compatibility) | `Acutis.Infrastructure/Migrations` |
-| Practitioner | `apps/practitioner-web` | `apps/practitioner-mobile` | `Acutis.Practitioner.Api` | `AcutisPractitioner` | `Acutis.Practitioner.Api/Migrations` |
-| Community | `apps/community-web` | `apps/community-mobile` | `Acutis.Community.Api` | `AcutisCommunity` | `Acutis.Community.Api/Migrations` |
-| Outreach | `apps/outreach-web` preview | `apps/outreach-mobile` preview | `Acutis.Outreach.Api` placeholder | reserved `AcutisOutreach` | reserved in Outreach API |
+| Centre | `acutis.centre/acutis.centre.web` | `acutis.centre/acutis.centre.tab` | `acutis.centre/acutis.centre.api` | `AcutisCentre` (current Centre database during compatibility) | `acutis.centre/acutis.centre.db/Acutis.Infrastructure/Migrations` |
+| Practitioner | `acutis.practitioner/acutis.practitioner.web` | `acutis.practitioner/acutis.practitioner.tab` | `acutis.practitioner/acutis.practitioner.api` | `AcutisPractitioner` | `Acutis.Practitioner.Api/Migrations` |
+| Community | `acutis.community/acutis.community.web` | `acutis.community/acutis.community.tab` | `acutis.community/acutis.community.api` | `AcutisCommunity` | `Acutis.Community.Api/Migrations` |
+| Outreach | `acutis.outreach/acutis.outreach.web` preview | `acutis.outreach/acutis.outreach.mob` preview | `acutis.outreach/acutis.outreach.api` placeholder | no implementation | none |
 
 No product API references another product API or the legacy Centre persistence project. Cross-product contracts contain identity, product link, tenant context, membership and branding transport shapes only.
 
@@ -34,7 +34,7 @@ Local realm/client/IdP configuration is repeatable through `infrastructure/keycl
 
 ## Branding, localisation and RTL
 
-`@acutis/branding` defines runtime tenant branding without product forks. `@acutis/design-system` and `@acutis/mobile-ui` consume semantic tokens. `@acutis/localization` and `@acutis/rtl` are platform-neutral and shared by web/mobile; product translation namespaces remain independently owned. Tenant terminology overlays are part of branding configuration. Direction is derived from locale and navigation icons use direction-aware helpers.
+The shared design-system, mobile UI, localization, and RTL packages coexist with richer Centre-specific web and tablet implementations. They were relocated unchanged and are not yet one unified theming engine. Current divergence, product-specific translation leakage, and a safe later convergence sequence are documented in `docs/architecture/shared-theming-localization-convergence.md`.
 
 ## Forms
 
@@ -80,10 +80,10 @@ npm --workspace @acutis/practitioner-mobile run build
 npm --workspace @acutis/community-mobile run build
 npm --workspace @acutis/outreach-mobile run build
 
-dotnet build acutis.api\Acutis.slnx --configuration Release
-dotnet test acutis.api\Acutis.Api.Tests\Acutis.Api.Tests.csproj --configuration Release
-dotnet ef migrations list --project acutis.api\Acutis.Practitioner.Api --startup-project acutis.api\Acutis.Practitioner.Api --context PractitionerDbContext
-dotnet ef migrations list --project acutis.api\Acutis.Community.Api --startup-project acutis.api\Acutis.Community.Api --context CommunityDbContext
-sqlcmd -S localhost -E -C -b -i infrastructure\sql\migrate-practitioner-from-ambulatory.sql
-sqlcmd -S localhost -E -C -b -i infrastructure\sql\migrate-community-from-ambulatory.sql
+dotnet build Acutis.slnx --configuration Release
+dotnet test acutis.centre\acutis.centre.api\tests\Acutis.Api.Tests\Acutis.Api.Tests.csproj --configuration Release
+dotnet ef migrations list --project acutis.practitioner\acutis.practitioner.api\src\Acutis.Practitioner.Api --startup-project acutis.practitioner\acutis.practitioner.api\src\Acutis.Practitioner.Api --context PractitionerDbContext
+dotnet ef migrations list --project acutis.community\acutis.community.api\src\Acutis.Community.Api --startup-project acutis.community\acutis.community.api\src\Acutis.Community.Api --context CommunityDbContext
+sqlcmd -S localhost -E -C -b -i acutis.practitioner\acutis.practitioner.db\scripts\migrate-practitioner-from-ambulatory.sql
+sqlcmd -S localhost -E -C -b -i acutis.community\acutis.community.db\scripts\migrate-community-from-ambulatory.sql
 ```

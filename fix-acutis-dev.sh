@@ -14,7 +14,7 @@ require_env AUTH_KEYCLOAK_SECRET
 require_env NEXTAUTH_SECRET
 
 APP_ROOT="/opt/acutis/acutis"
-WEB_ENV="$APP_ROOT/acutis.web/.env.local"
+WEB_ENV="$APP_ROOT/acutis.centre/acutis.centre.web/.env.local"
 APP_IP="167.233.16.141"
 API_URL="http://localhost:5010"
 KC_URL="http://$APP_IP:8080"

@@ -4,7 +4,7 @@
 
 React Native is bootstrapped directly in:
 
-C:\Acutis\acutis.tab
+C:\Acutis\acutis.centre\acutis.centre.tab
 
 DO NOT:
 - create a separate repo (e.g. acutis.mobile)
@@ -60,7 +60,7 @@ Reserved for server only:
 
 Run from:
 
-C:\Acutis\acutis.tab
+C:\Acutis\acutis.centre\acutis.centre.tab
 
 If Expo is not initialised:
 

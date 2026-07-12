@@ -7,13 +7,13 @@ It is based on the current repository state as of 2026-03-12.
 ## 1. Web lint entrypoint workaround
 
 Affected files:
-- `acutis.web/package.json`
-- `acutis.web/eslint.cmd`
+- `acutis.centre/acutis.centre.web/package.json`
+- `acutis.centre/acutis.centre.web/eslint.cmd`
 
 Current behavior:
-- `npm run lint` in `acutis.web` invokes ESLint directly through the local package file:
+- `npm run lint` in `acutis.centre/acutis.centre.web` invokes ESLint directly through the local package file:
   - `node .\node_modules\eslint\bin\eslint.js`
-- `acutis.web/eslint.cmd` is a helper wrapper that calls ESLint through:
+- `acutis.centre/acutis.centre.web/eslint.cmd` is a helper wrapper that calls ESLint through:
   - `C:\nvm4w\nodejs\node.exe`
 
 Why this exists:
@@ -24,13 +24,13 @@ Impact:
 - It should not affect production runtime behavior or web build output.
 
 Operational note:
-- If CI or another machine uses a different Node installation layout, `acutis.web/eslint.cmd` may not be portable because it hardcodes `C:\nvm4w\nodejs\node.exe`.
+- If CI or another machine uses a different Node installation layout, `acutis.centre/acutis.centre.web/eslint.cmd` may not be portable because it hardcodes `C:\nvm4w\nodejs\node.exe`.
 - The `package.json` lint script is the more portable entrypoint.
 
 ## 2. API development authorization bypass
 
 Affected file:
-- `acutis.api/Acutis.Api/appsettings.Development.json`
+- `acutis.centre/acutis.centre.api/src/Acutis.Api/appsettings.Development.json`
 
 Current behavior:
 - Development configuration contains:
@@ -54,7 +54,7 @@ Current behavior:
   - `ASPNETCORE_URLS=http://localhost:5010`
   - `ASPNETCORE_ENVIRONMENT=Development`
 - It then launches:
-  - `acutis.api/Acutis.Api/bin/Debug/net8.0/Acutis.Api.exe`
+  - `acutis.centre/acutis.centre.api/src/Acutis.Api/bin/Debug/net8.0/Acutis.Api.exe`
 
 Why this exists:
 - `dotnet run` in the sandbox was observed to be unreliable because of:
@@ -78,7 +78,7 @@ Current behavior:
 
 Why this matters:
 - This script does not reflect the API sandbox workaround documented in `README.md`.
-- It also does not use the dedicated `acutis.web/eslint.cmd` helper, though that helper is for linting rather than dev startup.
+- It also does not use the dedicated `acutis.centre/acutis.centre.web/eslint.cmd` helper, though that helper is for linting rather than dev startup.
 
 Impact:
 - `start-dev.ps1` may work on a normal local machine.
@@ -89,7 +89,7 @@ Impact:
 The details above were consolidated from:
 - `README.md`
 - `DEPLOYMENT_NOTES.md`
-- `acutis.web/package.json`
-- `acutis.web/eslint.cmd`
-- `acutis.api/Acutis.Api/appsettings.Development.json`
+- `acutis.centre/acutis.centre.web/package.json`
+- `acutis.centre/acutis.centre.web/eslint.cmd`
+- `acutis.centre/acutis.centre.api/src/Acutis.Api/appsettings.Development.json`
 - `start-dev.ps1`

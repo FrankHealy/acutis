@@ -2,7 +2,7 @@
 
 ## Development
 
-Run the web app locally from `acutis.web`:
+Run the web app locally from `acutis.centre/acutis.centre.web`:
 
 ```bash
 npm run dev

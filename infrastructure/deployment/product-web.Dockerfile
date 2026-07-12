@@ -1,11 +1,13 @@
 FROM node:20-bookworm-slim
 ARG WORKSPACE
-ARG APP_DIR
 WORKDIR /src
 COPY package.json package-lock.json ./
-COPY packages/ packages/
-COPY apps/ apps/
+COPY acutis.centre/ acutis.centre/
+COPY acutis.community/ acutis.community/
+COPY acutis.practitioner/ acutis.practitioner/
+COPY acutis.outreach/ acutis.outreach/
+COPY acutis.shared/ acutis.shared/
 RUN npm ci && npm --workspace "$WORKSPACE" run build
-WORKDIR /src/${APP_DIR}
+ENV PRODUCT_WORKSPACE=${WORKSPACE}
 ENV NODE_ENV=production
-CMD ["npm","run","start"]
+CMD ["sh","-c","npm --workspace \"$PRODUCT_WORKSPACE\" run start"]

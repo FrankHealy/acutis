@@ -21,7 +21,7 @@ if ([string]::IsNullOrWhiteSpace($Root)) {
 $Root = [System.IO.Path]::GetFullPath($Root)
 
 if ($Root -match '^[A-Za-z]:\\Windows\\System32\\?$') {
-    throw "Refusing to run in C:\Windows\System32. Move the script into acutis.tab or pass -Root C:\acutis\acutis.tab"
+    throw "Refusing to run in C:\Windows\System32. Move the script into acutis.centre\acutis.centre.tab or pass -Root C:\acutis\acutis.centre\acutis.centre.tab"
 }
 
 Write-Host "Bootstrapping React Native structure in $Root"

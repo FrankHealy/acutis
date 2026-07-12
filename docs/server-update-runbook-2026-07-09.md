@@ -112,9 +112,9 @@ Then restart the API and it will apply both contexts.
 If running migrations manually:
 
 ```bash
-cd /path/to/acutis/acutis.api
-dotnet ef database update --context AcutisDbContext --project Acutis.Infrastructure --startup-project Acutis.Api
-dotnet ef database update --context AcutisAmbulatoryDbContext --project Acutis.Infrastructure --startup-project Acutis.Api
+cd /path/to/acutis
+dotnet ef database update --context AcutisDbContext --project acutis.centre/acutis.centre.db/Acutis.Infrastructure/Acutis.Infrastructure.csproj --startup-project acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj
+dotnet ef database update --context AcutisAmbulatoryDbContext --project acutis.centre/acutis.centre.db/Acutis.Infrastructure/Acutis.Infrastructure.csproj --startup-project acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj
 ```
 
 On Ubuntu Docker deployments, prefer startup migrations unless you are deliberately running the API project directly on the host. Set:
