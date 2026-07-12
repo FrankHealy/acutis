@@ -279,6 +279,82 @@ namespace Acutis.Infrastructure.Migrations.Ambulatory
                     b.ToTable("AmbulatoryParticipant", (string)null);
                 });
 
+            modelBuilder.Entity("Acutis.Domain.Entities.VideoConsultation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EndedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RoomName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
+
+                    b.HasIndex("RoomName")
+                        .IsUnique();
+
+                    b.ToTable("VideoConsultation", (string)null);
+                });
+
+            modelBuilder.Entity("Acutis.Domain.Entities.VideoConsultationInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RevokedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("binary(32)")
+                        .IsFixedLength();
+
+                    b.Property<DateTime?>("UsedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("VideoConsultationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("VideoConsultationId");
+
+                    b.ToTable("VideoConsultationInvitation", (string)null);
+                });
+
             modelBuilder.Entity("Acutis.Domain.Entities.AmbulatoryAppointment", b =>
                 {
                     b.HasOne("Acutis.Domain.Entities.AmbulatoryParticipant", "Participant")
@@ -311,6 +387,33 @@ namespace Acutis.Infrastructure.Migrations.Ambulatory
                     b.Navigation("Participant");
                 });
 
+            modelBuilder.Entity("Acutis.Domain.Entities.VideoConsultation", b =>
+                {
+                    b.HasOne("Acutis.Domain.Entities.AmbulatoryAppointment", "Appointment")
+                        .WithOne("VideoConsultation")
+                        .HasForeignKey("Acutis.Domain.Entities.VideoConsultation", "AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+                });
+
+            modelBuilder.Entity("Acutis.Domain.Entities.VideoConsultationInvitation", b =>
+                {
+                    b.HasOne("Acutis.Domain.Entities.VideoConsultation", "VideoConsultation")
+                        .WithMany("Invitations")
+                        .HasForeignKey("VideoConsultationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("VideoConsultation");
+                });
+
+            modelBuilder.Entity("Acutis.Domain.Entities.AmbulatoryAppointment", b =>
+                {
+                    b.Navigation("VideoConsultation");
+                });
+
             modelBuilder.Entity("Acutis.Domain.Entities.AmbulatoryParticipant", b =>
                 {
                     b.Navigation("Appointments");
@@ -318,6 +421,11 @@ namespace Acutis.Infrastructure.Migrations.Ambulatory
                     b.Navigation("Assessments");
 
                     b.Navigation("CarePlans");
+                });
+
+            modelBuilder.Entity("Acutis.Domain.Entities.VideoConsultation", b =>
+                {
+                    b.Navigation("Invitations");
                 });
 #pragma warning restore 612, 618
         }

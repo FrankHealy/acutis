@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Acutis.Infrastructure.Auditing;
 
 namespace Acutis.Api.Middleware;
 
@@ -32,13 +33,17 @@ public sealed class FileRequestLoggingMiddleware
         {
             stopwatch.Stop();
 
-            var query = context.Request.QueryString.HasValue ? context.Request.QueryString.Value : string.Empty;
+            var rawPath = context.Request.Path.Value ?? string.Empty;
+            var path = RequestPathRedactor.Redact(rawPath);
+            var query = RequestPathRedactor.IsSensitive(rawPath)
+                ? string.Empty
+                : context.Request.QueryString.HasValue ? context.Request.QueryString.Value : string.Empty;
             var correlationId = context.Response.Headers.TryGetValue("X-Correlation-Id", out var headerValue)
                 ? headerValue.ToString()
                 : "n/a";
 
             var logLine =
-                $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz} | {context.Request.Method} {context.Request.Path}{query} | {context.Response.StatusCode} | {stopwatch.ElapsedMilliseconds} ms | CorrelationId={correlationId}{Environment.NewLine}";
+                $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz} | {context.Request.Method} {path}{query} | {context.Response.StatusCode} | {stopwatch.ElapsedMilliseconds} ms | CorrelationId={correlationId}{Environment.NewLine}";
 
             var logDirectory = Path.Combine(_environment.ContentRootPath, "logs");
             Directory.CreateDirectory(logDirectory);

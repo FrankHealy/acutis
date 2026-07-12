@@ -1,11 +1,26 @@
 {
   "name": "acutis",
   "private": true,
+  "workspaces": [
+    "acutis.web",
+    "acutis.tab",
+    "apps/*-web",
+    "apps/*-mobile",
+    "packages/*"
+  ],
   "scripts": {
     "web": "npm --prefix acutis.web run dev",
     "api": "dotnet watch --project acutis.api run",
     "mob": "powershell -NoProfile -Command \"Set-Location 'acutis.mob'; npm run start\"",
-    "dev": "npm run web"
+    "dev": "npm run web",
+    "build:centre-web": "npm --workspace acutis.web run build",
+    "build:practitioner-web": "npm --workspace @acutis/practitioner-web run build",
+    "build:community-web": "npm --workspace @acutis/community-web run build",
+    "build:outreach-web": "npm --workspace @acutis/outreach-web run build",
+    "typecheck:shared": "npm run typecheck --workspaces --if-present",
+    "test:shared": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:all": "npm run lint"
   },
   "dependencies": {
     "expo": "^55.0.9"

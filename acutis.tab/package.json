@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "build": "expo export --platform android --output-dir dist",
     "android": "powershell -ExecutionPolicy Bypass -File .\\start-dev.ps1",
     "android:clear": "powershell -ExecutionPolicy Bypass -File .\\start-dev.ps1 -ClearCache",
     "metro": "powershell -ExecutionPolicy Bypass -File .\\start-dev.ps1 -NoAndroid",

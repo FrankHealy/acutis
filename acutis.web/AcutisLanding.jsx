@@ -252,7 +252,7 @@ const MainLanding = ({ onEnterCentre, onEnterCommunity }) => (
       <ProductCard
         delayMs={350}
         label="Acutis Community"
-        sublabel="Assessment & post-treatment recovery support"
+        sublabel="Community based treatment"
         Icon={HeartHandshake}
         accent="teal"
         onClick={onEnterCommunity}

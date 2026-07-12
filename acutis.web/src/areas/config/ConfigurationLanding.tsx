@@ -20,6 +20,9 @@ import {
 import SuperAdminGuard from "@/areas/config/SuperAdminGuard";
 import { useLocalization } from "@/areas/shared/i18n/LocalizationProvider";
 
+const interactiveCardClass =
+  "app-card rounded-xl p-6 text-left transition-all duration-200 hover:-translate-y-1 hover:border-[var(--app-primary)] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2";
+
 const ConfigurationLanding: React.FC = () => {
   const router = useRouter();
   const { loadKeys, t } = useLocalization();
@@ -93,7 +96,7 @@ const ConfigurationLanding: React.FC = () => {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <button
               onClick={() => router.push("/units/config/centres")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <Building2 className="h-6 w-6 text-[var(--app-accent)]" />
@@ -106,7 +109,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/units")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <Building2 className="h-6 w-6 text-[var(--app-primary)]" />
@@ -119,7 +122,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/forms")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <ClipboardList className="h-6 w-6 text-[var(--app-primary)]" />
@@ -132,7 +135,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/forms/elements-library")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <LayoutGrid className="h-6 w-6 text-[var(--app-accent)]" />
@@ -145,7 +148,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/ot-roles")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <BriefcaseBusiness className="h-6 w-6 text-[var(--app-success)]" />
@@ -158,7 +161,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/group-therapy")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <MessageSquareText className="h-6 w-6 text-[var(--app-primary)]" />
@@ -171,7 +174,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/users-roles")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <UserCog className="h-6 w-6 text-[var(--app-text-muted)]" />
@@ -195,7 +198,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/day-planner")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <CalendarClock className="h-6 w-6 text-[var(--app-text-muted)]" />
@@ -206,7 +209,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/event-management")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <ClipboardCheck className="h-6 w-6 text-[var(--app-primary)]" />
@@ -219,7 +222,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/map-designer")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <Map className="h-6 w-6 text-[var(--app-primary)]" />
@@ -232,7 +235,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/quotes")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <Quote className="h-6 w-6 text-[var(--app-text-muted)]" />
@@ -243,7 +246,7 @@ const ConfigurationLanding: React.FC = () => {
 
             <button
               onClick={() => router.push("/units/config/program-manager")}
-              className="app-card text-left rounded-xl p-6 transition-shadow hover:shadow-md"
+              className={interactiveCardClass}
             >
               <div className="flex items-center gap-3 mb-3">
                 <ClipboardCheck className="h-6 w-6 text-[var(--app-text-muted)]" />

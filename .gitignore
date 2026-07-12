@@ -64,6 +64,8 @@ obj/
 ############################
 logs/
 *.log
+.dev-logs/
+.eslintcache
 
 ############################
 # Build artifacts

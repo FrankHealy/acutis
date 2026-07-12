@@ -1,0 +1,1 @@
+{"name":"@acutis/branding","version":"0.1.0","private":true,"type":"module","exports":"./src/index.ts","scripts":{"typecheck":"tsc --noEmit"},"dependencies":{"@acutis/shared-contracts":"0.1.0"},"devDependencies":{"typescript":"^5.9.2"}}

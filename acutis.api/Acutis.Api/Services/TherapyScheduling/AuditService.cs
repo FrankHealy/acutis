@@ -69,7 +69,7 @@ public sealed class AuditService : IAuditService
             AfterJson = SerializeForAudit(after),
             Reason = reason,
             CorrelationId = correlationId,
-            RequestPath = httpContext?.Request.Path.Value ?? string.Empty,
+            RequestPath = RequestPathRedactor.Redact(httpContext?.Request.Path.Value),
             RequestMethod = httpContext?.Request.Method ?? string.Empty,
             ClientIp = httpContext?.Connection.RemoteIpAddress?.ToString(),
             UserAgent = httpContext?.Request.Headers.UserAgent.ToString()

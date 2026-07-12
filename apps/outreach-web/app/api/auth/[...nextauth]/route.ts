@@ -1,0 +1,1 @@
+import NextAuth from"next-auth";import{createProductAuthOptions}from"@acutis/identity/server";const handler=NextAuth(createProductAuthOptions({clientId:process.env.KEYCLOAK_CLIENT_ID??"outreach-web",clientSecret:process.env.KEYCLOAK_CLIENT_SECRET??"",issuer:process.env.KEYCLOAK_ISSUER??"http://localhost:8080/realms/acutisrealm"}));export{handler as GET,handler as POST};

@@ -2,7 +2,7 @@ export const defaultKeycloakProviderId = "keycloak";
 export const ambulatoryKeycloakProviderId = "ambulatory-keycloak";
 
 export const isAmbulatoryPath = (pathname: string) =>
-  pathname.startsWith("/units/community") || pathname.startsWith("/units/practitioner");
+  pathname.startsWith("/units/community") || pathname.startsWith("/units/practitioner") || pathname.startsWith("/practitioner/");
 
 export const getProviderForPath = (pathname: string) =>
   isAmbulatoryPath(pathname) ? ambulatoryKeycloakProviderId : defaultKeycloakProviderId;

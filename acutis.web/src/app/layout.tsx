@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "@livekit/components-styles";
 // --- Import the Providers component ---
 import Providers from './providers'; 
 import AuthGate from "./modules/auth/components/AuthGate";

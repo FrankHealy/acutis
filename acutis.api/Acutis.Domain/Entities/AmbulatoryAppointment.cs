@@ -21,4 +21,5 @@ public sealed class AmbulatoryAppointment
     public DateTime UpdatedAtUtc { get; set; }
 
     public AmbulatoryParticipant? Participant { get; set; }
+    public VideoConsultation? VideoConsultation { get; set; }
 }

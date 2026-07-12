@@ -792,7 +792,7 @@ public sealed class AcutisDbContext : DbContext
                 AfterJson = AuditJsonSanitizer.Serialize(CreateCurrentSnapshot(auditEntry.Entry), AuditJsonOptions),
                 Reason = null,
                 CorrelationId = correlationId,
-                RequestPath = httpContext?.Request.Path.Value ?? string.Empty,
+                RequestPath = RequestPathRedactor.Redact(httpContext?.Request.Path.Value),
                 RequestMethod = httpContext?.Request.Method ?? string.Empty,
                 ClientIp = httpContext?.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = httpContext?.Request.Headers["User-Agent"].ToString()

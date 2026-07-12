@@ -1,0 +1,21 @@
+name: Reusable .NET validation
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+      context:
+        required: false
+        type: string
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 8.0.x }
+      - run: dotnet restore ${{ inputs.project }}
+      - run: dotnet build ${{ inputs.project }} --no-restore --configuration Release
+      - if: inputs.context != ''
+        run: dotnet tool install --global dotnet-ef && dotnet ef migrations list --project ${{ inputs.project }} --startup-project ${{ inputs.project }} --context ${{ inputs.context }} --no-build --configuration Release

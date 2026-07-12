@@ -25,6 +25,8 @@ using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
+using Acutis.Api.Services.VideoConsultations;
+using System.Threading.RateLimiting;
 
 DotEnvLoader.LoadForCurrentEnvironment();
 
@@ -82,6 +84,18 @@ builder.Services.AddScoped<IUnitVideoService, UnitVideoService>();
 builder.Services.AddScoped<IUnitVideoAdminService, UnitVideoService>();
 builder.Services.AddScoped<IUnitIdentityService, UnitIdentityService>();
 builder.Services.AddScoped<IAmbulatoryService, AmbulatoryService>();
+builder.Services.Configure<LiveKitOptions>(builder.Configuration.GetSection(LiveKitOptions.SectionName));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<ILiveKitTokenService, LiveKitTokenService>();
+builder.Services.AddScoped<IVideoConsultationService, VideoConsultationService>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("video-consultation-tokens", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirst("sub")?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 12, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+builder.Services.AddHttpLoggingInterceptor<SensitivePathHttpLoggingInterceptor>();
 builder.Services.AddSingleton<IApplicationAccessService, ApplicationAccessService>();
 builder.Services.Configure<OfflineWindowPolicyOptions>(builder.Configuration.GetSection("OfflineWindowPolicy"));
 builder.Services.Configure<AuthorizationOptions>(builder.Configuration.GetSection(AuthorizationOptions.SectionName));
@@ -326,8 +340,16 @@ if (!builder.Configuration.GetValue<bool>("Hosting:DisableHttpsRedirection", fal
     app.UseHttpsRedirection();
 }
 app.UseMiddleware<RequestCorrelationMiddleware>();
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/api/video-consultations"), branch =>
+    branch.Use(async (context, next) =>
+    {
+        context.Response.Headers.CacheControl = "no-store, no-cache, max-age=0";
+        context.Response.Headers.Pragma = "no-cache";
+        await next();
+    }));
 app.UseCors("WebApp");
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();

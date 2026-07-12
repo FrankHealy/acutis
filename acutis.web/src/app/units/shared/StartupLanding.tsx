@@ -14,6 +14,7 @@ import {
   Users,
   Video,
   Wine,
+  Radio,
   type LucideProps,
 } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
@@ -65,6 +66,7 @@ const hasUnitAccess = (access: AppAccess, aliases: string[]) =>
   hasPermission(access, aliases);
 
 const canSeeAll = (access: AppAccess) => isAuthorizationDisabled || hasSuperAdminAccess(access.roles);
+const hasPlatformDemoAccess = (access: AppAccess) => hasAnyAccessValue(access.roles, ["AcutisPlatformDemo"]);
 
 const hasNoAssignedAccess = (access: AppAccess) =>
   access.roles.length === 0 &&
@@ -154,7 +156,7 @@ const communityItems: LandingItem[] = [
     fallbackLabel: "Community",
     icon: HeartHandshake,
     accent: "teal",
-    href: "/units/community",
+    href: process.env.NEXT_PUBLIC_COMMUNITY_WEB_URL || "http://localhost:3020",
     delayMs: 200,
     canAccess: canOpenUnit(["community", "ambulatory"]),
   },
@@ -171,19 +173,19 @@ const productItems: LandingItem[] = [
     accent: "blue",
     targetView: "centre",
     delayMs: 150,
-    canAccess: (access) => centreItems.some((item) => item.canAccess(access)) || canOpenConfiguration(access),
+    canAccess: (access) => hasPlatformDemoAccess(access) || centreItems.some((item) => item.canAccess(access)) || canOpenConfiguration(access),
   },
   {
     id: "community",
     labelKey: "landing.product.community",
     fallbackLabel: "Acutis Community",
     descriptionKey: "landing.product.community.description",
-    fallbackDescription: "Assessment & post-treatment recovery support",
+    fallbackDescription: "Community based treatment",
     icon: HeartHandshake,
     accent: "teal",
     targetView: "community",
     delayMs: 350,
-    canAccess: (access) => communityItems.some((item) => item.canAccess(access)),
+    canAccess: (access) => hasPlatformDemoAccess(access) || communityItems.some((item) => item.canAccess(access)),
   },
   {
     id: "practitioner",
@@ -193,9 +195,21 @@ const productItems: LandingItem[] = [
     fallbackDescription: "Clinical practitioner workspace",
     icon: Video,
     accent: "indigo",
-    href: "/units/practitioner",
+    href: process.env.NEXT_PUBLIC_PRACTITIONER_WEB_URL || "http://localhost:3010",
     delayMs: 550,
-    canAccess: canOpenPractitioner,
+    canAccess: (access) => hasPlatformDemoAccess(access) || canOpenPractitioner(access),
+  },
+  {
+    id: "outreach",
+    labelKey: "landing.product.outreach",
+    fallbackLabel: "Acutis Outreach",
+    descriptionKey: "landing.product.outreach.description",
+    fallbackDescription: "Preview only",
+    icon: Radio,
+    accent: "orange",
+    href: process.env.NEXT_PUBLIC_OUTREACH_WEB_URL || "http://localhost:3030",
+    delayMs: 650,
+    canAccess: hasPlatformDemoAccess,
   },
 ];
 
@@ -215,6 +229,8 @@ const i18nKeys = [
   "landing.product.community.description",
   "landing.product.practitioner",
   "landing.product.practitioner.description",
+  "landing.product.outreach",
+  "landing.product.outreach.description",
   "landing.centre.title",
   "landing.centre.screening",
   "landing.centre.detox",
@@ -562,7 +578,11 @@ export default function StartupLanding() {
       return;
     }
     if (item.href) {
-      router.push(item.href);
+      if (/^https?:\/\//i.test(item.href)) {
+        window.location.assign(item.href);
+      } else {
+        router.push(item.href);
+      }
     }
   };
 
@@ -605,9 +625,9 @@ export default function StartupLanding() {
                   <button
                     type="button"
                     onClick={() => router.push("/units/config")}
-                    className="mt-10 flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50/70 px-5 py-2.5 text-sm font-semibold text-orange-700 shadow-sm transition-all hover:bg-orange-50 hover:shadow"
+                    className="group mt-10 flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50/70 px-5 py-2.5 text-sm font-semibold text-orange-700 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-orange-300 hover:bg-orange-50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
                   >
-                    <Settings className="h-4 w-4" />
+                    <Settings className="h-4 w-4 transition-transform duration-300 group-hover:rotate-90" />
                     <span>{t("landing.centre.configuration") === "landing.centre.configuration" ? "Configuration" : t("landing.centre.configuration")}</span>
                   </button>
                 ) : null

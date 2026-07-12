@@ -10,6 +10,22 @@ namespace Acutis.Api.Tests.Services.TherapyScheduling;
 public sealed class AuditServiceTests
 {
     [Fact]
+    public async Task WriteAsync_stores_only_redacted_invitation_request_path()
+    {
+        const string token = "f1f2f3f4f5f6f7f8f9fa0123456789abcdef0123456789abcdef0123456789ab";
+        await using var dbContext = CreateDbContext(nameof(WriteAsync_stores_only_redacted_invitation_request_path));
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Path = $"/api/video-consultations/invitations/{token}/credentials";
+        var service = new AuditService(dbContext, new HttpContextAccessor { HttpContext = httpContext });
+
+        await service.WriteAsync(null, null, "VideoConsultation", Guid.NewGuid().ToString(), "IssueCredential", null, null, null);
+
+        var audit = await dbContext.AuditLogs.AsNoTracking().SingleAsync();
+        Assert.Equal("/api/video-consultations/invitations/[REDACTED]/credentials", audit.RequestPath);
+        Assert.DoesNotContain(token, audit.RequestPath, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task WriteAsync_RedactsSensitiveFieldsAcrossObjects()
     {
         await using var dbContext = CreateDbContext(nameof(WriteAsync_RedactsSensitiveFieldsAcrossObjects));

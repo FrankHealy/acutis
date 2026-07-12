@@ -1,0 +1,24 @@
+name: Reusable Node validation
+on:
+  workflow_call:
+    inputs:
+      workspace:
+        required: true
+        type: string
+      run-build:
+        required: false
+        default: true
+        type: boolean
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm --workspace ${{ inputs.workspace }} run typecheck --if-present
+      - run: npm --workspace ${{ inputs.workspace }} run test --if-present
+      - run: npm --workspace ${{ inputs.workspace }} run lint --if-present
+      - if: inputs['run-build']
+        run: npm --workspace ${{ inputs.workspace }} run build --if-present

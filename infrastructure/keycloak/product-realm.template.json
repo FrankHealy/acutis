@@ -1,0 +1,18 @@
+{
+  "realm": "${PRODUCT_REALM}",
+  "displayName": "${PRODUCT_DISPLAY_NAME}",
+  "enabled": true,
+  "roles": { "realm": [{"name":"product_access"},{"name":"tenant_member"},{"name":"demo_user"}] },
+  "clients": [
+    {"clientId":"${PRODUCT}-web","publicClient":true,"redirectUris":["${PRODUCT_WEB_URL}/*"]},
+    {"clientId":"${PRODUCT}-mobile","publicClient":true,"redirectUris":["${PRODUCT_SCHEME}://redirect"]},
+    {"clientId":"${PRODUCT}-api","publicClient":false,"serviceAccountsEnabled":false}
+  ],
+  "identityProviders": [{
+    "alias":"acutis-identity",
+    "displayName":"Acutis",
+    "providerId":"oidc",
+    "enabled":true,
+    "config":{"issuer":"${CENTRAL_ISSUER}","clientId":"${BROKER_CLIENT_ID}","clientSecret":"${BROKER_CLIENT_SECRET}"}
+  }]
+}

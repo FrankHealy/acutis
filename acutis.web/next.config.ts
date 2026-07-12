@@ -1,13 +1,14 @@
 import type { NextConfig } from "next";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["@acutis/telemetry"],
   output: "standalone",
   turbopack: {
-    root: projectRoot,
+    root: resolve(projectRoot, ".."),
   },
   images: {
     remotePatterns: [

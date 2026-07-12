@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { redactSensitivePath } from "@acutis/telemetry";
 
 const getProxyUpstreamBaseUrl = (): string => {
   const upstreamBaseUrl =
@@ -46,6 +47,10 @@ const buildUpstreamHeaders = (request: NextRequest) => {
 };
 
 const proxyRequest = async (request: NextRequest, path: string[]) => {
+  const joinedPath = `/${path.join("/")}`;
+  if (joinedPath.startsWith("/api/ambulatory/") || joinedPath.startsWith("/api/video-consultations/")) {
+    console.info("legacy_route_used", { path: redactSensitivePath(joinedPath), method: request.method });
+  }
   const upstreamResponse = await fetch(buildUpstreamUrl(request, path), {
     method: request.method,
     headers: buildUpstreamHeaders(request),
