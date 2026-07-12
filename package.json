@@ -6,7 +6,10 @@
     "acutis.tab",
     "apps/*-web",
     "apps/*-mobile",
-    "packages/*"
+    "acutis.shared/acutis.shared.web/packages/*",
+    "acutis.shared/acutis.shared.tab/packages/*",
+    "acutis.shared/acutis.shared.api/packages/*",
+    "acutis.shared/acutis.shared.resources/packages/*"
   ],
   "scripts": {
     "web": "npm --prefix acutis.web run dev",
