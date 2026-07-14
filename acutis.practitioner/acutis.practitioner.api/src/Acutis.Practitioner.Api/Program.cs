@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Threading.RateLimiting;
+using Acutis.Email;
 using Acutis.Practitioner.Api;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -15,8 +17,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.RequireHttpsMetadata = builder.Configuration.GetValue("Identity:RequireHttpsMetadata", true);
 });
 builder.Services.AddAuthorization(options => options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+builder.Services.Configure<LiveKitOptions>(builder.Configuration.GetSection("LiveKit"));
+builder.Services.Configure<VideoMeetingOptions>(builder.Configuration.GetSection("VideoMeetings"));
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.AddSingleton<ZohoSmtpEmailSender>();
+builder.Services.AddSingleton<IEmailSender>(services => services.GetRequiredService<ZohoSmtpEmailSender>());
+builder.Services.AddSingleton<IEmailHealthProbe>(services => services.GetRequiredService<ZohoSmtpEmailSender>());
+builder.Services.AddRateLimiter(options => options.AddPolicy("video-recipient", context => RateLimitPartition.GetFixedWindowLimiter(
+    context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions { PermitLimit = 12, Window = TimeSpan.FromMinutes(5), QueueLimit = 0 })));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<LiveKitTokenService>();
 var app = builder.Build();
-app.UseCors(); app.UseAuthentication(); app.UseAuthorization();
+var emailConfigurationIssue = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<EmailOptions>>().Value.Validate();
+if (emailConfigurationIssue is not null) app.Logger.LogWarning("Email delivery configuration is incomplete. The API will remain available; inspect the authorized email health endpoint.");
+app.UseCors(); app.UseRateLimiter(); app.UseAuthentication(); app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { product = "Acutis Practitioner" })).AllowAnonymous();
 app.MapGet("/api/access", async (ClaimsPrincipal user, PractitionerDbContext db, CancellationToken ct) =>
 {
@@ -38,6 +52,9 @@ app.MapPost("/api/tenants/{tenantId:guid}/forms", async (Guid tenantId, FormDefi
     await db.SaveChangesAsync(ct);
     return Results.Created($"/api/tenants/{tenantId}/forms/{definition.Id}", definition);
 });
+app.MapPractitionerProductEndpoints();
+app.MapVideoInvitationEndpoints();
+if (app.Environment.IsDevelopment()) await app.SeedPractitionerDemoAsync();
 app.Run();
 static string Subject(ClaimsPrincipal user) => user.FindFirstValue("acutis_subject") ?? user.FindFirstValue("preferred_username") ?? user.FindFirstValue("sub") ?? user.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException();
 static Task<bool> HasMembership(PractitionerDbContext db, Guid tenantId, string subject, CancellationToken ct) => db.Memberships.AnyAsync(x => x.TenantId == tenantId && x.ExternalSubject == subject && x.IsActive && x.RolesJson.Contains("Practitioner"), ct);

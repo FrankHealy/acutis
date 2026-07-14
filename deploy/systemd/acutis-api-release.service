@@ -1,0 +1,19 @@
+[Unit]
+Description=Acutis API (versioned release)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/acutis/releases/current/api
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5011
+Environment=Database__ApplyMigrationsOnStartup=false
+EnvironmentFile=/opt/acutis/config/api.env
+ExecStart=/usr/bin/dotnet /opt/acutis/releases/current/api/Acutis.Api.dll
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

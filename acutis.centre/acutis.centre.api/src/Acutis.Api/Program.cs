@@ -45,7 +45,9 @@ builder.Services.AddHttpLogging(options =>
 });
 
 builder.Services.AddDbContext<AcutisDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sql => sql.EnableRetryOnFailure()));
 
 var defaultConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
@@ -54,7 +56,7 @@ var ambulatoryConnectionString = builder.Configuration.GetConnectionString("Ambu
         .Replace("Database=Acutis_CuanMhuire_IE_Dev;", "Database=Acutis_Ambulatory_IE_Dev;", StringComparison.OrdinalIgnoreCase);
 
 builder.Services.AddDbContext<AcutisAmbulatoryDbContext>(options =>
-    options.UseSqlServer(ambulatoryConnectionString));
+    options.UseSqlServer(ambulatoryConnectionString, sql => sql.EnableRetryOnFailure()));
 
 builder.Services.AddScoped<ICallRepository, CallRepository>();
 builder.Services.AddScoped<ICallService, CallService>();

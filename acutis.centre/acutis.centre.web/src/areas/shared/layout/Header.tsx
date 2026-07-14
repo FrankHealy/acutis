@@ -346,9 +346,9 @@ const Header: React.FC<HeaderProps> = ({
                 onChange={(event) => setLocale(event.target.value)}
                 className="rounded border bg-[var(--app-surface)] px-2 py-1 text-xs text-[var(--app-text)]"
               >
-                <option value="en-IE">EN</option>
-                <option value="ga-IE">GA</option>
-                <option value="ar">AR</option>
+                <option value="en-IE">English</option>
+                <option value="ga-IE">Gaeilge</option>
+                <option value="ar">العربية</option>
               </select>
             </label>
             {canManageTheme && (

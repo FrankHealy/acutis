@@ -1,0 +1,7 @@
+.product[data-theme="calm"] { --app-bg:#eff8f6; --app-bg-accent:#f8fcfb; --app-surface:#fff; --app-surface-muted:#edf7f4; --app-border:#cde4dd; --app-text:#12312b; --app-text-muted:#58736d; --app-primary:#0f766e; --app-primary-strong:#115e59; --app-primary-soft:#ccfbf1; --app-accent:#0891b2; }
+.product[data-theme="dark"] { color-scheme:dark; --app-bg:#0f172a; --app-bg-accent:#111827; --app-surface:#182235; --app-surface-muted:#202c40; --app-border:#35445d; --app-text:#f8fafc; --app-text-muted:#b8c3d5; --app-primary:#60a5fa; --app-primary-strong:#93c5fd; --app-primary-soft:#1e3a5f; --app-accent:#22d3ee; --shadow:0 18px 40px -28px rgb(0 0 0/.8); }
+.header-control { align-items:center; color:var(--app-text-muted); display:flex; font-size:11px; font-weight:700; gap:5px; }
+.header-control select { background:var(--app-surface-muted); border:1px solid var(--app-border); color:var(--app-text); padding:6px 8px; }
+.product > .brand { position:sticky; top:0; z-index:40; }
+.product > .topnav { position:sticky; top:76px; z-index:39; }
+@media(max-width:900px) { .header-control { display:none; } }

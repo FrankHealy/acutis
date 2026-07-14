@@ -117,6 +117,9 @@ public sealed class AcutisDbContext : DbContext
     private static readonly Guid DrugsUnitId = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid LadiesUnitId = Guid.Parse("44444444-4444-4444-4444-444444444444");
     private static readonly Guid AlcoholGamblingProgrammeDefinitionId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+    private static readonly Guid CbtProgrammeDefinitionId = Guid.Parse("55555555-5555-5555-5555-555555555556");
+    private static readonly Guid DbtProgrammeDefinitionId = Guid.Parse("55555555-5555-5555-5555-555555555557");
+    private static readonly Guid GamblingRecoveryProgrammeDefinitionId = Guid.Parse("55555555-5555-5555-5555-555555555558");
     private static readonly Guid TemplateWakeUpBellId = Guid.Parse("66666666-1000-1000-1000-100000000001");
     private static readonly Guid TemplateMorningRollCallId = Guid.Parse("66666666-1000-1000-1000-100000000002");
     private static readonly Guid TemplateWorksGroupId = Guid.Parse("66666666-1000-1000-1000-100000000003");
@@ -1477,6 +1480,51 @@ public sealed class AcutisDbContext : DbContext
                 TotalDurationUnit = ProgrammeDurationUnit.Weeks,
                 DetoxPhaseDurationValue = 2,
                 DetoxPhaseDurationUnit = ProgrammeDurationUnit.Weeks,
+                MainPhaseDurationValue = 10,
+                MainPhaseDurationUnit = ProgrammeDurationUnit.Weeks,
+                IsActive = true,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            },
+            new ProgrammeDefinition
+            {
+                Id = CbtProgrammeDefinitionId,
+                CentreId = BrureeCentreId,
+                Code = "cbt_skills_8_week",
+                Name = "CBT Skills Programme",
+                Description = "Eight-week CBT skills programme covering assessment and goals, thoughts-feelings-behaviours, unhelpful thinking, behavioural activation, problem solving, coping strategies, relapse prevention and review.",
+                TotalDurationValue = 8,
+                TotalDurationUnit = ProgrammeDurationUnit.Weeks,
+                MainPhaseDurationValue = 8,
+                MainPhaseDurationUnit = ProgrammeDurationUnit.Weeks,
+                IsActive = true,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            },
+            new ProgrammeDefinition
+            {
+                Id = DbtProgrammeDefinitionId,
+                CentreId = BrureeCentreId,
+                Code = "dbt_skills_16_week",
+                Name = "DBT Skills Programme",
+                Description = "Sixteen-week DBT skills programme covering orientation, mindfulness, distress tolerance, emotion regulation, interpersonal effectiveness and skills consolidation.",
+                TotalDurationValue = 16,
+                TotalDurationUnit = ProgrammeDurationUnit.Weeks,
+                MainPhaseDurationValue = 16,
+                MainPhaseDurationUnit = ProgrammeDurationUnit.Weeks,
+                IsActive = true,
+                CreatedAtUtc = SeedCreatedAt,
+                UpdatedAtUtc = SeedCreatedAt
+            },
+            new ProgrammeDefinition
+            {
+                Id = GamblingRecoveryProgrammeDefinitionId,
+                CentreId = BrureeCentreId,
+                Code = "gambling_recovery_10_week",
+                Name = "Gambling Recovery Programme",
+                Description = "Ten-week gambling recovery programme covering motivation, gambling harms, triggers and urges, thinking patterns, financial safeguards, affected others, problem solving, relapse prevention and recovery planning.",
+                TotalDurationValue = 10,
+                TotalDurationUnit = ProgrammeDurationUnit.Weeks,
                 MainPhaseDurationValue = 10,
                 MainPhaseDurationUnit = ProgrammeDurationUnit.Weeks,
                 IsActive = true,

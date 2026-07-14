@@ -1,2 +1,3 @@
-import { Text } from "react-native"; import { MobileProductShell } from "@acutis/mobile-ui"; import{getLocales}from"expo-localization";import{productText}from"@acutis/localization";
-export default function Home(){const locale=getLocales()[0]?.languageTag??"en-IE";return <MobileProductShell productName={productText(locale,"product.practitioner")} organisationName={`${productText(locale,"product.practitioner")} ${productText(locale,"common.demo")}`} poweredByLabel={productText(locale,"common.powered_by")} demoLabel={productText(locale,"common.demo")} demo><Text>{productText(locale,"practitioner.home")}</Text></MobileProductShell>;}
+import Constants from "expo-constants";
+import {ProductTabletApp} from "@acutis/mobile-ui";
+export default function Home(){const x=Constants.expoConfig?.extra!;return <ProductTabletApp config={{kind:"practitioner",name:"Practitioner",strapline:"Clinical work, thoughtfully organised.",apiBaseUrl:x.apiBaseUrl,issuer:x.keycloakIssuer,clientId:x.keycloakClientId,scheme:"acutis-practitioner",accent:"#087f83"}}/>}

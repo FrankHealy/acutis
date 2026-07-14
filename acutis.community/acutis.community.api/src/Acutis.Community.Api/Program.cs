@@ -15,6 +15,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.RequireHttpsMetadata = builder.Configuration.GetValue("Identity:RequireHttpsMetadata", true);
 });
 builder.Services.AddAuthorization(options => options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+builder.Services.Configure<CommunityLiveKitOptions>(builder.Configuration.GetSection("LiveKit"));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<CommunityLiveKitTokenService>();
 var app = builder.Build();
 app.UseCors(); app.UseAuthentication(); app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { product = "Acutis Community" })).AllowAnonymous();
@@ -38,6 +41,8 @@ app.MapPost("/api/tenants/{tenantId:guid}/forms", async (Guid tenantId, FormDefi
     await db.SaveChangesAsync(ct);
     return Results.Created($"/api/tenants/{tenantId}/forms/{definition.Id}", definition);
 });
+app.MapCommunityProductEndpoints();
+if (app.Environment.IsDevelopment()) await app.SeedCommunityDemoAsync();
 app.Run();
 static string Subject(ClaimsPrincipal user) => user.FindFirstValue("acutis_subject") ?? user.FindFirstValue("preferred_username") ?? user.FindFirstValue("sub") ?? user.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException();
 static Task<bool> HasMembership(CommunityDbContext db, Guid tenantId, string subject, CancellationToken ct) => db.Memberships.AnyAsync(x => x.TenantId == tenantId && x.ExternalSubject == subject && x.IsActive && x.RolesJson.Contains("CommunityManager"), ct);
