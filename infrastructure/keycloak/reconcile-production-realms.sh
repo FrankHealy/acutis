@@ -114,6 +114,46 @@ JSON
   fi
 }
 
+ensure_default_broker_redirect() {
+  local realm=$1 executions execution_id config_id body
+  executions=$("$KCADM" get authentication/flows/browser/executions -r "$realm")
+  execution_id=$(sed -n '
+    /"id"[[:space:]]*:/ {
+      s/^.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*$/\1/
+      h
+    }
+    /"providerId"[[:space:]]*:[[:space:]]*"identity-provider-redirector"/ {
+      g
+      p
+      q
+    }
+  ' <<< "$executions")
+  if [[ -z "$execution_id" ]]; then
+    echo "Identity Provider Redirector execution is missing in $realm" >&2
+    exit 1
+  fi
+  config_id=$(sed -n '
+    /"id"[[:space:]]*:[[:space:]]*"'"$execution_id"'"/,/}, {/ {
+      s/^.*"authenticationConfig"[[:space:]]*:[[:space:]]*"\([^"]*\)".*$/\1/p
+    }
+  ' <<< "$executions" | head -1)
+  body=$(mktemp)
+  cat > "$body" <<JSON
+{
+  "alias": "$realm-central-login",
+  "config": {
+    "defaultProvider": "acutis-identity"
+  }
+}
+JSON
+  if [[ -z "$config_id" ]]; then
+    "$KCADM" create "authentication/executions/$execution_id/config" -r "$realm" -f "$body" >/dev/null
+  else
+    "$KCADM" update "authentication/config/$config_id" -r "$realm" -f "$body" >/dev/null
+  fi
+  rm -f "$body"
+}
+
 ensure_product_realm() {
   local realm=$1 display=$2 api_client=$3 mobile_client=$4 mobile_scheme=$5 broker_client=$6 web_origin=$7
   ensure_realm "$realm" "$display"
@@ -126,6 +166,9 @@ ensure_product_realm() {
   ensure_api_audience "$realm" "$realm-web" "$api_client"
   ensure_api_audience "$realm" "$mobile_client" "$api_client"
   ensure_broker "$realm" "$broker_client"
+  # Product credentials remain centralized. Normal product sign-in must broker
+  # directly to acutisrealm instead of showing an empty product-realm form.
+  ensure_default_broker_redirect "$realm"
 }
 
 ensure_product_realm acutis-practitioner "Acutis Practitioner" \
