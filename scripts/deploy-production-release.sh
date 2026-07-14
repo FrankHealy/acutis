@@ -10,6 +10,14 @@ release=$releases/$commit
 current=$releases/current
 previous=
 
+rollback() {
+  if [[ -n $previous && -d $previous ]]; then
+    ln -sfn "$previous" "$releases/.current-rollback"
+    mv -Tf "$releases/.current-rollback" "$current"
+    systemctl restart acutis-api-release.service acutis-web-release.service
+  fi
+}
+
 [[ $commit =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid commit SHA" >&2; exit 1; }
 [[ -f $archive ]] || { echo "Release archive not found" >&2; exit 1; }
 [[ -s $root/config/api.env && -s $root/config/web.env ]] || {
@@ -52,20 +60,30 @@ for _ in {1..30}; do
   sleep 2
 done
 code=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 http://127.0.0.1:5011/ || true)
-[[ $code =~ ^[1-4][0-9][0-9]$ ]] || { echo "API health check failed" >&2; exit 1; }
+if ! [[ $code =~ ^[1-4][0-9][0-9]$ ]]; then
+  rollback
+  echo "API health check failed; previous release restored" >&2
+  exit 1
+fi
 
 systemctl restart acutis-web-release.service
 for _ in {1..30}; do
   curl --fail --silent --max-time 5 http://127.0.0.1:3003/ >/dev/null && break
   sleep 2
 done
-if ! curl --fail --silent --max-time 10 http://127.0.0.1:3003/ >/dev/null; then
-  if [[ -n $previous && -d $previous ]]; then
-    ln -sfn "$previous" "$releases/.current-rollback"
-    mv -Tf "$releases/.current-rollback" "$current"
-    systemctl restart acutis-api-release.service acutis-web-release.service
-  fi
+page=$(mktemp)
+if ! curl --fail --silent --max-time 10 http://127.0.0.1:3003/ -o "$page"; then
+  rm -f "$page"
+  rollback
   echo "Web health check failed; previous release restored" >&2
+  exit 1
+fi
+
+asset=$(grep -oE '/_next/static/[^" ]+' "$page" | head -1 || true)
+rm -f "$page"
+if [[ -z $asset ]] || ! curl --fail --silent --max-time 10 "http://127.0.0.1:3003$asset" >/dev/null; then
+  rollback
+  echo "Web asset health check failed; previous release restored" >&2
   exit 1
 fi
 
