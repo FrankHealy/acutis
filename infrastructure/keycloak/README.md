@@ -1,6 +1,6 @@
 # Acutis identity topology
 
-`acutisrealm` is the Centre identity realm. `acutis-practitioner` and `acutis-community` are independent product realms with their own normal username/password login screens. An OIDC identity provider named **Acutis** is available as an optional broker to the Centre realm, but it must not be configured as the default browser-flow redirect. Product realms contain product clients and coarse `product_access`, `tenant_member`, and `demo_user` roles. Fine permissions and tenant memberships remain in product databases.
+`acutisrealm` is the Centre identity realm. `acutis-practitioner` and `acutis-community` are independent product realms with their own normal username/password login screens. An OIDC identity provider named **Acutis** is retained for a separately designed convenience SSO flow, but it is hidden from the core product login pages and must not be configured as the default browser-flow redirect. Product realms contain product clients and coarse `product_access`, `tenant_member`, and `demo_user` roles. Fine permissions and tenant memberships remain in product databases.
 
 Apply the repeatable local configuration with:
 
