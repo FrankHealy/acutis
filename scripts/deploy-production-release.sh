@@ -87,6 +87,17 @@ if [[ -z $asset ]] || ! curl --fail --silent --max-time 10 "http://127.0.0.1:300
   exit 1
 fi
 
+# Exercise the same browser-facing proxy used immediately after login. Without
+# credentials the API should reject the request, but it must be reachable and
+# must never return a proxy/server failure.
+proxy_code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  --max-time 10 http://127.0.0.1:3003/api-proxy/api/auth-test/access || true)
+if ! [[ $proxy_code =~ ^(200|401|403)$ ]]; then
+  rollback
+  echo "API proxy health check failed with HTTP $proxy_code; previous release restored" >&2
+  exit 1
+fi
+
 curl --fail --silent --max-time 15 \
   https://acutis.salientrecovery.com/keycloak/realms/acutisrealm/.well-known/openid-configuration >/dev/null
 
