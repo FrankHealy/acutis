@@ -1,0 +1,92 @@
+name: Deploy Acutis production
+
+on:
+  workflow_run:
+    workflows: ["Validate Acutis platform"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full commit SHA to deploy (defaults to main)
+        required: false
+        type: string
+
+concurrency:
+  group: acutis-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Resolve commit
+        id: revision
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_COMMIT: ${{ inputs.commit }}
+          VALIDATED_COMMIT: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [[ "$EVENT_NAME" == workflow_dispatch && -n "$REQUESTED_COMMIT" ]]; then
+            commit=$REQUESTED_COMMIT
+          elif [[ "$EVENT_NAME" == workflow_run ]]; then
+            commit=$VALIDATED_COMMIT
+          else
+            commit=${{ github.sha }}
+          fi
+          [[ $commit =~ ^[0-9a-f]{40}$ ]] || { echo "A full commit SHA is required" >&2; exit 1; }
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.revision.outputs.commit }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build centre release
+        run: |
+          npm ci
+          npm --workspace acutis.web run build
+          dotnet publish acutis.centre/acutis.centre.api/src/Acutis.Api/Acutis.Api.csproj \
+            --configuration Release --output "$RUNNER_TEMP/release/api"
+          mkdir -p "$RUNNER_TEMP/release/web" "$RUNNER_TEMP/release/resources"
+          cp -a acutis.centre/acutis.centre.web/.next/standalone/. "$RUNNER_TEMP/release/web/"
+          cp -a resources/maps "$RUNNER_TEMP/release/resources/maps"
+          tar -C "$RUNNER_TEMP/release" -czf "$RUNNER_TEMP/acutis-release.tar.gz" .
+
+      - name: Configure deployment SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/acutis-production
+          chmod 0600 ~/.ssh/acutis-production
+          printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
+          chmod 0600 ~/.ssh/known_hosts
+
+      - name: Upload and activate release
+        env:
+          HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          COMMIT: ${{ steps.revision.outputs.commit }}
+        run: |
+          remote_archive="/opt/acutis/incoming/acutis-$COMMIT.tar.gz"
+          scp -i ~/.ssh/acutis-production "$RUNNER_TEMP/acutis-release.tar.gz" "$USER@$HOST:$remote_archive"
+          ssh -i ~/.ssh/acutis-production "$USER@$HOST" \
+            "sudo /opt/acutis/bin/deploy-production-release '$remote_archive' '$COMMIT'"
