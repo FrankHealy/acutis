@@ -19,7 +19,7 @@ jobs:
         with:
           filters: |
             shared: ['acutis.shared/**', 'package*.json', '.github/workflows/**', 'infrastructure/deployment/**', 'infrastructure/keycloak/**']
-            centre: ['acutis.centre/**', 'deploy/**']
+            centre: ['acutis.centre/**', 'deploy/**', 'scripts/deploy-production-release.sh']
             practitioner: ['acutis.practitioner/**']
             community: ['acutis.community/**']
             outreach: ['acutis.outreach/**']
