@@ -1,0 +1,17 @@
+[Unit]
+Description=Acutis Practitioner API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/acutis/products/current/practitioner-api
+Environment=ASPNETCORE_ENVIRONMENT=Production
+EnvironmentFile=/opt/acutis/config/practitioner-api.env
+ExecStart=/usr/bin/dotnet /opt/acutis/products/current/practitioner-api/Acutis.Practitioner.Api.dll
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

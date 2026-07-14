@@ -47,8 +47,28 @@ ensure_client() {
       -s directAccessGrantsEnabled=false \
       -s "redirectUris=$redirects_json" -s "webOrigins=$origins_json" >/dev/null
     id=$(client_id "$realm" "$name")
+  else
+    "$KCADM" update "clients/$id" -r "$realm" \
+      -s enabled=true -s "publicClient=$public" \
+      -s standardFlowEnabled=true -s directAccessGrantsEnabled=false \
+      -s "redirectUris=$redirects_json" -s "webOrigins=$origins_json" >/dev/null
   fi
   printf '%s' "$id"
+}
+
+ensure_api_audience() {
+  local realm=$1 source_client=$2 audience=$3
+  local source_id mapper_name mappers
+  source_id=$(client_id "$realm" "$source_client")
+  mapper_name="$audience-audience"
+  mappers=$("$KCADM" get "clients/$source_id/protocol-mappers/models" -r "$realm")
+  if ! grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$mapper_name\"" <<< "$mappers"; then
+    "$KCADM" create "clients/$source_id/protocol-mappers/models" -r "$realm" \
+      -s "name=$mapper_name" -s protocol=openid-connect \
+      -s protocolMapper=oidc-audience-mapper -s consentRequired=false \
+      -s "config.\"included.client.audience\"=$audience" \
+      -s 'config."id.token.claim"=false' -s 'config."access.token.claim"=true' >/dev/null
+  fi
 }
 
 ensure_broker() {
@@ -95,22 +115,25 @@ JSON
 }
 
 ensure_product_realm() {
-  local realm=$1 display=$2 api_client=$3 mobile_client=$4 mobile_scheme=$5 broker_client=$6
+  local realm=$1 display=$2 api_client=$3 mobile_client=$4 mobile_scheme=$5 broker_client=$6 web_origin=$7
   ensure_realm "$realm" "$display"
   ensure_role "$realm" product_access
   ensure_role "$realm" tenant_member
   ensure_role "$realm" demo_user
-  # Web origins remain empty until a reviewed production hostname exists.
-  ensure_client "$realm" "$realm-web" true '[]' '[]' >/dev/null
+  ensure_client "$realm" "$realm-web" true "[\"$web_origin/*\"]" "[\"$web_origin\"]" >/dev/null
   ensure_client "$realm" "$mobile_client" true "[\"$mobile_scheme://redirect\"]" '[]' >/dev/null
   ensure_client "$realm" "$api_client" false '[]' '[]' >/dev/null
+  ensure_api_audience "$realm" "$realm-web" "$api_client"
+  ensure_api_audience "$realm" "$mobile_client" "$api_client"
   ensure_broker "$realm" "$broker_client"
 }
 
 ensure_product_realm acutis-practitioner "Acutis Practitioner" \
-  practitioner-api practitioner-mobile acutis-practitioner practitioner-identity-broker
+  practitioner-api practitioner-mobile acutis-practitioner practitioner-identity-broker \
+  https://practitioner.salientrecovery.com
 ensure_product_realm acutis-community "Acutis Community" \
-  community-api community-mobile acutis-community community-identity-broker
+  community-api community-mobile acutis-community community-identity-broker \
+  https://community.salientrecovery.com
 
 # Outreach intentionally remains a client of the central realm and has no product realm.
 ensure_client acutisrealm outreach-web false '[]' '[]' >/dev/null
