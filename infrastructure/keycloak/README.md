@@ -1,6 +1,6 @@
 # Acutis identity topology
 
-`acutisrealm` is the central human-identity realm. Centre uses it directly. `acutis-practitioner` and `acutis-community` are product realms with an OIDC identity provider named **Acutis** that brokers the central realm. Product realms contain product clients and coarse `product_access`, `tenant_member`, and `demo_user` roles. Fine permissions and tenant memberships remain in product databases.
+`acutisrealm` is the central human-identity realm. Centre uses it directly. `acutis-practitioner` and `acutis-community` are product realms with an OIDC identity provider named **Acutis** that brokers the central realm. Their browser flows redirect to that provider automatically, so human credentials are entered only in `acutisrealm`; the product-realm password forms are not normal sign-in surfaces. Product realms contain product clients and coarse `product_access`, `tenant_member`, and `demo_user` roles. Fine permissions and tenant memberships remain in product databases.
 
 Apply the repeatable local configuration with:
 
