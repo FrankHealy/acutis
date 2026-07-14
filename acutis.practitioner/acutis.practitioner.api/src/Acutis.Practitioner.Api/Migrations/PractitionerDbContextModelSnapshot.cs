@@ -209,6 +209,9 @@ namespace Acutis.Practitioner.Api.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
+
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(160)
@@ -244,6 +247,11 @@ namespace Acutis.Practitioner.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Surname")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
@@ -450,17 +458,84 @@ namespace Acutis.Practitioner.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("FailedIdentityAttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("FirstOpenedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("IdentityLockedUntilUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("IdentityVerifiedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastOpenedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastSentAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("OrganisationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ProviderMessageId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("RecipientEmail")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<Guid?>("ReplacedByInvitationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("RevokedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("RevokedByUserId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SanitisedSendFailureReason")
+                        .HasMaxLength(240)
+                        .HasColumnType("nvarchar(240)");
+
+                    b.Property<int>("SendAttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SendFailureCategory")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("SendStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<byte[]>("TokenHash")
                         .IsRequired()
@@ -468,18 +543,29 @@ namespace Acutis.Practitioner.Api.Migrations
                         .HasColumnType("binary(32)")
                         .IsFixedLength();
 
-                    b.Property<DateTime?>("UsedAtUtc")
+                    b.Property<DateTime?>("VerificationExpiresAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("VerificationTokenHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("binary(32)")
+                        .IsFixedLength();
 
                     b.Property<Guid>("VideoConsultationId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AppointmentId");
+
+                    b.HasIndex("ClientId");
+
                     b.HasIndex("TokenHash")
                         .IsUnique();
 
                     b.HasIndex("VideoConsultationId");
+
+                    b.HasIndex("OrganisationId", "AppointmentId");
 
                     b.ToTable("VideoInvitations");
                 });
@@ -585,11 +671,27 @@ namespace Acutis.Practitioner.Api.Migrations
 
             modelBuilder.Entity("Acutis.Practitioner.Api.PractitionerVideoInvitation", b =>
                 {
+                    b.HasOne("Acutis.Practitioner.Api.PractitionerAppointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Acutis.Practitioner.Api.PractitionerClient", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.HasOne("Acutis.Practitioner.Api.PractitionerVideoConsultation", null)
                         .WithMany()
                         .HasForeignKey("VideoConsultationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Appointment");
+
+                    b.Navigation("Client");
                 });
 
             modelBuilder.Entity("Acutis.Practitioner.Api.TenantBranding", b =>

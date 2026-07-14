@@ -29,8 +29,13 @@ public sealed class PractitionerDbContext(DbContextOptions<PractitionerDbContext
         b.Entity<PractitionerVideoConsultation>().HasIndex(x => x.AppointmentId).IsUnique();
         b.Entity<PractitionerVideoConsultation>().HasOne(x => x.Appointment).WithOne().HasForeignKey<PractitionerVideoConsultation>(x => x.AppointmentId);
         b.Entity<PractitionerVideoInvitation>().Property(x => x.TokenHash).HasMaxLength(32).IsFixedLength();
+        b.Entity<PractitionerVideoInvitation>().Property(x => x.VerificationTokenHash).HasMaxLength(32).IsFixedLength();
+        b.Entity<PractitionerVideoInvitation>().Property(x => x.RowVersion).IsRowVersion();
         b.Entity<PractitionerVideoInvitation>().HasIndex(x => x.TokenHash).IsUnique();
+        b.Entity<PractitionerVideoInvitation>().HasIndex(x => new { x.OrganisationId, x.AppointmentId });
         b.Entity<PractitionerVideoInvitation>().HasOne<PractitionerVideoConsultation>().WithMany().HasForeignKey(x => x.VideoConsultationId);
+        b.Entity<PractitionerVideoInvitation>().HasOne(x => x.Appointment).WithMany().HasForeignKey(x => x.AppointmentId).OnDelete(DeleteBehavior.NoAction);
+        b.Entity<PractitionerVideoInvitation>().HasOne(x => x.Client).WithMany().HasForeignKey(x => x.ClientId).OnDelete(DeleteBehavior.NoAction);
         b.Entity<PractitionerFormDefinition>().HasIndex(x => new { x.TenantId, x.Code, x.Version }).IsUnique();
         b.Entity<PractitionerFormAssignment>().HasOne<PractitionerFormDefinition>().WithMany().HasForeignKey(x => x.FormDefinitionId);
         b.Entity<PractitionerFormAssignment>().HasOne<PractitionerClient>().WithMany().HasForeignKey(x => x.ClientId);

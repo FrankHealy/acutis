@@ -28,7 +28,9 @@ function Ensure-ApiAudience($realm,$clientId,$audience) {
 }
 function Ensure-ProductRealm($realm,$display,$webPort,$apiClient,$mobileClient,$scheme,$brokerClientId) {
     Ensure-Realm $realm $display; Ensure-Role $realm "product_access"; Ensure-Role $realm "tenant_member"; Ensure-Role $realm "demo_user"
-    Ensure-Client $realm "$realm-web" $false @("http://localhost:$webPort/*") | Out-Null
+    # Browser applications are React SPAs and use Authorization Code + PKCE.
+    # They must never receive or require a client secret.
+    Ensure-Client $realm "$realm-web" $true @("http://localhost:$webPort/*") | Out-Null
     Ensure-Client $realm $mobileClient $true @("$scheme`://redirect") | Out-Null
     Ensure-Client $realm $apiClient $false @() | Out-Null
     Ensure-ApiAudience $realm "$realm-web" $apiClient
@@ -55,10 +57,9 @@ Ensure-Client "acutisrealm" "outreach-web" $false @("http://localhost:3030/*") |
 Ensure-ProductRealm "acutis-practitioner" "Acutis Practitioner" 3010 "practitioner-api" "practitioner-mobile" "acutis-practitioner" "practitioner-identity-broker"
 Ensure-ProductRealm "acutis-community" "Acutis Community" 3020 "community-api" "community-mobile" "acutis-community" "community-identity-broker"
 $repoRoot=(Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-foreach($item in @(@{realm="acutis-practitioner";app="acutis.practitioner\acutis.practitioner.web";port=3010},@{realm="acutis-community";app="acutis.community\acutis.community.web";port=3020})) {
-    $clientId="$($item.realm)-web"; $client=@(Invoke-RestMethod -Uri "$BaseUrl/admin/realms/$($item.realm)/clients?clientId=$clientId" -Headers $headers)|Select-Object -First 1
-    $secret=(Invoke-RestMethod -Uri "$BaseUrl/admin/realms/$($item.realm)/clients/$($client.id)/client-secret" -Headers $headers).value
-    @("KEYCLOAK_CLIENT_ID=$clientId","KEYCLOAK_CLIENT_SECRET=$secret","KEYCLOAK_ISSUER=$BaseUrl/realms/$($item.realm)","NEXTAUTH_URL=http://localhost:$($item.port)","NEXTAUTH_SECRET=$(New-LocalSecret)") | Set-Content (Join-Path $repoRoot "$($item.app)\.env.local")
+foreach($item in @(@{realm="acutis-practitioner";app="acutis.practitioner\acutis.practitioner.web";port=3010;api="http://localhost:5010"},@{realm="acutis-community";app="acutis.community\acutis.community.web";port=3020;api="http://localhost:5020"})) {
+    $clientId="$($item.realm)-web"
+    @("VITE_KEYCLOAK_CLIENT_ID=$clientId","VITE_KEYCLOAK_ISSUER=$BaseUrl/realms/$($item.realm)","VITE_API_URL=$($item.api)") | Set-Content (Join-Path $repoRoot "$($item.app)\.env.local")
 }
 $outreach=@(Invoke-RestMethod -Uri "$BaseUrl/admin/realms/acutisrealm/clients?clientId=outreach-web" -Headers $headers)|Select-Object -First 1
 $outreachSecret=(Invoke-RestMethod -Uri "$BaseUrl/admin/realms/acutisrealm/clients/$($outreach.id)/client-secret" -Headers $headers).value

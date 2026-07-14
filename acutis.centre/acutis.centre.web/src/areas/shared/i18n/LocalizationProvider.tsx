@@ -15,6 +15,8 @@ type LocalizationContextValue = {
 
 const LocalizationContext = createContext<LocalizationContextValue | null>(null);
 const LOCALE_STORAGE_KEY = "acutis.locale";
+const SUPPORTED_LOCALES = new Set(["en-IE", "ga-IE", "ar"]);
+const normalizeLocale = (locale: string | null | undefined) => SUPPORTED_LOCALES.has(locale ?? "") ? locale! : "en-IE";
 
 const subscribeToLocale = (callback: () => void) => {
   if (typeof window === "undefined") {
@@ -36,7 +38,7 @@ const getLocaleSnapshot = () => {
     return "en-IE";
   }
 
-  return window.localStorage.getItem(LOCALE_STORAGE_KEY) || "en-IE";
+  return normalizeLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
 };
 
 const fetchTranslations = async (locale: string, keys: string[]): Promise<TranslationsMap> => {
@@ -81,7 +83,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
   }, [translations]);
 
   const setLocale = useCallback((nextLocale: string) => {
-    const localeToUse = nextLocale || "en-IE";
+    const localeToUse = normalizeLocale(nextLocale);
     setLocaleOverride(localeToUse);
     translationsRef.current = {};
     setTranslations({});

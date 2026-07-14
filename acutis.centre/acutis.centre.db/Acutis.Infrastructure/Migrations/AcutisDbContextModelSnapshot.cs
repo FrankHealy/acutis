@@ -727,6 +727,51 @@ namespace Acutis.Infrastructure.Migrations
                             Name = "Bruree",
                             ThemeKey = "acutis",
                             UpdatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-5555-5555-5555-555555555556"),
+                            CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
+                            Code = "cbt_skills_8_week",
+                            CreatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Eight-week CBT skills programme covering assessment and goals, thoughts-feelings-behaviours, unhelpful thinking, behavioural activation, problem solving, coping strategies, relapse prevention and review.",
+                            IsActive = true,
+                            MainPhaseDurationUnit = "Weeks",
+                            MainPhaseDurationValue = 8,
+                            Name = "CBT Skills Programme",
+                            TotalDurationUnit = "Weeks",
+                            TotalDurationValue = 8,
+                            UpdatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-5555-5555-5555-555555555557"),
+                            CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
+                            Code = "dbt_skills_16_week",
+                            CreatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Sixteen-week DBT skills programme covering orientation, mindfulness, distress tolerance, emotion regulation, interpersonal effectiveness and skills consolidation.",
+                            IsActive = true,
+                            MainPhaseDurationUnit = "Weeks",
+                            MainPhaseDurationValue = 16,
+                            Name = "DBT Skills Programme",
+                            TotalDurationUnit = "Weeks",
+                            TotalDurationValue = 16,
+                            UpdatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-5555-5555-5555-555555555558"),
+                            CentreId = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
+                            Code = "gambling_recovery_10_week",
+                            CreatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Ten-week gambling recovery programme covering motivation, gambling harms, triggers and urges, thinking patterns, financial safeguards, affected others, problem solving, relapse prevention and recovery planning.",
+                            IsActive = true,
+                            MainPhaseDurationUnit = "Weeks",
+                            MainPhaseDurationValue = 10,
+                            Name = "Gambling Recovery Programme",
+                            TotalDurationUnit = "Weeks",
+                            TotalDurationValue = 10,
+                            UpdatedAtUtc = new DateTime(2026, 2, 2, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 

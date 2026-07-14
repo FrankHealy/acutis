@@ -1,4 +1,6 @@
 using System;
+using Acutis.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,6 +8,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Acutis.Infrastructure.Migrations
 {
     /// <inheritdoc />
+    [DbContext(typeof(AcutisDbContext))]
+    [Migration("20260709120000_AddFormDefinitionEffectiveDates")]
     public partial class AddFormDefinitionEffectiveDates : Migration
     {
         /// <inheritdoc />
