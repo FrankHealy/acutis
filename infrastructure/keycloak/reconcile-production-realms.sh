@@ -114,8 +114,8 @@ JSON
   fi
 }
 
-ensure_default_broker_redirect() {
-  local realm=$1 executions execution_id config_id body
+ensure_independent_product_login() {
+  local realm=$1 executions execution_id config_id
   executions=$("$KCADM" get authentication/flows/browser/executions -r "$realm")
   execution_id=$(sed -n '
     /"id"[[:space:]]*:/ {
@@ -137,21 +137,9 @@ ensure_default_broker_redirect() {
       s/^.*"authenticationConfig"[[:space:]]*:[[:space:]]*"\([^"]*\)".*$/\1/p
     }
   ' <<< "$executions" | head -1)
-  body=$(mktemp)
-  cat > "$body" <<JSON
-{
-  "alias": "$realm-central-login",
-  "config": {
-    "defaultProvider": "acutis-identity"
-  }
-}
-JSON
-  if [[ -z "$config_id" ]]; then
-    "$KCADM" create "authentication/executions/$execution_id/config" -r "$realm" -f "$body" >/dev/null
-  else
-    "$KCADM" update "authentication/config/$config_id" -r "$realm" -f "$body" >/dev/null
+  if [[ -n "$config_id" ]]; then
+    "$KCADM" delete "authentication/config/$config_id" -r "$realm"
   fi
-  rm -f "$body"
 }
 
 ensure_product_realm() {
@@ -166,9 +154,9 @@ ensure_product_realm() {
   ensure_api_audience "$realm" "$realm-web" "$api_client"
   ensure_api_audience "$realm" "$mobile_client" "$api_client"
   ensure_broker "$realm" "$broker_client"
-  # Product credentials remain centralized. Normal product sign-in must broker
-  # directly to acutisrealm instead of showing an empty product-realm form.
-  ensure_default_broker_redirect "$realm"
+  # Each product realm owns its normal username/password login. The Acutis
+  # broker remains optional and must never replace the product login screen.
+  ensure_independent_product_login "$realm"
 }
 
 ensure_product_realm acutis-practitioner "Acutis Practitioner" \
