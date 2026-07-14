@@ -85,10 +85,9 @@ ensure_broker() {
     exit 1
   fi
 
-  if ! exists identity-provider/instances/acutis-identity "$product_realm"; then
-    local body
-    body=$(mktemp)
-    cat > "$body" <<JSON
+  local body
+  body=$(mktemp)
+  cat > "$body" <<JSON
 {
   "alias": "acutis-identity",
   "displayName": "Acutis",
@@ -105,13 +104,17 @@ ensure_broker() {
     "clientSecret": "$secret",
     "clientAuthMethod": "client_secret_post",
     "defaultScope": "openid profile email",
-    "syncMode": "IMPORT"
+    "syncMode": "IMPORT",
+    "hideOnLoginPage": "true"
   }
 }
 JSON
+  if exists identity-provider/instances/acutis-identity "$product_realm"; then
+    "$KCADM" update identity-provider/instances/acutis-identity -r "$product_realm" -f "$body" >/dev/null
+  else
     "$KCADM" create identity-provider/instances -r "$product_realm" -f "$body" >/dev/null
-    rm -f "$body"
   fi
+  rm -f "$body"
 }
 
 ensure_independent_product_login() {
