@@ -1,0 +1,17 @@
+[Unit]
+Description=Acutis Community API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/acutis/products/current/community-api
+Environment=ASPNETCORE_ENVIRONMENT=Production
+EnvironmentFile=/opt/acutis/config/community-api.env
+ExecStart=/usr/bin/dotnet /opt/acutis/products/current/community-api/Acutis.Community.Api.dll
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

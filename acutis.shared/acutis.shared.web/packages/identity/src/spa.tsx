@@ -10,7 +10,9 @@ export function ProductSpaAuthProvider({ issuer, clientId, children }: { issuer:
     const path = authority.pathname.split("/").filter(Boolean);
     const realmIndex = path.indexOf("realms");
     if (realmIndex < 0 || !path[realmIndex + 1]) throw new Error(`Invalid Keycloak issuer: ${issuer}`);
-    const config: KeycloakConfig = { url: authority.origin, realm: path[realmIndex + 1], clientId };
+    const basePath = path.slice(0, realmIndex).join("/");
+    const keycloakUrl = basePath ? `${authority.origin}/${basePath}` : authority.origin;
+    const config: KeycloakConfig = { url: keycloakUrl, realm: path[realmIndex + 1], clientId };
     return new Keycloak(config);
   }, [clientId, issuer]);
   const initialization = useRef<Promise<boolean> | null>(null);

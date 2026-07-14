@@ -69,6 +69,43 @@ jobs:
           cp -a resources/maps "$RUNNER_TEMP/release/resources/maps"
           tar -C "$RUNNER_TEMP/release" -czf "$RUNNER_TEMP/acutis-release.tar.gz" .
 
+      - name: Build product release
+        env:
+          VITE_PRACTITIONER_ISSUER: https://acutis.salientrecovery.com/keycloak/realms/acutis-practitioner
+          VITE_COMMUNITY_ISSUER: https://acutis.salientrecovery.com/keycloak/realms/acutis-community
+        run: |
+          export VITE_KEYCLOAK_ISSUER=$VITE_PRACTITIONER_ISSUER
+          export VITE_KEYCLOAK_CLIENT_ID=acutis-practitioner-web
+          export VITE_API_URL=https://practitioner.salientrecovery.com
+          npm --workspace @acutis/practitioner-web run build
+
+          export VITE_KEYCLOAK_ISSUER=$VITE_COMMUNITY_ISSUER
+          export VITE_KEYCLOAK_CLIENT_ID=acutis-community-web
+          export VITE_API_URL=https://community.salientrecovery.com
+          npm --workspace @acutis/community-web run build
+
+          products="$RUNNER_TEMP/products"
+          mkdir -p "$products/practitioner-web" "$products/community-web"
+          cp -a acutis.practitioner/acutis.practitioner.web/dist/. "$products/practitioner-web/"
+          cp -a acutis.community/acutis.community.web/dist/. "$products/community-web/"
+          dotnet publish acutis.practitioner/acutis.practitioner.api/src/Acutis.Practitioner.Api/Acutis.Practitioner.Api.csproj \
+            --configuration Release --output "$products/practitioner-api"
+          dotnet publish acutis.community/acutis.community.api/src/Acutis.Community.Api/Acutis.Community.Api.csproj \
+            --configuration Release --output "$products/community-api"
+
+          dotnet tool install --global dotnet-ef --version 8.0.23
+          dotnet ef migrations bundle --self-contained --runtime linux-x64 \
+            --project acutis.practitioner/acutis.practitioner.api/src/Acutis.Practitioner.Api/Acutis.Practitioner.Api.csproj \
+            --startup-project acutis.practitioner/acutis.practitioner.api/src/Acutis.Practitioner.Api/Acutis.Practitioner.Api.csproj \
+            --context PractitionerDbContext --configuration Release \
+            --output "$products/practitioner-migrate"
+          dotnet ef migrations bundle --self-contained --runtime linux-x64 \
+            --project acutis.community/acutis.community.api/src/Acutis.Community.Api/Acutis.Community.Api.csproj \
+            --startup-project acutis.community/acutis.community.api/src/Acutis.Community.Api/Acutis.Community.Api.csproj \
+            --context CommunityDbContext --configuration Release \
+            --output "$products/community-migrate"
+          tar -C "$products" -czf "$RUNNER_TEMP/acutis-products.tar.gz" .
+
       - name: Configure deployment SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -87,6 +124,10 @@ jobs:
           COMMIT: ${{ steps.revision.outputs.commit }}
         run: |
           remote_archive="/opt/acutis/incoming/acutis-$COMMIT.tar.gz"
+          remote_products="/opt/acutis/incoming/acutis-products-$COMMIT.tar.gz"
           scp -i ~/.ssh/acutis-production "$RUNNER_TEMP/acutis-release.tar.gz" "$USER@$HOST:$remote_archive"
+          scp -i ~/.ssh/acutis-production "$RUNNER_TEMP/acutis-products.tar.gz" "$USER@$HOST:$remote_products"
           ssh -i ~/.ssh/acutis-production "$USER@$HOST" \
             "sudo /opt/acutis/bin/deploy-production-release '$remote_archive' '$COMMIT'"
+          ssh -i ~/.ssh/acutis-production "$USER@$HOST" \
+            "sudo /opt/acutis/bin/deploy-products-release '$remote_products' '$COMMIT'"
