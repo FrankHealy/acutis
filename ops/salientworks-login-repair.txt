@@ -1,0 +1,19 @@
+checked_at=2026-08-01T12:51:51Z
+host=acutis-app-server
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+keycloak_pid=881504
+keycloak_owner_uid=1000
+current_uid=1000
+keycloak_environment_readable=yes
+Traceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/lib/python3.14/pathlib/__init__.py", line 778, in read_bytes
+    with self.open(mode='rb', buffering=0) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/pathlib/__init__.py", line 772, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/proc/881504/environ'
+environment_extract_rc=1
+bootstrap_credential_present=no
+ssh_rc=42
