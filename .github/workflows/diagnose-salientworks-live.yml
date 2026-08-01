@@ -1,4 +1,4 @@
-name: Inspect approved Salient Works deployment command
+name: Locate Salient Works deployment mechanism
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Inspect approved deployers
+      - name: Inspect deployment watchers and timers
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -24,7 +24,7 @@ jobs:
           USER: ${{ secrets.PRODUCTION_SSH_USER }}
         run: |
           set +e
-          report="$RUNNER_TEMP/salientworks-deployer.txt"
+          report="$RUNNER_TEMP/salientworks-deployment-mechanism.txt"
           echo "checked_at=$(date -u +%FT%TZ)" > "$report"
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/key
@@ -33,28 +33,55 @@ jobs:
           chmod 0600 ~/.ssh/known_hosts
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
+          root=/opt/salientworks/glor
           echo "host=$(hostname)"
           echo "identity=$(id)"
-          echo '=== SUDO ==='
-          sudo -n -l 2>&1 || true
-          for script in /opt/acutis/bin/deploy-production-release /opt/acutis/bin/deploy-products-release; do
-            echo "=== $script ==="
-            stat "$script" 2>&1 || true
-            file "$script" 2>&1 || true
-            wc -l -c "$script" 2>&1 || true
-            sed -n '1,500p' "$script" 2>&1 || true
+          echo '=== SYSTEMD UNITS ==='
+          systemctl list-unit-files --no-pager 2>/dev/null | grep -Ei 'salient|glor|deploy|github|runner|watch|webhook' || true
+          echo '=== ACTIVE/ALL SERVICES ==='
+          systemctl list-units --all --no-pager 2>/dev/null | grep -Ei 'salient|glor|deploy|github|runner|watch|webhook' || true
+          echo '=== TIMERS ==='
+          systemctl list-timers --all --no-pager 2>/dev/null | grep -Ei 'salient|glor|deploy|github|runner|watch|webhook|NEXT|LEFT|LAST|PASSED' || true
+          echo '=== UNIT FILE CONTENTS ==='
+          for unit in $(systemctl list-unit-files --no-legend 2>/dev/null | awk '{print $1}' | grep -Ei 'salient|glor|deploy|github|runner|watch|webhook'); do
+            echo "--- $unit ---"
+            systemctl cat "$unit" --no-pager 2>&1 || true
           done
-          echo '=== SALIENTWORKS DEPLOY ASSETS ==='
-          find /opt/salientworks -maxdepth 4 -type f \( -iname '*deploy*' -o -iname '*release*' -o -iname '*restart*' \) -printf '%M %u:%g %p\n' 2>/dev/null | sort | head -300
-          echo '=== SYSTEMD POLKIT ==='
-          systemctl show salientworks-web.service -p UnitFileState -p CanStart -p CanStop -p CanReload --no-pager 2>&1 || true
+          echo '=== CRON ==='
+          for file in /etc/crontab /etc/cron.d/*; do
+            [[ -f "$file" ]] || continue
+            echo "--- $file ---"
+            sed -n '1,260p' "$file" 2>&1 || true
+          done
+          echo '=== USER CRONTABS ==='
+          for user in root salientworks acutis-deploy; do
+            echo "--- $user ---"
+            crontab -u "$user" -l 2>&1 || true
+          done
+          echo '=== RUNNER FILES ==='
+          find /opt /home /srv -maxdepth 5 \( -iname '*actions-runner*' -o -iname '.runner' -o -iname 'svc.sh' -o -iname 'run.sh' \) -printf '%M %u:%g %p\n' 2>/dev/null | head -300
+          echo '=== DEPLOY FILES ==='
+          find /opt/salientworks /usr/local/bin /opt -maxdepth 6 -type f \( -iname '*deploy*' -o -iname '*release*' -o -iname '*update*' -o -iname '*pull*' -o -iname '*webhook*' \) -printf '%M %u:%g %p\n' 2>/dev/null | sort | head -500
+          echo '=== GIT HOOKS ==='
+          find "$root/.git/hooks" -maxdepth 1 -type f -perm /111 -printf '%M %u:%g %p\n' 2>/dev/null | sort
+          for hook in "$root"/.git/hooks/*; do
+            [[ -f "$hook" && -x "$hook" ]] || continue
+            echo "--- $hook ---"
+            sed -n '1,220p' "$hook" 2>&1 || true
+          done
+          echo '=== SHELL HISTORY NAMES ONLY ==='
+          for hist in /root/.bash_history /home/salientworks/.bash_history /home/acutis-deploy/.bash_history; do
+            echo "--- $hist ---"
+            ls -l "$hist" 2>&1 || true
+            if [[ -r "$hist" ]]; then grep -Ei 'git (pull|fetch|checkout)|npm (run build|install|ci)|systemctl restart salientworks|docker compose|deploy' "$hist" | tail -120 | sed -E 's/(password|token|secret|key)=([^ ]+)/\1=[redacted]/Ig' || true; fi
+          done
           REMOTE
           encoded=$(base64 -w0 "$report")
-          path='ops/salientworks-deployer.txt'
+          path='ops/salientworks-deployment-mechanism.txt'
           sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
           if [[ -n "$sha" ]]; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record approved product deployer' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works deployment mechanism' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record approved product deployer' -f content="$encoded" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works deployment mechanism' -f content="$encoded" -f branch=main >/dev/null
           fi
           cat "$report"
