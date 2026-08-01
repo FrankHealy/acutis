@@ -1,0 +1,9 @@
+checked_at=2026-08-01T12:53:04Z
+host=acutis-app-server
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+keycloak_pid=881504
+java_tools:
+jcmd=missing
+jinfo=missing
+jps=missing
+java=missing
