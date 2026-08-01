@@ -1,0 +1,122 @@
+name: Diagnose SalientWorks live outage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/diagnose-salientworks-live.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Inspect production host and persist report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
+          HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          set +e
+          report="$RUNNER_TEMP/salientworks-live-diagnostic.txt"
+          : > "$report"
+          printf 'checked_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$report"
+          printf 'workflow_commit=%s\n' "$GITHUB_SHA" >> "$report"
+
+          if [[ -z "$SSH_PRIVATE_KEY" || -z "$SSH_HOST_KEY" || -z "$HOST" || -z "$USER" ]]; then
+            echo 'connection=missing-production-secrets' >> "$report"
+          else
+            install -d -m 0700 ~/.ssh
+            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/acutis-production
+            chmod 0600 ~/.ssh/acutis-production
+            printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
+            chmod 0600 ~/.ssh/known_hosts
+
+            ssh -i ~/.ssh/acutis-production "$USER@$HOST" 'bash -s' <<'REMOTE' >> "$report" 2>&1
+          set +e
+          echo 'connection=ok'
+          echo "host=$(hostname)"
+          echo "user=$(id -un)"
+          echo "server_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo
+
+          echo '=== SERVICE STATES ==='
+          for service in salientworks-api salientworks-studio nginx keycloak; do
+            state=$(systemctl is-active "$service" 2>/dev/null || true)
+            enabled=$(systemctl is-enabled "$service" 2>/dev/null || true)
+            echo "$service.state=${state:-unknown}"
+            echo "$service.enabled=${enabled:-unknown}"
+          done
+          echo
+
+          echo '=== LISTENING PORTS ==='
+          ss -lnt 2>/dev/null | grep -E '(:80|:443|:3011|:5091|:8080)[[:space:]]' || true
+          echo
+
+          check_http() {
+            local name=$1 url=$2
+            local code
+            code=$(curl -k -sS -o /tmp/http-body -w '%{http_code}' --connect-timeout 5 --max-time 15 "$url" 2>/tmp/http-error)
+            local rc=$?
+            echo "$name.rc=$rc"
+            echo "$name.http=${code:-000}"
+            if [[ -s /tmp/http-error ]]; then
+              printf '%s.error=' "$name"
+              tr '\n' ' ' < /tmp/http-error | head -c 400
+              echo
+            fi
+            if [[ -s /tmp/http-body ]]; then
+              printf '%s.body=' "$name"
+              tr '\n' ' ' < /tmp/http-body | head -c 500
+              echo
+            fi
+          }
+
+          echo '=== LOCAL HTTP ==='
+          check_http local_studio http://127.0.0.1:3011/
+          check_http local_api http://127.0.0.1:5091/api/health
+          check_http local_keycloak_root http://127.0.0.1:8080/
+          check_http local_keycloak_realm http://127.0.0.1:8080/realms/salientworks/.well-known/openid-configuration
+          echo
+
+          echo '=== PUBLIC DNS ==='
+          for name in engine.salientworks.ie salientworks.167-233-16-141.sslip.io acutis.salientrecovery.com; do
+            ips=$(getent ahostsv4 "$name" 2>/dev/null | awk '{print $1}' | sort -u | paste -sd, -)
+            echo "$name=${ips:-none}"
+          done
+          echo
+
+          echo '=== PUBLIC HTTP ==='
+          check_http engine_http http://engine.salientworks.ie/
+          check_http engine_https https://engine.salientworks.ie/
+          check_http legacy_https https://salientworks.167-233-16-141.sslip.io/
+          check_http keycloak_public https://acutis.salientrecovery.com/keycloak/realms/salientworks/.well-known/openid-configuration
+          echo
+
+          echo '=== PROCESS HINTS ==='
+          ps -eo pid,lstart,cmd 2>/dev/null | grep -E '[k]eycloak|[s]alientworks|[n]ext-server' | head -30 || true
+          REMOTE
+            echo "ssh_exit=$?" >> "$report"
+          fi
+
+          encoded=$(base64 -w0 "$report")
+          path='ops/salientworks-live-diagnostic.txt'
+          existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null)
+          if [[ -n "$existing_sha" ]]; then
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" \
+              -f message='Record SalientWorks live diagnostic' \
+              -f content="$encoded" \
+              -f sha="$existing_sha" \
+              -f branch=main >/dev/null
+          else
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" \
+              -f message='Record SalientWorks live diagnostic' \
+              -f content="$encoded" \
+              -f branch=main >/dev/null
+          fi
