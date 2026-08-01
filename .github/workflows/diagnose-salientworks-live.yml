@@ -1,4 +1,4 @@
-name: Inspect live Salient Works frontend checkout
+name: Identify live Salient Works source repository
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Inspect deployed frontend source and permissions
+      - name: Identify deployed source repository
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -24,42 +24,44 @@ jobs:
           USER: ${{ secrets.PRODUCTION_SSH_USER }}
         run: |
           set +e
-          report="$RUNNER_TEMP/salientworks-live-diagnostic.txt"
+          report="$RUNNER_TEMP/salientworks-source-repo.txt"
           echo "checked_at=$(date -u +%FT%TZ)" > "$report"
-          echo "inspection_revision=2" >> "$report"
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/key
           chmod 0600 ~/.ssh/key
           printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
           chmod 0600 ~/.ssh/known_hosts
-
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
-          root=/opt/salientworks/glor/salientworks-ui-v6
+          root=/opt/salientworks/glor
           echo "host=$(hostname)"
           echo "identity=$(id)"
-          echo '=== ROOT PERMISSIONS ==='
-          namei -l "$root" 2>&1 || true
-          ls -ld "$root" "$root/.git" "$root/.next" "$root/src" "$root/src/app" 2>&1 || true
-          echo '=== GIT ==='
-          git -C "$root" remote -v 2>&1 || true
-          git -C "$root" status --short --branch 2>&1 || true
-          git -C "$root" rev-parse HEAD 2>&1 || true
-          git -C "$root" log -5 --oneline --decorate 2>&1 || true
-          echo '=== PACKAGE ==='
-          sed -n '1,240p' "$root/package.json" 2>&1 || true
-          echo '=== AUTH CALLBACK MATCHES ==='
-          grep -RInE --exclude-dir=node_modules --exclude-dir=.git --exclude='*.map' 'api/auth/callback|redirect_uri|redirectUri|openid-connect/auth|client_id|sw_oidc_state' "$root" 2>/dev/null | head -400 || true
-          echo '=== AUTH-RELATED FILES ==='
-          find "$root" -maxdepth 8 -type f \( -path '*api*auth*' -o -iname '*auth*' -o -iname '*keycloak*' -o -iname '*oidc*' \) 2>/dev/null | sort | head -300
-          echo '=== WRITABILITY ==='
-          for path in "$root" "$root/.next" "$root/src" "$root/package.json"; do
-            if [[ -w "$path" ]]; then echo "$path=writable"; else echo "$path=not_writable"; fi
+          echo '=== GIT ROOT ==='
+          git -c safe.directory="$root" -C "$root" rev-parse --show-toplevel 2>&1 || true
+          git -c safe.directory="$root" -C "$root" remote -v 2>&1 || true
+          git -c safe.directory="$root" -C "$root" status --short --branch 2>&1 || true
+          git -c safe.directory="$root" -C "$root" rev-parse HEAD 2>&1 || true
+          git -c safe.directory="$root" -C "$root" branch -vv 2>&1 || true
+          git -c safe.directory="$root" -C "$root" log -12 --oneline --decorate 2>&1 || true
+          echo '=== TRACKED AUTH FILES ==='
+          git -c safe.directory="$root" -C "$root" ls-files | grep -E 'salientworks-ui-v6/app/api/auth/(login|callback)/route\.ts$' || true
+          echo '=== FILE COMMITS ==='
+          git -c safe.directory="$root" -C "$root" log -8 --oneline -- salientworks-ui-v6/app/api/auth/login/route.ts salientworks-ui-v6/app/api/auth/callback/route.ts 2>&1 || true
+          echo '=== SOURCE CONTENT ==='
+          sed -n '1,180p' "$root/salientworks-ui-v6/app/api/auth/login/route.ts" 2>&1 || true
+          echo '--- callback ---'
+          sed -n '1,220p' "$root/salientworks-ui-v6/app/api/auth/callback/route.ts" 2>&1 || true
+          echo '=== PARENT WRITABILITY ==='
+          for p in "$root" "$root/.git" "$root/salientworks-ui-v6/app/api/auth/login/route.ts"; do
+            [[ -w "$p" ]] && echo "$p=writable" || echo "$p=not_writable"
           done
           REMOTE
-
           encoded=$(base64 -w0 "$report")
-          path='ops/salientworks-live-diagnostic.txt'
-          existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record live Salient Works frontend checkout' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
+          path='ops/salientworks-source-repo.txt'
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
+          if [[ -n "$sha" ]]; then
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works source repository' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
+          else
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works source repository' -f content="$encoded" -f branch=main >/dev/null
+          fi
           cat "$report"
