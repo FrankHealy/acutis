@@ -1,0 +1,19 @@
+checked_at=2026-08-01T12:55:28Z
+host=acutis-app-server
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+keycloak_pid=881504
+=== DIRECT CONTAINER PATHS ===
+missing=/proc/881504/root/opt/java/openjdk/bin/java
+missing=/proc/881504/root/opt/java/openjdk/bin/jcmd
+missing=/proc/881504/root/opt/java/openjdk/bin/jinfo
+missing=/proc/881504/root/usr/bin/java
+missing=/proc/881504/root/usr/bin/jcmd
+missing=/proc/881504/root/opt/keycloak/bin/kcadm.sh
+missing=/proc/881504/root/opt/keycloak/bin/kc.sh
+missing=/proc/881504/root/tmp/.java_pid1
+missing=/proc/881504/root/tmp/.java_pid881504
+=== DISCOVER JAVA TOOLS ===
+selected_jcmd=none
+=== KEYCLOAK CONFIG PATHS ===
+=== ATTACH SOCKETS ===
+ssh_rc=0
