@@ -1,0 +1,174 @@
+name: Root repair SalientWorks engine
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/root-repair-salientworks-engine.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Repair through root access and persist result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
+          HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          set +e
+          result="$RUNNER_TEMP/salientworks-engine-root-result.txt"
+          : > "$result"
+          printf 'checked_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$result"
+          printf 'workflow_commit=%s\n' "$GITHUB_SHA" >> "$result"
+
+          if [[ -z "$SSH_PRIVATE_KEY" || -z "$SSH_HOST_KEY" || -z "$HOST" ]]; then
+            echo 'connection=missing-production-ssh-secret' >> "$result"
+          else
+            install -d -m 0700 ~/.ssh
+            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/acutis-production
+            chmod 0600 ~/.ssh/acutis-production
+            printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
+            chmod 0600 ~/.ssh/known_hosts
+
+            if ssh -o BatchMode=yes -o ConnectTimeout=15 -i ~/.ssh/acutis-production "root@$HOST" 'test "$(id -u)" = 0' >/dev/null 2>&1; then
+              echo 'root_connection=ok' >> "$result"
+              ssh -o BatchMode=yes -o ConnectTimeout=15 -i ~/.ssh/acutis-production "root@$HOST" 'bash -s' <<'REMOTE' >> "$result" 2>&1
+          set +e
+          ENGINE_HOST=engine.salientworks.ie
+          SITE=/etc/nginx/sites-available/salientworks
+
+          echo "host=$(hostname)"
+          public_ip=$(ip -4 -o addr show dev eth0 scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+          echo "public_ip=${public_ip:-unknown}"
+
+          systemctl daemon-reload >/dev/null 2>&1
+          for service in salientworks-api salientworks-studio; do
+            if systemctl list-unit-files "$service.service" --no-legend 2>/dev/null | grep -q "^$service.service"; then
+              systemctl enable "$service" >/dev/null 2>&1
+              systemctl restart "$service" >/dev/null 2>&1
+              echo "${service}_unit=present"
+            else
+              echo "${service}_unit=missing"
+            fi
+          done
+
+          install -d -m 0755 /etc/nginx/sites-available /etc/nginx/sites-enabled
+          if [[ ! -f "$SITE" ]]; then
+            : > "$SITE"
+          fi
+          if ! grep -Fq "$ENGINE_HOST" "$SITE"; then
+            cp -a "$SITE" "$SITE.before-engine-domain-$(date -u +%Y%m%dT%H%M%SZ)"
+            printf '%s\n' \
+              '' \
+              'server {' \
+              '  listen 80;' \
+              '  listen [::]:80;' \
+              '  server_name engine.salientworks.ie;' \
+              '' \
+              '  location /api/ {' \
+              '    proxy_pass http://127.0.0.1:5091;' \
+              '    proxy_http_version 1.1;' \
+              '    proxy_set_header Host $host;' \
+              '    proxy_set_header X-Real-IP $remote_addr;' \
+              '    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+              '    proxy_set_header X-Forwarded-Proto $scheme;' \
+              '  }' \
+              '' \
+              '  location / {' \
+              '    proxy_pass http://127.0.0.1:3011;' \
+              '    proxy_http_version 1.1;' \
+              '    proxy_set_header Host $host;' \
+              '    proxy_set_header X-Real-IP $remote_addr;' \
+              '    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+              '    proxy_set_header X-Forwarded-Proto $scheme;' \
+              '  }' \
+              '}' >> "$SITE"
+          fi
+
+          ln -sfn "$SITE" /etc/nginx/sites-enabled/salientworks
+          if nginx -t >/dev/null 2>&1; then
+            systemctl reload nginx >/dev/null 2>&1
+            echo 'nginx_config=valid'
+          else
+            echo 'nginx_config=invalid'
+          fi
+
+          for _ in $(seq 1 15); do
+            api_state=$(systemctl is-active salientworks-api 2>/dev/null || true)
+            studio_state=$(systemctl is-active salientworks-studio 2>/dev/null || true)
+            [[ "$api_state" == active && "$studio_state" == active ]] && break
+            sleep 1
+          done
+
+          api_state=$(systemctl is-active salientworks-api 2>/dev/null || true)
+          studio_state=$(systemctl is-active salientworks-studio 2>/dev/null || true)
+          nginx_state=$(systemctl is-active nginx 2>/dev/null || true)
+          api_http=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 http://127.0.0.1:5091/api/health 2>/dev/null || true)
+          studio_http=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 http://127.0.0.1:3011/ 2>/dev/null || true)
+          proxy_http=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 -H 'Host: engine.salientworks.ie' http://127.0.0.1/ 2>/dev/null || true)
+          dns_ips=$(getent ahostsv4 engine.salientworks.ie 2>/dev/null | awk '{print $1}' | sort -u | paste -sd, - || true)
+          dns_match=no
+          if [[ -n "$public_ip" && -n "$dns_ips" ]] && tr ',' '\n' <<<"$dns_ips" | grep -Fxq "$public_ip"; then
+            dns_match=yes
+          fi
+
+          echo "api_state=${api_state:-unknown}"
+          echo "studio_state=${studio_state:-unknown}"
+          echo "nginx_state=${nginx_state:-unknown}"
+          echo "api_health_http=${api_http:-000}"
+          echo "studio_http=${studio_http:-000}"
+          echo "proxy_http=${proxy_http:-000}"
+          echo "dns_ips=${dns_ips:-none}"
+          echo "dns_matches_public_ip=$dns_match"
+
+          if [[ "$dns_match" == yes ]] && command -v certbot >/dev/null 2>&1; then
+            if certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email --redirect -d engine.salientworks.ie >/dev/null 2>&1; then
+              echo 'tls_result=installed'
+            else
+              echo 'tls_result=failed'
+            fi
+          else
+            echo 'tls_result=not-attempted'
+          fi
+
+          if [[ "$api_state" != active ]]; then
+            journalctl -u salientworks-api --no-pager -n 80 2>/dev/null || true
+          fi
+          if [[ "$studio_state" != active ]]; then
+            journalctl -u salientworks-studio --no-pager -n 80 2>/dev/null || true
+          fi
+          REMOTE
+              echo "root_ssh_exit=$?" >> "$result"
+            else
+              echo 'root_connection=failed' >> "$result"
+              if [[ -n "$DEPLOY_USER" ]]; then
+                ssh -o BatchMode=yes -o ConnectTimeout=15 -i ~/.ssh/acutis-production "$DEPLOY_USER@$HOST" 'id; sudo -n -l 2>&1 || true' >> "$result" 2>&1
+                echo "deploy_diagnostic_exit=$?" >> "$result"
+              fi
+            fi
+          fi
+
+          encoded=$(base64 -w0 "$result")
+          path='ops/salientworks-engine-root-repair-result.txt'
+          existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null)
+          if [[ -n "$existing_sha" ]]; then
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" \
+              -f message='Record root SalientWorks engine repair result' \
+              -f content="$encoded" \
+              -f sha="$existing_sha" \
+              -f branch='main' >/dev/null
+          else
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" \
+              -f message='Record root SalientWorks engine repair result' \
+              -f content="$encoded" \
+              -f branch='main' >/dev/null
+          fi
