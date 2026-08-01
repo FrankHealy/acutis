@@ -1,0 +1,4 @@
+checked_at=2026-08-01T09:52:53Z
+workflow_commit=7942ca411cca15ba42e2dd390311467d80b55fd1
+sudo: I'm sorry acutis-deploy. I'm afraid I can't do that
+ssh_exit=1
