@@ -1,0 +1,45 @@
+checked_at=2026-08-01T12:50:36Z
+host=acutis-app-server
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+=== DEPLOY USER SSH FILES ===
+drwx------ acutis-deploy:acutis-deploy 4096 /home/acutis-deploy/.ssh
+-rw------- acutis-deploy:acutis-deploy 114 /home/acutis-deploy/.ssh/authorized_keys
+=== SSH AGENT ===
+SSH_AUTH_SOCK=none
+Could not open a connection to your authentication agent.
+=== LOCAL SSH PROBES ===
+--- salientworks@127.0.0.1 ---
+Warning: Permanently added '127.0.0.1' (ED25519) to the list of known hosts.
+salientworks@127.0.0.1: Permission denied (publickey,password).
+--- salientworks@localhost ---
+Warning: Permanently added 'localhost' (ED25519) to the list of known hosts.
+salientworks@localhost: Permission denied (publickey,password).
+--- root@127.0.0.1 ---
+root@127.0.0.1: Permission denied (publickey,password).
+--- root@localhost ---
+root@localhost: Permission denied (publickey,password).
+=== OTHER HOME SSH DIRECTORIES ===
+--- /home/salientworks/.ssh ---
+f: /home/salientworks/.ssh
+drwxr-xr-x root root /
+drwxr-xr-x root root home
+                      salientworks - No such file or directory
+--- /root/.ssh ---
+f: /root/.ssh
+drwxr-xr-x root root /
+drwx------ root root root
+                      .ssh - Permission denied
+=== KCADM CONFIG FILES ===
+=== READABLE KCADM CONFIG METADATA ===
+=== KEYCLOAK PROCESS CONTEXT ===
+keycloak_pid=881504
+0::/system.slice/docker-cc4cbbb170f80fb8428d0028590c110d24a542fc88f054b42be9d0136461a2eb.scope
+Name:	java
+State:	S (sleeping)
+Uid:	1000	1000	1000	1000
+Gid:	0	0	0	0
+NSpid:	881504	1
+ls: cannot open file '/proc/881504/cwd': Permission denied
+ls: cannot open file '/proc/881504/root': Permission denied
+lrwxrwxrwx 1 acutis-deploy root 0 Jul 31 06:54 /proc/881504/cwd
+lrwxrwxrwx 1 acutis-deploy root 0 Jul 31 06:54 /proc/881504/root
