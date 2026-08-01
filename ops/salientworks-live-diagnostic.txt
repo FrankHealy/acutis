@@ -1,10 +1,12 @@
-checked_at=2026-08-01T11:39:47Z
-workflow_commit=f83f32bfe0b7546c37db6926a3352d950c5535ae
+checked_at=2026-08-01T11:41:23Z
+workflow_commit=219fad778b7c1b8a60554072ee5fa9bbb289f684
 connection=ok
 host=acutis-app-server
 user=acutis-deploy
 groups=acutis-deploy
-server_time=2026-08-01T11:39:48Z
+docker_group=docker:x:107:
+docker_socket=srw-rw---- 1 root docker 0 Jun  2 19:00 /var/run/docker.sock
+server_time=2026-08-01T11:41:25Z
 
 === SERVICE STATES ===
 salientworks-api.state=inactive
