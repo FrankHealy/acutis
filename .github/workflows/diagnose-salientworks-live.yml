@@ -1,4 +1,4 @@
-name: Extract Salient Works Keycloak error
+name: Identify valid Salient Works Keycloak callback
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Extract Keycloak error from login flow
+      - name: Probe known callback variants
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -35,40 +35,39 @@ jobs:
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
           echo "host=$(hostname)"
-          curl -k -sS -L --max-redirs 4 --max-time 30 -D /tmp/headers -o /tmp/body -w 'final_url=%{url_effective}\nhttp=%{http_code}\nredirects=%{num_redirects}\n' 'https://engine.salientworks.ie/api/auth/login?returnTo=%2F'
-          echo "curl_rc=$?"
-          echo 'locations:'
-          grep -i '^location:' /tmp/headers | sed -E 's/(state=)[^& ]+/\1[redacted]/g; s/(code_challenge=)[^& ]+/\1[redacted]/g' || true
-          echo 'keycloak_error_text:'
-          python3 - <<'PY'
+          auth='https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth'
+          probe() {
+            client=$1
+            redirect=$2
+            encoded=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$redirect")
+            url="$auth?client_id=$client&redirect_uri=$encoded&response_type=code&scope=openid&state=teststate&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&code_challenge_method=S256"
+            code=$(curl -k -sS --max-time 15 -o /tmp/body -w '%{http_code}' "$url")
+            title=$(grep -io '<title>[^<]*' /tmp/body | head -1 | sed 's/<title>//I')
+            error=$(python3 - <<'PY'
           from html.parser import HTMLParser
           from pathlib import Path
-
-          class Text(HTMLParser):
-              def __init__(self):
-                  super().__init__()
-                  self.parts=[]
-              def handle_data(self, data):
-                  s=' '.join(data.split())
-                  if s:
-                      self.parts.append(s)
-
-          p=Text(); p.feed(Path('/tmp/body').read_text(errors='replace'))
-          text=' | '.join(p.parts)
-          for part in p.parts:
-              low=part.lower()
-              if any(k in low for k in ('invalid', 'error', 'redirect', 'client')):
-                  print(part)
-          print('all_text=' + text[:5000])
+          class T(HTMLParser):
+              def __init__(self): super().__init__(); self.p=[]
+              def handle_data(self,d):
+                  s=' '.join(d.split())
+                  if s and ('invalid' in s.lower() or 'error' in s.lower()): self.p.append(s)
+          p=T(); p.feed(Path('/tmp/body').read_text(errors='replace')); print(' | '.join(p.p)[:500])
           PY
-          echo 'status_checks:'
-          curl -k -sS --max-time 10 -o /dev/null -w 'root=%{http_code}\n' https://engine.salientworks.ie/
-          curl -k -sS --max-time 10 -o /dev/null -w 'domains=%{http_code}\n' https://engine.salientworks.ie/api/domains
-          curl -k -sS --max-time 10 -o /dev/null -w 'discovery=%{http_code}\n' https://engine.salientworks.ie/realms/salientworks/.well-known/openid-configuration
+          )
+            echo "client=$client redirect=$redirect http=$code title=$title error=$error"
+          }
+          for client in salientworks-api salientworks-studio; do
+            probe "$client" 'https://engine.salientworks.ie/api/auth/callback'
+            probe "$client" 'https://engine.salientworks.ie/api/auth/callback/keycloak'
+            probe "$client" 'https://salientworks.167-233-16-141.sslip.io/api/auth/callback'
+            probe "$client" 'https://salientworks.167-233-16-141.sslip.io/api/auth/callback/keycloak'
+            probe "$client" 'http://127.0.0.1:3011/api/auth/callback'
+            probe "$client" 'http://localhost:3011/api/auth/callback/keycloak'
+          done
           REMOTE
 
           encoded=$(base64 -w0 "$report")
           path='ops/salientworks-live-diagnostic.txt'
           existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works Keycloak error' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record valid Keycloak callback probe' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
           cat "$report"
