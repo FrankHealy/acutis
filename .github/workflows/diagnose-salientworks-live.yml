@@ -26,6 +26,7 @@ jobs:
           set +e
           report="$RUNNER_TEMP/salientworks-live-diagnostic.txt"
           echo "checked_at=$(date -u +%FT%TZ)" > "$report"
+          echo "inspection_revision=2" >> "$report"
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/key
           chmod 0600 ~/.ssh/key
