@@ -1,10 +1,33 @@
-checked_at=2026-08-01T11:47:16Z
-workflow_commit=e4f58503763fc46daafc7558b02022c0435571ef
-salientworks_ssh=denied
-uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
-salient+  903237       1 Ssl  Thu Jul 30 14:55:35 2026 /opt/salientworks/glor/rust/target/debug/salientworks-runtime
+checked_at=2026-08-01T11:58:34Z
+host=acutis-app-server
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+runtime_pid=903237
+runtime_cgroup:
+0::/system.slice/salientworks-glor.service
+runtime_namespaces:
+ls: cannot open directory '/proc/903237/ns': Permission denied
+runtime_root:
+runtime_cwd:
+runtime_status:
+Name:	salientworks-ru
+State:	S (sleeping)
+Uid:	995	995	995	995
+Gid:	983	983	983	983
+NSpid:	903237
+Threads:	3
+runtime_fd_sockets:
+docker_sockets:
+     2099      0 srw-rw----   1 root     docker          0 Jun  2 19:00 /run/docker.sock
+docker_contexts:
+NAME        DESCRIPTION                               DOCKER ENDPOINT               ERROR
+default *   Current DOCKER_HOST based configuration   unix:///var/run/docker.sock   
+container_services:
+  containerd.service                                    loaded    active   running containerd container runtime
+  docker.service                                        loaded    active   running Docker Application Container Engine
+  salientworks-api.service                              loaded    inactive dead    SalientWorks API
+  salientworks-glor.service                             loaded    active   running Salient Works Glor application API
+  salientworks-studio.service                           loaded    inactive dead    Salient Studio
+  salientworks-web.service                              loaded    active   running Salient Works Next.js web application
+health:
 curl: (7) Failed to connect to 127.0.0.1 port 5091 after 0 ms: Could not connect to server
-fallback_local_api.http=000
-fallback_ssh_exit=7
-public_api.rc=0
-public_api.http=404
+local_api.http=000
