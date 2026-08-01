@@ -1,4 +1,14 @@
-checked_at=2026-08-01T12:27:03Z
-current_run=30699708606
-cancelling run=30699580078 status=in_progress name=Deploy Acutis production title=Deploy Acutis production sha=16ae720a7cd30f2b332e6775498b41d0764b45cc
+checked_at=2026-08-01T12:28:04Z
+current_run=30699743638
+=== status=queued ===
+=== status=in_progress ===
+run=30699743638 name=Clear retired Acutis deploy queue title=List and clear retired deployment queue event=push sha=6210db124b6f577891ac8cb324201952d65d78c3 created=2026-08-01T12:28:01Z
+run=30699743730 name=Validate Acutis platform title=List and clear retired deployment queue event=push sha=6210db124b6f577891ac8cb324201952d65d78c3 created=2026-08-01T12:28:01Z
+run=30699708677 name=Validate Acutis platform title=Clear retired Acutis production deployment queue event=push sha=7859635664f449f89a49f8540d32191ad0edd9c4 created=2026-08-01T12:26:58Z
+run=30699683443 name=Validate Acutis platform title=Check repository-level production SSH access event=push sha=e541647f6d1b101b2cbc0da5c0cb7d3026837492 created=2026-08-01T12:26:14Z
+run=30699594985 name=Deploy Acutis production title=Deploy Acutis production event=workflow_run sha=16ae720a7cd30f2b332e6775498b41d0764b45cc created=2026-08-01T12:23:30Z
+cancelling_retired_deploy=30699594985
+=== status=waiting ===
+=== status=requested ===
+=== status=pending ===
 cancelled=1
