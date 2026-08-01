@@ -1,4 +1,4 @@
-name: Diagnose SalientWorks live outage
+name: Recover Salient Works Rust runtime
 
 on:
   push:
@@ -11,230 +11,111 @@ permissions:
   contents: write
 
 jobs:
-  diagnose:
+  recover:
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
     steps:
-      - name: Inspect production host, recover runtime, and persist report
+      - name: Restart the existing Salient Works Rust runtime
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
           SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
           HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
-          USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          FALLBACK_USER: ${{ secrets.PRODUCTION_SSH_USER }}
         run: |
           set +e
           report="$RUNNER_TEMP/salientworks-live-diagnostic.txt"
           : > "$report"
-          printf 'checked_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$report"
-          printf 'workflow_commit=%s\n' "$GITHUB_SHA" >> "$report"
+          echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$report"
+          echo "workflow_commit=$GITHUB_SHA" >> "$report"
 
-          if [[ -z "$SSH_PRIVATE_KEY" || -z "$SSH_HOST_KEY" || -z "$HOST" || -z "$USER" ]]; then
-            echo 'connection=missing-production-secrets' >> "$report"
-          else
-            install -d -m 0700 ~/.ssh
-            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/salientworks-production
-            chmod 0600 ~/.ssh/salientworks-production
-            printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
-            chmod 0600 ~/.ssh/known_hosts
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/salientworks-production
+          chmod 0600 ~/.ssh/salientworks-production
+          printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
+          chmod 0600 ~/.ssh/known_hosts
 
-            ssh -i ~/.ssh/salientworks-production "$USER@$HOST" 'bash -s' <<'REMOTE' >> "$report" 2>&1
+          if ssh -o BatchMode=yes -o ConnectTimeout=8 -i ~/.ssh/salientworks-production "salientworks@$HOST" 'true' >/dev/null 2>&1; then
+            echo 'salientworks_ssh=ok' >> "$report"
+            ssh -o BatchMode=yes -i ~/.ssh/salientworks-production "salientworks@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
-          echo 'connection=ok'
           echo "host=$(hostname)"
           echo "user=$(id -un)"
           echo "groups=$(id -Gn)"
-          echo "docker_group=$(getent group docker 2>/dev/null || true)"
-          echo "docker_socket=$(ls -l /var/run/docker.sock 2>/dev/null || true)"
-          echo "server_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo
 
-          echo '=== SERVICE STATES ==='
-          for service in salientworks-api salientworks-studio nginx keycloak; do
-            state=$(systemctl is-active "$service" 2>/dev/null || true)
-            enabled=$(systemctl is-enabled "$service" 2>/dev/null || true)
-            echo "$service.state=${state:-unknown}"
-            echo "$service.enabled=${enabled:-unknown}"
-          done
-          echo
+          health_code=$(curl -sS --max-time 5 -o /tmp/sw-health-before -w '%{http_code}' http://127.0.0.1:5091/api/health 2>/tmp/sw-health-before-error)
+          health_rc=$?
+          echo "before.rc=$health_rc"
+          echo "before.http=${health_code:-000}"
 
-          echo '=== SALIENT WORKS PROCESS AND FILES ==='
-          ps -eo user,pid,ppid,stat,lstart,cmd 2>/dev/null | grep -E '[s]alientworks-runtime|[n]ext-server' | head -30 || true
-          systemctl show salientworks-api -p User -p Group -p ExecStart -p EnvironmentFiles -p FragmentPath --no-pager 2>/dev/null || true
-          ls -ld /opt/salientworks /opt/salientworks/config /opt/salientworks/glor/rust/target/debug 2>/dev/null || true
-          ls -l /opt/salientworks/config/api.env /opt/salientworks/glor/rust/target/debug/salientworks-runtime 2>/dev/null || true
-          echo
-
-          echo '=== APPROVED DEPLOYERS ==='
-          sudo -n -l 2>&1 || true
-          for script in /opt/acutis/bin/deploy-production-release /opt/acutis/bin/deploy-products-release; do
-            echo "-- $script --"
-            ls -l "$script" 2>&1 || true
-            sed -n '1,40p' "$script" 2>&1 || true
-          done
-          echo
-
-          echo '=== LISTENING PORTS ==='
-          ss -lnt 2>/dev/null | grep -E '(:80|:443|:3011|:5091|:8080)[[:space:]]' || true
-          echo
-
-          check_http() {
-            local name=$1 url=$2
-            local code
-            code=$(curl -k -sS -o /tmp/http-body -w '%{http_code}' --connect-timeout 5 --max-time 15 "$url" 2>/tmp/http-error)
-            local rc=$?
-            echo "$name.rc=$rc"
-            echo "$name.http=${code:-000}"
-            if [[ -s /tmp/http-error ]]; then
-              printf '%s.error=' "$name"
-              tr '\n' ' ' < /tmp/http-error | head -c 400
-              echo
+          if [[ $health_rc -ne 0 || $health_code != 200 ]]; then
+            pid=$(pgrep -u "$(id -u)" -f '^/opt/salientworks/glor/rust/target/debug/salientworks-runtime$' | tail -1)
+            echo "runtime_pid=${pid:-none}"
+            if [[ -n "$pid" ]]; then
+              cwd=$(readlink "/proc/$pid/cwd")
+              exe=$(readlink "/proc/$pid/exe")
+              envfile=$(mktemp "$HOME/.sw-runtime-env.XXXXXX")
+              chmod 600 "$envfile"
+              python3 -c 'import shlex,sys; data=open(sys.argv[1],"rb").read().decode(errors="replace").split("\0"); print("\n".join("export "+x.split("=",1)[0]+"="+shlex.quote(x.split("=",1)[1]) for x in data if "=" in x))' "/proc/$pid/environ" > "$envfile"
+              echo "runtime_cwd=$cwd"
+              echo "runtime_exe=$exe"
+              kill "$pid"
+              for _ in $(seq 1 30); do
+                kill -0 "$pid" 2>/dev/null || break
+                sleep 0.2
+              done
+              if kill -0 "$pid" 2>/dev/null; then
+                kill -9 "$pid"
+                sleep 1
+              fi
+              set -a
+              source "$envfile"
+              set +a
+              rm -f "$envfile"
+              cd "$cwd"
+              nohup "$exe" >> "$HOME/salientworks-runtime-recovery.log" 2>&1 < /dev/null &
+              new_pid=$!
+              echo "new_pid=$new_pid"
+              sleep 10
             fi
-            if [[ -s /tmp/http-body ]]; then
-              printf '%s.body=' "$name"
-              tr '\n' ' ' < /tmp/http-body | head -c 500
-              echo
-            fi
-          }
-
-          echo '=== LOCAL HTTP ==='
-          check_http local_studio http://127.0.0.1:3011/
-          check_http local_api http://127.0.0.1:5091/api/health
-          check_http local_keycloak_root http://127.0.0.1:8080/
-          check_http local_keycloak_realm http://127.0.0.1:8080/realms/salientworks/.well-known/openid-configuration
-          echo
-
-          echo '=== DOCKER ==='
-          if docker info >/dev/null 2>&1; then
-            echo 'docker_access=yes'
-            docker version --format 'docker_server={{.Server.Version}}' 2>/dev/null || true
-            docker ps -a --no-trunc --format 'container={{.Names}} image={{.Image}} status={{.Status}} ports={{.Ports}}' || true
-          else
-            echo 'docker_access=no'
-            docker info 2>&1 | head -30 || true
           fi
-          echo
 
-          echo '=== PUBLIC DNS ==='
-          for name in engine.salientworks.ie salientworks.167-233-16-141.sslip.io acutis.salientrecovery.com; do
-            ips=$(getent ahostsv4 "$name" 2>/dev/null | awk '{print $1}' | sort -u | paste -sd, -)
-            echo "$name=${ips:-none}"
-          done
-          echo
-
-          echo '=== PUBLIC HTTP ==='
-          check_http engine_http http://engine.salientworks.ie/
-          check_http engine_https https://engine.salientworks.ie/
-          check_http legacy_https https://salientworks.167-233-16-141.sslip.io/
-          check_http keycloak_public https://acutis.salientrecovery.com/keycloak/realms/salientworks/.well-known/openid-configuration
-          echo
+          final_code=$(curl -sS --max-time 8 -o /tmp/sw-health-final -w '%{http_code}' http://127.0.0.1:5091/api/health 2>/tmp/sw-health-final-error)
+          final_rc=$?
+          echo "final.rc=$final_rc"
+          echo "final.http=${final_code:-000}"
+          if [[ -s /tmp/sw-health-final ]]; then
+            printf 'final.body='
+            tr '\n' ' ' < /tmp/sw-health-final | head -c 1000
+            echo
+          fi
+          echo 'runtime_processes:'
+          ps -eo user,pid,ppid,stat,lstart,cmd | grep -E '[s]alientworks-runtime' || true
           REMOTE
-            echo "ssh_exit=$?" >> "$report"
+            echo "recovery_ssh_exit=$?" >> "$report"
+          else
+            echo 'salientworks_ssh=denied' >> "$report"
+            ssh -o BatchMode=yes -i ~/.ssh/salientworks-production "$FALLBACK_USER@$HOST" 'id; ps -eo user,pid,ppid,stat,lstart,cmd | grep -E "[s]alientworks-runtime"; curl -sS --max-time 5 -o /dev/null -w "fallback_local_api.http=%{http_code}\n" http://127.0.0.1:5091/api/health' >> "$report" 2>&1
+            echo "fallback_ssh_exit=$?" >> "$report"
+          fi
 
+          public_code=$(curl -k -sS --max-time 15 -o /tmp/sw-public-final -w '%{http_code}' https://engine.salientworks.ie/api/health 2>/tmp/sw-public-error)
+          public_rc=$?
+          echo "public_api.rc=$public_rc" >> "$report"
+          echo "public_api.http=${public_code:-000}" >> "$report"
+          if [[ -s /tmp/sw-public-final ]]; then
+            printf 'public_api.body=' >> "$report"
+            tr '\n' ' ' < /tmp/sw-public-final | head -c 1000 >> "$report"
             echo >> "$report"
-            echo '=== SALIENTWORKS USER RECOVERY ===' >> "$report"
-            if ssh -o BatchMode=yes -o ConnectTimeout=8 -i ~/.ssh/salientworks-production "salientworks@$HOST" 'true' >/dev/null 2>&1; then
-              echo 'salientworks_ssh=ok' >> "$report"
-              ssh -i ~/.ssh/salientworks-production "salientworks@$HOST" 'python3 -' <<'PY' >> "$report" 2>&1
-import os
-import pathlib
-import signal
-import subprocess
-import time
-
-health_url = "http://127.0.0.1:5091/api/health"
-
-def health():
-    p = subprocess.run(["curl", "-sS", "--max-time", "5", "-o", "/tmp/sw-health", "-w", "%{http_code}", health_url], text=True, capture_output=True)
-    return p.returncode, p.stdout.strip()
-
-before_rc, before_code = health()
-print(f"before.rc={before_rc}")
-print(f"before.http={before_code or '000'}")
-
-if before_rc != 0 or before_code != "200":
-    pids = []
-    for entry in pathlib.Path("/proc").iterdir():
-        if not entry.name.isdigit():
-            continue
-        try:
-            cmd = (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
-            uid = (entry / "status").read_text().split("Uid:", 1)[1].splitlines()[0].split()[0]
-        except Exception:
-            continue
-        if "salientworks-runtime" in cmd and int(uid) == os.getuid():
-            pids.append(int(entry.name))
-
-    print(f"matching_runtime_pids={pids}")
-    if not pids:
-        raise SystemExit("No Salient Works runtime owned by salientworks user")
-
-    pid = max(pids)
-    proc = pathlib.Path(f"/proc/{pid}")
-    env = {}
-    for item in (proc / "environ").read_bytes().split(b"\0"):
-        if not item or b"=" not in item:
-            continue
-        key, value = item.split(b"=", 1)
-        env[key.decode()] = value.decode()
-    argv = [x.decode() for x in (proc / "cmdline").read_bytes().split(b"\0") if x]
-    cwd = os.readlink(proc / "cwd")
-    print(f"restarting_pid={pid}")
-    print(f"runtime={argv[0] if argv else 'unknown'}")
-    print(f"cwd={cwd}")
-
-    os.kill(pid, signal.SIGTERM)
-    for _ in range(30):
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            break
-        time.sleep(0.2)
-    else:
-        os.kill(pid, signal.SIGKILL)
-        time.sleep(1)
-
-    log_path = pathlib.Path.home() / "salientworks-runtime-recovery.log"
-    with log_path.open("ab", buffering=0) as log:
-        new_proc = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
-    print(f"new_pid={new_proc.pid}")
-    print(f"log={log_path}")
-    time.sleep(10)
-
-final_rc, final_code = health()
-print(f"final.rc={final_rc}")
-print(f"final.http={final_code or '000'}")
-if pathlib.Path('/tmp/sw-health').exists():
-    print('final.body=' + pathlib.Path('/tmp/sw-health').read_text(errors='replace')[:1000].replace('\n', ' '))
-PY
-              echo "salientworks_recovery_ssh_exit=$?" >> "$report"
-            else
-              echo 'salientworks_ssh=denied' >> "$report"
-            fi
-
-            echo >> "$report"
-            echo '=== FINAL PUBLIC VERIFICATION ===' >> "$report"
-            curl -k -sS -o /tmp/public-final -w 'public_api_final.http=%{http_code}\n' --connect-timeout 5 --max-time 15 https://engine.salientworks.ie/api/health >> "$report" 2>&1
-            echo "public_api_final.rc=$?" >> "$report"
-            if [[ -s /tmp/public-final ]]; then
-              printf 'public_api_final.body=' >> "$report"
-              tr '\n' ' ' < /tmp/public-final | head -c 1000 >> "$report"
-              echo >> "$report"
-            fi
           fi
 
           encoded=$(base64 -w0 "$report")
           path='ops/salientworks-live-diagnostic.txt'
           existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null)
-          if [[ -n "$existing_sha" ]]; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" \
-              -f message='Record SalientWorks live diagnostic' \
-              -f content="$encoded" \
-              -f sha="$existing_sha" \
-              -f branch=main >/dev/null
-          else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" \
-              -f message='Record SalientWorks live diagnostic' \
-              -f content="$encoded" \
-              -f branch=main >/dev/null
-          fi
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" \
+            -f message='Record Salient Works runtime recovery' \
+            -f content="$encoded" \
+            -f sha="$existing_sha" \
+            -f branch=main >/dev/null
+          cat "$report"
