@@ -1,0 +1,1188 @@
+checked_at=2026-08-01T12:42:30Z
+host=acutis-app-server
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+=== SYSTEMD UNITS ===
+salientworks-api.service                                                      enabled         enabled
+salientworks-glor.service                                                     enabled         enabled
+salientworks-studio.service                                                   enabled         enabled
+salientworks-web.service                                                      enabled         enabled
+=== ACTIVE/ALL SERVICES ===
+  apport-autoreport.path                                                                                                                    loaded    inactive dead      Process error reports when automatic reporting is enabled (file watch)
+  systemd-ask-password-console.path                                                                                                         loaded    active   waiting   Dispatch Password Requests to Console Directory Watch
+  systemd-ask-password-plymouth.path                                                                                                        loaded    inactive dead      Forward Password Requests to Plymouth Directory Watch
+  systemd-ask-password-wall.path                                                                                                            loaded    active   waiting   Forward Password Requests to Wall Directory Watch
+  session-2554.scope                                                                                                                        loaded    active   running   Session 2554 of User acutis-deploy
+  salientworks-api.service                                                                                                                  loaded    inactive dead      SalientWorks API
+  salientworks-glor.service                                                                                                                 loaded    active   running   Salient Works Glor application API
+  salientworks-studio.service                                                                                                               loaded    inactive dead      Salient Studio
+  salientworks-web.service                                                                                                                  loaded    active   running   Salient Works Next.js web application
+  systemd-rfkill.socket                                                                                                                     loaded    active   listening Load/Save RF Kill Switch Status /dev/rfkill Watch
+=== TIMERS ===
+NEXT                             LEFT LAST                              PASSED UNIT                           ACTIVATES
+=== UNIT FILE CONTENTS ===
+--- salientworks-api.service ---
+# /etc/systemd/system/salientworks-api.service
+[Unit]
+Description=SalientWorks API
+After=network-online.target
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/salientworks/current/api
+EnvironmentFile=/opt/salientworks/config/api.env
+ExecStart=/usr/bin/dotnet /opt/salientworks/current/api/SalientWorks.Api.dll
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+--- salientworks-glor.service ---
+# /etc/systemd/system/salientworks-glor.service
+[Unit]
+Description=Salient Works Glor application API
+After=network-online.target
+
+[Service]
+Type=simple
+User=salientworks
+WorkingDirectory=/opt/salientworks/glor
+EnvironmentFile=/etc/salientworks/app.env
+# SQLite must be SQLCipher/encrypted in production and accessible only here.
+ExecStart=/opt/salientworks/glor/rust/target/debug/salientworks-runtime
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+--- salientworks-studio.service ---
+# /etc/systemd/system/salientworks-studio.service
+[Unit]
+Description=Salient Studio
+After=salientworks-api.service
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/salientworks/current/studio
+EnvironmentFile=/opt/salientworks/config/studio.env
+ExecStart=/usr/bin/node /opt/salientworks/current/studio/server.js
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+--- salientworks-web.service ---
+# /etc/systemd/system/salientworks-web.service
+[Unit]
+Description=Salient Works Next.js web application
+After=network-online.target salientworks-glor.service
+
+[Service]
+Type=simple
+User=salientworks
+WorkingDirectory=/opt/salientworks/glor/salientworks-ui-v6
+EnvironmentFile=/etc/salientworks/web.env
+ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3011
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+=== CRON ===
+--- /etc/crontab ---
+# /etc/crontab: system-wide crontab
+# Unlike any other crontab you don't have to run the `crontab'
+# command to install the new version when you edit this file
+# and files in /etc/cron.d. These files also have username fields,
+# that none of the other crontabs do.
+
+SHELL=/bin/sh
+# You can also override PATH, but by default, newer versions inherit it from the environment
+#PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name command to be executed
+17 *	* * *	root	cd / && run-parts --report /etc/cron.hourly
+25 6	* * *	root	test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.daily; }
+47 6	* * 7	root	test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.weekly; }
+52 6	1 * *	root	test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.monthly; }
+#
+--- /etc/cron.d/certbot ---
+# /etc/cron.d/certbot: crontab entries for the certbot package
+#
+# Upstream recommends attempting renewal twice a day
+#
+# Eventually, this will be an opportunity to validate certificates
+# haven't been revoked, etc.  Renewal will only occur if expiration
+# is within 30 days.
+#
+# Important Note!  This cronjob will NOT be executed if you are
+# running systemd as your init system.  If you are running systemd,
+# the cronjob.timer function takes precedence over this cronjob.  For
+# more details, see the systemd.timer manpage, or use systemctl show
+# certbot.timer.
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+0 */12 * * * root test -x /usr/bin/certbot -a \! -d /run/systemd/system && perl -e 'sleep int(rand(43200))' && certbot -q renew --no-random-sleep-on-renew
+--- /etc/cron.d/e2scrub_all ---
+30 3 * * 0 root test -e /run/systemd/system || SERVICE_MODE=1 /usr/libexec/e2fsprogs/e2scrub_all_cron
+10 3 * * * root test -e /run/systemd/system || SERVICE_MODE=1 /sbin/e2scrub_all -A -r
+=== USER CRONTABS ===
+--- root ---
+must be privileged to use -u
+--- salientworks ---
+must be privileged to use -u
+--- acutis-deploy ---
+no crontab for acutis-deploy
+=== RUNNER FILES ===
+=== DEPLOY FILES ===
+-rw------- root:root /opt/acutis/backups/pre-automated-deploy-20260714T183023Z.tar.gz
+-rw-r--r-- root:root /opt/acutis/acutis/acutis.tab/acutis-device-final-pulled.png
+-rw-r--r-- root:root /opt/acutis/acutis/acutis.tab/node_modules/handlebars/release-notes.md
+-rw-r--r-- root:root /opt/acutis/acutis/acutis.tab/node_modules/rtl-detect/.releaserc.json
+-rw-r--r-- root:root /opt/acutis/acutis/acutis.tab/node_modules/xcode/RELEASENOTES.md
+-rw-r--r-- root:root /opt/acutis/acutis/DEPLOYMENT_NOTES.md
+-rw-r--r-- root:root /opt/acutis/acutis/deploy/release-v0.8/deployment.env.example
+-rw-r--r-- root:root /opt/acutis/acutis/docs/server-update-runbook-2026-07-09.md
+-rw-r--r-- root:root /opt/acutis/acutis/node_modules/expo/internal/unstable-expo-updates-cli-exports.d.ts
+-rw-r--r-- root:root /opt/acutis/acutis/node_modules/expo/internal/unstable-expo-updates-cli-exports.js
+-rw-r--r-- root:root /opt/acutis/acutis/node_modules/semver/functions/prerelease.js
+-rw-r--r-- root:root /opt/acutis/acutis/node_modules/xcode/RELEASENOTES.md
+-rw-r--r-- root:root /opt/acutis/acutis-release-v0.8-platform-foundation/acutis.centre/acutis.centre.tab/acutis-device-final-pulled.png
+-rw-r--r-- root:root /opt/acutis/acutis-release-v0.8-platform-foundation/DEPLOYMENT_NOTES.md
+-rw-r--r-- root:root /opt/acutis/acutis-release-v0.8-platform-foundation/docs/server-update-runbook-2026-07-09.md
+-rw-r--r-- root:root /opt/acutis/deployment-packages/v0.8-platform-foundation/deployment.env.example
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@babel/preset-env/data/unreleased-labels.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/date-fns/docs/release.md
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/_basePullAll.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/_basePullAt.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/_baseUpdate.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/_basePullAll.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/_basePullAt.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/_baseUpdate.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/pullAllBy.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/pullAll.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/pullAllWith.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/pullAt.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/pull.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/update.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/updateWith.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash-es/_updateWrapDetails.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/fp/pullAllBy.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/fp/pullAll.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/fp/pullAllWith.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/fp/pullAt.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/fp/pull.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/fp/update.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/fp/updateWith.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/pullAllBy.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/pullAll.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/pullAllWith.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/pullAt.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/pull.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/update.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/updateWith.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/lodash/_updateWrapDetails.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/next/dist/build/deployment-id.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/next/dist/build/deployment-id.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/next/dist/build/deployment-id.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/next-sanity/dist/webhook.cjs
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/next-sanity/dist/webhook.cjs.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/next-sanity/dist/webhook.d.cts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/next-sanity/dist/webhook.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/next-sanity/dist/webhook.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/next-sanity/dist/webhook.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/node-releases/data/release-schedule/release-schedule.json
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deployAction2.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deployAction2.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deployAction.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deployAction.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deployApiAction.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deployApiAction.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deployAspectAction.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deployAspectAction.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deploySchemasAction.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/deploySchemasAction.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/shouldAutoUpdate.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/shouldAutoUpdate.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/undeployAction2.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/undeployAction2.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/undeployAction.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/sanity/lib/_chunks-cjs/undeployAction.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/semver/functions/prerelease.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/slate/dist/core/update-dirty-paths.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/slate/dist/core/update-dirty-paths.d.ts.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/cjs/_class_apply_descriptor_update.cjs
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/cjs/_class_private_field_update.cjs
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/cjs/_class_static_private_field_update.cjs
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/cjs/_update.cjs
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/esm/_class_apply_descriptor_update.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/esm/_class_private_field_update.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/esm/_class_static_private_field_update.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/esm/_update.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/src/_class_apply_descriptor_update.mjs
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/src/_class_private_field_update.mjs
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/src/_class_static_private_field_update.mjs
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@swc/helpers/src/_update.mjs
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tailwindcss/scripts/release-channel.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tailwindcss/scripts/release-notes.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tar/dist/commonjs/update.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tar/dist/commonjs/update.d.ts.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tar/dist/commonjs/update.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tar/dist/commonjs/update.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tar/dist/esm/update.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tar/dist/esm/update.d.ts.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tar/dist/esm/update.js
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/tar/dist/esm/update.js.map
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash-es/pullAllBy.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash-es/pullAll.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash-es/pullAllWith.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash-es/pullAt.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash-es/pull.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash-es/update.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash-es/updateWith.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/fp/pullAllBy.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/fp/pullAll.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/fp/pullAllWith.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/fp/pullAt.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/fp/pull.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/fp/update.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/fp/updateWith.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/pullAllBy.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/pullAll.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/pullAllWith.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/pullAt.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/pull.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/update.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/@types/lodash/updateWith.d.ts
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/universal-user-agent/.github/workflows/release.yml
+-rw-r--r-- root:root /opt/salient-recovery-site/node_modules/universal-user-agent/.github/workflows/update-prettier.yml
+-rw-r--r-- root:root /opt/salientworks/glor/infrastructure/deploy/deploy-rust-api.sh
+-rw-r--r-- root:root /opt/salientworks/glor/infrastructure/deploy/deploy-rust-api.sh
+-rw-r--r-- root:root /opt/salientworks/glor/salientworks-ui-v6/node_modules/semver/functions/prerelease.js
+-rw-r--r-- salientworks:salientworks /opt/salientworks/glor/docs/PRODUCTION_DEPLOYMENT.md
+-rw-r--r-- salientworks:salientworks /opt/salientworks/glor/docs/PRODUCTION_DEPLOYMENT.md
+-rwx------ root:root /opt/acutis/acutis/deploy/release-v0.8/deploy-v0.8-platform-foundation.sh
+-rwx------ root:root /opt/acutis/deployment-packages/v0.8-platform-foundation/deploy-v0.8-platform-foundation.sh
+-rwxr-xr-x root:root /opt/acutis/acutis/.git/hooks/post-update.sample
+-rwxr-xr-x root:root /opt/acutis/acutis/.git/hooks/update.sample
+-rwxr-xr-x root:root /opt/acutis/bin/deploy-production-release
+-rwxr-xr-x root:root /opt/acutis/bin/deploy-products-release
+-rwxr-xr-x root:root /opt/salient-recovery-site/.git/hooks/post-update.sample
+-rwxr-xr-x root:root /opt/salient-recovery-site/.git/hooks/update.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/post-update.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/post-update.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/update.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/update.sample
+=== GIT HOOKS ===
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/applypatch-msg.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/commit-msg.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/fsmonitor-watchman.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/post-update.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/pre-applypatch.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/pre-commit.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/pre-merge-commit.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/prepare-commit-msg.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/pre-push.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/pre-rebase.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/pre-receive.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/push-to-checkout.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/sendemail-validate.sample
+-rwxr-xr-x salientworks:salientworks /opt/salientworks/glor/.git/hooks/update.sample
+--- /opt/salientworks/glor/.git/hooks/applypatch-msg.sample ---
+#!/bin/sh
+#
+# An example hook script to check the commit log message taken by
+# applypatch from an e-mail message.
+#
+# The hook should exit with non-zero status after issuing an
+# appropriate message if it wants to stop the commit.  The hook is
+# allowed to edit the commit message file.
+#
+# To enable this hook, rename this file to "applypatch-msg".
+
+. git-sh-setup
+commitmsg="$(git rev-parse --git-path hooks/commit-msg)"
+test -x "$commitmsg" && exec "$commitmsg" ${1+"$@"}
+:
+--- /opt/salientworks/glor/.git/hooks/commit-msg.sample ---
+#!/bin/sh
+#
+# An example hook script to check the commit log message.
+# Called by "git commit" with one argument, the name of the file
+# that has the commit message.  The hook should exit with non-zero
+# status after issuing an appropriate message if it wants to stop the
+# commit.  The hook is allowed to edit the commit message file.
+#
+# To enable this hook, rename this file to "commit-msg".
+
+# Uncomment the below to add a Signed-off-by line to the message.
+# Doing this in a hook is a bad idea in general, but the prepare-commit-msg
+# hook is more suited to it.
+#
+# SOB=$(git var GIT_AUTHOR_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
+# grep -qs "^$SOB" "$1" || echo "$SOB" >> "$1"
+
+# This example catches duplicate Signed-off-by lines.
+
+test "" = "$(grep '^Signed-off-by: ' "$1" |
+	 sort | uniq -c | sed -e '/^[ 	]*1[ 	]/d')" || {
+	echo >&2 Duplicate Signed-off-by lines.
+	exit 1
+}
+--- /opt/salientworks/glor/.git/hooks/fsmonitor-watchman.sample ---
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use IPC::Open2;
+
+# An example hook script to integrate Watchman
+# (https://facebook.github.io/watchman/) with git to speed up detecting
+# new and modified files.
+#
+# The hook is passed a version (currently 2) and last update token
+# formatted as a string and outputs to stdout a new update token and
+# all files that have been modified since the update token. Paths must
+# be relative to the root of the working tree and separated by a single NUL.
+#
+# To enable this hook, rename this file to "query-watchman" and set
+# 'git config core.fsmonitor .git/hooks/query-watchman'
+#
+my ($version, $last_update_token) = @ARGV;
+
+# Uncomment for debugging
+# print STDERR "$0 $version $last_update_token\n";
+
+# Check the hook interface version
+if ($version ne 2) {
+	die "Unsupported query-fsmonitor hook version '$version'.\n" .
+	    "Falling back to scanning...\n";
+}
+
+my $git_work_tree = get_working_dir();
+
+my $retry = 1;
+
+my $json_pkg;
+eval {
+	require JSON::XS;
+	$json_pkg = "JSON::XS";
+	1;
+} or do {
+	require JSON::PP;
+	$json_pkg = "JSON::PP";
+};
+
+launch_watchman();
+
+sub launch_watchman {
+	my $o = watchman_query();
+	if (is_work_tree_watched($o)) {
+		output_result($o->{clock}, @{$o->{files}});
+	}
+}
+
+sub output_result {
+	my ($clockid, @files) = @_;
+
+	# Uncomment for debugging watchman output
+	# open (my $fh, ">", ".git/watchman-output.out");
+	# binmode $fh, ":utf8";
+	# print $fh "$clockid\n@files\n";
+	# close $fh;
+
+	binmode STDOUT, ":utf8";
+	print $clockid;
+	print "\0";
+	local $, = "\0";
+	print @files;
+}
+
+sub watchman_clock {
+	my $response = qx/watchman clock "$git_work_tree"/;
+	die "Failed to get clock id on '$git_work_tree'.\n" .
+		"Falling back to scanning...\n" if $? != 0;
+
+	return $json_pkg->new->utf8->decode($response);
+}
+
+sub watchman_query {
+	my $pid = open2(\*CHLD_OUT, \*CHLD_IN, 'watchman -j --no-pretty')
+	or die "open2() failed: $!\n" .
+	"Falling back to scanning...\n";
+
+	# In the query expression below we're asking for names of files that
+	# changed since $last_update_token but not from the .git folder.
+	#
+	# To accomplish this, we're using the "since" generator to use the
+	# recency index to select candidate nodes and "fields" to limit the
+	# output to file names only. Then we're using the "expression" term to
+	# further constrain the results.
+	my $last_update_line = "";
+	if (substr($last_update_token, 0, 1) eq "c") {
+		$last_update_token = "\"$last_update_token\"";
+		$last_update_line = qq[\n"since": $last_update_token,];
+	}
+	my $query = <<"	END";
+		["query", "$git_work_tree", {$last_update_line
+			"fields": ["name"],
+			"expression": ["not", ["dirname", ".git"]]
+		}]
+	END
+
+	# Uncomment for debugging the watchman query
+	# open (my $fh, ">", ".git/watchman-query.json");
+	# print $fh $query;
+	# close $fh;
+
+	print CHLD_IN $query;
+	close CHLD_IN;
+	my $response = do {local $/; <CHLD_OUT>};
+
+	# Uncomment for debugging the watch response
+	# open ($fh, ">", ".git/watchman-response.json");
+	# print $fh $response;
+	# close $fh;
+
+	die "Watchman: command returned no output.\n" .
+	"Falling back to scanning...\n" if $response eq "";
+	die "Watchman: command returned invalid output: $response\n" .
+	"Falling back to scanning...\n" unless $response =~ /^\{/;
+
+	return $json_pkg->new->utf8->decode($response);
+}
+
+sub is_work_tree_watched {
+	my ($output) = @_;
+	my $error = $output->{error};
+	if ($retry > 0 and $error and $error =~ m/unable to resolve root .* directory (.*) is not watched/) {
+		$retry--;
+		my $response = qx/watchman watch "$git_work_tree"/;
+		die "Failed to make watchman watch '$git_work_tree'.\n" .
+		    "Falling back to scanning...\n" if $? != 0;
+		$output = $json_pkg->new->utf8->decode($response);
+		$error = $output->{error};
+		die "Watchman: $error.\n" .
+		"Falling back to scanning...\n" if $error;
+
+		# Uncomment for debugging watchman output
+		# open (my $fh, ">", ".git/watchman-output.out");
+		# close $fh;
+
+		# Watchman will always return all files on the first query so
+		# return the fast "everything is dirty" flag to git and do the
+		# Watchman query just to get it over with now so we won't pay
+		# the cost in git to look up each individual file.
+		my $o = watchman_clock();
+		$error = $output->{error};
+
+		die "Watchman: $error.\n" .
+		"Falling back to scanning...\n" if $error;
+
+		output_result($o->{clock}, ("/"));
+		$last_update_token = $o->{clock};
+
+		eval { launch_watchman() };
+		return 0;
+	}
+
+	die "Watchman: $error.\n" .
+	"Falling back to scanning...\n" if $error;
+
+	return 1;
+}
+
+sub get_working_dir {
+	my $working_dir;
+	if ($^O =~ 'msys' || $^O =~ 'cygwin') {
+		$working_dir = Win32::GetCwd();
+		$working_dir =~ tr/\\/\//;
+	} else {
+		require Cwd;
+		$working_dir = Cwd::cwd();
+	}
+
+	return $working_dir;
+}
+--- /opt/salientworks/glor/.git/hooks/post-update.sample ---
+#!/bin/sh
+#
+# An example hook script to prepare a packed repository for use over
+# dumb transports.
+#
+# To enable this hook, rename this file to "post-update".
+
+exec git update-server-info
+--- /opt/salientworks/glor/.git/hooks/pre-applypatch.sample ---
+#!/bin/sh
+#
+# An example hook script to verify what is about to be committed
+# by applypatch from an e-mail message.
+#
+# The hook should exit with non-zero status after issuing an
+# appropriate message if it wants to stop the commit.
+#
+# To enable this hook, rename this file to "pre-applypatch".
+
+. git-sh-setup
+precommit="$(git rev-parse --git-path hooks/pre-commit)"
+test -x "$precommit" && exec "$precommit" ${1+"$@"}
+:
+--- /opt/salientworks/glor/.git/hooks/pre-commit.sample ---
+#!/bin/sh
+#
+# An example hook script to verify what is about to be committed.
+# Called by "git commit" with no arguments.  The hook should
+# exit with non-zero status after issuing an appropriate message if
+# it wants to stop the commit.
+#
+# To enable this hook, rename this file to "pre-commit".
+
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
+fi
+
+# If you want to allow non-ASCII filenames set this variable to true.
+allownonascii=$(git config --type=bool hooks.allownonascii)
+
+# Redirect output to stderr.
+exec 1>&2
+
+# Cross platform projects tend to avoid non-ASCII filenames; prevent
+# them from being added to the repository. We exploit the fact that the
+# printable range starts at the space character and ends with tilde.
+if [ "$allownonascii" != "true" ] &&
+	# Note that the use of brackets around a tr range is ok here, (it's
+	# even required, for portability to Solaris 10's /usr/bin/tr), since
+	# the square bracket bytes happen to fall in the designated range.
+	test $(git diff-index --cached --name-only --diff-filter=A -z $against |
+	  LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
+then
+	cat <<\EOF
+Error: Attempt to add a non-ASCII file name.
+
+This can cause problems if you want to work with people on other platforms.
+
+To be portable it is advisable to rename the file.
+
+If you know what you are doing you can disable this check using:
+
+  git config hooks.allownonascii true
+EOF
+	exit 1
+fi
+
+# If there are whitespace errors, print the offending file names and fail.
+exec git diff-index --check --cached $against --
+--- /opt/salientworks/glor/.git/hooks/pre-merge-commit.sample ---
+#!/bin/sh
+#
+# An example hook script to verify what is about to be committed.
+# Called by "git merge" with no arguments.  The hook should
+# exit with non-zero status after issuing an appropriate message to
+# stderr if it wants to stop the merge commit.
+#
+# To enable this hook, rename this file to "pre-merge-commit".
+
+. git-sh-setup
+test -x "$GIT_DIR/hooks/pre-commit" &&
+        exec "$GIT_DIR/hooks/pre-commit"
+:
+--- /opt/salientworks/glor/.git/hooks/prepare-commit-msg.sample ---
+#!/bin/sh
+#
+# An example hook script to prepare the commit log message.
+# Called by "git commit" with the name of the file that has the
+# commit message, followed by the description of the commit
+# message's source.  The hook's purpose is to edit the commit
+# message file.  If the hook fails with a non-zero status,
+# the commit is aborted.
+#
+# To enable this hook, rename this file to "prepare-commit-msg".
+
+# This hook includes three examples. The first one removes the
+# "# Please enter the commit message..." help message.
+#
+# The second includes the output of "git diff --name-status -r"
+# into the message, just before the "git status" output.  It is
+# commented because it doesn't cope with --amend or with squashed
+# commits.
+#
+# The third example adds a Signed-off-by line to the message, that can
+# still be edited.  This is rarely a good idea.
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+SHA1=$3
+
+/usr/bin/perl -i.bak -ne 'print unless(m/^. Please enter the commit message/..m/^#$/)' "$COMMIT_MSG_FILE"
+
+# case "$COMMIT_SOURCE,$SHA1" in
+#  ,|template,)
+#    /usr/bin/perl -i.bak -pe '
+#       print "\n" . `git diff --cached --name-status -r`
+# 	 if /^#/ && $first++ == 0' "$COMMIT_MSG_FILE" ;;
+#  *) ;;
+# esac
+
+# SOB=$(git var GIT_COMMITTER_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
+# git interpret-trailers --in-place --trailer "$SOB" "$COMMIT_MSG_FILE"
+# if test -z "$COMMIT_SOURCE"
+# then
+#   /usr/bin/perl -i.bak -pe 'print "\n" if !$first_line++' "$COMMIT_MSG_FILE"
+# fi
+--- /opt/salientworks/glor/.git/hooks/pre-push.sample ---
+#!/bin/sh
+
+# An example hook script to verify what is about to be pushed.  Called by "git
+# push" after it has checked the remote status, but before anything has been
+# pushed.  If this script exits with a non-zero status nothing will be pushed.
+#
+# This hook is called with the following parameters:
+#
+# $1 -- Name of the remote to which the push is being done
+# $2 -- URL to which the push is being done
+#
+# If pushing without using a named remote those arguments will be equal.
+#
+# Information about the commits which are being pushed is supplied as lines to
+# the standard input in the form:
+#
+#   <local ref> <local oid> <remote ref> <remote oid>
+#
+# This sample shows how to prevent push of commits where the log message starts
+# with "WIP" (work in progress).
+
+remote="$1"
+url="$2"
+
+zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+
+while read local_ref local_oid remote_ref remote_oid
+do
+	if test "$local_oid" = "$zero"
+	then
+		# Handle delete
+		:
+	else
+		if test "$remote_oid" = "$zero"
+		then
+			# New branch, examine all commits
+			range="$local_oid"
+		else
+			# Update to existing branch, examine new commits
+			range="$remote_oid..$local_oid"
+		fi
+
+		# Check for WIP commit
+		commit=$(git rev-list -n 1 --grep '^WIP' "$range")
+		if test -n "$commit"
+		then
+			echo >&2 "Found WIP commit in $local_ref, not pushing"
+			exit 1
+		fi
+	fi
+done
+
+exit 0
+--- /opt/salientworks/glor/.git/hooks/pre-rebase.sample ---
+#!/bin/sh
+#
+# Copyright (c) 2006, 2008 Junio C Hamano
+#
+# The "pre-rebase" hook is run just before "git rebase" starts doing
+# its job, and can prevent the command from running by exiting with
+# non-zero status.
+#
+# The hook is called with the following parameters:
+#
+# $1 -- the upstream the series was forked from.
+# $2 -- the branch being rebased (or empty when rebasing the current branch).
+#
+# This sample shows how to prevent topic branches that are already
+# merged to 'next' branch from getting rebased, because allowing it
+# would result in rebasing already published history.
+
+publish=next
+basebranch="$1"
+if test "$#" = 2
+then
+	topic="refs/heads/$2"
+else
+	topic=`git symbolic-ref HEAD` ||
+	exit 0 ;# we do not interrupt rebasing detached HEAD
+fi
+
+case "$topic" in
+refs/heads/??/*)
+	;;
+*)
+	exit 0 ;# we do not interrupt others.
+	;;
+esac
+
+# Now we are dealing with a topic branch being rebased
+# on top of master.  Is it OK to rebase it?
+
+# Does the topic really exist?
+git show-ref -q "$topic" || {
+	echo >&2 "No such branch $topic"
+	exit 1
+}
+
+# Is topic fully merged to master?
+not_in_master=`git rev-list --pretty=oneline ^master "$topic"`
+if test -z "$not_in_master"
+then
+	echo >&2 "$topic is fully merged to master; better remove it."
+	exit 1 ;# we could allow it, but there is no point.
+fi
+
+# Is topic ever merged to next?  If so you should not be rebasing it.
+only_next_1=`git rev-list ^master "^$topic" ${publish} | sort`
+only_next_2=`git rev-list ^master           ${publish} | sort`
+if test "$only_next_1" = "$only_next_2"
+then
+	not_in_topic=`git rev-list "^$topic" master`
+	if test -z "$not_in_topic"
+	then
+		echo >&2 "$topic is already up to date with master"
+		exit 1 ;# we could allow it, but there is no point.
+	else
+		exit 0
+	fi
+else
+	not_in_next=`git rev-list --pretty=oneline ^${publish} "$topic"`
+	/usr/bin/perl -e '
+		my $topic = $ARGV[0];
+		my $msg = "* $topic has commits already merged to public branch:\n";
+		my (%not_in_next) = map {
+			/^([0-9a-f]+) /;
+			($1 => 1);
+		} split(/\n/, $ARGV[1]);
+		for my $elem (map {
+				/^([0-9a-f]+) (.*)$/;
+				[$1 => $2];
+			} split(/\n/, $ARGV[2])) {
+			if (!exists $not_in_next{$elem->[0]}) {
+				if ($msg) {
+					print STDERR $msg;
+					undef $msg;
+				}
+				print STDERR " $elem->[1]\n";
+			}
+		}
+	' "$topic" "$not_in_next" "$not_in_master"
+	exit 1
+fi
+
+<<\DOC_END
+
+This sample hook safeguards topic branches that have been
+published from being rewound.
+
+The workflow assumed here is:
+
+ * Once a topic branch forks from "master", "master" is never
+   merged into it again (either directly or indirectly).
+
+ * Once a topic branch is fully cooked and merged into "master",
+   it is deleted.  If you need to build on top of it to correct
+   earlier mistakes, a new topic branch is created by forking at
+   the tip of the "master".  This is not strictly necessary, but
+   it makes it easier to keep your history simple.
+
+ * Whenever you need to test or publish your changes to topic
+   branches, merge them into "next" branch.
+
+The script, being an example, hardcodes the publish branch name
+to be "next", but it is trivial to make it configurable via
+$GIT_DIR/config mechanism.
+
+With this workflow, you would want to know:
+
+(1) ... if a topic branch has ever been merged to "next".  Young
+    topic branches can have stupid mistakes you would rather
+    clean up before publishing, and things that have not been
+    merged into other branches can be easily rebased without
+    affecting other people.  But once it is published, you would
+    not want to rewind it.
+
+(2) ... if a topic branch has been fully merged to "master".
+    Then you can delete it.  More importantly, you should not
+    build on top of it -- other people may already want to
+    change things related to the topic as patches against your
+    "master", so if you need further changes, it is better to
+    fork the topic (perhaps with the same name) afresh from the
+    tip of "master".
+
+Let's look at this example:
+
+		   o---o---o---o---o---o---o---o---o---o "next"
+		  /       /           /           /
+		 /   a---a---b A     /           /
+		/   /               /           /
+	       /   /   c---c---c---c B         /
+	      /   /   /             \         /
+	     /   /   /   b---b C     \       /
+	    /   /   /   /             \     /
+    ---o---o---o---o---o---o---o---o---o---o---o "master"
+
+
+A, B and C are topic branches.
+
+ * A has one fix since it was merged up to "next".
+
+ * B has finished.  It has been fully merged up to "master" and "next",
+   and is ready to be deleted.
+
+ * C has not merged to "next" at all.
+
+We would want to allow C to be rebased, refuse A, and encourage
+B to be deleted.
+
+To compute (1):
+
+	git rev-list ^master ^topic next
+	git rev-list ^master        next
+
+	if these match, topic has not merged in next at all.
+
+To compute (2):
+
+	git rev-list master..topic
+
+	if this is empty, it is fully merged to "master".
+
+DOC_END
+--- /opt/salientworks/glor/.git/hooks/pre-receive.sample ---
+#!/bin/sh
+#
+# An example hook script to make use of push options.
+# The example simply echoes all push options that start with 'echoback='
+# and rejects all pushes when the "reject" push option is used.
+#
+# To enable this hook, rename this file to "pre-receive".
+
+if test -n "$GIT_PUSH_OPTION_COUNT"
+then
+	i=0
+	while test "$i" -lt "$GIT_PUSH_OPTION_COUNT"
+	do
+		eval "value=\$GIT_PUSH_OPTION_$i"
+		case "$value" in
+		echoback=*)
+			echo "echo from the pre-receive-hook: ${value#*=}" >&2
+			;;
+		reject)
+			exit 1
+		esac
+		i=$((i + 1))
+	done
+fi
+--- /opt/salientworks/glor/.git/hooks/push-to-checkout.sample ---
+#!/bin/sh
+
+# An example hook script to update a checked-out tree on a git push.
+#
+# This hook is invoked by git-receive-pack(1) when it reacts to git
+# push and updates reference(s) in its repository, and when the push
+# tries to update the branch that is currently checked out and the
+# receive.denyCurrentBranch configuration variable is set to
+# updateInstead.
+#
+# By default, such a push is refused if the working tree and the index
+# of the remote repository has any difference from the currently
+# checked out commit; when both the working tree and the index match
+# the current commit, they are updated to match the newly pushed tip
+# of the branch. This hook is to be used to override the default
+# behaviour; however the code below reimplements the default behaviour
+# as a starting point for convenient modification.
+#
+# The hook receives the commit with which the tip of the current
+# branch is going to be updated:
+commit=$1
+
+# It can exit with a non-zero status to refuse the push (when it does
+# so, it must not modify the index or the working tree).
+die () {
+	echo >&2 "$*"
+	exit 1
+}
+
+# Or it can make any necessary changes to the working tree and to the
+# index to bring them to the desired state when the tip of the current
+# branch is updated to the new commit, and exit with a zero status.
+#
+# For example, the hook can simply run git read-tree -u -m HEAD "$1"
+# in order to emulate git fetch that is run in the reverse direction
+# with git push, as the two-tree form of git read-tree -u -m is
+# essentially the same as git switch or git checkout that switches
+# branches while keeping the local changes in the working tree that do
+# not interfere with the difference between the branches.
+
+# The below is a more-or-less exact translation to shell of the C code
+# for the default behaviour for git's push-to-checkout hook defined in
+# the push_to_deploy() function in builtin/receive-pack.c.
+#
+# Note that the hook will be executed from the repository directory,
+# not from the working tree, so if you want to perform operations on
+# the working tree, you will have to adapt your code accordingly, e.g.
+# by adding "cd .." or using relative paths.
+
+if ! git update-index -q --ignore-submodules --refresh
+then
+	die "Up-to-date check failed"
+fi
+
+if ! git diff-files --quiet --ignore-submodules --
+then
+	die "Working directory has unstaged changes"
+fi
+
+# This is a rough translation of:
+#
+#   head_has_history() ? "HEAD" : EMPTY_TREE_SHA1_HEX
+if git cat-file -e HEAD 2>/dev/null
+then
+	head=HEAD
+else
+	head=$(git hash-object -t tree --stdin </dev/null)
+fi
+
+if ! git diff-index --quiet --cached --ignore-submodules $head --
+then
+	die "Working directory has staged changes"
+fi
+
+if ! git read-tree -u -m "$commit"
+then
+	die "Could not update working tree to new HEAD"
+fi
+--- /opt/salientworks/glor/.git/hooks/sendemail-validate.sample ---
+#!/bin/sh
+
+# An example hook script to validate a patch (and/or patch series) before
+# sending it via email.
+#
+# The hook should exit with non-zero status after issuing an appropriate
+# message if it wants to prevent the email(s) from being sent.
+#
+# To enable this hook, rename this file to "sendemail-validate".
+#
+# By default, it will only check that the patch(es) can be applied on top of
+# the default upstream branch without conflicts in a secondary worktree. After
+# validation (successful or not) of the last patch of a series, the worktree
+# will be deleted.
+#
+# The following config variables can be set to change the default remote and
+# remote ref that are used to apply the patches against:
+#
+#   sendemail.validateRemote (default: origin)
+#   sendemail.validateRemoteRef (default: HEAD)
+#
+# Replace the TODO placeholders with appropriate checks according to your
+# needs.
+
+validate_cover_letter () {
+	file="$1"
+	# TODO: Replace with appropriate checks (e.g. spell checking).
+	true
+}
+
+validate_patch () {
+	file="$1"
+	# Ensure that the patch applies without conflicts.
+	git am -3 "$file" || return
+	# TODO: Replace with appropriate checks for this patch
+	# (e.g. checkpatch.pl).
+	true
+}
+
+validate_series () {
+	# TODO: Replace with appropriate checks for the whole series
+	# (e.g. quick build, coding style checks, etc.).
+	true
+}
+
+# main -------------------------------------------------------------------------
+
+if test "$GIT_SENDEMAIL_FILE_COUNTER" = 1
+then
+	remote=$(git config --default origin --get sendemail.validateRemote) &&
+	ref=$(git config --default HEAD --get sendemail.validateRemoteRef) &&
+	worktree=$(mktemp --tmpdir -d sendemail-validate.XXXXXXX) &&
+	git worktree add -fd --checkout "$worktree" "refs/remotes/$remote/$ref" &&
+	git config --replace-all sendemail.validateWorktree "$worktree"
+else
+	worktree=$(git config --get sendemail.validateWorktree)
+fi || {
+	echo "sendemail-validate: error: failed to prepare worktree" >&2
+	exit 1
+}
+
+unset GIT_DIR GIT_WORK_TREE
+cd "$worktree" &&
+
+if grep -q "^diff --git " "$1"
+then
+	validate_patch "$1"
+else
+	validate_cover_letter "$1"
+fi &&
+
+if test "$GIT_SENDEMAIL_FILE_COUNTER" = "$GIT_SENDEMAIL_FILE_TOTAL"
+then
+	git config --unset-all sendemail.validateWorktree &&
+	trap 'git worktree remove -ff "$worktree"' EXIT &&
+	validate_series
+fi
+--- /opt/salientworks/glor/.git/hooks/update.sample ---
+#!/bin/sh
+#
+# An example hook script to block unannotated tags from entering.
+# Called by "git receive-pack" with arguments: refname sha1-old sha1-new
+#
+# To enable this hook, rename this file to "update".
+#
+# Config
+# ------
+# hooks.allowunannotated
+#   This boolean sets whether unannotated tags will be allowed into the
+#   repository.  By default they won't be.
+# hooks.allowdeletetag
+#   This boolean sets whether deleting tags will be allowed in the
+#   repository.  By default they won't be.
+# hooks.allowmodifytag
+#   This boolean sets whether a tag may be modified after creation. By default
+#   it won't be.
+# hooks.allowdeletebranch
+#   This boolean sets whether deleting branches will be allowed in the
+#   repository.  By default they won't be.
+# hooks.denycreatebranch
+#   This boolean sets whether remotely creating branches will be denied
+#   in the repository.  By default this is allowed.
+#
+
+# --- Command line
+refname="$1"
+oldrev="$2"
+newrev="$3"
+
+# --- Safety check
+if [ -z "$GIT_DIR" ]; then
+	echo "Don't run this script from the command line." >&2
+	echo " (if you want, you could supply GIT_DIR then run" >&2
+	echo "  $0 <ref> <oldrev> <newrev>)" >&2
+	exit 1
+fi
+
+if [ -z "$refname" -o -z "$oldrev" -o -z "$newrev" ]; then
+	echo "usage: $0 <ref> <oldrev> <newrev>" >&2
+	exit 1
+fi
+
+# --- Config
+allowunannotated=$(git config --type=bool hooks.allowunannotated)
+allowdeletebranch=$(git config --type=bool hooks.allowdeletebranch)
+denycreatebranch=$(git config --type=bool hooks.denycreatebranch)
+allowdeletetag=$(git config --type=bool hooks.allowdeletetag)
+allowmodifytag=$(git config --type=bool hooks.allowmodifytag)
+
+# check for no description
+projectdesc=$(sed -e '1q' "$GIT_DIR/description")
+case "$projectdesc" in
+"Unnamed repository"* | "")
+	echo "*** Project description file hasn't been set" >&2
+	exit 1
+	;;
+esac
+
+# --- Check types
+# if $newrev is 0000...0000, it's a commit to delete a ref.
+zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+if [ "$newrev" = "$zero" ]; then
+	newrev_type=delete
+else
+	newrev_type=$(git cat-file -t $newrev)
+fi
+
+case "$refname","$newrev_type" in
+	refs/tags/*,commit)
+		# un-annotated tag
+		short_refname=${refname##refs/tags/}
+		if [ "$allowunannotated" != "true" ]; then
+			echo "*** The un-annotated tag, $short_refname, is not allowed in this repository" >&2
+			echo "*** Use 'git tag [ -a | -s ]' for tags you want to propagate." >&2
+			exit 1
+		fi
+		;;
+	refs/tags/*,delete)
+		# delete tag
+		if [ "$allowdeletetag" != "true" ]; then
+			echo "*** Deleting a tag is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	refs/tags/*,tag)
+		# annotated tag
+		if [ "$allowmodifytag" != "true" ] && git rev-parse $refname > /dev/null 2>&1
+		then
+			echo "*** Tag '$refname' already exists." >&2
+			echo "*** Modifying a tag is not allowed in this repository." >&2
+			exit 1
+		fi
+		;;
+	refs/heads/*,commit)
+		# branch
+		if [ "$oldrev" = "$zero" -a "$denycreatebranch" = "true" ]; then
+			echo "*** Creating a branch is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	refs/heads/*,delete)
+		# delete branch
+		if [ "$allowdeletebranch" != "true" ]; then
+			echo "*** Deleting a branch is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	refs/remotes/*,commit)
+		# tracking branch
+		;;
+	refs/remotes/*,delete)
+		# delete tracking branch
+		if [ "$allowdeletebranch" != "true" ]; then
+			echo "*** Deleting a tracking branch is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	*)
+		# Anything else (is there anything else?)
+		echo "*** Update hook: unknown type of update to ref $refname of type $newrev_type" >&2
+		exit 1
+		;;
+esac
+
+# --- Finished
+exit 0
+=== SHELL HISTORY NAMES ONLY ===
+--- /root/.bash_history ---
+ls: cannot open file '/root/.bash_history': Permission denied
+--- /home/salientworks/.bash_history ---
+ls: cannot access '/home/salientworks/.bash_history': No such file or directory
+--- /home/acutis-deploy/.bash_history ---
+ls: cannot access '/home/acutis-deploy/.bash_history': No such file or directory
