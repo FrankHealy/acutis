@@ -1,33 +1,104 @@
-checked_at=2026-08-01T11:58:34Z
+checked_at=2026-08-01T11:59:49Z
 host=acutis-app-server
 identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
-runtime_pid=903237
-runtime_cgroup:
-0::/system.slice/salientworks-glor.service
-runtime_namespaces:
-ls: cannot open directory '/proc/903237/ns': Permission denied
-runtime_root:
-runtime_cwd:
-runtime_status:
-Name:	salientworks-ru
-State:	S (sleeping)
-Uid:	995	995	995	995
-Gid:	983	983	983	983
-NSpid:	903237
-Threads:	3
-runtime_fd_sockets:
-docker_sockets:
-     2099      0 srw-rw----   1 root     docker          0 Jun  2 19:00 /run/docker.sock
-docker_contexts:
-NAME        DESCRIPTION                               DOCKER ENDPOINT               ERROR
-default *   Current DOCKER_HOST based configuration   unix:///var/run/docker.sock   
-container_services:
-  containerd.service                                    loaded    active   running containerd container runtime
-  docker.service                                        loaded    active   running Docker Application Container Engine
-  salientworks-api.service                              loaded    inactive dead    SalientWorks API
-  salientworks-glor.service                             loaded    active   running Salient Works Glor application API
-  salientworks-studio.service                           loaded    inactive dead    Salient Studio
-  salientworks-web.service                              loaded    active   running Salient Works Next.js web application
-health:
+
+=== UNIT ===
+# /etc/systemd/system/salientworks-glor.service
+[Unit]
+Description=Salient Works Glor application API
+After=network-online.target
+
+[Service]
+Type=simple
+User=salientworks
+WorkingDirectory=/opt/salientworks/glor
+EnvironmentFile=/etc/salientworks/app.env
+# SQLite must be SQLCipher/encrypted in production and accessible only here.
+ExecStart=/opt/salientworks/glor/rust/target/debug/salientworks-runtime
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
+=== SHOW ===
+Id=salientworks-glor.service
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/salientworks-glor.service
+Restart=always
+RestartUSec=5s
+MainPID=903237
+ExecStart={ path=/opt/salientworks/glor/rust/target/debug/salientworks-runtime ; argv[]=/opt/salientworks/glor/rust/target/debug/salientworks-runtime ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+ControlGroup=/system.slice/salientworks-glor.service
+EnvironmentFiles=/etc/salientworks/app.env (ignore_errors=no)
+User=salientworks
+Group=
+
+=== STATUS BEFORE ===
+● salientworks-glor.service - Salient Works Glor application API
+     Loaded: loaded (/etc/systemd/system/salientworks-glor.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2026-07-30 14:55:36 UTC; 1 day 21h ago
+ Invocation: 70d55afa55004c88be89d7d6ee492f72
+   Main PID: 903237 (salientworks-ru)
+      Tasks: 3 (limit: 3636)
+     Memory: 2.2M (peak: 2.7M)
+        CPU: 269ms
+     CGroup: /system.slice/salientworks-glor.service
+             └─903237 /opt/salientworks/glor/rust/target/debug/salientworks-runtime
+
+=== JOURNAL ===
+Hint: You are currently not seeing messages from other users and the system.
+      Users in groups 'adm', 'systemd-journal' can see all messages.
+      Pass -q to turn off this notice.
+-- No entries --
+
+=== LISTENERS BEFORE ===
+State  Recv-Q Send-Q Local Address:Port  Peer Address:Port
+LISTEN 0      4096   127.0.0.53%lo:53         0.0.0.0:*   
+LISTEN 0      511        127.0.0.1:3011       0.0.0.0:*   
+LISTEN 0      128        127.0.0.1:5092       0.0.0.0:*   
+LISTEN 0      4096       127.0.0.1:42645      0.0.0.0:*   
+LISTEN 0      128        127.0.0.1:44855      0.0.0.0:*   
+LISTEN 0      4096       127.0.0.1:8080       0.0.0.0:*   
+LISTEN 0      511          0.0.0.0:443        0.0.0.0:*   
+LISTEN 0      4096         0.0.0.0:22         0.0.0.0:*   
+LISTEN 0      4096      127.0.0.54:53         0.0.0.0:*   
+LISTEN 0      511          0.0.0.0:80         0.0.0.0:*   
+LISTEN 0      511             [::]:443           [::]:*   
+LISTEN 0      4096            [::]:22            [::]:*   
+LISTEN 0      511             [::]:80            [::]:*   
+
+=== HEALTH BEFORE ===
 curl: (7) Failed to connect to 127.0.0.1 port 5091 after 0 ms: Could not connect to server
-local_api.http=000
+before.http=000
+
+=== RESTART ATTEMPTS ===
+Failed to restart salientworks-glor.service: Access denied as the requested operation requires interactive authentication. However, interactive authentication has not been enabled by the calling program.
+See system logs and 'systemctl status salientworks-glor.service' for details.
+direct_restart.rc=1
+sudo: I'm sorry acutis-deploy. I'm afraid I can't do that
+sudo_restart.rc=1
+
+=== STATUS AFTER ===
+● salientworks-glor.service - Salient Works Glor application API
+     Loaded: loaded (/etc/systemd/system/salientworks-glor.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2026-07-30 14:55:36 UTC; 1 day 21h ago
+ Invocation: 70d55afa55004c88be89d7d6ee492f72
+   Main PID: 903237 (salientworks-ru)
+      Tasks: 3 (limit: 3636)
+     Memory: 2.2M (peak: 2.7M)
+        CPU: 269ms
+     CGroup: /system.slice/salientworks-glor.service
+             └─903237 /opt/salientworks/glor/rust/target/debug/salientworks-runtime
+
+=== HEALTH AFTER ===
+curl: (7) Failed to connect to 127.0.0.1 port 5091 after 0 ms: Could not connect to server
+after.http=000
+after.rc=7
+
+=== PUBLIC AFTER ===
+public.http=404
+public.rc=0
