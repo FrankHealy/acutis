@@ -1,4 +1,4 @@
-name: Identify live Salient Works source repository
+name: Inspect approved Salient Works deployment command
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Identify deployed source repository
+      - name: Inspect approved deployers
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -24,7 +24,7 @@ jobs:
           USER: ${{ secrets.PRODUCTION_SSH_USER }}
         run: |
           set +e
-          report="$RUNNER_TEMP/salientworks-source-repo.txt"
+          report="$RUNNER_TEMP/salientworks-deployer.txt"
           echo "checked_at=$(date -u +%FT%TZ)" > "$report"
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/key
@@ -33,35 +33,28 @@ jobs:
           chmod 0600 ~/.ssh/known_hosts
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
-          root=/opt/salientworks/glor
           echo "host=$(hostname)"
           echo "identity=$(id)"
-          echo '=== GIT ROOT ==='
-          git -c safe.directory="$root" -C "$root" rev-parse --show-toplevel 2>&1 || true
-          git -c safe.directory="$root" -C "$root" remote -v 2>&1 || true
-          git -c safe.directory="$root" -C "$root" status --short --branch 2>&1 || true
-          git -c safe.directory="$root" -C "$root" rev-parse HEAD 2>&1 || true
-          git -c safe.directory="$root" -C "$root" branch -vv 2>&1 || true
-          git -c safe.directory="$root" -C "$root" log -12 --oneline --decorate 2>&1 || true
-          echo '=== TRACKED AUTH FILES ==='
-          git -c safe.directory="$root" -C "$root" ls-files | grep -E 'salientworks-ui-v6/app/api/auth/(login|callback)/route\.ts$' || true
-          echo '=== FILE COMMITS ==='
-          git -c safe.directory="$root" -C "$root" log -8 --oneline -- salientworks-ui-v6/app/api/auth/login/route.ts salientworks-ui-v6/app/api/auth/callback/route.ts 2>&1 || true
-          echo '=== SOURCE CONTENT ==='
-          sed -n '1,180p' "$root/salientworks-ui-v6/app/api/auth/login/route.ts" 2>&1 || true
-          echo '--- callback ---'
-          sed -n '1,220p' "$root/salientworks-ui-v6/app/api/auth/callback/route.ts" 2>&1 || true
-          echo '=== PARENT WRITABILITY ==='
-          for p in "$root" "$root/.git" "$root/salientworks-ui-v6/app/api/auth/login/route.ts"; do
-            [[ -w "$p" ]] && echo "$p=writable" || echo "$p=not_writable"
+          echo '=== SUDO ==='
+          sudo -n -l 2>&1 || true
+          for script in /opt/acutis/bin/deploy-production-release /opt/acutis/bin/deploy-products-release; do
+            echo "=== $script ==="
+            stat "$script" 2>&1 || true
+            file "$script" 2>&1 || true
+            wc -l -c "$script" 2>&1 || true
+            sed -n '1,500p' "$script" 2>&1 || true
           done
+          echo '=== SALIENTWORKS DEPLOY ASSETS ==='
+          find /opt/salientworks -maxdepth 4 -type f \( -iname '*deploy*' -o -iname '*release*' -o -iname '*restart*' \) -printf '%M %u:%g %p\n' 2>/dev/null | sort | head -300
+          echo '=== SYSTEMD POLKIT ==='
+          systemctl show salientworks-web.service -p UnitFileState -p CanStart -p CanStop -p CanReload --no-pager 2>&1 || true
           REMOTE
           encoded=$(base64 -w0 "$report")
-          path='ops/salientworks-source-repo.txt'
+          path='ops/salientworks-deployer.txt'
           sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
           if [[ -n "$sha" ]]; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works source repository' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record approved product deployer' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works source repository' -f content="$encoded" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record approved product deployer' -f content="$encoded" -f branch=main >/dev/null
           fi
           cat "$report"
