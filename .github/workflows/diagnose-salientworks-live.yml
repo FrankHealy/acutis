@@ -1,4 +1,4 @@
-name: Verify Salient Works login flow
+name: Extract Salient Works Keycloak error
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Follow production login flow
+      - name: Extract Keycloak error from login flow
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -35,47 +35,40 @@ jobs:
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
           echo "host=$(hostname)"
-          echo "identity=$(id)"
-          echo
-          echo '=== LIVE SERVICES ==='
-          systemctl is-active salientworks-web.service salientworks-glor.service nginx.service 2>&1 || true
-          echo
-          echo '=== GLOR ==='
-          curl -sS --max-time 10 -o /tmp/domains -w 'local_domains.http=%{http_code}\n' http://127.0.0.1:5092/api/domains 2>&1 || true
-          if [[ -s /tmp/domains ]]; then printf 'local_domains.body='; tr '\n' ' ' < /tmp/domains | head -c 1000; echo; fi
-          echo
-          echo '=== ROOT REDIRECT ==='
-          curl -k -sS --max-time 15 -D /tmp/root-headers -o /tmp/root-body https://engine.salientworks.ie/
-          echo "root.rc=$?"
-          sed -n '1,40p' /tmp/root-headers
-          if [[ -s /tmp/root-body ]]; then printf 'root.body='; tr '\n' ' ' < /tmp/root-body | head -c 1000; echo; fi
-          echo
-          echo '=== LOGIN REDIRECT ==='
-          curl -k -sS --max-time 15 -D /tmp/login-headers -o /tmp/login-body 'https://engine.salientworks.ie/api/auth/login?returnTo=%2F'
-          echo "login.rc=$?"
-          sed -n '1,80p' /tmp/login-headers
-          if [[ -s /tmp/login-body ]]; then printf 'login.body='; tr '\n' ' ' < /tmp/login-body | head -c 1200; echo; fi
-          echo
-          echo '=== FOLLOW LOGIN FLOW ==='
-          curl -k -sS -L --max-redirs 8 --max-time 30 -D /tmp/follow-headers -o /tmp/follow-body -w 'follow.final_url=%{url_effective}\nfollow.http=%{http_code}\nfollow.redirects=%{num_redirects}\n' 'https://engine.salientworks.ie/api/auth/login?returnTo=%2F'
-          echo "follow.rc=$?"
-          grep -Ei '^(HTTP/|location:|set-cookie:)' /tmp/follow-headers | sed -E 's/(set-cookie:[^=]+=)[^;]+/\1[redacted]/I' | head -80
-          if [[ -s /tmp/follow-body ]]; then
-            printf 'follow.title='
-            grep -io '<title>[^<]*' /tmp/follow-body | head -1 | sed 's/<title>//I'
-            printf 'follow.body_sample='
-            tr '\n' ' ' < /tmp/follow-body | head -c 1200
-            echo
-          fi
-          echo
-          echo '=== KEYCLOAK DISCOVERY ==='
-          curl -k -sS --max-time 15 -o /tmp/discovery -w 'keycloak_discovery.http=%{http_code}\n' https://engine.salientworks.ie/realms/salientworks/.well-known/openid-configuration
-          grep -o '"issuer":"[^"]*"' /tmp/discovery | head -1 || true
-          grep -o '"authorization_endpoint":"[^"]*"' /tmp/discovery | head -1 || true
+          curl -k -sS -L --max-redirs 4 --max-time 30 -D /tmp/headers -o /tmp/body -w 'final_url=%{url_effective}\nhttp=%{http_code}\nredirects=%{num_redirects}\n' 'https://engine.salientworks.ie/api/auth/login?returnTo=%2F'
+          echo "curl_rc=$?"
+          echo 'locations:'
+          grep -i '^location:' /tmp/headers | sed -E 's/(state=)[^& ]+/\1[redacted]/g; s/(code_challenge=)[^& ]+/\1[redacted]/g' || true
+          echo 'keycloak_error_text:'
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class Text(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.parts=[]
+              def handle_data(self, data):
+                  s=' '.join(data.split())
+                  if s:
+                      self.parts.append(s)
+
+          p=Text(); p.feed(Path('/tmp/body').read_text(errors='replace'))
+          text=' | '.join(p.parts)
+          for part in p.parts:
+              low=part.lower()
+              if any(k in low for k in ('invalid', 'error', 'redirect', 'client')):
+                  print(part)
+          print('all_text=' + text[:5000])
+          PY
+          echo 'status_checks:'
+          curl -k -sS --max-time 10 -o /dev/null -w 'root=%{http_code}\n' https://engine.salientworks.ie/
+          curl -k -sS --max-time 10 -o /dev/null -w 'domains=%{http_code}\n' https://engine.salientworks.ie/api/domains
+          curl -k -sS --max-time 10 -o /dev/null -w 'discovery=%{http_code}\n' https://engine.salientworks.ie/realms/salientworks/.well-known/openid-configuration
           REMOTE
 
           encoded=$(base64 -w0 "$report")
           path='ops/salientworks-live-diagnostic.txt'
           existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works login verification' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works Keycloak error' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
           cat "$report"
