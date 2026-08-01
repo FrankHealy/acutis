@@ -1,0 +1,51 @@
+name: Check production variable names
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/check-production-variables.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Record configured variable names only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KC_BOOTSTRAP_ADMIN_USERNAME: ${{ vars.KC_BOOTSTRAP_ADMIN_USERNAME }}
+          KC_BOOTSTRAP_ADMIN_PASSWORD: ${{ vars.KC_BOOTSTRAP_ADMIN_PASSWORD }}
+          KEYCLOAK_ADMIN: ${{ vars.KEYCLOAK_ADMIN }}
+          KEYCLOAK_ADMIN_PASSWORD: ${{ vars.KEYCLOAK_ADMIN_PASSWORD }}
+          KEYCLOAK_ADMIN_USERNAME: ${{ vars.KEYCLOAK_ADMIN_USERNAME }}
+          KEYCLOAK_ADMIN_CLIENT_ID: ${{ vars.KEYCLOAK_ADMIN_CLIENT_ID }}
+          KEYCLOAK_ADMIN_CLIENT_SECRET: ${{ vars.KEYCLOAK_ADMIN_CLIENT_SECRET }}
+          ROOT_SSH_HOST: ${{ vars.ROOT_SSH_HOST }}
+          ROOT_SSH_USER: ${{ vars.ROOT_SSH_USER }}
+          ROOT_SSH_KEY: ${{ vars.ROOT_SSH_KEY }}
+          HETZNER_API_TOKEN: ${{ vars.HETZNER_API_TOKEN }}
+          HCLOUD_TOKEN: ${{ vars.HCLOUD_TOKEN }}
+          DOCKER_HOST: ${{ vars.DOCKER_HOST }}
+          SALIENTWORKS_HOST: ${{ vars.SALIENTWORKS_HOST }}
+          SALIENTWORKS_USER: ${{ vars.SALIENTWORKS_USER }}
+          SALIENTWORKS_SSH_KEY: ${{ vars.SALIENTWORKS_SSH_KEY }}
+        run: |
+          set -e
+          report="$RUNNER_TEMP/production-variables.txt"
+          echo "checked_at=$(date -u +%FT%TZ)" > "$report"
+          for name in KC_BOOTSTRAP_ADMIN_USERNAME KC_BOOTSTRAP_ADMIN_PASSWORD KEYCLOAK_ADMIN KEYCLOAK_ADMIN_PASSWORD KEYCLOAK_ADMIN_USERNAME KEYCLOAK_ADMIN_CLIENT_ID KEYCLOAK_ADMIN_CLIENT_SECRET ROOT_SSH_HOST ROOT_SSH_USER ROOT_SSH_KEY HETZNER_API_TOKEN HCLOUD_TOKEN DOCKER_HOST SALIENTWORKS_HOST SALIENTWORKS_USER SALIENTWORKS_SSH_KEY; do
+            if [[ -n "${!name}" ]]; then echo "$name=configured"; else echo "$name=missing"; fi
+          done >> "$report"
+          encoded=$(base64 -w0 "$report")
+          path='ops/production-variables.txt'
+          existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
+          if [[ -n "$existing_sha" ]]; then
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record production variable names' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
+          else
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record production variable names' -f content="$encoded" -f branch=main >/dev/null
+          fi
