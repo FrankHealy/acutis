@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Inspect production host and persist report
+      - name: Inspect production host, recover runtime, and persist report
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -70,7 +70,7 @@ jobs:
           for script in /opt/acutis/bin/deploy-production-release /opt/acutis/bin/deploy-products-release; do
             echo "-- $script --"
             ls -l "$script" 2>&1 || true
-            sed -n '1,260p' "$script" 2>&1 || true
+            sed -n '1,40p' "$script" 2>&1 || true
           done
           echo
 
@@ -109,26 +109,9 @@ jobs:
             echo 'docker_access=yes'
             docker version --format 'docker_server={{.Server.Version}}' 2>/dev/null || true
             docker ps -a --no-trunc --format 'container={{.Names}} image={{.Image}} status={{.Status}} ports={{.Ports}}' || true
-            docker compose ls 2>&1 || true
-            docker images --format 'image={{.Repository}}:{{.Tag}} id={{.ID}} created={{.CreatedSince}}' | grep -Ei 'salientworks|salient-works|glor|th-19|th19' || true
-
-            candidates=$(docker ps -a --format '{{.Names}}|{{.Image}}|{{.Ports}}' | grep -Ei 'salientworks|salient-works|glor|5091' | cut -d'|' -f1 | sort -u)
-            count=$(printf '%s\n' "$candidates" | sed '/^$/d' | wc -l)
-            echo "matching_containers=$count"
-            if [[ -n "$candidates" ]]; then
-              while IFS= read -r container; do
-                [[ -z "$container" ]] && continue
-                echo "restarting_container=$container"
-                docker restart "$container"
-                echo "restart_rc=$?"
-              done <<< "$candidates"
-              sleep 10
-            fi
-            check_http local_api_after_docker http://127.0.0.1:5091/api/health
-            check_http public_api_after_docker https://engine.salientworks.ie/api/health
           else
             echo 'docker_access=no'
-            docker info 2>&1 | head -60 || true
+            docker info 2>&1 | head -30 || true
           fi
           echo
 
@@ -145,11 +128,99 @@ jobs:
           check_http legacy_https https://salientworks.167-233-16-141.sslip.io/
           check_http keycloak_public https://acutis.salientrecovery.com/keycloak/realms/salientworks/.well-known/openid-configuration
           echo
-
-          echo '=== PROCESS HINTS ==='
-          ps -eo pid,lstart,cmd 2>/dev/null | grep -E '[k]eycloak|[s]alientworks|[n]ext-server' | head -30 || true
           REMOTE
             echo "ssh_exit=$?" >> "$report"
+
+            echo >> "$report"
+            echo '=== SALIENTWORKS USER RECOVERY ===' >> "$report"
+            if ssh -o BatchMode=yes -o ConnectTimeout=8 -i ~/.ssh/salientworks-production "salientworks@$HOST" 'true' >/dev/null 2>&1; then
+              echo 'salientworks_ssh=ok' >> "$report"
+              ssh -i ~/.ssh/salientworks-production "salientworks@$HOST" 'python3 -' <<'PY' >> "$report" 2>&1
+import os
+import pathlib
+import signal
+import subprocess
+import time
+
+health_url = "http://127.0.0.1:5091/api/health"
+
+def health():
+    p = subprocess.run(["curl", "-sS", "--max-time", "5", "-o", "/tmp/sw-health", "-w", "%{http_code}", health_url], text=True, capture_output=True)
+    return p.returncode, p.stdout.strip()
+
+before_rc, before_code = health()
+print(f"before.rc={before_rc}")
+print(f"before.http={before_code or '000'}")
+
+if before_rc != 0 or before_code != "200":
+    pids = []
+    for entry in pathlib.Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            cmd = (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
+            uid = (entry / "status").read_text().split("Uid:", 1)[1].splitlines()[0].split()[0]
+        except Exception:
+            continue
+        if "salientworks-runtime" in cmd and int(uid) == os.getuid():
+            pids.append(int(entry.name))
+
+    print(f"matching_runtime_pids={pids}")
+    if not pids:
+        raise SystemExit("No Salient Works runtime owned by salientworks user")
+
+    pid = max(pids)
+    proc = pathlib.Path(f"/proc/{pid}")
+    env = {}
+    for item in (proc / "environ").read_bytes().split(b"\0"):
+        if not item or b"=" not in item:
+            continue
+        key, value = item.split(b"=", 1)
+        env[key.decode()] = value.decode()
+    argv = [x.decode() for x in (proc / "cmdline").read_bytes().split(b"\0") if x]
+    cwd = os.readlink(proc / "cwd")
+    print(f"restarting_pid={pid}")
+    print(f"runtime={argv[0] if argv else 'unknown'}")
+    print(f"cwd={cwd}")
+
+    os.kill(pid, signal.SIGTERM)
+    for _ in range(30):
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            break
+        time.sleep(0.2)
+    else:
+        os.kill(pid, signal.SIGKILL)
+        time.sleep(1)
+
+    log_path = pathlib.Path.home() / "salientworks-runtime-recovery.log"
+    with log_path.open("ab", buffering=0) as log:
+        new_proc = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+    print(f"new_pid={new_proc.pid}")
+    print(f"log={log_path}")
+    time.sleep(10)
+
+final_rc, final_code = health()
+print(f"final.rc={final_rc}")
+print(f"final.http={final_code or '000'}")
+if pathlib.Path('/tmp/sw-health').exists():
+    print('final.body=' + pathlib.Path('/tmp/sw-health').read_text(errors='replace')[:1000].replace('\n', ' '))
+PY
+              echo "salientworks_recovery_ssh_exit=$?" >> "$report"
+            else
+              echo 'salientworks_ssh=denied' >> "$report"
+            fi
+
+            echo >> "$report"
+            echo '=== FINAL PUBLIC VERIFICATION ===' >> "$report"
+            curl -k -sS -o /tmp/public-final -w 'public_api_final.http=%{http_code}\n' --connect-timeout 5 --max-time 15 https://engine.salientworks.ie/api/health >> "$report" 2>&1
+            echo "public_api_final.rc=$?" >> "$report"
+            if [[ -s /tmp/public-final ]]; then
+              printf 'public_api_final.body=' >> "$report"
+              tr '\n' ' ' < /tmp/public-final | head -c 1000 >> "$report"
+              echo >> "$report"
+            fi
           fi
 
           encoded=$(base64 -w0 "$report")
