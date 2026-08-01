@@ -1,0 +1,156 @@
+name: Repair SalientWorks engine
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/repair-salientworks-engine.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repair-salientworks-engine
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    name: Repair engine host
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure production SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SSH_PRIVATE_KEY"
+          test -n "$SSH_HOST_KEY"
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/acutis-production
+          chmod 0600 ~/.ssh/acutis-production
+          printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
+          chmod 0600 ~/.ssh/known_hosts
+
+      - name: Diagnose and repair SalientWorks
+        env:
+          HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$HOST"
+          test -n "$USER"
+          ssh -i ~/.ssh/acutis-production "$USER@$HOST" 'sudo bash -s' <<'REMOTE'
+          set -Eeuo pipefail
+
+          ENGINE_HOST=engine.salientworks.ie
+          LEGACY_HOST=salientworks.167-233-16-141.sslip.io
+          SITE=/etc/nginx/sites-available/salientworks
+          PUBLIC_IP=$(ip -4 -o addr show scope global | awk '{print $4}' | cut -d/ -f1 | head -1)
+
+          echo "=== HOST ==="
+          hostnamectl --static || hostname
+          echo "public_ip=$PUBLIC_IP"
+          uptime
+
+          echo "=== SERVICES BEFORE ==="
+          for service in salientworks-api salientworks-studio nginx; do
+            systemctl --no-pager --full status "$service" 2>&1 | sed -n '1,18p' || true
+          done
+
+          systemctl daemon-reload
+          for service in salientworks-api salientworks-studio; do
+            if systemctl list-unit-files "$service.service" --no-legend 2>/dev/null | grep -q "$service.service"; then
+              systemctl restart "$service"
+            else
+              echo "missing_service=$service"
+            fi
+          done
+
+          if [[ -f "$SITE" ]]; then
+            cp -a "$SITE" "$SITE.before-engine-repair"
+            python3 - "$SITE" "$ENGINE_HOST" "$LEGACY_HOST" <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          path = Path(sys.argv[1])
+          engine = sys.argv[2]
+          legacy = sys.argv[3]
+          text = path.read_text()
+          if engine not in text:
+              pattern = re.compile(r"(server_name\s+[^;]*\b" + re.escape(legacy) + r"\b[^;]*)(;)")
+              text, count = pattern.subn(lambda m: f"{m.group(1)} {engine}{m.group(2)}", text)
+              if count == 0:
+                  raise SystemExit(f"Could not find a server_name containing {legacy}")
+              path.write_text(text)
+          PY
+          else
+            cat > "$SITE" <<EOF
+          server {
+            listen 80;
+            listen [::]:80;
+            server_name $LEGACY_HOST $ENGINE_HOST;
+
+            location /api/ {
+              proxy_pass http://127.0.0.1:5091;
+              proxy_http_version 1.1;
+              proxy_set_header Host \$host;
+              proxy_set_header X-Real-IP \$remote_addr;
+              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto \$scheme;
+            }
+
+            location / {
+              proxy_pass http://127.0.0.1:3011;
+              proxy_http_version 1.1;
+              proxy_set_header Host \$host;
+              proxy_set_header X-Real-IP \$remote_addr;
+              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto \$scheme;
+            }
+          }
+          EOF
+          fi
+
+          ln -sfn "$SITE" /etc/nginx/sites-enabled/salientworks
+          nginx -t
+          systemctl reload nginx
+
+          echo "=== LOCAL HEALTH ==="
+          curl --silent --show-error --max-time 10 http://127.0.0.1:5091/api/health || true
+          echo
+          curl --silent --show-error --output /dev/null --write-out 'studio_http=%{http_code}\n' --max-time 10 http://127.0.0.1:3011/ || true
+          curl --silent --show-error --output /dev/null --write-out 'nginx_engine_http=%{http_code}\n' --max-time 10 -H "Host: $ENGINE_HOST" http://127.0.0.1/ || true
+
+          echo "=== DNS ==="
+          DNS_IPS=$(getent ahostsv4 "$ENGINE_HOST" 2>/dev/null | awk '{print $1}' | sort -u | paste -sd, - || true)
+          echo "dns_ips=${DNS_IPS:-none}"
+          if [[ -n "$DNS_IPS" ]] && tr ',' '\n' <<<"$DNS_IPS" | grep -Fxq "$PUBLIC_IP"; then
+            echo "dns_points_to_host=yes"
+            if command -v certbot >/dev/null 2>&1; then
+              certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email --redirect -d "$ENGINE_HOST" || true
+              nginx -t
+              systemctl reload nginx
+            else
+              echo "certbot=not-installed"
+            fi
+          else
+            echo "dns_points_to_host=no"
+          fi
+
+          echo "=== SERVICES AFTER ==="
+          for service in salientworks-api salientworks-studio nginx; do
+            echo -n "$service="
+            systemctl is-active "$service" 2>/dev/null || true
+          done
+
+          for service in salientworks-api salientworks-studio; do
+            if ! systemctl is-active --quiet "$service" 2>/dev/null; then
+              journalctl -u "$service" --no-pager -n 80 2>/dev/null || true
+            fi
+          done
+          REMOTE
