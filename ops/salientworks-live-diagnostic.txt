@@ -1,14 +1,47 @@
-checked_at=2026-08-01T12:04:12Z
+checked_at=2026-08-01T12:08:34Z
 host=acutis-app-server
-client=salientworks-api redirect=https://engine.salientworks.ie/api/auth/callback http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
-client=salientworks-api redirect=https://engine.salientworks.ie/api/auth/callback/keycloak http=200 title=Sign in to salientworks error=
-client=salientworks-api redirect=https://salientworks.167-233-16-141.sslip.io/api/auth/callback http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
-client=salientworks-api redirect=https://salientworks.167-233-16-141.sslip.io/api/auth/callback/keycloak http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
-client=salientworks-api redirect=http://127.0.0.1:3011/api/auth/callback http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
-client=salientworks-api redirect=http://localhost:3011/api/auth/callback/keycloak http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
-client=salientworks-studio redirect=https://engine.salientworks.ie/api/auth/callback http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
-client=salientworks-studio redirect=https://engine.salientworks.ie/api/auth/callback/keycloak http=200 title=Sign in to salientworks error=
-client=salientworks-studio redirect=https://salientworks.167-233-16-141.sslip.io/api/auth/callback http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
-client=salientworks-studio redirect=https://salientworks.167-233-16-141.sslip.io/api/auth/callback/keycloak http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
-client=salientworks-studio redirect=http://127.0.0.1:3011/api/auth/callback http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
-client=salientworks-studio redirect=http://localhost:3011/api/auth/callback/keycloak http=400 title=Sign in to salientworks error=Invalid parameter: redirect_uri
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+=== WEB UNIT ===
+# /etc/systemd/system/salientworks-web.service
+[Unit]
+Description=Salient Works Next.js web application
+After=network-online.target salientworks-glor.service
+
+[Service]
+Type=simple
+User=salientworks
+WorkingDirectory=/opt/salientworks/glor/salientworks-ui-v6
+EnvironmentFile=/etc/salientworks/web.env
+ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3011
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+=== WEB SHOW ===
+FragmentPath=/etc/systemd/system/salientworks-web.service
+MainPID=902628
+ExecStart={ path=/usr/bin/npm ; argv[]=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3011 ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+EnvironmentFiles=/etc/salientworks/web.env (ignore_errors=no)
+WorkingDirectory=/opt/salientworks/glor/salientworks-ui-v6
+User=salientworks
+Group=
+=== INLINE ENVIRONMENT KEYS ===
+=== ENVIRONMENT FILE ACCESS ===
+file=/etc/salientworks/web.env
+ls: cannot open file '/etc/salientworks/web.env': Permission denied
+readable=no
+=== PROCESS ENVIRONMENT ACCESS ===
+pid=902628
+process_environment_readable=no
+=== EXPECTED KEY PRESENCE VIA SYSTEMD ===
+AUTH_KEYCLOAK_ID=not_inline
+AUTH_KEYCLOAK_SECRET=not_inline
+AUTH_KEYCLOAK_ISSUER=not_inline
+KEYCLOAK_ADMIN_CLIENT_ID=not_inline
+KEYCLOAK_ADMIN_CLIENT_SECRET=not_inline
+KC_BOOTSTRAP_ADMIN_USERNAME=not_inline
+KC_BOOTSTRAP_ADMIN_PASSWORD=not_inline
+NEXTAUTH_SECRET=not_inline
