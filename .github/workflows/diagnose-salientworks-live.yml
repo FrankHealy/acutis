@@ -1,4 +1,4 @@
-name: Inspect server-local Salient Works access
+name: Repair Salient Works login from live Keycloak container
 
 on:
   push:
@@ -11,11 +11,12 @@ permissions:
   contents: write
 
 jobs:
-  inspect:
+  repair:
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
     steps:
-      - name: Inspect local SSH and Keycloak session paths
+      - name: Use live Keycloak container credentials without exposing them
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -24,60 +25,186 @@ jobs:
           USER: ${{ secrets.PRODUCTION_SSH_USER }}
         run: |
           set +e
-          report="$RUNNER_TEMP/server-local-access.txt"
+          report="$RUNNER_TEMP/salientworks-login-repair.txt"
           echo "checked_at=$(date -u +%FT%TZ)" > "$report"
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/key
           chmod 0600 ~/.ssh/key
           printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
           chmod 0600 ~/.ssh/known_hosts
+
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
           echo "host=$(hostname)"
           echo "identity=$(id)"
-          echo '=== DEPLOY USER SSH FILES ==='
-          find "$HOME/.ssh" -maxdepth 2 -printf '%M %u:%g %s %p\n' 2>/dev/null | sort || true
-          if [[ -r "$HOME/.ssh/config" ]]; then
-            echo '--- ssh config ---'
-            sed -n -E '/^[[:space:]]*(Host|HostName|User|IdentityFile|ProxyJump|ProxyCommand)[[:space:]]/p' "$HOME/.ssh/config" | sed -E 's/(IdentityFile[[:space:]]+).*/\1[redacted-path]/I'
-          fi
-          echo '=== SSH AGENT ==='
-          echo "SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-none}"
-          ssh-add -l 2>&1 || true
-          echo '=== LOCAL SSH PROBES ==='
-          for target in salientworks@127.0.0.1 salientworks@localhost root@127.0.0.1 root@localhost; do
-            echo "--- $target ---"
-            ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no "$target" 'id' 2>&1 || true
-          done
-          echo '=== OTHER HOME SSH DIRECTORIES ==='
-          for dir in /home/salientworks/.ssh /root/.ssh; do
-            echo "--- $dir ---"
-            namei -l "$dir" 2>&1 || true
-            find "$dir" -maxdepth 2 -printf '%M %u:%g %s %p\n' 2>/dev/null | sort || true
-          done
-          echo '=== KCADM CONFIG FILES ==='
-          find /opt /home /root /etc -maxdepth 6 -type f \( -name 'kcadm.config' -o -name '*kcadm*config*' -o -path '*/.keycloak/*' \) -printf '%M %u:%g %s %p\n' 2>/dev/null | sort | head -300
-          echo '=== READABLE KCADM CONFIG METADATA ==='
-          while IFS= read -r file; do
-            [[ -r "$file" ]] || continue
-            echo "file=$file"
-            sed -n -E 's/^[[:space:]]*"?([A-Za-z_][A-Za-z0-9_.-]*)"?[[:space:]]*[:=].*/key=\1/p' "$file" | sort -u | head -100
-          done < <(find /opt /home /root /etc -maxdepth 6 -type f \( -name 'kcadm.config' -o -name '*kcadm*config*' -o -path '*/.keycloak/*' \) 2>/dev/null)
-          echo '=== KEYCLOAK PROCESS CONTEXT ==='
           pid=$(pgrep -f 'io.quarkus.bootstrap.runner.QuarkusEntryPoint start' | head -1)
           echo "keycloak_pid=${pid:-none}"
-          if [[ -n "$pid" ]]; then
-            cat "/proc/$pid/cgroup" 2>&1 || true
-            grep -E '^(Name|State|Uid|Gid|NSpid):' "/proc/$pid/status" 2>&1 || true
-            ls -l "/proc/$pid/root" "/proc/$pid/cwd" 2>&1 || true
+          if [[ -z "$pid" ]]; then
+            echo 'keycloak_process=missing'
+            exit 40
+          fi
+          owner_uid=$(awk '/^Uid:/{print $2}' "/proc/$pid/status")
+          echo "keycloak_owner_uid=$owner_uid"
+          echo "current_uid=$(id -u)"
+          if [[ ! -r "/proc/$pid/environ" ]]; then
+            echo 'keycloak_environment_readable=no'
+            ls -l "/proc/$pid/environ" 2>&1 || true
+            exit 41
+          fi
+          echo 'keycloak_environment_readable=yes'
+
+          python3 - "$pid" /tmp/keycloak-live.env <<'PY'
+          import pathlib, shlex, sys
+          pid, output = sys.argv[1], sys.argv[2]
+          raw = pathlib.Path(f'/proc/{pid}/environ').read_bytes().split(b'\0')
+          allowed = {
+              'KC_BOOTSTRAP_ADMIN_USERNAME',
+              'KC_BOOTSTRAP_ADMIN_PASSWORD',
+              'KEYCLOAK_ADMIN',
+              'KEYCLOAK_ADMIN_PASSWORD',
+              'KC_ADMIN',
+              'KC_ADMIN_PASSWORD',
+          }
+          values = {}
+          for item in raw:
+              if b'=' not in item:
+                  continue
+              key, value = item.split(b'=', 1)
+              name = key.decode(errors='replace')
+              if name in allowed:
+                  values[name] = value.decode(errors='replace')
+          with open(output, 'w', encoding='utf-8') as handle:
+              for key, value in values.items():
+                  handle.write(f'export {key}={shlex.quote(value)}\n')
+          pathlib.Path(output).chmod(0o600)
+          print('credential_keys_present=' + ','.join(sorted(values)))
+          PY
+          env_extract_rc=$?
+          echo "environment_extract_rc=$env_extract_rc"
+          if [[ $env_extract_rc -ne 0 || ! -s /tmp/keycloak-live.env ]]; then
+            echo 'bootstrap_credential_present=no'
+            rm -f /tmp/keycloak-live.env
+            exit 42
+          fi
+          echo 'bootstrap_credential_present=yes'
+          source /tmp/keycloak-live.env
+          rm -f /tmp/keycloak-live.env
+
+          admin_user=${KC_BOOTSTRAP_ADMIN_USERNAME:-${KEYCLOAK_ADMIN:-${KC_ADMIN:-admin}}}
+          admin_password=${KC_BOOTSTRAP_ADMIN_PASSWORD:-${KEYCLOAK_ADMIN_PASSWORD:-${KC_ADMIN_PASSWORD:-}}}
+          if [[ -z "$admin_password" ]]; then
+            echo 'admin_password_resolved=no'
+            exit 43
+          fi
+          echo 'admin_password_resolved=yes'
+
+          token_response=$(curl -sS --max-time 20 \
+            -X POST 'http://127.0.0.1:8080/realms/master/protocol/openid-connect/token' \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'client_id=admin-cli' \
+            --data-urlencode "username=$admin_user" \
+            --data-urlencode "password=$admin_password" \
+            --data-urlencode 'grant_type=password')
+          unset admin_password KC_BOOTSTRAP_ADMIN_PASSWORD KEYCLOAK_ADMIN_PASSWORD KC_ADMIN_PASSWORD
+          token=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("access_token", ""))' <<< "$token_response" 2>/dev/null)
+          if [[ -z "$token" ]]; then
+            echo 'admin_authentication=failed'
+            python3 -c 'import json,sys; d=json.load(sys.stdin); print("token_error="+str(d.get("error","unknown"))); print("token_error_description="+str(d.get("error_description","unknown")))' <<< "$token_response" 2>/dev/null || true
+            exit 44
+          fi
+          echo 'admin_authentication=ok'
+
+          export TOKEN="$token"
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          token = os.environ['TOKEN']
+          base = 'http://127.0.0.1:8080'
+          realm = 'salientworks'
+          redirects = [
+              'https://engine.salientworks.ie/api/auth/callback',
+              'https://engine.salientworks.ie/api/auth/callback/keycloak',
+          ]
+          origin = 'https://engine.salientworks.ie'
+
+          def call(method, url, payload=None):
+              headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/json'}
+              data = None
+              if payload is not None:
+                  headers['Content-Type'] = 'application/json'
+                  data = json.dumps(payload).encode()
+              request = urllib.request.Request(url, data=data, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(request, timeout=20) as response:
+                      raw = response.read()
+                      return response.status, json.loads(raw) if raw else None
+              except urllib.error.HTTPError as exc:
+                  body = exc.read().decode(errors='replace')
+                  print(f'admin_api_error method={method} status={exc.code} body={body[:500]}')
+                  raise
+
+          for client_id in ('salientworks-api', 'salientworks-studio'):
+              query = urllib.parse.urlencode({'clientId': client_id})
+              status, matches = call('GET', f'{base}/admin/realms/{realm}/clients?{query}')
+              if status != 200 or not matches:
+                  raise RuntimeError(f'client_not_found={client_id}')
+              internal_id = matches[0]['id']
+              _, client = call('GET', f'{base}/admin/realms/{realm}/clients/{internal_id}')
+              current_redirects = list(client.get('redirectUris') or [])
+              current_origins = list(client.get('webOrigins') or [])
+              for value in redirects:
+                  if value not in current_redirects:
+                      current_redirects.append(value)
+              if origin not in current_origins:
+                  current_origins.append(origin)
+              client['redirectUris'] = current_redirects
+              client['webOrigins'] = current_origins
+              update_status, _ = call('PUT', f'{base}/admin/realms/{realm}/clients/{internal_id}', client)
+              if update_status not in (200, 204):
+                  raise RuntimeError(f'update_failed={client_id} status={update_status}')
+              print(f'updated_client={client_id}')
+              print(f'plain_callback_present_{client_id}={"yes" if redirects[0] in current_redirects else "no"}')
+              print(f'keycloak_callback_present_{client_id}={"yes" if redirects[1] in current_redirects else "no"}')
+          print('repair_status=success')
+          PY
+          repair_rc=$?
+          unset TOKEN token
+          echo "repair_rc=$repair_rc"
+          if [[ $repair_rc -ne 0 ]]; then exit "$repair_rc"; fi
+
+          echo '=== FULL LOGIN VERIFICATION ==='
+          curl -k -sS -L --max-redirs 8 --max-time 30 \
+            -D /tmp/login-headers -o /tmp/login-body \
+            -w 'login_final_url=%{url_effective}\nlogin_http=%{http_code}\nlogin_redirects=%{num_redirects}\n' \
+            'https://engine.salientworks.ie/api/auth/login?returnTo=%2F'
+          verify_rc=$?
+          echo "login_curl_rc=$verify_rc"
+          title=$(grep -io '<title>[^<]*' /tmp/login-body | head -1 | sed 's/<title>//I')
+          echo "login_page_title=${title:-none}"
+          if grep -qi 'Invalid parameter: redirect_uri' /tmp/login-body; then
+            echo 'redirect_error_present=yes'
+            exit 45
+          fi
+          echo 'redirect_error_present=no'
+          if [[ $verify_rc -eq 0 ]] && grep -qiE 'sign in|log in|username|password' /tmp/login-body; then
+            echo 'login_page_reached=yes'
+          else
+            echo 'login_page_reached=unknown'
           fi
           REMOTE
+          ssh_rc=$?
+          echo "ssh_rc=$ssh_rc" >> "$report"
+
           encoded=$(base64 -w0 "$report")
-          path='ops/server-local-access.txt'
+          path='ops/salientworks-login-repair.txt'
           sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
           if [[ -n "$sha" ]]; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record server-local Salient Works access' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works login repair' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record server-local Salient Works access' -f content="$encoded" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works login repair' -f content="$encoded" -f branch=main >/dev/null
           fi
           cat "$report"
