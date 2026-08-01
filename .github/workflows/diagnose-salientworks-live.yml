@@ -58,6 +58,22 @@ jobs:
           done
           echo
 
+          echo '=== SALIENT WORKS PROCESS AND FILES ==='
+          ps -eo user,pid,ppid,stat,lstart,cmd 2>/dev/null | grep -E '[s]alientworks-runtime|[n]ext-server' | head -30 || true
+          systemctl show salientworks-api -p User -p Group -p ExecStart -p EnvironmentFiles -p FragmentPath --no-pager 2>/dev/null || true
+          ls -ld /opt/salientworks /opt/salientworks/config /opt/salientworks/glor/rust/target/debug 2>/dev/null || true
+          ls -l /opt/salientworks/config/api.env /opt/salientworks/glor/rust/target/debug/salientworks-runtime 2>/dev/null || true
+          echo
+
+          echo '=== APPROVED DEPLOYERS ==='
+          sudo -n -l 2>&1 || true
+          for script in /opt/acutis/bin/deploy-production-release /opt/acutis/bin/deploy-products-release; do
+            echo "-- $script --"
+            ls -l "$script" 2>&1 || true
+            sed -n '1,260p' "$script" 2>&1 || true
+          done
+          echo
+
           echo '=== LISTENING PORTS ==='
           ss -lnt 2>/dev/null | grep -E '(:80|:443|:3011|:5091|:8080)[[:space:]]' || true
           echo
