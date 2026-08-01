@@ -1,52 +1,16 @@
-checked_at=2026-08-01T12:01:53Z
+checked_at=2026-08-01T12:02:55Z
 host=acutis-app-server
-identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
-
-=== LIVE SERVICES ===
-active
-active
-active
-
-=== GLOR ===
-local_domains.http=401
-local_domains.body={"error":"Authentication required."}
-
-=== ROOT REDIRECT ===
-root.rc=0
-HTTP/1.1 307 Temporary Redirect
-Server: nginx/1.28.3 (Ubuntu)
-Date: Sat, 01 Aug 2026 12:01:55 GMT
-Transfer-Encoding: chunked
-Connection: keep-alive
-location: /api/auth/login?returnTo=%2F
-
-root.body=/api/auth/login?returnTo=%2F
-
-=== LOGIN REDIRECT ===
-login.rc=0
-HTTP/1.1 307 Temporary Redirect
-Server: nginx/1.28.3 (Ubuntu)
-Date: Sat, 01 Aug 2026 12:01:55 GMT
-Transfer-Encoding: chunked
-Connection: keep-alive
-vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
-location: https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth?client_id=salientworks-api&redirect_uri=https%3A%2F%2Fengine.salientworks.ie%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+profile+email&state=wcdNLqYHyT6x5nqcF64ZLAyiYn2zNCVkS99o3sgs-Hw&code_challenge=3NWLukJsEtECfVALJKrHXQkoawgfWLFskEKm0E8npn0&code_challenge_method=S256
-set-cookie: sw_oidc_state=eyJzdGF0ZSI6IndjZE5McVlIeVQ2eDVucWNGNjRaTEF5aVluMnpOQ1ZrUzk5bzNzZ3MtSHciLCJ2ZXJpZmllciI6ImFQOTQ2UWpIellqUGtSNlNmQXFEYVlxeEVqd1E0TEgydWFmX3RRTDhBNHBlVlhkY09WMThoaWNXR0JoX19GRTkiLCJyZXR1cm5UbyI6Ii8ifQ; Path=/; Expires=Sat, 01 Aug 2026 12:11:55 GMT; Max-Age=600; Secure; HttpOnly; SameSite=lax
-
-
-=== FOLLOW LOGIN FLOW ===
-follow.final_url=https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth?client_id=salientworks-api&redirect_uri=https%3A%2F%2Fengine.salientworks.ie%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+profile+email&state=SgjZJRy77XZL83MctczeUsGSkv_crzFm0UwHJ2eFWgs&code_challenge=t53ox7tljSRd6HmQGQmZJPkWASd7_83WGqxP4rLMtKw&code_challenge_method=S256
-follow.http=400
-follow.redirects=1
-follow.rc=0
-HTTP/1.1 307 Temporary Redirect
-location: https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth?client_id=salientworks-api&redirect_uri=https%3A%2F%2Fengine.salientworks.ie%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+profile+email&state=SgjZJRy77XZL83MctczeUsGSkv_crzFm0UwHJ2eFWgs&code_challenge=t53ox7tljSRd6HmQGQmZJPkWASd7_83WGqxP4rLMtKw&code_challenge_method=S256
-set-cookie: sw_oidc_state=[redacted]; Path=/; Expires=Sat, 01 Aug 2026 12:11:56 GMT; Max-Age=600; Secure; HttpOnly; SameSite=lax
-HTTP/1.1 400 Bad Request
-follow.title=Sign in to salientworks
-follow.body_sample=<!DOCTYPE html> <html class="login-pf" lang="en">  <head>     <meta charset="utf-8">     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />     <meta name="color-scheme" content="light dark">     <meta name="viewport" content="width=device-width, initial-scale=1">      <title>Sign in to salientworks</title>     <link rel="icon" href="/resources/o4dbl/login/keycloak.v2/img/favicon.ico" />             <link href="/resources/o4dbl/common/keycloak/vendor/patternfly-v5/patternfly.min.css" rel="stylesheet" />             <link href="/resources/o4dbl/common/keycloak/vendor/patternfly-v5/patternfly-addons.css" rel="stylesheet" />             <link href="/resources/o4dbl/login/keycloak.v2/css/styles.css" rel="stylesheet" />     <script type="importmap">         {             "imports": {                 "rfc4648": "/resources/o4dbl/common/keycloak/vendor/rfc4648/rfc4648.js"             }         }     </script>       <script type="module" async blocking="render">           const DARK_MODE_CLASS = "pf-v5-theme-dark";           const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");            updateDarkMode(mediaQuery.matches);           mediaQuery.addEventLi
-
-=== KEYCLOAK DISCOVERY ===
-keycloak_discovery.http=200
-"issuer":"https://engine.salientworks.ie/realms/salientworks"
-"authorization_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth"
+final_url=https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth?client_id=salientworks-api&redirect_uri=https%3A%2F%2Fengine.salientworks.ie%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+profile+email&state=-dTJ044ZwDHTIPmadjzJqTDr6ttPSHRCDQfnW0iQJxk&code_challenge=3XBzmElgQzVpN8-rC-hI4I0HizyqFOI18aIVTulBhNg&code_challenge_method=S256
+http=400
+redirects=1
+curl_rc=0
+locations:
+location: https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth?client_id=salientworks-api&redirect_uri=https%3A%2F%2Fengine.salientworks.ie%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+profile+email&state=[redacted]&code_challenge=[redacted]&code_challenge_method=S256
+keycloak_error_text:
+import { startSessionPolling } from "/resources/o4dbl/login/keycloak.v2/js/authChecker.js"; startSessionPolling( "/realms/salientworks/login-actions/restart?client_id=salientworks-api&skip_logout=true" );
+Invalid parameter: redirect_uri
+all_text=Sign in to salientworks | { "imports": { "rfc4648": "/resources/o4dbl/common/keycloak/vendor/rfc4648/rfc4648.js" } } | const DARK_MODE_CLASS = "pf-v5-theme-dark"; const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)"); updateDarkMode(mediaQuery.matches); mediaQuery.addEventListener("change", (event) => updateDarkMode(event.matches)); function updateDarkMode(isEnabled) { const { classList } = document.documentElement; if (isEnabled) { classList.add(DARK_MODE_CLASS); } else { classList.remove(DARK_MODE_CLASS); } } | import { startSessionPolling } from "/resources/o4dbl/login/keycloak.v2/js/authChecker.js"; startSessionPolling( "/realms/salientworks/login-actions/restart?client_id=salientworks-api&skip_logout=true" ); | document.addEventListener("click", (event) => { const link = event.target.closest("a[data-once-link]"); if (!link) { return; } if (link.getAttribute("aria-disabled") === "true") { event.preventDefault(); return; } const { disabledClass } = link.dataset; if (disabledClass) { link.classList.add(...disabledClass.trim().split(/\s+/)); } link.setAttribute("role", "link"); link.setAttribute("aria-disabled", "true"); }); | // Workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=1404468 const isFirefox = true; | salientworks | We are sorry... | Invalid parameter: redirect_uri
+status_checks:
+root=307
+domains=401
+discovery=200
