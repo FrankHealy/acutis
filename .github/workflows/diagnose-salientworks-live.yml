@@ -1,4 +1,4 @@
-name: Inspect Salient Works web credential sources
+name: Inspect live Salient Works frontend checkout
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Inspect environment names without values
+      - name: Inspect deployed frontend source and permissions
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -34,53 +34,31 @@ jobs:
 
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
+          root=/opt/salientworks/glor/salientworks-ui-v6
           echo "host=$(hostname)"
           echo "identity=$(id)"
-          echo '=== WEB UNIT ==='
-          systemctl cat salientworks-web.service --no-pager 2>&1 || true
-          echo '=== WEB SHOW ==='
-          systemctl show salientworks-web.service -p User -p Group -p MainPID -p ExecStart -p WorkingDirectory -p EnvironmentFiles -p FragmentPath --no-pager 2>&1 || true
-          echo '=== INLINE ENVIRONMENT KEYS ==='
-          envline=$(systemctl show salientworks-web.service -p Environment --value 2>/dev/null)
-          python3 - "$envline" <<'PY'
-          import shlex, sys
-          try:
-              items=shlex.split(sys.argv[1])
-          except Exception:
-              items=sys.argv[1].split()
-          for item in items:
-              if '=' in item:
-                  print(item.split('=',1)[0])
-          PY
-          echo '=== ENVIRONMENT FILE ACCESS ==='
-          files=$(systemctl show salientworks-web.service -p EnvironmentFiles --value 2>/dev/null | sed -E 's/ \(ignore_errors=[^)]+\)//g')
-          for file in $files; do
-            echo "file=$file"
-            ls -l "$file" 2>&1 || true
-            if [[ -r "$file" ]]; then
-              echo 'readable=yes keys:'
-              sed -n -E 's/^(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=.*/\2/p' "$file" | sort -u
-            else
-              echo 'readable=no'
-            fi
-          done
-          echo '=== PROCESS ENVIRONMENT ACCESS ==='
-          pid=$(systemctl show salientworks-web.service -p MainPID --value 2>/dev/null)
-          echo "pid=$pid"
-          if [[ -n "$pid" && "$pid" != 0 && -r "/proc/$pid/environ" ]]; then
-            echo 'process_environment_readable=yes keys:'
-            tr '\0' '\n' < "/proc/$pid/environ" | sed -n -E 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\1/p' | sort -u
-          else
-            echo 'process_environment_readable=no'
-          fi
-          echo '=== EXPECTED KEY PRESENCE VIA SYSTEMD ==='
-          for key in AUTH_KEYCLOAK_ID AUTH_KEYCLOAK_SECRET AUTH_KEYCLOAK_ISSUER KEYCLOAK_ADMIN_CLIENT_ID KEYCLOAK_ADMIN_CLIENT_SECRET KC_BOOTSTRAP_ADMIN_USERNAME KC_BOOTSTRAP_ADMIN_PASSWORD NEXTAUTH_SECRET; do
-            if [[ " $envline " == *" $key="* || "$envline" == "$key="* ]]; then echo "$key=inline"; else echo "$key=not_inline"; fi
+          echo '=== ROOT PERMISSIONS ==='
+          namei -l "$root" 2>&1 || true
+          ls -ld "$root" "$root/.git" "$root/.next" "$root/src" "$root/src/app" 2>&1 || true
+          echo '=== GIT ==='
+          git -C "$root" remote -v 2>&1 || true
+          git -C "$root" status --short --branch 2>&1 || true
+          git -C "$root" rev-parse HEAD 2>&1 || true
+          git -C "$root" log -5 --oneline --decorate 2>&1 || true
+          echo '=== PACKAGE ==='
+          sed -n '1,240p' "$root/package.json" 2>&1 || true
+          echo '=== AUTH CALLBACK MATCHES ==='
+          grep -RInE --exclude-dir=node_modules --exclude-dir=.git --exclude='*.map' 'api/auth/callback|redirect_uri|redirectUri|openid-connect/auth|client_id|sw_oidc_state' "$root" 2>/dev/null | head -400 || true
+          echo '=== AUTH-RELATED FILES ==='
+          find "$root" -maxdepth 8 -type f \( -path '*api*auth*' -o -iname '*auth*' -o -iname '*keycloak*' -o -iname '*oidc*' \) 2>/dev/null | sort | head -300
+          echo '=== WRITABILITY ==='
+          for path in "$root" "$root/.next" "$root/src" "$root/package.json"; do
+            if [[ -w "$path" ]]; then echo "$path=writable"; else echo "$path=not_writable"; fi
           done
           REMOTE
 
           encoded=$(base64 -w0 "$report")
           path='ops/salientworks-live-diagnostic.txt'
           existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works credential sources' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record live Salient Works frontend checkout' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
           cat "$report"
