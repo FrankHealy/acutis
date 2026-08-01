@@ -1,0 +1,91 @@
+checked_at=2026-08-01T12:39:18Z
+host=acutis-app-server
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+=== GIT ROOT ===
+/opt/salientworks/glor
+origin	https://github.com/FrankHealy/salientworks.git (fetch)
+origin	https://github.com/FrankHealy/salientworks.git (push)
+## codex/governed-yoke-api...origin/codex/governed-yoke-api
+f1caa93024e0851f9e6bbb1e52012fb0404ecd8a
+* codex/governed-yoke-api f1caa93 [origin/codex/governed-yoke-api] Publish governed API and Studio updates
+f1caa93 (HEAD -> codex/governed-yoke-api, origin/codex/governed-yoke-api) Publish governed API and Studio updates
+9f6c899 Add first-class complex TH-19 values
+af12bbf Add C# projection compile harness
+3b6e7df Add TH-19 C# projection CLI
+39c0291 Add deterministic sovereign hedge C# projection
+7f9d388 Remove deprecated syntax from TH-19 tests
+86dd2a3 Require ACTION syntax in TH-19 sources
+d18a86e Add semantic ACTION authoring syntax
+c60f182 List governed yokes in capability workspaces
+40662d8 Expose governed Yoke source in Studio
+73dcc9f Preserve legacy static yokes in governed registry
+f4d49d6 Register static Glor yokes at startup
+=== TRACKED AUTH FILES ===
+salientworks-ui-v6/app/api/auth/callback/route.ts
+salientworks-ui-v6/app/api/auth/login/route.ts
+=== FILE COMMITS ===
+8fa1367 Use public URL for every authentication redirect
+bcaf3d1 Pin authentication redirects to the public hostname
+18f4c89 Require Keycloak sign-in before platform access
+=== SOURCE CONTENT ===
+import { NextRequest, NextResponse } from "next/server";
+import { createHash, randomBytes } from "crypto";
+import { OIDC_STATE_COOKIE } from "@/lib/session";
+
+function localPath(value: string | null) { return value?.startsWith("/") && !value.startsWith("//") ? value : "/"; }
+
+export async function GET(request: NextRequest) {
+  const issuer = process.env.KEYCLOAK_ISSUER;
+  const clientId = process.env.KEYCLOAK_CLIENT_ID;
+  const publicUrl = process.env.SALIENTWORKS_PUBLIC_URL;
+  if (!issuer || !clientId || !publicUrl) return NextResponse.json({ error: "Authentication is not configured." }, { status: 503 });
+  const state = randomBytes(32).toString("base64url");
+  const verifier = randomBytes(48).toString("base64url");
+  const challenge = createHash("sha256").update(verifier).digest("base64url");
+  const returnTo = localPath(request.nextUrl.searchParams.get("returnTo"));
+  const url = new URL(`${issuer.replace(/\/$/, "")}/protocol/openid-connect/auth`);
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("redirect_uri", `${publicUrl}/api/auth/callback`);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", "openid profile email");
+  url.searchParams.set("state", state);
+  url.searchParams.set("code_challenge", challenge);
+  url.searchParams.set("code_challenge_method", "S256");
+  const response = NextResponse.redirect(url);
+  response.cookies.set(OIDC_STATE_COOKIE, Buffer.from(JSON.stringify({ state, verifier, returnTo })).toString("base64url"), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 600 });
+  return response;
+}
+--- callback ---
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { decodeJwtRoles, OIDC_STATE_COOKIE, SESSION_COOKIE } from "@/lib/session";
+
+export async function GET(request: NextRequest) {
+  const issuer = process.env.KEYCLOAK_ISSUER;
+  const clientId = process.env.KEYCLOAK_CLIENT_ID;
+  const publicUrl = process.env.SALIENTWORKS_PUBLIC_URL;
+  const code = request.nextUrl.searchParams.get("code");
+  const state = request.nextUrl.searchParams.get("state");
+  const raw = (await cookies()).get(OIDC_STATE_COOKIE)?.value;
+  let pending: { state: string; verifier: string; returnTo: string } | undefined;
+  try { pending = raw ? JSON.parse(Buffer.from(raw, "base64url").toString("utf8")) : undefined; } catch { /* rejected below */ }
+  if (!issuer || !clientId || !publicUrl || !code || !state || !pending || pending.state !== state) return NextResponse.redirect(new URL("/api/auth/login", publicUrl ?? request.url));
+  const tokenResponse = await fetch(`${issuer.replace(/\/$/, "")}/protocol/openid-connect/token`, {
+    method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "authorization_code", client_id: clientId, code, redirect_uri: `${publicUrl}/api/auth/callback`, code_verifier: pending.verifier }),
+  });
+  if (!tokenResponse.ok) return NextResponse.redirect(new URL("/api/auth/login", publicUrl));
+  const token = await tokenResponse.json() as { access_token: string; refresh_token?: string; expires_in?: number };
+  const session = { accessToken: token.access_token, refreshToken: token.refresh_token, expiresAt: Date.now() + Math.max(60, token.expires_in ?? 300) * 1000, roles: decodeJwtRoles(token.access_token) };
+  // The reverse proxy terminates HTTPS and forwards to loopback.  Never use
+  // request.url here: it can contain that private hop and send a browser to
+  // localhost after a successful Keycloak login.
+  const response = NextResponse.redirect(new URL(pending.returnTo || "/", publicUrl));
+  response.cookies.set(OIDC_STATE_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
+  response.cookies.set(SESSION_COOKIE, Buffer.from(JSON.stringify(session)).toString("base64url"), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 8 * 60 * 60 });
+  return response;
+}
+=== PARENT WRITABILITY ===
+/opt/salientworks/glor=not_writable
+/opt/salientworks/glor/.git=not_writable
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/login/route.ts=not_writable
