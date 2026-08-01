@@ -1,4 +1,4 @@
-name: Inspect Keycloak container recovery tools
+name: Inspect Salient Works Keycloak administration routes
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
     environment: production
     timeout-minutes: 15
     steps:
-      - name: Inspect container Java and Keycloak tools safely
+      - name: Inspect deployed administration source and endpoints
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -25,7 +25,7 @@ jobs:
           USER: ${{ secrets.PRODUCTION_SSH_USER }}
         run: |
           set +e
-          report="$RUNNER_TEMP/keycloak-container-tools.txt"
+          report="$RUNNER_TEMP/keycloak-admin-routes.txt"
           echo "checked_at=$(date -u +%FT%TZ)" > "$report"
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/key
@@ -35,110 +35,60 @@ jobs:
 
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
-          pid=$(pgrep -f 'io.quarkus.bootstrap.runner.QuarkusEntryPoint start' | head -1)
+          root=/opt/salientworks/glor
+          ui="$root/salientworks-ui-v6"
           echo "host=$(hostname)"
           echo "identity=$(id)"
-          echo "keycloak_pid=${pid:-none}"
-          if [[ -z "$pid" ]]; then exit 60; fi
-          root="/proc/$pid/root"
 
-          echo '=== DIRECT CONTAINER PATHS ==='
+          echo '=== KEYCLOAK ADMIN REFERENCES ==='
+          grep -RInE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=target --exclude='*.lock' \
+            'KEYCLOAK_ADMIN_CLIENT|salientworks-administration|admin/realms|service[_-]?account|client_credentials|manage-users|view-users|KEYCLOAK_CLIENT_SECRET' \
+            "$root" 2>/dev/null | head -600 || true
+
+          echo '=== ADMIN/API ROUTE FILES ==='
+          find "$ui/app" "$ui/src" -type f \( -path '*/api/*/route.*' -o -path '*/admin/*' \) 2>/dev/null | sort | head -600
+
+          echo '=== ROUTE AUTHORIZATION REFERENCES ==='
+          grep -RInE --exclude-dir=node_modules --exclude-dir=.next \
+            'SESSION_COOKIE|require.*admin|studio_admin|administrator|roles|accessToken|Authorization|Bearer' \
+            "$ui/app/api" "$ui/src" "$ui/lib" 2>/dev/null | head -800 || true
+
+          echo '=== SELECTED KEYCLOAK FILES ==='
+          while IFS= read -r file; do
+            [[ -f "$file" ]] || continue
+            echo "--- $file ---"
+            sed -n '1,320p' "$file" 2>/dev/null || true
+          done < <(grep -RIlE --exclude-dir=node_modules --exclude-dir=.next \
+            'KEYCLOAK_ADMIN_CLIENT|salientworks-administration|admin/realms|client_credentials' \
+            "$ui" 2>/dev/null | head -80)
+
+          echo '=== LOCAL ENDPOINT PROBES ==='
           candidates=(
-            "$root/opt/java/openjdk/bin/java"
-            "$root/opt/java/openjdk/bin/jcmd"
-            "$root/opt/java/openjdk/bin/jinfo"
-            "$root/usr/bin/java"
-            "$root/usr/bin/jcmd"
-            "$root/opt/keycloak/bin/kcadm.sh"
-            "$root/opt/keycloak/bin/kc.sh"
-            "$root/tmp/.java_pid1"
-            "$root/tmp/.java_pid$pid"
+            /api/admin
+            /api/admin/users
+            /api/administration
+            /api/administration/users
+            /api/users
+            /api/access
+            /api/auth/session
+            /api/auth/me
           )
           for path in "${candidates[@]}"; do
-            if [[ -e "$path" || -L "$path" ]]; then
-              stat -Lc 'path=%n mode=%A owner=%u:%g size=%s type=%F' "$path" 2>&1 || true
-              [[ -r "$path" ]] && echo "readable=$path" || echo "not_readable=$path"
-              [[ -x "$path" ]] && echo "executable=$path" || true
-            else
-              echo "missing=$path"
-            fi
-          done
-
-          echo '=== DISCOVER JAVA TOOLS ==='
-          find "$root/opt" "$root/usr/lib/jvm" -maxdepth 7 -type f \( -name jcmd -o -name jinfo -o -name java -o -name kcadm.sh \) -printf '%M %u:%g %s %p\n' 2>/dev/null | head -200 || true
-
-          jcmd_path=''
-          for path in "$root/opt/java/openjdk/bin/jcmd" "$root/usr/bin/jcmd"; do
-            [[ -x "$path" ]] && { jcmd_path="$path"; break; }
-          done
-          if [[ -z "$jcmd_path" ]]; then
-            jcmd_path=$(find "$root/opt" "$root/usr/lib/jvm" -maxdepth 7 -type f -name jcmd -perm /111 2>/dev/null | head -1)
-          fi
-          echo "selected_jcmd=${jcmd_path:-none}"
-
-          if [[ -n "$jcmd_path" ]]; then
-            props=$(mktemp /tmp/keycloak-properties.XXXXXX)
-            chmod 600 "$props"
-            timeout 30s "$jcmd_path" "$pid" VM.system_properties > "$props" 2>/tmp/keycloak-jcmd-error
+            code=$(curl -sS --max-time 8 -o /tmp/body -w '%{http_code}' "http://127.0.0.1:3011$path" 2>/tmp/error)
             rc=$?
-            echo "host_pid_jcmd_rc=$rc"
-            if [[ $rc -ne 0 ]]; then
-              timeout 30s "$jcmd_path" 1 VM.system_properties > "$props" 2>/tmp/keycloak-jcmd-error-1
-              rc1=$?
-              echo "container_pid_jcmd_rc=$rc1"
-            fi
-            if [[ -s "$props" ]]; then
-              echo 'relevant_system_property_names:'
-              python3 - "$props" <<'PY'
-          import re, sys
-          names=[]
-          with open(sys.argv[1], errors='replace') as handle:
-              for line in handle:
-                  if '=' not in line: continue
-                  name=line.split('=',1)[0].strip()
-                  if re.search(r'(keycloak|quarkus|datasource|admin|password|credential|secret|token)', name, re.I):
-                      names.append(name)
-          for name in sorted(set(names)):
-              print(name)
-          PY
-              echo "system_property_count=$(awk -F= 'NF>1{print $1}' "$props" | sort -u | wc -l)"
-            fi
-            for err in /tmp/keycloak-jcmd-error /tmp/keycloak-jcmd-error-1; do
-              if [[ -s "$err" ]]; then
-                printf 'jcmd_error='
-                tr '\n' ' ' < "$err" | head -c 1200
-                echo
-              fi
-            done
-            rm -f "$props" /tmp/keycloak-jcmd-error /tmp/keycloak-jcmd-error-1
-          fi
-
-          echo '=== KEYCLOAK CONFIG PATHS ==='
-          for path in \
-            "$root/opt/keycloak/conf/keycloak.conf" \
-            "$root/opt/keycloak/conf/quarkus.properties" \
-            "$root/opt/keycloak/conf/cache-ispn.xml"; do
-            if [[ -e "$path" ]]; then
-              stat -Lc 'path=%n mode=%A owner=%u:%g size=%s' "$path" 2>&1 || true
-              if [[ -r "$path" ]]; then
-                echo "readable_config=$path"
-                sed -n -E 's/^[[:space:]]*([^#;][^=[:space:]]*)[[:space:]]*=.*/config_key=\1/p' "$path" | sort -u | head -200
-              fi
-            fi
+            body=$(tr '\n' ' ' < /tmp/body 2>/dev/null | head -c 500)
+            echo "path=$path rc=$rc http=${code:-000} body=$body"
           done
-
-          echo '=== ATTACH SOCKETS ==='
-          find "$root/tmp" -maxdepth 2 \( -type s -o -name '.java_pid*' \) -printf '%M %u:%g %s %p\n' 2>/dev/null | head -100 || true
           REMOTE
           ssh_rc=$?
           echo "ssh_rc=$ssh_rc" >> "$report"
 
           encoded=$(base64 -w0 "$report")
-          path='ops/keycloak-container-tools.txt'
+          path='ops/keycloak-admin-routes.txt'
           sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
           if [[ -n "$sha" ]]; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Keycloak container recovery tools' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Keycloak administration routes' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Keycloak container recovery tools' -f content="$encoded" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Keycloak administration routes' -f content="$encoded" -f branch=main >/dev/null
           fi
           cat "$report"
