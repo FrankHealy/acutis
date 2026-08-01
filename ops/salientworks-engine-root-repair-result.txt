@@ -1,0 +1,8 @@
+checked_at=2026-08-01T09:56:28Z
+workflow_commit=a43503d0c53170e953a98ed11e74f2cc8189b918
+root_connection=failed
+uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+User acutis-deploy may run the following commands on acutis-app-server:
+    (root) NOPASSWD: /opt/acutis/bin/deploy-production-release
+    (root) NOPASSWD: /opt/acutis/bin/deploy-products-release
+deploy_diagnostic_exit=0
