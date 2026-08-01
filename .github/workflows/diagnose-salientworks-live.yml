@@ -33,16 +33,17 @@ jobs:
             echo 'connection=missing-production-secrets' >> "$report"
           else
             install -d -m 0700 ~/.ssh
-            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/acutis-production
-            chmod 0600 ~/.ssh/acutis-production
+            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/salientworks-production
+            chmod 0600 ~/.ssh/salientworks-production
             printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
             chmod 0600 ~/.ssh/known_hosts
 
-            ssh -i ~/.ssh/acutis-production "$USER@$HOST" 'bash -s' <<'REMOTE' >> "$report" 2>&1
+            ssh -i ~/.ssh/salientworks-production "$USER@$HOST" 'bash -s' <<'REMOTE' >> "$report" 2>&1
           set +e
           echo 'connection=ok'
           echo "host=$(hostname)"
           echo "user=$(id -un)"
+          echo "groups=$(id -Gn)"
           echo "server_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo
 
@@ -83,6 +84,34 @@ jobs:
           check_http local_api http://127.0.0.1:5091/api/health
           check_http local_keycloak_root http://127.0.0.1:8080/
           check_http local_keycloak_realm http://127.0.0.1:8080/realms/salientworks/.well-known/openid-configuration
+          echo
+
+          echo '=== DOCKER ==='
+          if docker info >/dev/null 2>&1; then
+            echo 'docker_access=yes'
+            docker version --format 'docker_server={{.Server.Version}}' 2>/dev/null || true
+            docker ps -a --no-trunc --format 'container={{.Names}} image={{.Image}} status={{.Status}} ports={{.Ports}}' || true
+            docker compose ls 2>&1 || true
+            docker images --format 'image={{.Repository}}:{{.Tag}} id={{.ID}} created={{.CreatedSince}}' | grep -Ei 'salientworks|salient-works|glor|th-19|th19' || true
+
+            candidates=$(docker ps -a --format '{{.Names}}|{{.Image}}|{{.Ports}}' | grep -Ei 'salientworks|salient-works|glor|5091' | cut -d'|' -f1 | sort -u)
+            count=$(printf '%s\n' "$candidates" | sed '/^$/d' | wc -l)
+            echo "matching_containers=$count"
+            if [[ -n "$candidates" ]]; then
+              while IFS= read -r container; do
+                [[ -z "$container" ]] && continue
+                echo "restarting_container=$container"
+                docker restart "$container"
+                echo "restart_rc=$?"
+              done <<< "$candidates"
+              sleep 10
+            fi
+            check_http local_api_after_docker http://127.0.0.1:5091/api/health
+            check_http public_api_after_docker https://engine.salientworks.ie/api/health
+          else
+            echo 'docker_access=no'
+            docker info 2>&1 | head -60 || true
+          fi
           echo
 
           echo '=== PUBLIC DNS ==='
