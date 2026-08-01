@@ -15,7 +15,7 @@ jobs:
   clear:
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel queued retired Acutis production deployments
+      - name: List active runs and cancel retired deployments
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -26,16 +26,19 @@ jobs:
           cancelled=0
 
           for status in queued in_progress waiting requested pending; do
+            echo "=== status=$status ===" >> "$report"
             page=1
             while :; do
               response=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=$status&per_page=100&page=$page")
               count=$(python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("workflow_runs", [])))' <<< "$response")
               [[ $count -eq 0 ]] && break
 
-              while IFS=$'\t' read -r run_id name title event head_sha; do
-                [[ -z "$run_id" || "$run_id" == "$GITHUB_RUN_ID" ]] && continue
+              while IFS=$'\t' read -r run_id name title event head_sha created_at; do
+                [[ -z "$run_id" ]] && continue
+                echo "run=$run_id name=$name title=$title event=$event sha=$head_sha created=$created_at" >> "$report"
+                [[ "$run_id" == "$GITHUB_RUN_ID" ]] && continue
                 if [[ "$name" == "Deploy Acutis production" || "$title" == *"Deploy Acutis production"* ]]; then
-                  echo "cancelling run=$run_id status=$status name=$name title=$title sha=$head_sha" >> "$report"
+                  echo "cancelling_retired_deploy=$run_id" >> "$report"
                   gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/cancel" >/dev/null 2>&1 || true
                   cancelled=$((cancelled+1))
                 fi
@@ -48,6 +51,7 @@ jobs:
                   str(run.get('display_title','')).replace('\t',' '),
                   str(run.get('event','')),
                   str(run.get('head_sha','')),
+                  str(run.get('created_at','')),
               ]
               print('\t'.join(vals))
           PY
@@ -62,8 +66,8 @@ jobs:
           path='ops/cleared-retired-deploy-runs.txt'
           current_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
           if [[ -n "$current_sha" ]]; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record cleared retired deploy queue' -f content="$encoded" -f sha="$current_sha" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record active workflow queue' -f content="$encoded" -f sha="$current_sha" -f branch=main >/dev/null
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record cleared retired deploy queue' -f content="$encoded" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record active workflow queue' -f content="$encoded" -f branch=main >/dev/null
           fi
           cat "$report"
