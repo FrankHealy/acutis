@@ -1,9 +1,10 @@
-checked_at=2026-08-01T10:12:22Z
-workflow_commit=3551d5a27570770fd2d5aac91b1b0860bfebf734
+checked_at=2026-08-01T11:39:47Z
+workflow_commit=f83f32bfe0b7546c37db6926a3352d950c5535ae
 connection=ok
 host=acutis-app-server
 user=acutis-deploy
-server_time=2026-08-01T10:12:25Z
+groups=acutis-deploy
+server_time=2026-08-01T11:39:48Z
 
 === SERVICE STATES ===
 salientworks-api.state=inactive
@@ -36,6 +37,23 @@ local_keycloak_root.http=302
 local_keycloak_realm.rc=0
 local_keycloak_realm.http=200
 local_keycloak_realm.body={"issuer":"https://engine.salientworks.ie/realms/salientworks","authorization_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth","token_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/token","introspection_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/token/introspect","userinfo_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/userinfo","end_
+
+=== DOCKER ===
+docker_access=no
+Client:
+ Version:    29.1.3
+ Context:    default
+ Debug Mode: false
+ Plugins:
+  compose: Docker Compose (Docker Inc.)
+    Version:  2.40.3+ds1-0ubuntu1
+    Path:     /usr/libexec/docker/cli-plugins/docker-compose
+  trust: Manage trust on Docker images (Docker Inc.)
+    Version:  29.1.3
+    Path:     /usr/libexec/docker/cli-plugins/docker-trust
+
+Server:
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
 
 === PUBLIC DNS ===
 engine.salientworks.ie=167.233.16.141
