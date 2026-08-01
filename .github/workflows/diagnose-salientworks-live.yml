@@ -1,4 +1,4 @@
-name: Identify Salient Works runtime context
+name: Recover actual Salient Works Glor service
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   contents: write
 
 jobs:
-  inspect:
+  recover:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Inspect runtime process and Docker sockets
+      - name: Inspect and restart salientworks-glor
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -31,37 +31,63 @@ jobs:
           chmod 0600 ~/.ssh/key
           printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
           chmod 0600 ~/.ssh/known_hosts
+
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
           echo "host=$(hostname)"
           echo "identity=$(id)"
-          pid=$(pgrep -f '^/opt/salientworks/glor/rust/target/debug/salientworks-runtime$' | tail -1)
-          echo "runtime_pid=${pid:-none}"
-          if [[ -n "$pid" ]]; then
-            echo 'runtime_cgroup:'
-            cat "/proc/$pid/cgroup" 2>&1 || true
-            echo 'runtime_namespaces:'
-            ls -l "/proc/$pid/ns" 2>&1 || true
-            echo 'runtime_root:'
-            readlink "/proc/$pid/root" 2>&1 || true
-            echo 'runtime_cwd:'
-            readlink "/proc/$pid/cwd" 2>&1 || true
-            echo 'runtime_status:'
-            grep -E '^(Name|State|Uid|Gid|NSpid|Threads):' "/proc/$pid/status" 2>&1 || true
-            echo 'runtime_fd_sockets:'
-            ls -l "/proc/$pid/fd" 2>&1 | grep socket | head -30 || true
+          echo
+          echo '=== UNIT ==='
+          systemctl cat salientworks-glor.service --no-pager 2>&1 || true
+          echo
+          echo '=== SHOW ==='
+          systemctl show salientworks-glor.service -p Id -p ActiveState -p SubState -p MainPID -p User -p Group -p ExecStart -p EnvironmentFiles -p Restart -p RestartUSec -p FragmentPath -p ControlGroup --no-pager 2>&1 || true
+          echo
+          echo '=== STATUS BEFORE ==='
+          systemctl status salientworks-glor.service --no-pager -l 2>&1 || true
+          echo
+          echo '=== JOURNAL ==='
+          journalctl -u salientworks-glor.service -n 160 --no-pager 2>&1 || true
+          echo
+          echo '=== LISTENERS BEFORE ==='
+          ss -lnt 2>/dev/null || true
+          echo
+          echo '=== HEALTH BEFORE ==='
+          curl -sS --max-time 8 -o /tmp/before -w 'before.http=%{http_code}\n' http://127.0.0.1:5091/api/health 2>&1 || true
+          echo
+          echo '=== RESTART ATTEMPTS ==='
+          systemctl --no-ask-password restart salientworks-glor.service 2>&1
+          echo "direct_restart.rc=$?"
+          if ! systemctl is-active --quiet salientworks-glor.service || ! curl -sS --max-time 4 http://127.0.0.1:5091/api/health >/dev/null 2>&1; then
+            sudo -n systemctl restart salientworks-glor.service 2>&1
+            echo "sudo_restart.rc=$?"
           fi
-          echo 'docker_sockets:'
-          find /run /var/run /home -maxdepth 5 -type s \( -name 'docker.sock' -o -name 'podman.sock' -o -name 'containerd.sock' \) -ls 2>/dev/null || true
-          echo 'docker_contexts:'
-          docker context ls 2>&1 || true
-          echo 'container_services:'
-          systemctl list-units --type=service --all --no-pager 2>/dev/null | grep -Ei 'docker|containerd|podman|salient' || true
-          echo 'health:'
-          curl -sS --max-time 5 -o /tmp/sw-health -w 'local_api.http=%{http_code}\n' http://127.0.0.1:5091/api/health 2>&1 || true
+          sleep 10
+          echo
+          echo '=== STATUS AFTER ==='
+          systemctl status salientworks-glor.service --no-pager -l 2>&1 || true
+          echo
+          echo '=== HEALTH AFTER ==='
+          curl -sS --max-time 10 -o /tmp/after -w 'after.http=%{http_code}\n' http://127.0.0.1:5091/api/health 2>&1
+          echo "after.rc=$?"
+          if [[ -s /tmp/after ]]; then
+            printf 'after.body='
+            tr '\n' ' ' < /tmp/after | head -c 1200
+            echo
+          fi
+          echo
+          echo '=== PUBLIC AFTER ==='
+          curl -k -sS --max-time 15 -o /tmp/public -w 'public.http=%{http_code}\n' https://engine.salientworks.ie/api/health 2>&1
+          echo "public.rc=$?"
+          if [[ -s /tmp/public ]]; then
+            printf 'public.body='
+            tr '\n' ' ' < /tmp/public | head -c 1200
+            echo
+          fi
           REMOTE
+
           encoded=$(base64 -w0 "$report")
           path='ops/salientworks-live-diagnostic.txt'
           existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works runtime context' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record actual Salient Works Glor recovery' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
           cat "$report"
