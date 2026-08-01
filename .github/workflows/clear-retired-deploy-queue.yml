@@ -15,7 +15,7 @@ jobs:
   clear:
     runs-on: ubuntu-latest
     steps:
-      - name: List active runs and cancel retired deployments
+      - name: Clear retired deploys and dispatch Salient Works inspection
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -62,12 +62,18 @@ jobs:
           done
 
           echo "cancelled=$cancelled" >> "$report"
+          sleep 3
+          gh workflow run inspect-live-salientworks-frontend.yml --ref main
+          echo "dispatched=inspect-live-salientworks-frontend.yml" >> "$report"
+          gh workflow run diagnose-salientworks-live.yml --ref main
+          echo "dispatched=diagnose-salientworks-live.yml" >> "$report"
+
           encoded=$(base64 -w0 "$report")
           path='ops/cleared-retired-deploy-runs.txt'
           current_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
           if [[ -n "$current_sha" ]]; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record active workflow queue' -f content="$encoded" -f sha="$current_sha" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record cleared queue and dispatched inspection' -f content="$encoded" -f sha="$current_sha" -f branch=main >/dev/null
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record active workflow queue' -f content="$encoded" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record cleared queue and dispatched inspection' -f content="$encoded" -f branch=main >/dev/null
           fi
           cat "$report"
