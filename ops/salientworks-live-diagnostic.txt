@@ -1,296 +1,52 @@
-checked_at=2026-08-01T12:00:57Z
+checked_at=2026-08-01T12:01:53Z
 host=acutis-app-server
 identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
 
-=== GLOR SERVICE ===
-ActiveState=active
-SubState=running
-MainPID=903237
-ExecStart={ path=/opt/salientworks/glor/rust/target/debug/salientworks-runtime ; argv[]=/opt/salientworks/glor/rust/target/debug/salientworks-runtime ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
-EnvironmentFiles=/etc/salientworks/app.env (ignore_errors=no)
+=== LIVE SERVICES ===
+active
+active
+active
 
-=== LOCAL GLOR ENDPOINTS ===
-glor_5092_root.rc=0
-glor_5092_root.http=401
-glor_5092_root.body={"error":"Authentication required."}
-glor_5092_health.rc=0
-glor_5092_health.http=401
-glor_5092_health.body={"error":"Authentication required."}
-glor_5092_api_health.rc=0
-glor_5092_api_health.http=404
-old_5091_api_health.rc=7
-old_5091_api_health.http=000
-old_5091_api_health.error=curl: (7) Failed to connect to 127.0.0.1 port 5091 after 0 ms: Could not connect to server 
+=== GLOR ===
+local_domains.http=401
+local_domains.body={"error":"Authentication required."}
 
-=== NGINX ENGINE CONFIG ===
-/etc/nginx/sites-enabled/acutis:7:        proxy_pass http://127.0.0.1:8080/;
-/etc/nginx/sites-enabled/acutis:18:        proxy_pass http://127.0.0.1:3003;
-/etc/nginx/sites-enabled/salient-recovery:5:        proxy_pass http://127.0.0.1:3001;
-/etc/nginx/sites-enabled/salient-recovery:29:        proxy_pass http://127.0.0.1:3001;
-/etc/nginx/sites-enabled/salient-recovery:55:        proxy_pass http://127.0.0.1:3001;
-/etc/nginx/sites-enabled/analytics.salientrecovery.com:8:        proxy_pass http://127.0.0.1:3002;
-/etc/nginx/sites-enabled/salientworks:2:  server_name engine.salientworks.ie salientworks.167-233-16-141.sslip.io;
-/etc/nginx/sites-enabled/salientworks:5:    proxy_pass http://127.0.0.1:8080;
-/etc/nginx/sites-enabled/salientworks:12:    proxy_pass http://127.0.0.1:8080;
-/etc/nginx/sites-enabled/salientworks:21:    proxy_pass http://127.0.0.1:3011;
-/etc/nginx/sites-enabled/salientworks:29:    proxy_pass http://127.0.0.1:3011;
-/etc/nginx/sites-enabled/salientworks:37:    proxy_pass http://127.0.0.1:5092;
-/etc/nginx/sites-enabled/salientworks:46:    proxy_pass http://127.0.0.1:3011;
-/etc/nginx/sites-enabled/salientworks:56:  ssl_certificate /etc/letsencrypt/live/engine.salientworks.ie/fullchain.pem;
-/etc/nginx/sites-enabled/salientworks:57:  ssl_certificate_key /etc/letsencrypt/live/engine.salientworks.ie/privkey.pem;
-/etc/nginx/sites-enabled/salientworks:65:  server_name engine.salientworks.ie salientworks.167-233-16-141.sslip.io;
-/etc/nginx/sites-enabled/practitioner.salientrecovery.com.conf:8:        proxy_pass http://127.0.0.1:5010;
-/etc/nginx/sites-enabled/practitioner.salientrecovery.com.conf:17:        proxy_pass http://127.0.0.1:5010/health;
-/etc/nginx/sites-enabled/community.salientrecovery.com.conf:8:        proxy_pass http://127.0.0.1:5020;
-/etc/nginx/sites-enabled/community.salientrecovery.com.conf:17:        proxy_pass http://127.0.0.1:5020/health;
-/etc/nginx/sites-available/acutis:7:        proxy_pass http://127.0.0.1:8080/;
-/etc/nginx/sites-available/acutis:18:        proxy_pass http://127.0.0.1:3003;
-/etc/nginx/sites-available/salient-recovery:5:        proxy_pass http://127.0.0.1:3001;
-/etc/nginx/sites-available/salient-recovery:29:        proxy_pass http://127.0.0.1:3001;
-/etc/nginx/sites-available/salient-recovery:55:        proxy_pass http://127.0.0.1:3001;
-/etc/nginx/sites-available/analytics.salientrecovery.com:8:        proxy_pass http://127.0.0.1:3002;
-/etc/nginx/sites-available/salientworks:2:  server_name engine.salientworks.ie salientworks.167-233-16-141.sslip.io;
-/etc/nginx/sites-available/salientworks:5:    proxy_pass http://127.0.0.1:8080;
-/etc/nginx/sites-available/salientworks:12:    proxy_pass http://127.0.0.1:8080;
-/etc/nginx/sites-available/salientworks:21:    proxy_pass http://127.0.0.1:3011;
-/etc/nginx/sites-available/salientworks:29:    proxy_pass http://127.0.0.1:3011;
-/etc/nginx/sites-available/salientworks:37:    proxy_pass http://127.0.0.1:5092;
-/etc/nginx/sites-available/salientworks:46:    proxy_pass http://127.0.0.1:3011;
-/etc/nginx/sites-available/salientworks:56:  ssl_certificate /etc/letsencrypt/live/engine.salientworks.ie/fullchain.pem;
-/etc/nginx/sites-available/salientworks:57:  ssl_certificate_key /etc/letsencrypt/live/engine.salientworks.ie/privkey.pem;
-/etc/nginx/sites-available/salientworks:65:  server_name engine.salientworks.ie salientworks.167-233-16-141.sslip.io;
-/etc/nginx/sites-available/practitioner.salientrecovery.com.conf:8:        proxy_pass http://127.0.0.1:5010;
-/etc/nginx/sites-available/practitioner.salientrecovery.com.conf:17:        proxy_pass http://127.0.0.1:5010/health;
-/etc/nginx/sites-available/salientworks.pre-engine:5:    proxy_pass http://127.0.0.1:8080;
-/etc/nginx/sites-available/salientworks.pre-engine:12:    proxy_pass http://127.0.0.1:8080;
-/etc/nginx/sites-available/salientworks.pre-engine:21:    proxy_pass http://127.0.0.1:3011;
-/etc/nginx/sites-available/salientworks.pre-engine:29:    proxy_pass http://127.0.0.1:3011;
-/etc/nginx/sites-available/salientworks.pre-engine:37:    proxy_pass http://127.0.0.1:5092;
-/etc/nginx/sites-available/salientworks.pre-engine:46:    proxy_pass http://127.0.0.1:3011;
-/etc/nginx/sites-available/salientworks.pre-glor:5:  location / { proxy_pass http://127.0.0.1:3011; proxy_http_version 1.1; proxy_buffer_size 32k; proxy_buffers 8 32k; proxy_busy_buffers_size 64k; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme; }
-/etc/nginx/sites-available/community.salientrecovery.com.conf:8:        proxy_pass http://127.0.0.1:5020;
-/etc/nginx/sites-available/community.salientrecovery.com.conf:17:        proxy_pass http://127.0.0.1:5020/health;
+=== ROOT REDIRECT ===
+root.rc=0
+HTTP/1.1 307 Temporary Redirect
+Server: nginx/1.28.3 (Ubuntu)
+Date: Sat, 01 Aug 2026 12:01:55 GMT
+Transfer-Encoding: chunked
+Connection: keep-alive
+location: /api/auth/login?returnTo=%2F
 
-=== RELEVANT NGINX FILES ===
---- /etc/nginx/sites-available/salientworks ---
-server {
-  server_name engine.salientworks.ie salientworks.167-233-16-141.sslip.io;
+root.body=/api/auth/login?returnTo=%2F
 
-  location /realms/ {
-    proxy_pass http://127.0.0.1:8080;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
+=== LOGIN REDIRECT ===
+login.rc=0
+HTTP/1.1 307 Temporary Redirect
+Server: nginx/1.28.3 (Ubuntu)
+Date: Sat, 01 Aug 2026 12:01:55 GMT
+Transfer-Encoding: chunked
+Connection: keep-alive
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+location: https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth?client_id=salientworks-api&redirect_uri=https%3A%2F%2Fengine.salientworks.ie%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+profile+email&state=wcdNLqYHyT6x5nqcF64ZLAyiYn2zNCVkS99o3sgs-Hw&code_challenge=3NWLukJsEtECfVALJKrHXQkoawgfWLFskEKm0E8npn0&code_challenge_method=S256
+set-cookie: sw_oidc_state=eyJzdGF0ZSI6IndjZE5McVlIeVQ2eDVucWNGNjRaTEF5aVluMnpOQ1ZrUzk5bzNzZ3MtSHciLCJ2ZXJpZmllciI6ImFQOTQ2UWpIellqUGtSNlNmQXFEYVlxeEVqd1E0TEgydWFmX3RRTDhBNHBlVlhkY09WMThoaWNXR0JoX19GRTkiLCJyZXR1cm5UbyI6Ii8ifQ; Path=/; Expires=Sat, 01 Aug 2026 12:11:55 GMT; Max-Age=600; Secure; HttpOnly; SameSite=lax
 
-  location /resources/ {
-    proxy_pass http://127.0.0.1:8080;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
 
-  # These are Next.js server routes. They establish the Keycloak browser
-  # session and proxy it to Glor; they must take precedence over the API.
-  location ^~ /api/auth/ {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
+=== FOLLOW LOGIN FLOW ===
+follow.final_url=https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth?client_id=salientworks-api&redirect_uri=https%3A%2F%2Fengine.salientworks.ie%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+profile+email&state=SgjZJRy77XZL83MctczeUsGSkv_crzFm0UwHJ2eFWgs&code_challenge=t53ox7tljSRd6HmQGQmZJPkWASd7_83WGqxP4rLMtKw&code_challenge_method=S256
+follow.http=400
+follow.redirects=1
+follow.rc=0
+HTTP/1.1 307 Temporary Redirect
+location: https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth?client_id=salientworks-api&redirect_uri=https%3A%2F%2Fengine.salientworks.ie%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+profile+email&state=SgjZJRy77XZL83MctczeUsGSkv_crzFm0UwHJ2eFWgs&code_challenge=t53ox7tljSRd6HmQGQmZJPkWASd7_83WGqxP4rLMtKw&code_challenge_method=S256
+set-cookie: sw_oidc_state=[redacted]; Path=/; Expires=Sat, 01 Aug 2026 12:11:56 GMT; Max-Age=600; Secure; HttpOnly; SameSite=lax
+HTTP/1.1 400 Bad Request
+follow.title=Sign in to salientworks
+follow.body_sample=<!DOCTYPE html> <html class="login-pf" lang="en">  <head>     <meta charset="utf-8">     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />     <meta name="color-scheme" content="light dark">     <meta name="viewport" content="width=device-width, initial-scale=1">      <title>Sign in to salientworks</title>     <link rel="icon" href="/resources/o4dbl/login/keycloak.v2/img/favicon.ico" />             <link href="/resources/o4dbl/common/keycloak/vendor/patternfly-v5/patternfly.min.css" rel="stylesheet" />             <link href="/resources/o4dbl/common/keycloak/vendor/patternfly-v5/patternfly-addons.css" rel="stylesheet" />             <link href="/resources/o4dbl/login/keycloak.v2/css/styles.css" rel="stylesheet" />     <script type="importmap">         {             "imports": {                 "rfc4648": "/resources/o4dbl/common/keycloak/vendor/rfc4648/rfc4648.js"             }         }     </script>       <script type="module" async blocking="render">           const DARK_MODE_CLASS = "pf-v5-theme-dark";           const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");            updateDarkMode(mediaQuery.matches);           mediaQuery.addEventLi
 
-  location ^~ /api/backend/ {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location /api/ {
-    proxy_pass http://127.0.0.1:5092;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location / {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  listen 443 ssl;
-  listen [::]:443 ssl;
-  ssl_certificate /etc/letsencrypt/live/engine.salientworks.ie/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/engine.salientworks.ie/privkey.pem;
-  include /etc/letsencrypt/options-ssl-nginx.conf;
-  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-
-server {
-  listen 80;
-  listen [::]:80;
-  server_name engine.salientworks.ie salientworks.167-233-16-141.sslip.io;
-  return 301 https://$host$request_uri;
-}
---- /etc/nginx/sites-available/salientworks.pre-engine ---
-server {
-  server_name salientworks.167-233-16-141.sslip.io;
-
-  location /realms/ {
-    proxy_pass http://127.0.0.1:8080;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-
-  location /resources/ {
-    proxy_pass http://127.0.0.1:8080;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-
-  # These are Next.js server routes. They establish the Keycloak browser
-  # session and proxy it to Glor; they must take precedence over the API.
-  location ^~ /api/auth/ {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location ^~ /api/backend/ {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location /api/ {
-    proxy_pass http://127.0.0.1:5092;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location / {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  listen 443 ssl;
-  listen [::]:443 ssl;
-  ssl_certificate /etc/letsencrypt/live/salientworks.167-233-16-141.sslip.io/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/salientworks.167-233-16-141.sslip.io/privkey.pem;
-  include /etc/letsencrypt/options-ssl-nginx.conf;
-  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-
-server {
-  listen 80;
-  listen [::]:80;
-  server_name salientworks.167-233-16-141.sslip.io;
-  return 301 https://$host$request_uri;
-}
---- /etc/nginx/sites-enabled/salientworks ---
-server {
-  server_name engine.salientworks.ie salientworks.167-233-16-141.sslip.io;
-
-  location /realms/ {
-    proxy_pass http://127.0.0.1:8080;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-
-  location /resources/ {
-    proxy_pass http://127.0.0.1:8080;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-
-  # These are Next.js server routes. They establish the Keycloak browser
-  # session and proxy it to Glor; they must take precedence over the API.
-  location ^~ /api/auth/ {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location ^~ /api/backend/ {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location /api/ {
-    proxy_pass http://127.0.0.1:5092;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location / {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  listen 443 ssl;
-  listen [::]:443 ssl;
-  ssl_certificate /etc/letsencrypt/live/engine.salientworks.ie/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/engine.salientworks.ie/privkey.pem;
-  include /etc/letsencrypt/options-ssl-nginx.conf;
-  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-
-server {
-  listen 80;
-  listen [::]:80;
-  server_name engine.salientworks.ie salientworks.167-233-16-141.sslip.io;
-  return 301 https://$host$request_uri;
-}
-
-=== PUBLIC ROUTES ===
-public_root.rc=0
-public_root.http=307
-public_root.body=/api/auth/login?returnTo=%2F
-public_api_health.rc=0
-public_api_health.http=404
-public_health.rc=0
-public_health.http=307
-public_health.body=/api/auth/login?returnTo=%2Fhealth
-public_domains.rc=0
-public_domains.http=401
-public_domains.body={"error":"Authentication required."}
-public_auth_login.rc=0
-public_auth_login.http=307
-public_keycloak_discovery.rc=0
-public_keycloak_discovery.http=200
-public_keycloak_discovery.body={"issuer":"https://engine.salientworks.ie/realms/salientworks","authorization_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth","token_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/token","introspection_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/token/introspect","userinfo_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/userinfo","end_session_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/logout","frontchannel_logout_session_supported":true,"frontchannel_logout_supported":true,"jwks_uri":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/certs","check_session_iframe":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/login-status-iframe.html","grant_types_supported":["authorization_code","client_credentials","implicit","password","refresh_token","urn:ietf:params:oauth:grant-type:device_code","urn:ietf:params:oauth:grant-type:jwt-bearer","urn:ietf:params:oauth:grant-type:token-exchange","urn:ietf:params:oauth:grant-type:uma-ticket","urn:openid:params:grant-type:ciba"],"acr_values_supported":["0","1"],"response_types_supported":["code","none","id_token","token","id_token token","code id_token","code token","code id_token token"],"subject_types_supported":["public","pairwise"],"prompt_values_supported":["none","login","consent"],"i
+=== KEYCLOAK DISCOVERY ===
+keycloak_discovery.http=200
+"issuer":"https://engine.salientworks.ie/realms/salientworks"
+"authorization_endpoint":"https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth"
