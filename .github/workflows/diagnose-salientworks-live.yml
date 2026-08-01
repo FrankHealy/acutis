@@ -1,4 +1,4 @@
-name: Inspect live Keycloak JVM configuration
+name: Inspect Keycloak container recovery tools
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
     environment: production
     timeout-minutes: 15
     steps:
-      - name: Inspect Keycloak JVM property names
+      - name: Inspect container Java and Keycloak tools safely
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -25,65 +25,120 @@ jobs:
           USER: ${{ secrets.PRODUCTION_SSH_USER }}
         run: |
           set +e
-          report="$RUNNER_TEMP/keycloak-jvm-config.txt"
+          report="$RUNNER_TEMP/keycloak-container-tools.txt"
           echo "checked_at=$(date -u +%FT%TZ)" > "$report"
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/key
           chmod 0600 ~/.ssh/key
           printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
           chmod 0600 ~/.ssh/known_hosts
+
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
           pid=$(pgrep -f 'io.quarkus.bootstrap.runner.QuarkusEntryPoint start' | head -1)
           echo "host=$(hostname)"
           echo "identity=$(id)"
           echo "keycloak_pid=${pid:-none}"
-          echo 'java_tools:'
-          for tool in jcmd jinfo jps java; do
-            path=$(command -v "$tool" 2>/dev/null || true)
-            echo "$tool=${path:-missing}"
+          if [[ -z "$pid" ]]; then exit 60; fi
+          root="/proc/$pid/root"
+
+          echo '=== DIRECT CONTAINER PATHS ==='
+          candidates=(
+            "$root/opt/java/openjdk/bin/java"
+            "$root/opt/java/openjdk/bin/jcmd"
+            "$root/opt/java/openjdk/bin/jinfo"
+            "$root/usr/bin/java"
+            "$root/usr/bin/jcmd"
+            "$root/opt/keycloak/bin/kcadm.sh"
+            "$root/opt/keycloak/bin/kc.sh"
+            "$root/tmp/.java_pid1"
+            "$root/tmp/.java_pid$pid"
+          )
+          for path in "${candidates[@]}"; do
+            if [[ -e "$path" || -L "$path" ]]; then
+              stat -Lc 'path=%n mode=%A owner=%u:%g size=%s type=%F' "$path" 2>&1 || true
+              [[ -r "$path" ]] && echo "readable=$path" || echo "not_readable=$path"
+              [[ -x "$path" ]] && echo "executable=$path" || true
+            else
+              echo "missing=$path"
+            fi
           done
-          if [[ -z "$pid" || -z $(command -v jcmd 2>/dev/null) ]]; then
-            exit 50
+
+          echo '=== DISCOVER JAVA TOOLS ==='
+          find "$root/opt" "$root/usr/lib/jvm" -maxdepth 7 -type f \( -name jcmd -o -name jinfo -o -name java -o -name kcadm.sh \) -printf '%M %u:%g %s %p\n' 2>/dev/null | head -200 || true
+
+          jcmd_path=''
+          for path in "$root/opt/java/openjdk/bin/jcmd" "$root/usr/bin/jcmd"; do
+            [[ -x "$path" ]] && { jcmd_path="$path"; break; }
+          done
+          if [[ -z "$jcmd_path" ]]; then
+            jcmd_path=$(find "$root/opt" "$root/usr/lib/jvm" -maxdepth 7 -type f -name jcmd -perm /111 2>/dev/null | head -1)
           fi
-          props=$(mktemp /tmp/keycloak-props.XXXXXX)
-          chmod 600 "$props"
-          timeout 25s jcmd "$pid" VM.system_properties > "$props" 2>/tmp/jcmd-error
-          jcmd_rc=$?
-          echo "jcmd_rc=$jcmd_rc"
-          if [[ -s /tmp/jcmd-error ]]; then
-            printf 'jcmd_error='
-            tr '\n' ' ' < /tmp/jcmd-error | head -c 1000
-            echo
-          fi
-          if [[ $jcmd_rc -eq 0 ]]; then
-            echo 'candidate_property_names:'
-            python3 - "$props" <<'PY'
+          echo "selected_jcmd=${jcmd_path:-none}"
+
+          if [[ -n "$jcmd_path" ]]; then
+            props=$(mktemp /tmp/keycloak-properties.XXXXXX)
+            chmod 600 "$props"
+            timeout 30s "$jcmd_path" "$pid" VM.system_properties > "$props" 2>/tmp/keycloak-jcmd-error
+            rc=$?
+            echo "host_pid_jcmd_rc=$rc"
+            if [[ $rc -ne 0 ]]; then
+              timeout 30s "$jcmd_path" 1 VM.system_properties > "$props" 2>/tmp/keycloak-jcmd-error-1
+              rc1=$?
+              echo "container_pid_jcmd_rc=$rc1"
+            fi
+            if [[ -s "$props" ]]; then
+              echo 'relevant_system_property_names:'
+              python3 - "$props" <<'PY'
           import re, sys
           names=[]
           with open(sys.argv[1], errors='replace') as handle:
               for line in handle:
-                  if '=' not in line:
-                      continue
+                  if '=' not in line: continue
                   name=line.split('=',1)[0].strip()
-                  if re.search(r'(keycloak|kc\.|admin|password|credential|secret|token)', name, re.I):
+                  if re.search(r'(keycloak|quarkus|datasource|admin|password|credential|secret|token)', name, re.I):
                       names.append(name)
           for name in sorted(set(names)):
               print(name)
           PY
-            echo 'all_property_name_count:'
-            awk -F= 'NF>1{print $1}' "$props" | sort -u | wc -l
+              echo "system_property_count=$(awk -F= 'NF>1{print $1}' "$props" | sort -u | wc -l)"
+            fi
+            for err in /tmp/keycloak-jcmd-error /tmp/keycloak-jcmd-error-1; do
+              if [[ -s "$err" ]]; then
+                printf 'jcmd_error='
+                tr '\n' ' ' < "$err" | head -c 1200
+                echo
+              fi
+            done
+            rm -f "$props" /tmp/keycloak-jcmd-error /tmp/keycloak-jcmd-error-1
           fi
-          rm -f "$props" /tmp/jcmd-error
-          echo 'attach_socket_candidates:'
-          find /tmp /proc/"$pid"/root/tmp -maxdepth 2 -type s -o -name '.java_pid*' 2>/dev/null | head -100 || true
+
+          echo '=== KEYCLOAK CONFIG PATHS ==='
+          for path in \
+            "$root/opt/keycloak/conf/keycloak.conf" \
+            "$root/opt/keycloak/conf/quarkus.properties" \
+            "$root/opt/keycloak/conf/cache-ispn.xml"; do
+            if [[ -e "$path" ]]; then
+              stat -Lc 'path=%n mode=%A owner=%u:%g size=%s' "$path" 2>&1 || true
+              if [[ -r "$path" ]]; then
+                echo "readable_config=$path"
+                sed -n -E 's/^[[:space:]]*([^#;][^=[:space:]]*)[[:space:]]*=.*/config_key=\1/p' "$path" | sort -u | head -200
+              fi
+            fi
+          done
+
+          echo '=== ATTACH SOCKETS ==='
+          find "$root/tmp" -maxdepth 2 \( -type s -o -name '.java_pid*' \) -printf '%M %u:%g %s %p\n' 2>/dev/null | head -100 || true
           REMOTE
+          ssh_rc=$?
+          echo "ssh_rc=$ssh_rc" >> "$report"
+
           encoded=$(base64 -w0 "$report")
-          path='ops/keycloak-jvm-config.txt'
+          path='ops/keycloak-container-tools.txt'
           sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
           if [[ -n "$sha" ]]; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Keycloak JVM configuration names' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Keycloak container recovery tools' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Keycloak JVM configuration names' -f content="$encoded" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Keycloak container recovery tools' -f content="$encoded" -f branch=main >/dev/null
           fi
           cat "$report"
