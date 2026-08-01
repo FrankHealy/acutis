@@ -1,0 +1,39 @@
+name: Check repository-level SSH access
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/check-repository-ssh-access.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check repository secret availability
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          set -e
+          report="$RUNNER_TEMP/repository-ssh-access.txt"
+          echo "checked_at=$(date -u +%FT%TZ)" > "$report"
+          for name in SSH_PRIVATE_KEY SSH_HOST_KEY SSH_HOST SSH_USER; do
+            if [[ -n "${!name}" ]]; then echo "$name=configured"; else echo "$name=missing"; fi
+          done >> "$report"
+          encoded=$(base64 -w0 "$report")
+          path='ops/repository-ssh-access.txt'
+          current_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
+          if [[ -n "$current_sha" ]]; then
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record repository SSH access' -f content="$encoded" -f sha="$current_sha" -f branch=main >/dev/null
+          else
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record repository SSH access' -f content="$encoded" -f branch=main >/dev/null
+          fi
+          cat "$report"
