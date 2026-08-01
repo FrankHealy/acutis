@@ -1,0 +1,5 @@
+checked_at=2026-08-01T12:45:31Z
+host=acutis-app-server
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+env_file_readable=no
+ssh_rc=20
