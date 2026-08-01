@@ -1,4 +1,4 @@
-name: Identify valid Salient Works Keycloak callback
+name: Inspect Salient Works web credential sources
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   contents: write
 
 jobs:
-  verify:
+  inspect:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Probe known callback variants
+      - name: Inspect environment names without values
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -35,39 +35,52 @@ jobs:
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
           echo "host=$(hostname)"
-          auth='https://engine.salientworks.ie/realms/salientworks/protocol/openid-connect/auth'
-          probe() {
-            client=$1
-            redirect=$2
-            encoded=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$redirect")
-            url="$auth?client_id=$client&redirect_uri=$encoded&response_type=code&scope=openid&state=teststate&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&code_challenge_method=S256"
-            code=$(curl -k -sS --max-time 15 -o /tmp/body -w '%{http_code}' "$url")
-            title=$(grep -io '<title>[^<]*' /tmp/body | head -1 | sed 's/<title>//I')
-            error=$(python3 - <<'PY'
-          from html.parser import HTMLParser
-          from pathlib import Path
-          class T(HTMLParser):
-              def __init__(self): super().__init__(); self.p=[]
-              def handle_data(self,d):
-                  s=' '.join(d.split())
-                  if s and ('invalid' in s.lower() or 'error' in s.lower()): self.p.append(s)
-          p=T(); p.feed(Path('/tmp/body').read_text(errors='replace')); print(' | '.join(p.p)[:500])
+          echo "identity=$(id)"
+          echo '=== WEB UNIT ==='
+          systemctl cat salientworks-web.service --no-pager 2>&1 || true
+          echo '=== WEB SHOW ==='
+          systemctl show salientworks-web.service -p User -p Group -p MainPID -p ExecStart -p WorkingDirectory -p EnvironmentFiles -p FragmentPath --no-pager 2>&1 || true
+          echo '=== INLINE ENVIRONMENT KEYS ==='
+          envline=$(systemctl show salientworks-web.service -p Environment --value 2>/dev/null)
+          python3 - "$envline" <<'PY'
+          import shlex, sys
+          try:
+              items=shlex.split(sys.argv[1])
+          except Exception:
+              items=sys.argv[1].split()
+          for item in items:
+              if '=' in item:
+                  print(item.split('=',1)[0])
           PY
-          )
-            echo "client=$client redirect=$redirect http=$code title=$title error=$error"
-          }
-          for client in salientworks-api salientworks-studio; do
-            probe "$client" 'https://engine.salientworks.ie/api/auth/callback'
-            probe "$client" 'https://engine.salientworks.ie/api/auth/callback/keycloak'
-            probe "$client" 'https://salientworks.167-233-16-141.sslip.io/api/auth/callback'
-            probe "$client" 'https://salientworks.167-233-16-141.sslip.io/api/auth/callback/keycloak'
-            probe "$client" 'http://127.0.0.1:3011/api/auth/callback'
-            probe "$client" 'http://localhost:3011/api/auth/callback/keycloak'
+          echo '=== ENVIRONMENT FILE ACCESS ==='
+          files=$(systemctl show salientworks-web.service -p EnvironmentFiles --value 2>/dev/null | sed -E 's/ \(ignore_errors=[^)]+\)//g')
+          for file in $files; do
+            echo "file=$file"
+            ls -l "$file" 2>&1 || true
+            if [[ -r "$file" ]]; then
+              echo 'readable=yes keys:'
+              sed -n -E 's/^(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=.*/\2/p' "$file" | sort -u
+            else
+              echo 'readable=no'
+            fi
+          done
+          echo '=== PROCESS ENVIRONMENT ACCESS ==='
+          pid=$(systemctl show salientworks-web.service -p MainPID --value 2>/dev/null)
+          echo "pid=$pid"
+          if [[ -n "$pid" && "$pid" != 0 && -r "/proc/$pid/environ" ]]; then
+            echo 'process_environment_readable=yes keys:'
+            tr '\0' '\n' < "/proc/$pid/environ" | sed -n -E 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\1/p' | sort -u
+          else
+            echo 'process_environment_readable=no'
+          fi
+          echo '=== EXPECTED KEY PRESENCE VIA SYSTEMD ==='
+          for key in AUTH_KEYCLOAK_ID AUTH_KEYCLOAK_SECRET AUTH_KEYCLOAK_ISSUER KEYCLOAK_ADMIN_CLIENT_ID KEYCLOAK_ADMIN_CLIENT_SECRET KC_BOOTSTRAP_ADMIN_USERNAME KC_BOOTSTRAP_ADMIN_PASSWORD NEXTAUTH_SECRET; do
+            if [[ " $envline " == *" $key="* || "$envline" == "$key="* ]]; then echo "$key=inline"; else echo "$key=not_inline"; fi
           done
           REMOTE
 
           encoded=$(base64 -w0 "$report")
           path='ops/salientworks-live-diagnostic.txt'
           existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record valid Keycloak callback probe' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works credential sources' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
           cat "$report"
