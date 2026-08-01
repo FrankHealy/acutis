@@ -44,6 +44,8 @@ jobs:
           echo "host=$(hostname)"
           echo "user=$(id -un)"
           echo "groups=$(id -Gn)"
+          echo "docker_group=$(getent group docker 2>/dev/null || true)"
+          echo "docker_socket=$(ls -l /var/run/docker.sock 2>/dev/null || true)"
           echo "server_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo
 
