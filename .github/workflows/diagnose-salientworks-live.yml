@@ -1,4 +1,4 @@
-name: Recover actual Salient Works Glor service
+name: Verify Salient Works Glor routing
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   contents: write
 
 jobs:
-  recover:
+  verify:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Inspect and restart salientworks-glor
+      - name: Verify port 5092 and Nginx routes
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -37,57 +37,45 @@ jobs:
           echo "host=$(hostname)"
           echo "identity=$(id)"
           echo
-          echo '=== UNIT ==='
-          systemctl cat salientworks-glor.service --no-pager 2>&1 || true
+          echo '=== GLOR SERVICE ==='
+          systemctl show salientworks-glor.service -p ActiveState -p SubState -p MainPID -p ExecStart -p EnvironmentFiles --no-pager 2>&1 || true
           echo
-          echo '=== SHOW ==='
-          systemctl show salientworks-glor.service -p Id -p ActiveState -p SubState -p MainPID -p User -p Group -p ExecStart -p EnvironmentFiles -p Restart -p RestartUSec -p FragmentPath -p ControlGroup --no-pager 2>&1 || true
+          check() {
+            name=$1
+            url=$2
+            code=$(curl -k -sS --max-time 10 -o /tmp/body -w '%{http_code}' "$url" 2>/tmp/error)
+            rc=$?
+            echo "$name.rc=$rc"
+            echo "$name.http=${code:-000}"
+            if [[ -s /tmp/error ]]; then printf "$name.error="; tr '\n' ' ' < /tmp/error | head -c 500; echo; fi
+            if [[ -s /tmp/body ]]; then printf "$name.body="; tr '\n' ' ' < /tmp/body | head -c 1500; echo; fi
+          }
+          echo '=== LOCAL GLOR ENDPOINTS ==='
+          check glor_5092_root http://127.0.0.1:5092/
+          check glor_5092_health http://127.0.0.1:5092/health
+          check glor_5092_api_health http://127.0.0.1:5092/api/health
+          check old_5091_api_health http://127.0.0.1:5091/api/health
           echo
-          echo '=== STATUS BEFORE ==='
-          systemctl status salientworks-glor.service --no-pager -l 2>&1 || true
+          echo '=== NGINX ENGINE CONFIG ==='
+          grep -RniE 'engine\.salientworks\.ie|5091|5092|salientworks-glor|proxy_pass' /etc/nginx/sites-enabled /etc/nginx/sites-available /etc/nginx/conf.d 2>/dev/null | head -400 || true
           echo
-          echo '=== JOURNAL ==='
-          journalctl -u salientworks-glor.service -n 160 --no-pager 2>&1 || true
+          echo '=== RELEVANT NGINX FILES ==='
+          for file in $(grep -RilE 'engine\.salientworks\.ie|5091|5092' /etc/nginx/sites-enabled /etc/nginx/sites-available /etc/nginx/conf.d 2>/dev/null | sort -u); do
+            echo "--- $file ---"
+            sed -n '1,320p' "$file" 2>/dev/null || true
+          done
           echo
-          echo '=== LISTENERS BEFORE ==='
-          ss -lnt 2>/dev/null || true
-          echo
-          echo '=== HEALTH BEFORE ==='
-          curl -sS --max-time 8 -o /tmp/before -w 'before.http=%{http_code}\n' http://127.0.0.1:5091/api/health 2>&1 || true
-          echo
-          echo '=== RESTART ATTEMPTS ==='
-          systemctl --no-ask-password restart salientworks-glor.service 2>&1
-          echo "direct_restart.rc=$?"
-          if ! systemctl is-active --quiet salientworks-glor.service || ! curl -sS --max-time 4 http://127.0.0.1:5091/api/health >/dev/null 2>&1; then
-            sudo -n systemctl restart salientworks-glor.service 2>&1
-            echo "sudo_restart.rc=$?"
-          fi
-          sleep 10
-          echo
-          echo '=== STATUS AFTER ==='
-          systemctl status salientworks-glor.service --no-pager -l 2>&1 || true
-          echo
-          echo '=== HEALTH AFTER ==='
-          curl -sS --max-time 10 -o /tmp/after -w 'after.http=%{http_code}\n' http://127.0.0.1:5091/api/health 2>&1
-          echo "after.rc=$?"
-          if [[ -s /tmp/after ]]; then
-            printf 'after.body='
-            tr '\n' ' ' < /tmp/after | head -c 1200
-            echo
-          fi
-          echo
-          echo '=== PUBLIC AFTER ==='
-          curl -k -sS --max-time 15 -o /tmp/public -w 'public.http=%{http_code}\n' https://engine.salientworks.ie/api/health 2>&1
-          echo "public.rc=$?"
-          if [[ -s /tmp/public ]]; then
-            printf 'public.body='
-            tr '\n' ' ' < /tmp/public | head -c 1200
-            echo
-          fi
+          echo '=== PUBLIC ROUTES ==='
+          check public_root https://engine.salientworks.ie/
+          check public_api_health https://engine.salientworks.ie/api/health
+          check public_health https://engine.salientworks.ie/health
+          check public_domains https://engine.salientworks.ie/api/domains
+          check public_auth_login https://engine.salientworks.ie/api/auth/login
+          check public_keycloak_discovery https://engine.salientworks.ie/realms/salientworks/.well-known/openid-configuration
           REMOTE
 
           encoded=$(base64 -w0 "$report")
           path='ops/salientworks-live-diagnostic.txt'
           existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record actual Salient Works Glor recovery' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works Glor routing verification' -f content="$encoded" -f sha="$existing_sha" -f branch=main >/dev/null
           cat "$report"
