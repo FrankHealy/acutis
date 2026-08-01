@@ -56,39 +56,41 @@ jobs:
             fi
           done
 
-          if [[ -f "$SITE" ]] && ! grep -Fq "$ENGINE_HOST" "$SITE"; then
+          if [[ ! -f "$SITE" ]]; then
+            install -d -m 0755 /etc/nginx/sites-available /etc/nginx/sites-enabled
+            : > "$SITE"
+          fi
+
+          if ! grep -Fq "$ENGINE_HOST" "$SITE"; then
             cp -a "$SITE" "$SITE.before-engine-domain-$(date -u +%Y%m%dT%H%M%SZ)"
-            cat >> "$SITE" <<'EOF'
-
-server {
-  listen 80;
-  listen [::]:80;
-  server_name engine.salientworks.ie;
-
-  location /api/ {
-    proxy_pass http://127.0.0.1:5091;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location / {
-    proxy_pass http://127.0.0.1:3011;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-}
-EOF
+            printf '%s\n' \
+              '' \
+              'server {' \
+              '  listen 80;' \
+              '  listen [::]:80;' \
+              '  server_name engine.salientworks.ie;' \
+              '' \
+              '  location /api/ {' \
+              '    proxy_pass http://127.0.0.1:5091;' \
+              '    proxy_http_version 1.1;' \
+              '    proxy_set_header Host $host;' \
+              '    proxy_set_header X-Real-IP $remote_addr;' \
+              '    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+              '    proxy_set_header X-Forwarded-Proto $scheme;' \
+              '  }' \
+              '' \
+              '  location / {' \
+              '    proxy_pass http://127.0.0.1:3011;' \
+              '    proxy_http_version 1.1;' \
+              '    proxy_set_header Host $host;' \
+              '    proxy_set_header X-Real-IP $remote_addr;' \
+              '    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+              '    proxy_set_header X-Forwarded-Proto $scheme;' \
+              '  }' \
+              '}' >> "$SITE"
           fi
 
-          if [[ -f "$SITE" ]]; then
-            ln -sfn "$SITE" /etc/nginx/sites-enabled/salientworks
-          fi
+          ln -sfn "$SITE" /etc/nginx/sites-enabled/salientworks
           if nginx -t >/dev/null 2>&1; then
             systemctl reload nginx >/dev/null 2>&1
             echo "nginx_config=valid"
