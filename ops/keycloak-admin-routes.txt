@@ -1,0 +1,52 @@
+checked_at=2026-08-01T13:00:01Z
+host=acutis-app-server
+identity=uid=1000(acutis-deploy) gid=1000(acutis-deploy) groups=1000(acutis-deploy)
+=== KEYCLOAK ADMIN REFERENCES ===
+/opt/salientworks/glor/src/SalientWorks.Api/Security.cs:75:        using var response = await http.PostAsync($"{_issuer}/protocol/openid-connect/token", new FormUrlEncodedContent(new Dictionary<string,string>{{"client_id",_clientId},{"client_secret",_clientSecret},{"grant_type","client_credentials"}}), token);
+/opt/salientworks/glor/src/SalientWorks.Api/Security.cs:82:        using var request = new HttpRequestMessage(HttpMethod.Get, $"{Origin}/admin/realms/{Realm}/{path}");
+/opt/salientworks/glor/src/SalientWorks.Api/Security.cs:114:        using var request=new HttpRequestMessage(method,$"{Origin}/admin/realms/{Realm}/{path}"){Content=JsonContent.Create(body)};
+/opt/salientworks/glor/CLAUDE-HANDOVER.md:65:`salientworks-administration` now use:
+/opt/salientworks/glor/infrastructure/three-vm/smoke-test-keycloak-glor.sh:12:token=$(curl -fsS http://127.0.0.1:8080/realms/salientworks/protocol/openid-connect/token -d grant_type=client_credentials -d client_id=glor-auth-smoke -d client_secret="$secret" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+/opt/salientworks/glor/infrastructure/keycloak/reconcile-production-realm.sh:30:ADMIN_ID=$(ensure_client salientworks-administration true)
+/opt/salientworks/glor/infrastructure/keycloak/reconcile-production-realm.sh:37:ADMIN_SERVICE_USER=$("$KCADM" get clients/$ADMIN_ID/service-account-user -r "$REALM" --fields id | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+/opt/salientworks/glor/infrastructure/keycloak/reconcile-production-realm.sh:39:for role in manage-users view-users view-realm; do
+/opt/salientworks/glor/infrastructure/keycloak/reconcile-production-realm.sh:52:KEYCLOAK_ADMIN_CLIENT_ID=salientworks-administration
+/opt/salientworks/glor/infrastructure/keycloak/reconcile-production-realm.sh:53:KEYCLOAK_ADMIN_CLIENT_SECRET=$ADMIN_SECRET
+/opt/salientworks/glor/infrastructure/deploy/configure-host.sh:16:KeycloakAdmin__ClientId=$KEYCLOAK_ADMIN_CLIENT_ID
+/opt/salientworks/glor/infrastructure/deploy/configure-host.sh:17:KeycloakAdmin__ClientSecret=$KEYCLOAK_ADMIN_CLIENT_SECRET
+=== ADMIN/API ROUTE FILES ===
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/callback/route.ts
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/login/route.ts
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/logout/route.ts
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/session/route.ts
+/opt/salientworks/glor/salientworks-ui-v6/app/api/backend/[...path]/route.ts
+=== ROUTE AUTHORIZATION REFERENCES ===
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/logout/route.ts:2:import { SESSION_COOKIE } from "@/lib/session";
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/logout/route.ts:3:function clearSession(request: Request) { const publicUrl = process.env.SALIENTWORKS_PUBLIC_URL ?? request.url; const response = NextResponse.redirect(new URL("/", publicUrl)); response.cookies.set(SESSION_COOKIE, "", { httpOnly:true, secure:true, sameSite:"lax", path:"/", maxAge:0 }); return response; }
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/callback/route.ts:3:import { decodeJwtRoles, OIDC_STATE_COOKIE, SESSION_COOKIE } from "@/lib/session";
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/callback/route.ts:21:  const session = { accessToken: token.access_token, refreshToken: token.refresh_token, expiresAt: Date.now() + Math.max(60, token.expires_in ?? 300) * 1000, roles: decodeJwtRoles(token.access_token) };
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/callback/route.ts:27:  response.cookies.set(SESSION_COOKIE, Buffer.from(JSON.stringify(session)).toString("base64url"), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 8 * 60 * 60 });
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/session/route.ts:3:import { SESSION_COOKIE, Session } from "@/lib/session";
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/session/route.ts:7:    const raw = (await cookies()).get(SESSION_COOKIE)?.value;
+/opt/salientworks/glor/salientworks-ui-v6/app/api/auth/session/route.ts:10:    return NextResponse.json({ authenticated: true, roles: session.roles });
+/opt/salientworks/glor/salientworks-ui-v6/app/api/backend/[...path]/route.ts:3:import { refreshSession, SESSION_COOKIE, Session } from "@/lib/session";
+/opt/salientworks/glor/salientworks-ui-v6/app/api/backend/[...path]/route.ts:7:  const rawSession = (await cookies()).get(SESSION_COOKIE)?.value;
+/opt/salientworks/glor/salientworks-ui-v6/app/api/backend/[...path]/route.ts:12:  const bearer = req.headers.get("authorization") ?? (effectiveSession && effectiveSession.expiresAt > Date.now() ? `Bearer ${effectiveSession.accessToken}` : null);
+/opt/salientworks/glor/salientworks-ui-v6/app/api/backend/[...path]/route.ts:20:  if (refreshed) response.cookies.set(SESSION_COOKIE, Buffer.from(JSON.stringify(refreshed)).toString("base64url"), { httpOnly:true, secure:true, sameSite:"lax", path:"/", maxAge:8*60*60 });
+/opt/salientworks/glor/salientworks-ui-v6/lib/session.ts:1:export type Session = { accessToken: string; refreshToken?: string; expiresAt: number; roles: string[] };
+/opt/salientworks/glor/salientworks-ui-v6/lib/session.ts:3:export const SESSION_COOKIE = "sw_session";
+/opt/salientworks/glor/salientworks-ui-v6/lib/session.ts:9:    return Array.isArray(payload?.realm_access?.roles) ? payload.realm_access.roles.filter((role: unknown) => typeof role === "string") : [];
+/opt/salientworks/glor/salientworks-ui-v6/lib/session.ts:13:export function isPlatformAdmin(roles: string[]) {
+/opt/salientworks/glor/salientworks-ui-v6/lib/session.ts:14:  return roles.includes("platform-admin") || roles.includes("studio_admin");
+/opt/salientworks/glor/salientworks-ui-v6/lib/session.ts:25:  return { accessToken: token.access_token, refreshToken: token.refresh_token ?? session.refreshToken, expiresAt: Date.now() + Math.max(60, token.expires_in ?? 300) * 1000, roles: decodeJwtRoles(token.access_token) };
+=== SELECTED KEYCLOAK FILES ===
+=== LOCAL ENDPOINT PROBES ===
+path=/api/admin rc=0 http=307 body=/api/auth/login?returnTo=%2Fapi%2Fadmin
+path=/api/admin/users rc=0 http=307 body=/api/auth/login?returnTo=%2Fapi%2Fadmin%2Fusers
+path=/api/administration rc=0 http=307 body=/api/auth/login?returnTo=%2Fapi%2Fadministration
+path=/api/administration/users rc=0 http=307 body=/api/auth/login?returnTo=%2Fapi%2Fadministration%2Fusers
+path=/api/users rc=0 http=307 body=/api/auth/login?returnTo=%2Fapi%2Fusers
+path=/api/access rc=0 http=307 body=/api/auth/login?returnTo=%2Fapi%2Faccess
+path=/api/auth/session rc=0 http=401 body={"authenticated":false}
+path=/api/auth/me rc=0 http=404 body=<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/2v-8-0qnfmgqe.css" data-precedence="next"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/10qk6v6416kh8.js"/><script src="/_next/static/chunks/27jktro2p5rq9.js" async=""></script><script src="/_next/static/chunks/2-5nk792mwq2y.js" async=""></script><script src="/_next/static/chu
+ssh_rc=0
