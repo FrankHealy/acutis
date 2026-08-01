@@ -1,4 +1,4 @@
-name: Locate Salient Works deployment mechanism
+name: Repair Salient Works Keycloak redirect
 
 on:
   push:
@@ -11,11 +11,12 @@ permissions:
   contents: write
 
 jobs:
-  inspect:
+  repair:
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
     steps:
-      - name: Inspect deployment watchers and timers
+      - name: Repair Keycloak client from live Docker configuration
         env:
           GH_TOKEN: ${{ github.token }}
           SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
@@ -24,64 +25,145 @@ jobs:
           USER: ${{ secrets.PRODUCTION_SSH_USER }}
         run: |
           set +e
-          report="$RUNNER_TEMP/salientworks-deployment-mechanism.txt"
+          report="$RUNNER_TEMP/salientworks-keycloak-repair.txt"
           echo "checked_at=$(date -u +%FT%TZ)" > "$report"
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/key
           chmod 0600 ~/.ssh/key
           printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
           chmod 0600 ~/.ssh/known_hosts
+
           ssh -o BatchMode=yes -i ~/.ssh/key "$USER@$HOST" 'bash -s' >> "$report" 2>&1 <<'REMOTE'
           set +e
-          root=/opt/salientworks/glor
+          ENV_FILE=/opt/salientworks/core/.env
           echo "host=$(hostname)"
           echo "identity=$(id)"
-          echo '=== SYSTEMD UNITS ==='
-          systemctl list-unit-files --no-pager 2>/dev/null | grep -Ei 'salient|glor|deploy|github|runner|watch|webhook' || true
-          echo '=== ACTIVE/ALL SERVICES ==='
-          systemctl list-units --all --no-pager 2>/dev/null | grep -Ei 'salient|glor|deploy|github|runner|watch|webhook' || true
-          echo '=== TIMERS ==='
-          systemctl list-timers --all --no-pager 2>/dev/null | grep -Ei 'salient|glor|deploy|github|runner|watch|webhook|NEXT|LEFT|LAST|PASSED' || true
-          echo '=== UNIT FILE CONTENTS ==='
-          for unit in $(systemctl list-unit-files --no-legend 2>/dev/null | awk '{print $1}' | grep -Ei 'salient|glor|deploy|github|runner|watch|webhook'); do
-            echo "--- $unit ---"
-            systemctl cat "$unit" --no-pager 2>&1 || true
-          done
-          echo '=== CRON ==='
-          for file in /etc/crontab /etc/cron.d/*; do
-            [[ -f "$file" ]] || continue
-            echo "--- $file ---"
-            sed -n '1,260p' "$file" 2>&1 || true
-          done
-          echo '=== USER CRONTABS ==='
-          for user in root salientworks acutis-deploy; do
-            echo "--- $user ---"
-            crontab -u "$user" -l 2>&1 || true
-          done
-          echo '=== RUNNER FILES ==='
-          find /opt /home /srv -maxdepth 5 \( -iname '*actions-runner*' -o -iname '.runner' -o -iname 'svc.sh' -o -iname 'run.sh' \) -printf '%M %u:%g %p\n' 2>/dev/null | head -300
-          echo '=== DEPLOY FILES ==='
-          find /opt/salientworks /usr/local/bin /opt -maxdepth 6 -type f \( -iname '*deploy*' -o -iname '*release*' -o -iname '*update*' -o -iname '*pull*' -o -iname '*webhook*' \) -printf '%M %u:%g %p\n' 2>/dev/null | sort | head -500
-          echo '=== GIT HOOKS ==='
-          find "$root/.git/hooks" -maxdepth 1 -type f -perm /111 -printf '%M %u:%g %p\n' 2>/dev/null | sort
-          for hook in "$root"/.git/hooks/*; do
-            [[ -f "$hook" && -x "$hook" ]] || continue
-            echo "--- $hook ---"
-            sed -n '1,220p' "$hook" 2>&1 || true
-          done
-          echo '=== SHELL HISTORY NAMES ONLY ==='
-          for hist in /root/.bash_history /home/salientworks/.bash_history /home/acutis-deploy/.bash_history; do
-            echo "--- $hist ---"
-            ls -l "$hist" 2>&1 || true
-            if [[ -r "$hist" ]]; then grep -Ei 'git (pull|fetch|checkout)|npm (run build|install|ci)|systemctl restart salientworks|docker compose|deploy' "$hist" | tail -120 | sed -E 's/(password|token|secret|key)=([^ ]+)/\1=[redacted]/Ig' || true; fi
-          done
+          stat -c 'env_file_mode=%A owner=%U group=%G size=%s' "$ENV_FILE" 2>/dev/null || true
+          if [[ ! -r "$ENV_FILE" ]]; then
+            echo 'env_file_readable=no'
+            exit 20
+          fi
+          echo 'env_file_readable=yes'
+
+          set -a
+          source "$ENV_FILE"
+          set +a
+
+          admin_user=${KC_BOOTSTRAP_ADMIN_USERNAME:-${KEYCLOAK_ADMIN_USERNAME:-${KEYCLOAK_ADMIN:-admin}}}
+          admin_password=${KC_BOOTSTRAP_ADMIN_PASSWORD:-${KEYCLOAK_ADMIN_PASSWORD:-${KC_ADMIN_PASSWORD:-}}}
+          if [[ -z "$admin_password" ]]; then
+            echo 'admin_password_present=no'
+            exit 21
+          fi
+          echo 'admin_password_present=yes'
+
+          token_response=$(curl -sS --max-time 20 \
+            -X POST 'http://127.0.0.1:8080/realms/master/protocol/openid-connect/token' \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'client_id=admin-cli' \
+            --data-urlencode "username=$admin_user" \
+            --data-urlencode "password=$admin_password" \
+            --data-urlencode 'grant_type=password')
+          unset admin_password
+          token=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("access_token", ""))' <<< "$token_response" 2>/dev/null)
+          if [[ -z "$token" ]]; then
+            echo 'admin_authentication=failed'
+            python3 -c 'import json,sys; d=json.load(sys.stdin); print("token_error="+str(d.get("error","unknown"))); print("token_error_description="+str(d.get("error_description","unknown")))' <<< "$token_response" 2>/dev/null || true
+            exit 22
+          fi
+          echo 'admin_authentication=ok'
+
+          export TOKEN="$token"
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.parse
+          import urllib.request
+          import urllib.error
+
+          token = os.environ['TOKEN']
+          base = 'http://127.0.0.1:8080'
+          realm = 'salientworks'
+          required_redirects = [
+              'https://engine.salientworks.ie/api/auth/callback',
+              'https://engine.salientworks.ie/api/auth/callback/keycloak',
+          ]
+          required_origin = 'https://engine.salientworks.ie'
+
+          def call(method, url, body=None):
+              headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/json'}
+              data = None
+              if body is not None:
+                  headers['Content-Type'] = 'application/json'
+                  data = json.dumps(body).encode()
+              req = urllib.request.Request(url, data=data, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as response:
+                      raw = response.read()
+                      return response.status, json.loads(raw) if raw else None
+              except urllib.error.HTTPError as exc:
+                  raw = exc.read().decode(errors='replace')
+                  print(f'admin_api_error method={method} status={exc.code} body={raw[:500]}')
+                  raise
+
+          for client_id in ('salientworks-api', 'salientworks-studio'):
+              query = urllib.parse.urlencode({'clientId': client_id})
+              status, clients = call('GET', f'{base}/admin/realms/{realm}/clients?{query}')
+              if status != 200 or not clients:
+                  raise RuntimeError(f'client_not_found={client_id}')
+              internal_id = clients[0]['id']
+              _, client = call('GET', f'{base}/admin/realms/{realm}/clients/{internal_id}')
+              redirects = list(client.get('redirectUris') or [])
+              origins = list(client.get('webOrigins') or [])
+              for redirect in required_redirects:
+                  if redirect not in redirects:
+                      redirects.append(redirect)
+              if required_origin not in origins:
+                  origins.append(required_origin)
+              client['redirectUris'] = redirects
+              client['webOrigins'] = origins
+              status, _ = call('PUT', f'{base}/admin/realms/{realm}/clients/{internal_id}', client)
+              if status not in (200, 204):
+                  raise RuntimeError(f'update_failed={client_id} status={status}')
+              print(f'updated_client={client_id}')
+              print(f'plain_callback_present_{client_id}={"yes" if required_redirects[0] in redirects else "no"}')
+              print(f'keycloak_callback_present_{client_id}={"yes" if required_redirects[1] in redirects else "no"}')
+          print('repair_status=success')
+          PY
+          repair_rc=$?
+          unset TOKEN token
+          echo "repair_rc=$repair_rc"
+          if [[ $repair_rc -ne 0 ]]; then exit "$repair_rc"; fi
+
+          echo '=== LOGIN VERIFICATION ==='
+          curl -k -sS -L --max-redirs 8 --max-time 30 \
+            -D /tmp/login-headers -o /tmp/login-body \
+            -w 'login_final_url=%{url_effective}\nlogin_http=%{http_code}\nlogin_redirects=%{num_redirects}\n' \
+            'https://engine.salientworks.ie/api/auth/login?returnTo=%2F'
+          verify_rc=$?
+          echo "login_curl_rc=$verify_rc"
+          title=$(grep -io '<title>[^<]*' /tmp/login-body | head -1 | sed 's/<title>//I')
+          echo "login_page_title=${title:-none}"
+          if grep -qi 'Invalid parameter: redirect_uri' /tmp/login-body; then
+            echo 'redirect_error_present=yes'
+            exit 30
+          fi
+          echo 'redirect_error_present=no'
+          if [[ $verify_rc -eq 0 ]] && grep -qiE 'sign in|log in|username|password' /tmp/login-body; then
+            echo 'login_page_reached=yes'
+          else
+            echo 'login_page_reached=unknown'
+          fi
           REMOTE
+          ssh_rc=$?
+          echo "ssh_rc=$ssh_rc" >> "$report"
+
           encoded=$(base64 -w0 "$report")
-          path='ops/salientworks-deployment-mechanism.txt'
+          path='ops/salientworks-keycloak-repair.txt'
           sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=main" --jq .sha 2>/dev/null || true)
           if [[ -n "$sha" ]]; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works deployment mechanism' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works Keycloak repair' -f content="$encoded" -f sha="$sha" -f branch=main >/dev/null
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works deployment mechanism' -f content="$encoded" -f branch=main >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='Record Salient Works Keycloak repair' -f content="$encoded" -f branch=main >/dev/null
           fi
           cat "$report"
